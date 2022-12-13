@@ -6,6 +6,7 @@
 *.mex*
 *.pl
 *.sh
+*.tmp
 
 DMRG/tdDMRG_Dimitris.m
 Docu/latex/

@@ -52,7 +52,9 @@ function [HAM]=setup_Heisenberg_BaIrO(varargin)
 
   [nJ,m]=size(J); j=5; J_=J;
   if m<3 || m>j, wberr('invalid J data (%g x %g)',nJ,m); end
-  if nJ>min(L,4), wberr('invalid usage (nJ=%g)',nJ); end
+
+  if nJ==L-1 && ~perBC, l=L; else l=nJ; end
+  if l>L || mod(L,l), wblog('WRN got length(J) = %d / %d',nJ,L); end
 
   q=min(abs(J),1); q(end+1:4)=0; q(5)=norm(q([3:4])); s='';
   if q(1)<1E-8, s=sprintf('decoupled rung(s) @ %.3g', q(1)); end
@@ -139,7 +141,7 @@ function [HAM]=setup_Heisenberg_BaIrO(varargin)
 
   HAM.ops=init_ops(Sleg,'(S.S)_legs','~hconj');
   for i=1:nJ
-     if nJ==1, s='Hrung'; else s=sprintf('Hrung_%d',i); end
+     if nJ==1, s='Hloc'; else s=sprintf('Hloc(%d)',i); end
      HAM.ops(i+1,1)=init_ops(Hloc(i),s,'~hconj');
   end
 
@@ -233,7 +235,7 @@ function [Sleg,Hloc,Eloc,Sloc,I1,p]=get_ops_BrickLadder(sym,p)
      if jc, istr{end+1}=['jc=',num2rat(jc)]; end
   end
 
-  nJ=size(p.J,1);
+  [nJ,m]=size(p.J);
 
   if any(abs(p.J(:,2))<1E-3)
      wbdie('invalid usage (got small J2=%g)',min(abs(p.J(:,2)))); end
@@ -241,11 +243,15 @@ function [Sleg,Hloc,Eloc,Sloc,I1,p]=get_ops_BrickLadder(sym,p)
   j3=p.J(:,2:4)./repmat(p.J(:,2),1,3);
 
   q=mean(p.J(:,3:4));
-  if size(p.J,1)==2 && ~norm(diff(p.J(:,1:2),[],1)) && ~norm(diff(q,[],2))
-     q=[ p.J(1), p.J(2), q(1), diff(p.J(:,3:4),[],1)/2 ];
-  else
+  if nJ==2 && ~norm(diff(p.J(:,1:2),[],1)) && ~norm(diff(q,[],2))
+     q=[ q(1), diff(p.J(1,3:4),[],1)/2 ];
+     istr{end+1}=sprintf('jr=[%.3g, %.3g, %.3g±%.3g, %.3g∓%.3g]', ...
+     [ p.J(1,1:2), q, q(1),-q(2) ]);
+  elseif nJ<p.L-1
      if norm(diff(p.J(:,3:4),[],2)), j=1:3; else j=1:2; end
      istr{end+1}=vec2str(j3(:,j),'jr=[%.3g,]');
+  else
+     istr{end+1}='non-uniform';
   end
   I1.istr=strjoin(istr,', ');         % `jr' = normalized Js for rung
 

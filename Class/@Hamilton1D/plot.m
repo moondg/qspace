@@ -55,7 +55,10 @@ end
 
   s=HAM.ops; s={s.info};
   for i=1:numel(s), s{i}=sprintf('%g) %s',i,s{i}); end
-  s=sprintf('\n%s','with operator setup',s{:});
+  if numel(s)>8
+       s=sprintf('\n%s','with operator setup',s{1:4},'...',s{end-1:end});
+  else s=sprintf('\n%s','with operator setup',s{:});
+  end
 
   header('%M :: %s %s',HAM.info.istr,s); addt2fig Wb
   header({'SW',[0 0]},param2str(HAM.info.param));
@@ -126,7 +129,7 @@ setax(ah(1,1))
         h=plot3(xy(k,1),xy(k,2),repmat(mz(i),numel(k),1),...
         mm{i},'Color',c,'MarkerFaceC',c,'MarkerS',ms(i));
 
-        if ~q(mi(i)), q(mi(i))=1;
+        if mi(i)<=n && ~q(mi(i)), q(mi(i))=1;
            set(h,'Disp',sprintf('Hloc(%g)',Hi(2)));
         end
      end
@@ -361,7 +364,8 @@ setax(ah(2,1))
      hold on
   end, end
 
-  xtight(1.1);
+  xtight(1.05); ytight(1.1,'y1',0.1);
+  y=get(gca,'XTick'); set(gca,'YTick',[1,y(y>2)]);
   title('build sequence of pseudo MPO');
   label('site k','\rightarrow  step in mpo buildup  \rightarrow');
 
@@ -370,22 +374,37 @@ setax(ah(2,2));
   HM=cat(1,HM{:}); xx=mean(HM(:,[1 3]),2);
   [dx,Ix,Dx]=uniquerows([round(diff(HM(:,[1 3]),[],2)), HM(:,[2 4])]);
 
-  lo={'-','--','o','x','+'}; no=numel(lo);
-  for i=1:numel(Ix)
+  nl=zeros(1,L);
+
+  for i=1:numel(Ix), o='o-';
      l=unique(dx(i,2:end));
-     if l(1)<=no, o=lo(l(1)); else o={'-'}; end
-     h=plot(xx(Ix{i}),HM(Ix{i},end),o{:}); hold on % ,'Color',getcolor(dx(i))
-     if dx(i)==0, s='local';
+     t=sprintf('dx=%g',dx(i));
+
+     if dx(i)==0, s='local'; o='*';
      elseif dx(i)==1, s='NN';
      elseif dx(i)==2, s='NNN';
-     else sprintf('dx=%g',dx(i)); end
-     set(h(1),'Disp',sprintf('%s/op%s',s,sprintf('%g',l)));
+     else s=t; end
+
+     h=plot(xx(Ix{i}),HM(Ix{i},end),o); hold on % ,'Color',getcolor(dx(i))
+     j=dx(i)+1; nl(j)=nl(j)+1;
+     if numel(l)==1
+          s=HAM.ops(l,1).info;
+     else s=sprintf('%s/op%s',s,sprintf('%g',l)); end
+     set(h(1),'Disp',s,'Tag',t);
   end
 
-  xtight(1.1); sms(3);
-  legdisp({'SE',[0 0]});
+  for i=find(nl>6)
+     h=findall(gca,'Tag',sprintf('dx=%g',i-1));
+     if numel(h)>6
+        set(h(3),'Disp','...');
+        set(h(4:end-2),'Disp','');
+     end
+  end
 
-  title('coupling strength vs. avg. site position');
+  xtight(1.05); ytight(1.1); sms(3);
+  legdisp({'E',[0 0]});
+
+  title('energy / coupling strength vs. avg. site position');
   label('(k_1+k_2)/2','coupling / interaction strength');
 
 end

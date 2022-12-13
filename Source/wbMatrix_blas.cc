@@ -540,7 +540,7 @@ inline void WbEigenSymmetric (
     if (q>0) {
        V=M; E.init(n);
 
-       wblog(FL,"WRN %s() ZHEEVD returned e=%d -> fall back to ZHEEV",FCT,q);
+       wblog(FL,"WRN %s() ZHEEVD returned i=%d / falling back to ZHEEV",FCT,q);
        MXPut(FL,0,"tmpfile").add(M,"M").add(q,"q");
 
        if (n<128) { ni=2*n-1; } 

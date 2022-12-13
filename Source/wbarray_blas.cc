@@ -538,7 +538,7 @@ inline void wbEigenS(
 
    V=M; E.init(n);
 
-   wblog(FL,"WRN ZHEEVD returned e=%d: falling back to ZHEEV",q);
+   wblog(FL,"WRN ZHEEVD returned i=%d / falling back to ZHEEV",q);
    MXPut(FL,0,"tmpfile").add(M,"M").add(q,"q");
 
    if (n<128) { ni=2*n-1; } 
@@ -1045,7 +1045,7 @@ void wbSVD(
          MXPut Ix(FL,vn,"tmpfile");
          Ix.add(ncall,"ncall").add(q,"q").add(X,"A");
 
-         wblog(FL,"WRN GESVD returned i=%d falling back to old zgesvd()",q);
+         wblog(FL,"WRN GESVD returned i=%d / falling back to ZGESVD",q);
          GESVD_old(X,U,S,Vd); 
          Ix.add(U,"U").add(S,"S").add(Vd,"Vd");
       }

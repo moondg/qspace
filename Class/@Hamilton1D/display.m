@@ -149,12 +149,12 @@ function display(HAM,varargin)
         s1,'local state space dim (d)',d(1,1),s2,s3);
      end
 
-     fprintf(1,fmt,'nops (irop dim)',vec2str([HAM.ops(:,j).dop],'-f'));
-     fprintf(1,fmt,'hconj',vec2str([HAM.ops(:,j).hconj],'-f'));
+     fprintf(1,fmt,'nops (irop dim)',ivec2str([HAM.ops(:,j).dop]));
+     fprintf(1,fmt,'hconj',ivec2str([HAM.ops(:,j).hconj]));
 
      ff=[HAM.ops(:,j).fermionic]; fmt='       %-27s [ %s ]\n';
      if any(ff) 
-          fprintf(1,fmt,'fermionic operators',vec2str(ff,'-f'));
+          fprintf(1,fmt,'fermionic operators',ivec2str(ff));
      end
   end
 
@@ -191,3 +191,22 @@ function display(HAM,varargin)
   end
 
 end
+
+% -------------------------------------------------------------------- %
+function s=ivec2str(q)
+  if numel(q)<8
+       s=vec2str(q,'-f');
+  else
+     [~,I,D]=uniquerows(double(diff(q')==0));
+     q=matcell(q);
+     for i=1:numel(q), q{i}=num2str(q{i}); end
+     for i=find(D>10)', ix=I{i}+1;
+         q{ix(1)}= sprintf('..(%d)..',numel(ix)-2);
+         q(ix(2:end-1))=[];
+     end
+     s=strjoin(q);
+  end
+end
+
+% -------------------------------------------------------------------- %
+
