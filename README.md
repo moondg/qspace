@@ -4,10 +4,11 @@
 This git repository contains the source code for the QSpace
 tensor library that can handle arbitrary combinations of abelian
 and general non-abelian symmetries in tensor network states.
-As of version 4 this is offered as open source [hence `qspace4u`
-(*for you*) in the hyperref link to this repository].
+As of version 4 this has been made open source [hence `qspace4u`
+(*for you*) in the hyperref link to the public repository]
+under the Apache 2.0 license (see LICENSE.txt and ./LICENSE).
 
-&copy; 2022 Andreas Weichselbaum (see LICENSE)
+&copy; 2022 Andreas Weichselbaum
 
 ### Essential references
 
