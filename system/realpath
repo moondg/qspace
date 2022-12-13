@@ -1,0 +1,10 @@
+#!/usr/bin/perl -w
+# in case that the linux comman realpath is not available
+# Wb,Jan10,19
+
+  use Cwd 'realpath';
+
+  my @ff=@ARGV;
+  foreach (@ff) { $_=realpath($_); }
+  print join(' ',@ff);
+

@@ -1,0 +1,106 @@
+# -------------------------------------------------------------------- #
+# Makefile for MatLabs standalone compiler mcc
+# -------------------------------------------------------------------- #
+
+# MAKEFLAGS += -B    # always compile
+
+  SHELL = /bin/bash
+
+  ifndef MYMATLAB
+     $(info )
+     $(warning missing environmental variable MYMATLAB)
+     issue_error = 1
+  endif
+
+  ifndef MATLAB_ROOT
+     $(info )
+     $(warning MATLAB_ROOT not defined, having  "$(shell which matlab)")
+     issue_error = 1
+  endif
+
+  ifndef ARCH
+     $(warning ARCH not defined, having $(shell uname -sm))
+     issue_error = 1
+  endif
+
+  ifndef MCC_ODIR
+     ifdef MCC_TAG
+        MCC_ODIR = ./$(MCC_TAG)
+     else
+        $(warning MCC_ODIR not defined)
+        issue_error = 1
+     endif
+  endif
+
+  ifdef issue_error
+     $(info ------------ \
+               ----------------------------------------------------------------)
+     $(warning source .setup_matlab.sh (or similar) to setup matlab environment)
+     $(error )
+  endif
+
+  MCC := mcc -N -C -m -w enable -R -nodisplay
+  # MCC options:
+  #
+  #  -C   create CTF archive (crucial for MatLab > 2006b to work!
+  #       tags: CTF_FLAG ; Wb,Nov18,09
+  #
+  #   -g  include debug options
+  #   -v  verbose
+  #
+  #   -R -nojvm
+  #   -R -nodisplay
+  #   -R -singleCompThread // serial mode
+  #
+  #   -N clear compilation search path down to core directories
+  #      this prevents naming collision with toolbox libraries!
+  #      (hint Seung-Sup, Wb,Jul24,18)
+  #
+  # See also mcc -help.
+
+  ifdef DEBUG
+     MCC += -g -N
+  endif
+
+  MLI := \
+   -I $(MYMATLAB)/lib    \
+   -I $(MYMATLAB)/bin    \
+   -I $(MYMATLAB)/util   \
+   -I $(MYMATLAB)/setup  \
+   -I $(MYMATLAB)/tensor \
+   -I $(MYMATLAB)/NRG    \
+   -I $(MYMATLAB)/DMRG   \
+   -I $(MYMATLAB)/Class  \
+
+  MADD = -a instackof isset isvar isnumeric eval_script setdef
+
+# -------------------------------------------------------------------- #
+# implicit rule (assumes compilation of %.m file) // default
+
+%:
+	@( eval "$$(../system/.matlab_setup.pl -LD)" ; \
+           cd $(MCC_ODIR) ; printf '  cd '; pwd ;                            \
+	   printf "  $(MCC) $(@:.m=)\n  ...\n\n";           \
+	   $(MATLAB_ROOT)/bin/$(MCC) $(@:.m=) $(MADD) $(MLI) \
+	);
+
+ 	# -R -startmsg mcr_start -R -completemsg mcr_complete \
+    #  with mcr_start.m and mcr_compete.m functions defined on
+    #  the matlab path ($ML) does not seem to have any effect
+
+
+# -------------------------------------------------------------------- #
+
+# simple hello-world test compile: make hworld
+
+hworld: MADD = 
+
+Makefile:
+	@  # do not delete this line (relevant for "make -B ...")!
+	
+default:
+	@  # do not delete this line (relevant for "make -B ...")!
+	
+# -------------------------------------------------------------------- #
+# -------------------------------------------------------------------- #
+

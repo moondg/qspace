@@ -1,0 +1,3880 @@
+\documentclass[twoside,12pt]{article}
+\usepackage{QSdocs}
+
+\begin{document}
+
+\noindent Docu on mex-functions and QSpace member functions\\
+Auto-generated via QSdocs.m $\to$ QSdocs.tex $\to$ QSdocs.pdf\\
+A. Weichselbaum \copyright{} \today
+
+\tableofcontents
+
+\newpage
+
+
+\mysec[MEX routines (bin)]{MEX routines (bin)}
+
+
+\pagebreak[3]
+
+
+\mymex{NRGWilsonQS} % l=158/0
+
+\begin{verbatim}
+   Usage: [[NRG_DATA,] info] = ...
+            NRGWilsonQS(H0, A0, Lambda, ff, FC, Z, [, gg, FL, OPTS])
+ 
+   NRG run using (non-)Abelian symmetries for a Wilson chain of length L
+   based on the standard iterative diagonalization prescription.
+ 
+   The routine perfoms a quick check whether any of the inputs is complex.
+   This includes the QSpaces H0, A0, FC, FL (if preseent), or the hopping
+   amplitudes ff. If so, NRGWilsonQS runs in full complex arithmetic,
+   thus returning complex AK and AD. The subsequent fdmNRG_QS also can
+   deal with either case. All routines use double precision throughout.
+ 
+      H0      impurity / starting Hamiltonian (rank-2 QSpace)
+              H0 will be diagonalized upon initialization hence does not
+              have to be diagonal on input. The resulting basis
+              transformation is multiplied onto A0.
+ 
+      A0      basis used for H0 in LRs order (rank-3 QSpace)
+              where the local space s(igma) must already have the
+              (equivalent) space of a Wilson site (note that A0 is used
+              to obtain the matrix elements of FC at the first iteration.
+ 
+      Lambda  used to rescale H_k by sqrt(Lambda); therefore this should be
+              consistent with the Lambda used to obtain ff and gg below
+ 
+      ff      strength of couplings along Wilson chain as they appear in
+              the physical Hamiltonian, i.e. they must not be rescaled yet,
+              as this is done automaticely based on Lambda! if ff is a vector
+              of length L-1, the coupling applies for all nearest-neighbor
+              hoppings via the FC operators in a diagonal fashion.     ^1)
+              If ff is a matrix of dimension (L-1) x Nf, the diagonal
+              hopping matrix elements can differ across the FC operators.
+              If ff is a matrix of dimension (L-1) x (Nf*Nf), this also
+              permits to encode cross-couplings FC(i)'*FC(j) in between
+              nearest-neighbor shells.
+ 
+              NB! The length L of the Wilson chain is deterimend by the
+              length of ff, i.e. L=length(ff)+1 by including A0.
+ 
+      FC      set of Nf annihilation operators used for coupling (QSpace)
+              e.g. in case of all-abelian symmetries (default) this becomes
+              H = F1'*ZF2 + F1*(ZF2)' + h.conj. (zflag=1, see below)
+              with F1=F2=FC such that this operator alway appears as 
+              a bilinear together with its hermitian conjugate.  ^2)
+ 
+      Z       (diagonal) operator required for the calculation of the
+              fermionic hopping matrix elements (QSpace). It is defined by
+              ferminonic signs (-1)^ns required in the context as described
+              for FC above, where ns is the number of fermionic particles
+              for the local states s(igma).
+   Options
+ 
+      zflag   variation of how to apply the fermionic signs Z on the
+              hopping terms in the Hamilonian determined by the operators
+              FC (default: 1 e.g. as described for FC above in the context
+              of all-abelian quantum numbers). Valid settings:
+ 
+              0: ignore Z alltogether
+              1: H = F1'*(Z*F2) + F1*(Z*F2)' + hermitian conjugate (default)
+              2: intended for particle-hole-symmetric cases only:
+                 H = (ZF1)'*(ZF2) at every second iteration only, WITHOUT
+                 adding a further hermitian conjugate (already included!)
+                 starting with NO Z-operators applied to A0.local (i.e.
+                 same as for zflag==1), therefore starting with F1'*F1
+                 at first iteration (i.e. using F1 to update operators,
+                 and again F1 when building enlarged Hamiltonian.
+                 For every other iteration, H = (Z*F1)'*(Z*F2) is applied
+                 using Z with BOTH operators, consistent with particle-
+                 hole symmetry!
+              3: same as zflag=2, but Z is applied at every other iteration
+                 already starting with the very first iteration.
+ 
+      FL      set of Nl local operators along the chain (QSpaces [Nl])
+ 
+      gg      strength of local operators FL along the chain similar to ff
+              i.e. not rescaled! (double, (L-1) x Nl, not including H0)  ^1)
+              Note that local operators can always be expressed as
+              Hermitian operators, with real amplitudes gg. Hence gg is
+              always expected to be real.
+ 
+   ^1) NB! if the couplings ff (or also gg) are the same for all FC and FL,
+       they may be represented by a single vector only.
+ 
+   ^2) FC and FL are considered the same for every interation throughout
+       the Wilson chain, yet there strength is modified by ff and gg,
+       respectively.
+ 
+   Further options / flags
+ 
+    'Nkeep',. max number of states to keep at every NRG iteration (512)
+    'NKEEP',. vector that specifies Nkeep individually for first few sites
+ 
+    'Etrunc', use given energy threshold rather than Nkeep to trunctate
+              unless Nkeep is reached (<=0 uses Nkeep only; default: 0).
+    'ETRUNC', vector that specifies Etrunc individually for first few sites
+    'ET1'     Etrunc for 1st with trunctation (default: 1.2*Etrunc)
+              if ET1<0, then ET1=Etrunc is used.
+ 
+    'FNfac',. global factor on energy scale, i.e.
+              EScale(n) = Lambda^(-n/2) * 0.5*(Lambda+1) * FNfac.
+              (by default, FNfac is chosen such that ff(N-1)/EScale(N)=1;
+              see returned info.EScale below)
+ 
+    'Estop',. stop dynamically once stable fixed point is reached, i.e.
+              energies EK(1:Nkept/4) for iterations k and k+2 are the same
+              to within given value for Estop (default: 0, i.e. not used).
+    '-Estop'  same as 'Estop',1E-4
+ 
+    'NEE',..  number of states to store for energy flow diagram (Nkeep*Ns)
+    'fout',.  store data for every site into output file <fout>_##.mat
+              if specified, the first RETURN argument is skipped (./NRG/NRG).
+    'deps',.. restore degeneracy within eps (1E-12)
+    'db',..   require minimum distance towards discarded energies (-1)
+              (db<0 searches for maximum distance in vicinity of Nkeep)
+    'dmax'..  maximum number of extra states to include for db (Nkeep/10)
+              (mostly a safeguard in case db has been set too large).
+    '-IdF'    build local Id from F-ops, fully ignoring A0 (NB! by default,
+              sigma-space of A0 is considered a proper Wilson bath site!)
+    'ionly'   info only (incl. Eflow) i.e. do not store iterative NRG data
+    '-v'      verbose mode
+ 
+   Output
+ 
+    NRG_DATA  MPS data (only if 'fout' was not specified; otherwise this
+              data is stored into specified file structure):
+ 
+     .A[KD]   states K(ept) / D(iscarded) at current NRG iteration
+              according to NRG truncation scheme (rank-3 QSpaces in LRs order)
+     .H[KD]   eigenenergies corresponding to the eigenbasis of AK/AD;
+              stored in diagonal format.
+ 
+    info      info structure containing the following fields:
+ 
+     .istr    info string
+     .usage   (struct) info such as time stamp, etc.
+     .HK      rescaled energy data for energy flow diagram (QSpace vector)
+     .EE      collected eig(HK) data (purely numerical array)
+     .E0      substracted ground state energy at energy scale of iteration
+     .EK      [largest kept, lowest and largest discarded] energy for each iteration
+     .EScale  NRG energy scale used along the Wilson chain (see FNfac above)
+     .Lambda  Lambda used in the calculation (same as input)
+     .ops     (struct) operator specific data for Wilson chain (FC,Z,ff,gg,etc.)
+     .paras   (struct) technical NRG specific internal parameters
+ 
+   Alternative usage: NRGWilsonQS('MATfilename')
+   NRGWilsonQS('setup.mat' [, 'fout_tag'])
+ 
+      This allows to read all input parameters from given setup.mat file
+      (MatLab binary) which allows pure standalone run of NRG without
+      requiring MatLab (except for the API for binary *.mat I/O).
+ 
+      This way all variables and options MUST be defined by their names
+      shown above; moreover, this usage must include a specification
+      for fout_tag as all output data will be written there.
+      fout_tag is either specified as 2nd argument above, else it should
+      be defined in terms of the variable 'fout' in the parameter file
+      setup.mat (default for fout_tag: './NRG/NRG').
+ 
+   AW (C) Apr 2006 ; May 2010 ; Nov 2014
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{fdmNRG\_QS} % l=147/46
+
+\begin{verbatim}
+   Usage: [omega, A0 [,Info]] = ...
+          fdmNRG(NRG_DATA [,Inrg], B, C, Z0, [,opts])
+ 
+     This routine calculates arbitrary correlation function (CF)
+     in the full density matrix Numerical Renormalization Group
+     (fdm-NRG) framework at arbitrary temperature T for arbitrary
+     abelian or non-abelian symmetries.
+ 
+        A(w) = <B||C'>_w = FFT(<{B(t),C'}>).  (' equiv ^dagger)
+ 
+     If B is specified as empty [], it will be automatically assumed
+     equal to C, i.e. B=C as is the case for spectral functions;
+     anti-commutator (default) or commutator will be chosen according
+     to cflags below (see also zflags for Fermionic signs).
+ 
+     This routine uses data from a previous standard NRG run with
+     the result written as a matrix product state in QSpace format.
+     It must contain the state space kept (AK) as well as the one
+     thrown / discarded (AD) at every NRG iteration.
+ 
+   See also: NRGWilsonQS
+ 
+   Input:
+ 
+     NRG_DATA   structure containing data of previous NRG run; if this
+                contains path/file, then the data will be read from the
+                files path/file_##.mat for every site (see NRGWilsonQS)
+ 
+      .AK       MPS state of k(ept) space (regular NRG, QSpace)
+      .AD       MPS state of t(runcated) NRG space (QSpace)
+      .HK       effective NRG eigenspectra (kept, QSpace)
+      .HD       effective NRG eigenspectra (truncated, QSpace)
+ 
+     Inrg       NRG info structure (required if NRG_DATA contains
+                structure; otherwise <NRG_DATA>_info.mat will be accessed.
+                required elements within Inrg structure / data:
+ 
+      .Lambda   NRG discretization parameter for the conduction band.
+                Lambda is needed to undo the energy scaling permformed
+                in obtaining the NRG data at the first place.
+              
+      .EScale   energy scale fore each Wilson shell
+              
+      .E0       (relative) ground state energy offsets in the same
+                energy scales as H[KD]; this is needed for evaluating
+                the correct weights of the density matrix
+ 
+     B,C        operators acting on the impurity used to calculate the
+                correlation between them as in A(w)=FFT(<{B(t),C'}>).
+ 
+                If the operators B or C are specified by name, they
+                will be read from workspace, and stored in NRG_DATA
+                together with the other NRG MPS data (the latter is
+                disabled by the flag `nostore')
+ 
+                The operators in B and C are paired up for correlation
+                functions. They are applied in the order of priority
+                (whichever fits first): L, then s, then R onto A0
+                as in <NRGDATA>_00 with index order LRs where L = left,
+                R = right = combined, s = local state space sigma).
+ 
+     Z0         Z0 operator for the space described by B and C
+                required for fermionic setup where must represent
+                Z0=(-1)^(number of particles); Z0 is directly
+                contracted onto the B and C where 'zflags' is set.
+ 
+   Options / Flags (default method: fDM)
+ 
+    'fDM'       full-density-matrix approach to CFs (default)
+    'NRho',k,   build density matrix from single iteration k
+                (for testing purposes, only)
+ 
+    'T',...     temperature at which correlation function is calculated;
+                default: about an order of magnitude larger than the
+                energy scale at the end of the Wilson chain
+ 
+    'vflag',..  more detailed output with increasing value (default: 1)
+    'partial'   store G1 and G2 separatly (e.g. for detailed balance
+                or the calculation of expectation values)
+    'nostore'   do not store operator elements of B or C with NRG_DATA
+    'locRho'    if Rho needs to be calculated it is stored in RAM only
+                and will be deleted after the program is finished
+    'noRHO'     do not calculate Rho, eg. calculate partition function
+                only (relevant with empty ops B and C only)
+    'rhoNorm',. allows to specify the weights rhoNorm explicitely
+                as input (intended for testing purposes only)
+ 
+    'zflags'    on which operators in <B||C> to apply fermionic signs Z0
+                ex. 'zflags', [ 1 0 ... ]  would apply Z0 to the first
+                but not to the second operator (default: all 0 if Z0
+                is empty, 1 otherwise).
+ 
+    'nlog',...  number of bins per decade for log. discretization (256)
+    'emin',...  minimum energy for omega binning (TN/1000)  ^1)
+    'emax',...  maximum energy for omega binning (10.)      ^1)
+ 
+   ^1) NB! first (last) bin contains all data below (above) emin (emax)
+ 
+   Output
+ 
+     om         omega corresponding to the energy binning [-emax,+emax]
+     A0         raw data for spectral function (i.e. discrete in om)
+ 
+     Info       info structure: specific fields are
+       .ver     version / mode of code
+       .T       actual temperature used
+       .rho     FDM weight distribution for given temperature
+       .RHO     reduced thermal density matrix for A0 (R-basis).
+       .Om      Omega(T) = -T*log(Z), (grand)canonical potential.
+ 
+       .A4      individual spectral data for each of the two
+                contributions to the (anti)commutator (hence A4 has
+                twice as many  columns as A0 above).
+ 
+       .a4      (1st row) integrated spectral integrals over the two
+                individual contributions to the (anti)commutator of
+                given correlator (2nd row may be ignored; it refers
+                to check w.r.t. detailed balance).
+ 
+       .reA0    contains Re(G(omega->0)) for the calculated correlation
+                functions. Importantly for finite temperatues, the
+                correlators with cflags!=0, i.e. susceptibilities,
+                acquire in addition to the Kramers Kronig transformation
+                (principal value integral!) also a Matsubara correction
+                for Ea==Eb, which would be skipped in the principal
+                value integral; this correction [see Hanl and AW, PRB 2014]
+                is added to the first term in the commutator.
+ 
+       .symfac  IROP factors for given spectral functions.
+ 
+   ALTERNATIVE USAGE
+ 
+   fdmNRG('--mat','nrgdata', 'setup.mat' [,'B'], 'C')
+ 
+     B and C are the same as above (B=C if B is not specified).
+     This usage allows to read all input parameters from given MAT files
+     (MatLab binaries); all variables and options MUST be defined in
+     <setup.mat> by their names shown above; e.g. the operators B and
+     C are specified by their names as defined in <setup.mat>.
+ 
+     The output will be written / updated to the file set
+     `<nrgdata>_##.mat' and `<nrgdata>_info.mat'.
+ 
+     Output will be appended to setup.mat.
+ 
+   See also NRGWilsonQS.
+ 
+   AW (C) May 2006 ; May 2010 ; Nov 2014
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{fgrNRG} % l=152/22
+
+\begin{verbatim}
+   Usage: [[[om,] a0], Ifgr] = fgrNRG(NRG0, NRG2, Lambda, B [,C], [,opts])
+ 
+      full density matrix (FDM) Numerical Renormalization Group (NRG)
+      calculation for Fermi Golden Rule (FGR) rates, with extension
+      to resonanant ineleastic x-ray scattering (RIXS).
+ 
+   FGR mode (default)
+ 
+      This computes the FGR spectral data (om,a0) witin the fdm-NRG
+      framework at arbitrary temperature (default T=TN^+ with N the
+      length of the Wilson chain). When Fourier tansformed, it corresponds
+      to the time-dependent correlation function [see Ifgr.Itdm.at]
+ 
+         a(t) = < B(t)C'> = tr[ rho_0 * B(t) C' ]
+ 
+      Here B and C are local operators acting at or in close vicinity
+      of the impurity. They are assumed to switch back and forth
+      between two disconnected sectors of Hilbert space (e.g. by the
+      presence of an (otherwise unaccounted for) valence core hole.
+      The time evolution C(t) = exp(iH0*t) C exp(-iH*t) therefore becomes
+      `mixed' with `initial' Hamiltonian H0 and final Hamiltonian,
+      iteratively diagonalized for both, NRG0 and NRG2, respetively.
+      The frequency correponds to om=E_final-E_initial.
+ 
+      If C is not specified or empy, it is automatically assumed
+      equal to B. This is the typical situation in FGR.
+      The inital state is determined by the full density matrix (FDM)
+      rho_0 of NRG0 at given temperature (default T ~ T_N ~ 0^+K).
+      The dynamics occurs within NRG2.
+ 
+   Input
+ 
+      NRG*       (string pointer to) data of previous NRG runs;
+                 if this contains <path/file>, then the data will be
+                 read from the files <path/file>_##.mat files as
+                 generated by NRGWilsonQS.
+ 
+      Lambda     NRG discretization parameter used in NRG*.
+                 While EScale and E0 will be read from NRG0_info,
+                 Lambda is needed for simple estimates of energy scales.
+ 
+      B,C        local operators, e.g. acting on the impurity.  *)
+                 If operators B or C are specified by name, they will be
+                 read from workspace and stored in NRG2_info
+                 (this is disabled by `nostore').
+ 
+      NB! Note that exchanging NRG0 <> NRG2 and B<>C corresponds
+      to changing from emission to absorption spectra or vice versa.
+ 
+   Options / Flags
+ 
+     'Eoffset',. additional energy offset which affects the omega
+                 binning (om-binning) only. Eoffset acts *on top* of
+                 E0_final-E0_initial, which ensures that by default,
+                 (Eoffset=0) omega=0 corresponds to minimal excitation
+                 energy for a transition from groundstate in NRG0
+                 to groundstate in NRG2 (with NRG2 considered (much)
+                 higher in energy in x-ray absorption).
+ 
+     'T',...     temperature at which correlation function is calculated (0.)
+     'NRho', k   builds density matrix from iteration k only (cf. `DM-NRG')
+ 
+     'emin',...  min. energy for omega binning (TN/1000)  **)
+     'emax',...  max. energy for omega binning (10.)
+     'nlog',...  number of bins per decade for om-binning (256)
+ 
+     'nostore'   do not store operator matrix elements of C[12] with NRG data
+     'locRho'    if Rho needs to be calculated it is stored in RAM only
+                 and will be deleted after the program is finished
+ 
+     'sigma',..  applies broadening in frequency domain (log.gauss)
+                 NB! either alpha or sigma can be specified but not both.
+                 default sigma=0.3 (with alpha ignored)
+     'alpha',..  exponential decay of energies exp(-alpha dE) [0.]
+                 this applies alpha in time domain (F. Anders 2005)
+ 
+     'partial'   return partial data from every NRG iteration
+     'raw'       raw data only, i.e. no smoothing of data
+     'RAW'       calculates time dependent data from exact frequency data
+                 i.e. without binning of energies on log. scale
+     'disp'      more detaild output (0)
+ 
+     'Z0',..     Z0 operator for first site (impurity) required for
+                 fermionic setup where Z0=(-1)^(number of particles)
+     'zflags',.. on which operators in B.*C to apply fermionic signs Z0
+                 ex. 'zflags', [ 1 0 ... ]  would apply Z0 to the first
+                 but not to the second operator  (default: all 1s,
+                 as typically the case for absorption/emission setups.
+ 
+   RIXS mode
+ 
+      With the flag '--rixs', this routine computes disrete, i.e., binned,
+      RIXS (resonant ineleastic x-ray scattering) energy loss spetra
+      for given incomming photon energy E_inc.
+      This uses the Kramers-Heisenberg higher-order generalization of
+      Fermi golden rule.
+ 
+      Note on semantics: within RIXS, i(nitial) and f(inal) refer to the
+      *same* Hamiltonian, wheras it is the intermediate Hamiltonian takes
+      the role of the former H2:=H_final. With
+ 
+          V_if := <i| B 1/[E_inc^* + E_i - H2] C' |f>
+ 
+      the RIXS specral data would correspond, when Fourier transformed
+      into time-domain, to
+ 
+          R(t) = < V(t)*V'> = tr[ rho_0 * V(t) V' ]
+ 
+      thus recovering the same final form as for absorption/emission
+      spectra above. The RIXS mode requires the additional parameter
+ 
+      'E_inc',.. incoming photon energy E_inc = complex(omega_in, gamma);
+                 this must already also include the broadening gamma
+                 related to finite life-time of the core-hole due to other
+                 unaccounted for relaxation processes such as Auger etc.
+ 
+      The returned spectra correspond to the RIXS intensity,
+      i.e., spectral intensity a0 vs. energy loss om.
+ 
+   Output
+ 
+      om, a0     binned spectral data (according to emin,emax,nlog)
+      Ifgr       info structure
+ 
+   Notes / comments
+ 
+    *) Alternatively, if B and C have composite structure that oct on
+       multiple sites/indices simultaneously, the operators B and C can
+       also be specified as cell arrays of QSpace vectors.
+       A given QSpace vector then, e.g., B{i}, is interpreted as the
+       sequence of operators that act like a tensor product on indices
+       L00,s00,s01,... where L00 and s00 are the `left' and local (`sigma)
+       indices of A0, respectively, and s01, etc. the local indices
+       of A01, etc. In this usage, Z0 must be already properly included
+       in B and C upon input, i.e. Z0 and zflags cannot be used.
+ 
+   **) The bin a0(end) collects all data with omega >= om(end) = emax.
+       For emin, the smallest bin a0(1) (given the logarthmic grid!)
+       contains all data where omega is exactly zero (e.g. for diagonal
+       contributions in Lehmann representation). The next smallest bin
+       a0(2) then contains all data for 0 < omega <= om(2).
+  
+   Alternative usage:
+   fgrNRG('nrgdata0','nrgdata2','setup.mat','B','C')
+ 
+       This reads all input parameters and options from given setup.mat
+       file. Hence the operators B and C must be specified by their name.
+       Output will be written / updated to NRG0 and NRG2,
+       with results also appended to setup.mat.
+ 
+   See also NRGWilsonQS, fdmNRG_QS, tdmNRG
+ 
+   AW (C) 2008 ; RIXS 2019
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{tdmNRG} % l=100/3
+
+\begin{verbatim}
+   Usage: [cc [,Info]] = ...
+   tdmNRG(NRG0, NRG2, Lambda, C1 [,C2], tt, [,opts])
+ 
+      time-dependent numerical renormalization group (NRG)
+      using the full thermal density matrix of the initial system
+      (FDM), rho_0, as starting configuration at time t=0.
+ 
+   This routine calculates the time evolution of local operators
+   C1(t)*C2 in fDM-NRG framework at given temperature T.
+ 
+      cc(t) = < C1(t)C2'>_0 = trace( rho_0 * C1(t) * C2')
+ 
+   With option -fgr the initial density matrix is modified
+   by the operator C2 (e.g. creation / deletion of a particle
+   as in absorption / emission processes) with the
+   resulting modified time evolution being
+ 
+      cc(t) = trace( (C2' rho_0 C2) * C1(t) )
+ 
+   Hence the operator C2 appears twice. Note, however, that
+   the projected density matrix C2' rho_0 C2 is no longer
+   normalized.
+ 
+   This routine uses data from two previous NRG runs with
+   the result written as matrix product state in QSpace format.
+   It must contain the state space kept (AK) as well as the one
+   discarded (AD) at every NRG iteration.
+ 
+   The inital state is determined by the density matrix rho_0 of
+   NRG0 at given temperature T. The time evolution is determined
+   within NRG2.
+ 
+   See also: NRGWilsonQS, dmNRG, fgrNRG
+ 
+   Input:
+ 
+     NRG[02]    specifies previously calclulated NRG data; if this
+                contains path/file, then the data will be read from the
+                files path/file_##.mat for every site (see NRGWilsonQS)
+ 
+        .AK     MPS state of k(ept) space (regular NRG, QSpace)
+        .AD     MPS state of t(runcated) NRG space (QSpace)
+        .HK     effective NRG eigenspectra (kept, QSpace)
+        .HD     effective NRG eigenspectra (truncated, QSpace)
+ 
+     Lambda     NRG discretization parameter for the conduction band.
+                Lambda is needed to undo the energy scaling permformed
+                in obtaining the NRG data at the first place.
+ 
+     C[12]      local operators, e.g. acting on the impurity
+ 
+     If C2 is not specified or specified as empty [], it will be
+     automatically assumed equal to the identity operator.
+ 
+     NB! If operators C[12] are specified by name, they will be
+     read from workspace and stored in NRG_DATA together with
+     the other NRG data (can be disabled by flag `nostore').
+ 
+   Options / Flags (default method: tDM)
+ 
+    'alpha',..  exponential decay of energies exp(-alpha dE) [0.]
+                this applies alpha in time domain (F. Anders 2005)
+    'sigma',..  applies broadening in frequency domain (log. gauss)
+                NB! either alpha or sigma can be specified but not both.
+                default: sigma=0.3 with alpha ignored.
+ 
+    'NRho', k   builds density matrix from iteration k only.
+    'T',...     temperature at which correlation function is calculated.
+                If not specified, the temperature T is given by the
+                energy scale towards the end of the Wilson chain.
+ 
+    '-fgr'      run in FGR modus applying C2 twice (see above).
+ 
+    'nlog',...  number of bins per decade for logarithmic discretization (256)
+    'emin',...  minimum energy for omega binning (TN/1000)
+    'emax',...  maximum energy for omega binning (10.)
+ 
+    'nostore'   do not store operator elements of C[12] with NRG_DATA
+    'locRho'    if Rho needs to be calculated it is stored in RAM only
+                and will be deleted after the program is finished
+    'partial'   return partial data from every NRG iteration
+    'raw'       raw data only, i.e. no smoothing of data
+    'RAW'       calculates time dependent data from exact frequency data
+                i.e. without binning of energies on log. scale
+    'disp'      more detaild output (0)
+ 
+     Z0         Z0 operator for first site (impurity) required for
+                fermionic setup where Z0=(-1)^(number of particles)
+    'zflags'    on which operators C[12] to apply fermionic signs Z0
+                ex. 'zflags', [ 1 0 ... ]  would apply Z0 to the first
+                but not to the second operator  (default: none).
+ 
+   NB! The first (last) bin contains all data below (above) emin (emax)
+ 
+   Output
+ 
+     cc         expectation value at times specified in tt
+     Info       info structure
+ 
+   See also NRGWilsonQS, fdmNRG_QS, fgrNRG
+   AWb (C) Jan 2007
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{compactQS} % l=30/50
+
+\begin{verbatim}
+   Usage: S=compactQS([opts],'qtype',Q1,Q2,Q,A [,perm]);
+ 
+      reduce matrix elements of the rank-3 IROP.
+      Here A is still specified in full (dense) tensor format
+      with matrix elements given by
+ 
+         A(i1,i2,io) := <i1|A(io)|i2>
+ 
+      NB! this assumes the index (1,2,op) specified on the lhs!
+      The symmetry types are specified by qtype. Moreover,
+      all states i1 and i2 must be already cast into symmetry
+      eigenstate grouped into multiplets (see getSymStates.cc)
+      with q- and z-labels both present and interleaved in
+      each input state label sets Q*.
+ 
+      The state spaces are combined in the order (Q2+Q =>Q1),
+      thus using the Clebsch Gordan coefficients (Q1,Q|Q2).
+      This is a natural order in that, Q=-1 annihilates a
+      particle on a |ket> state (the annihilation operator
+      on a ket state increases charge, i.e. Q would be +1,
+      in case Q1 and Q had been combined into Q!).
+      This therefore represents a natural index order.
+ 
+   Options
+ 
+      perm  permutation to be applied to {Q1,Q2,Q} and A
+            prior to combining first two indizes into third.
+ 
+      '-h'  display this usage and exit
+ 
+   (C) AW : Apr 2010 ; Jul 2011 ; Oct 2014
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{contractQS} % l=138/27
+
+\begin{verbatim}
+  Usage: contractQS(A,..B,..)
+ 
+      performs pairwise contraction of tensors
+      e.g. A and B in QSpace format while also taking care of the
+      underlying Clebsch Gordan coefficient spaces (if present).
+ 
+      Each QSpace can be used as is, or as its 'conjugate' where the
+      conjugate of a QSpace A, i.e. conj(A) is defined as the QSpace
+ 
+      a) with all `arrows' reversed
+      b) keeping the SAME qlabels [for reversing individual
+         arrows, see getIdentitQS(..,'-0')]
+      c) and complex conjugation of all data{*}
+         if applicable, i.e. a given QSpace is complex
+ 
+   Note that because of (a), the specification of conjugation flags
+   (`conj-flags') is also important for QSpaces with all-real matrix
+   elements.
+ 
+   Usage #1: S=contractQS(A, ica, B, icb [, perm, OPTS ]);
+ 
+      Plain contraction of a single pair of QSpaces, A and B,
+      with respect to given explicitly specified  sets of
+      contraction indices ica and icb, which can be specified
+ 
+        - numerically (e.g. [1 2]),
+        - or as strings (e.g. '1,2', or '1 2')
+        - or as compact strings (e.g. '1,2', or '12')
+ 
+      The last 'compact format' is only possible / unique,
+      of course, if the tensors A and B do not have more than
+      9 legs (which basically never occurs), such that the
+      contraction indices reamin in the single digits
+      (this can be further relaxed, though, by extending the
+      digital range to letter, i.e. using a-z after 0-9).
+ 
+      The recommended way to specify conj-flag with usage #1
+      is together with the contraction indices in string notation!
+      For example,
+ 
+        contractQS(A,[1 3],B,[1 3],'conjA')  is equivalent to
+        contractQS(A,'1,3;*',B,[1 3])        is equivalent to
+        contractQS(A,'13*',B,'13')
+ 
+      (Deprecated) options specific to usage #1:
+ 
+        'conjA'  use complex conjugate of A for contraction
+        'conjB'  use complex conjugate of B for contraction
+ 
+   Usage #2: S=contractQS({A,{B,C}},... [, perm, OPTS ]);
+ 
+      Generalized 'cell-contraction' of tensors: when encountering
+      a cell, the content of that cell is contracted first, before
+      using its results. This allows the specification of an entire
+      patter of pairwise contractions based on nested structures
+      where the lowest-level contractions are performed first.
+ 
+      Cell contractions are furthermore based on QSpace 'itags'
+      i.e. string labels for indices with up to 8chars, and which
+      are specified in QSpace.info.itags. This offers automated
+      contraction ('auto-contraction') of pairs of tensors solely
+      based on matching itags! Uusage #2 therefore does not (also)
+      allow explicit specification of contraction indices as in
+      usage #1.  Therefore itags (plus conj-flags) must be unique.
+ 
+      Itags must always also contain individual conjugate flags
+      (this represent the bare minimum that must be specified with
+      each QSpacein v3): the conjugate flags on individual indices
+      (legs) of a tensor determine  whether that index (leg) is
+      in- or out-going, with the convention that
+ 
+          all out-going indices have a trailing * in their itags!
+ 
+      For example, an A-tensor with L(eft), R(ight), s(=local)
+      indices may have itags A.info.itags={'L','R*',s'}
+      assuming (L,R,s) index order.
+ 
+      In usage #2, for every operator additional optional strings
+      can be specified, appearing right after the affected tensor
+      e.g. QSpace A:
+ 
+        A,'!ij'  do not contract indices specified by ij (in compact
+                 format) despite they share common matching itags.
+        A,'*'    apply overall (complex) conjugation on given input
+                 tensor A (see early comments above)
+        A,'!ij*' both of the above (with * always trailing).
+ 
+        X,'-op:<tag>[:<opl=op>]' specify itags for given (e.g. local) operator.
+ 
+           The last option considers X an operator, and hence assumes
+           operator itags '<tag>;<tag>*[;opl*]' for QSpace X;
+           the default operator label is `op', but may be changed
+           by specifying a trailing ':<opl>' as indicated above.
+           As a safeguard, this issues a warning, if existing itags are
+           overwritten. This is relevant e.g. for local operators that
+           are applied to a very specific site with associated itag.
+ 
+           [11/24/2018] the specified <tag> may now also represent
+           a regular expression (regexp), recognized by non-alphabetic
+           special characters, while ignoring conj-flags (without
+           special characters, the specified <tag> is taken as is!).
+           This usage then searches for a matching itag in the paired
+           up QSpace (cell) in the contraction.
+ 
+           Ex. Consider A some QSpace with a single local index
+           that starts with `s', e.g., like 's010' for site 10;
+           then contract(A,Xloc,'-op:^s') will autocontract
+           the local operator Xloc to the correct local index in A
+           (here the regex `^s' indicates `starts with s');
+           An alternative operator itag may still be specified
+           by adding a trailing ':opl' as indicated earlier.
+ 
+      An adaptation of usage #2 also be used for a plain sequential
+      contractions where
+          S=contractQS(A,B,C,... [, perm, OPTS ]); is equivalent to
+          S=contractQS({A,{B, {C,...}}}, [,perm,OPTS ]),
+      i.e. the sequential contractions are started from the end
+      onwards to the beginning of the set.
+ 
+   The remaining trailing OPTS are
+ 
+      perm  permutation to be applied to the final object;
+            NB! [06/02/2019] this permutation can be shorter
+            than the rank of the resulting QSpace; in this case
+            it only affects the leading range of indices.
+ 
+      '-v'  verbose mode that shows level of cell contraction
+            together with actual contractions performed.
+ 
+   Mixed usage of #2 and #1 is not possible.
+ 
+   Note that mex files do not allow to return class objects,
+   hence S is returned as a QSpace structure. To get a class
+   object, use QSpace(contractQS(...)), or equivalently,
+   if contract() is properly defined as a wrapper routine
+   within matlab's Class/@QSpace (see MPS Pack), having a QSpace
+   input A, this may be shortended to contract(A,...).
+ 
+   AW (C) May10 ; Aug12 ; Dec14 ; Sep16
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{diagQS} % l=4/53
+
+\begin{verbatim}
+   Usage: dd=diagQS(A)
+ 
+      Get diagonal data of given QSpace (for rank-2 QSpaces only).
+ 
+   Wb,Aug16,16
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{eigQS} % l=39/4
+
+\begin{verbatim}
+   Usage: [E [,I]]= eigQS(H [,opts])
+ 
+       Obtain eigenspectrum and eigenbasis of input 'Hamiltonian' H
+       in QSpace represenation. The eigendecomposition is split into
+       kept (K) and discarded (T) state space, as governed by the
+       truncation parameters Nkeep and Etrunc (for actual Hamiltonians)
+       or Rtrunc (for density matrices R:=H).
+ 
+   Options
+ 
+      'Nkeep',..  max. number of states to keep (default: -1 = keep all)
+      'Etrunc',.. keep states according to energy truncation criteria
+                  with E<=E0+Etrunc (default: <=0 = ignore; note that
+                  Etrunc is interpreted relative to lowest eigenvalue
+                  E0 = min[eig(H)]).
+      'Rtrunc',.. keep states according to truncation criteria of
+                  reduced density matrix with eig(R)>Rtrunc with R:=H
+                  (this is alternative to Etrunc and thus ignored by
+                  default; note, furthermore, that here Rtrunc is
+                  interpreted absolute, i.e. as is).
+      'deps',..   allow to keep (close to) degenerate spaces together
+                  (default: 0, i.e. sharp truncation e.g. with Nkeep)
+ 
+   Output
+ 
+       E contains the full sorted eigenspectrum (1st column),
+       and in the presence of non-abelian symmetries, the overall
+       multiplet degeneracy as a 2nd column.
+ 
+       The output/info structure I contains the fields
+ 
+        .AK, .AD  for kept and discarded state space
+        .EK, .ED, for kept and discarded eigen spectrum (diag)
+        .DB       block dimension of input Hamiltonian H in terms
+                  of multiplets (1st col) and states (last col).
+        .NK       actual number of kept multiplets / states.
+        .Etrunc or
+        .Rtrunc   actual truncation treshold used
+ 
+   AWb (C) Sep 2006 ; Mar 2013 ; Aug 2015
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{getDimQS} % l=12/49
+
+\begin{verbatim}
+   Usage: [D[,D2]] = getDimQS(A)
+ 
+       get full dimension of given QSpace object.
+ 
+       In case of non-abelian symmetries, usage #2 returns
+       number of multipets as D, and the full state space
+       dimension as 2nd argument D2.
+ 
+       NB! if no second output argument (D2) is requested,
+       this routine returns D if D==D2 (e.g. which is always
+       the case of abelian symmetries) but [D;D2] if D!=D2.
+ 
+   (C) AW : May 2006 ; Oct 2014
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{getIdentityQS} % l=56/8
+
+\begin{verbatim}
+   Usage 1: A=getIdentityQS(A [,i1, perm,'-0']);
+ 
+      get plain identity operator from given QSpace.
+ 
+    '-0'  this generates the 1J symbol, i.e. an identity operator
+          with all indizes inward. This can be used to "revert
+          arrows", and subsequently also to avoid dragging along
+          a scalar singleton index if the total symmetry of a
+          given wave function has q=0.
+ 
+   Usage 2: A=getIdentityQS(A [,i1 [,at]], B [,i2 [,bt] itag, perm]);
+ 
+      get tensor product space of input spaces defined by
+      A and B. If i[12] is not specified, rank-2 objects
+      are assumed taking (the first) two indizes.
+ 
+      Default index order of the output space is (1,2,12*)
+      with the itags of A and B inherited if present.
+      An <itag> name for the combined output space (dim3) may be
+      specified (conj flag if present, will be ignored).
+ 
+      [06/01/2019] In addition, for an input A-tensor with LRs
+      index order convention, its itags may be inherited to C
+      by specifying  xor <bt> (see usage above) in the format
+      '-A[:..]' where `..' indicates extra characters to be
+      catenated at the end of the itag for the fused index.
+ 
+      For example, consider an A-tensor with itags {K01,K02*,s02},
+      and E a local identity operator without itags; then in order
+      to ensure a complete local state space, one may write
+      >> getIdentityQS(A,1,'-A:~',E)
+      which generates a QSpace with itags {K01,s02,K02~*}.
+      K01 is inherited from A via `A,1'; the remaining two itags
+      are derived from the remaining two itags in A;
+      therefore `A,i' must have i=1 or 2 with in LRs index order.
+      conj-flags are properly adjusted as needed.
+      Conversely, getIdentityQS(A,2,'-A:~',E)
+      generates itags {K02,s02,K01~*}, e.g. used for R->L sweep.
+ 
+   Finaly, the output index order may be changed by specifying
+   a permutation perm to be applied on the final object.
+   If itag is not specified, perm must be in numerical format,
+   otherwise a (compact) string format is also accepted.
+ 
+   Further options
+ 
+     '-h'  display this usage and exit
+     '-v'  verbose
+ 
+   Note that mex files do not allow to return class objects,
+   hence A is returned as a QSpace structure. To get a class
+   object, use QSpace(getIdentityQS(...)), or equivalently,
+   if getIdentity() is properly defined as a wrapper routine
+   within matlab's Class/@QSpace (see MPS Pack), having a QSpace
+   input A, this may be shortended to getIdentity(A,...).
+ 
+   (C) AW : Apr10 ; Oct14 ; May17
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{getQDimQS} % l=12/11
+
+\begin{verbatim}
+   Usage: [q,dd,dc] = getQDimQS(A,dim)
+ 
+       get dimension for every Q in QIDX for given QSpace object
+       dim is dimension to check (dim=='op' can be used to
+       consider both dimensions of an operator simultaneously)
+ 
+   Data returned
+ 
+       q    symmetry labels present (unique; n x nsymlabels)
+       dd   corresponding dimension of reduced data (n)
+       dc   corresponding dimension of Clebsch-Gordan (n x nsym)
+ 
+   AW (C) Jun 2007 ; Wb,Oct12,10
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{getRC} % l=5/29
+
+\begin{verbatim}
+  Usage: [...]=getRC(...)
+ 
+      C=getRC(cgr)  get RCStore data as specified by input
+      C=getRC(<sym>,'--info');
+ 
+   Wb,Oct02,15 ; Wb,Nov06,16
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{getSmoothSpec} % l=36/40
+
+\begin{verbatim}
+   Usage: [omega, As [,Info]] = getSmoothSpec(om, Araw, 'eps',.. [, opts])
+ 
+     om         omega (bins) for Araw
+     Araw       raw discrete spectral data; it may contain several set
+                in separate columns, e.g. like data for different spins
+ 
+   Options / Flags
+ 
+    'om',..     new discretized set of omega values (also returned as omega)
+    'sigma',..  sigma used in log-Gauss broadening (0.6)
+    'eps',...   smoothly replaces log-Gauss with regular Gaussian;
+                in absolute units since this routine does not know
+                anything about temperature(!). For the same reason,
+                eps must be specified (typically may choose eps=T).
+ 
+    'sigma2',.. Gaussian width sigma2*eps for w<<eps (0.5)
+    'alpha',..  shift in log-Gauss broadening
+                sigma/4: norm (=height) preserving (default)
+                sigma/2: width preserving
+ 
+    'func'      input data is not discrete but already function of omega
+    'nlog',..   number of bins per decade of omega scale
+                for logarithmic discretization   (128 = nlog_fdmNRG/2!)
+    'emin',..   minimum energy for omega binning (1E-8)
+    'emax',..   maximum energy for omega binning (10.)
+ 
+    'disp',..   verbose for disp>0 (1)
+ 
+                Note that the first (last) bin contains all data below
+                (above) emin (emax).
+   Output
+ 
+      om        omega corresponding to the energy binning [-emax,+emax]
+      As        smoothened spectral function
+ 
+   see also fdmNRG.
+   AWb (C) May 2006
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{getSmoothTDM} % l=44/23
+
+\begin{verbatim}
+   Usage: [ At [,Info]] = getSmoothTDM(tt, om, Adisc [, opts])
+          [ At [,Info]] = getSmoothTDM(tt, ARAW, [, opts])
+ 
+     tt         discretized set of time dependent data
+     om         omega binning for Araw
+     Adisc      raw TDM data with dimensions [ nom, nop [,nnrg]]
+                with nom=length(om), nop=number of operators and,
+                optionally, nnrg the number of NRG iterations
+     ARAW       alternativly, instead of om and Adisc, the RAW data
+                returned by tdmNRG() in partial mode can be specified
+                as input
+ 
+   Options / Flags
+ 
+    'disc'      discrete data (i.e. does not require d(om) weight; default)
+    'func'      functional data (i.e. DOES require d(om) weight)
+                default: disc for rank(A)==3 and func for rank(A)==2
+    '-q'        quiet mode (reduce number of log output)
+ 
+    'alpha',..  exponential decay of energies exp(-alpha dE) [0.]
+                this applies alpha in time domain (F. Anders 2005)
+    'sigma',..  applies broadening in frequency domain (log.gauss)
+                NB! either alpha or sigma can be specified but not both
+                default: sigma=0.1 (with alpha ignored)
+    'Lambda',.  Lambda from Wilson disretization (required with alpha)
+    'eps',...   smoothly replaces log-Gauss with regular Gaussian;
+                in absolute units since this routine does not know
+                anything about temperature(!). For the same reason,
+                eps must be specified (typically may choose eps=T).
+ 
+    'nlog',..   number of bins per decade of omega scale
+                for logarithmic discretization   (100)
+    'emin',..   minimum energy for omega binning (1E-8)
+    'emax',..   maximum energy for omega binning (10.)
+ 
+                Note that the first (last) bin contains all data below
+                (above) emin (emax).
+   Output
+ 
+      At        input spectral information transformed into time
+                dependent data.
+      Info      structure with additional information
+ 
+   see also tdmNRG.
+   AW (C) Jan 2007
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{getSymStates} % l=37/14
+
+\begin{verbatim}
+   Usage #1: [U,I]=getSymStates(Sp,Sz);
+ 
+     get symmetry eigenstates for symmetry operations given by
+     rising operators Sp and (diagonal) z-operators Sz.
+     The order of the Sz operators determines the order of the
+     z-labels to be determined.
+ 
+   Usage #2: [U,I]=getSymStates(SOP)
+ 
+     Moreover, Sp and Sz can be grouped according to each symmetry
+     by using a single vector structure Is with the mandatory
+     fields .Sp and .Sz. In this case, an empty Sp is interpreted
+     as Abelian quantum number. Eventually Sp and Sz are combined
+     into a single sequence as in usage #1.
+ 
+     Further optional fields
+       .type   symmetry type (in QSpace convention)
+       .qfac   applied to all z- and q-labels (scalar or vector)
+       .jmap   subsequently to qfac, applies linear transform
+               of q-labels (square matrix)
+ 
+   Output: symmetry eigenstates written as full matrix in U,
+   and info structure I with the fields
+ 
+     basically reiterating the input
+       .R0    input .Sp and .Sz data
+       .type  symmetry type
+       .JMap  J-transformation used (identity if not specified)
+       .dz    number of z-operators for each symmetry
+ 
+     actual output data
+       .dd    dimension of irreduible multiplets generated
+       .RR    irreducible representations with qfac and jmap applied
+       .QZ    interleaved q- and z-labels.
+       .d2    dimensions of setup in QZ (non-abelian number have
+              the same number appearing twice)
+ 
+   (C) Wb,Jul05,10
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{isIdentityCG} % l=5/57
+
+\begin{verbatim}
+   Usage: i = isIdentityCG(A)
+ 
+       check whether QSpace A has indentity Clebsch-Gordan spaces.
+       Note that for full abelian spaces, this is always true.
+ 
+   Wb,Jan12,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{isIdentityQS} % l=6/9
+
+\begin{verbatim}
+   Usage: i = isIdentityQS(A [,eps])
+ 
+       check whether QSpace A represents a block-diagonal
+       identity matrix. This also checks the corresponding
+       Clebsch-Gordon spaces if any (default: eps=1E-12).
+ 
+   (C) AW : May 2006 ; Oct 2010 ; Oct 2014
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{makeUniqueQS} % l=9/21
+
+\begin{verbatim}
+   Usage: A = makeUniqueQS(A [,opts])
+ 
+       MEX wrapper routine for QSpace::makeUnique()
+ 
+   Options
+ 
+       -[qQ]    quite mode
+       -[vV]    verbose mode (wrt. outer multiplicity)
+ 
+   AWb (C) Nov 2007 ; 2012
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{mpsIsHConj} % l=5/36
+
+\begin{verbatim}
+   Usage: [i,istr]=mpsIsHConj(A [,eps]);
+ 
+   check whether QSpace is hermitian within threshold eps (1E-12).
+   A must be even-rank object as hyperindex is allowed.
+ 
+  Wb,Aug17,06
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{normQS} % l=7/47
+
+\begin{verbatim}
+   Usage: nrm = normQS(A)
+ 
+       calculates the (Frobenius) norm of given QSpace,
+       i.e. |A|^2 = norm(A)^2 = trace(A'*A), and appropriately
+       generalized to arbitray rank. In the presence of CGCs, this
+       implies |A|^2 = sum_i (|data{i}|^2 * prod_j(|cgs(i,j)|^2)).
+ 
+    (C) AW : Jun 2010 ; Oct 2014
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{orthoQS} % l=71/1
+
+\begin{verbatim}
+   Usage #1:
+   [A1,A2,[,info]] = orthoQS(PSI,idx, [,OPTS]);
+ 
+      Orthonormalize QSpace PSI w.r.t. given SINGLE index idx,
+      which is split off into tensor A1, connected via a trailing
+      new intermediate index with A2, i.e. PSI=A1*A2, where
+      A2 keeps its index order (i.e. index idx stays in place).
+ 
+      Note that the new intermediate index will typically be
+      truncated w.r.t. to singular values (see stol below).
+ 
+      Convention on orthonormalization direction (cf. lrdir below,
+      which is NOT specified here): A1 is ALWAYS an isometry/unitary
+      that has one in- and one out-index. This allows the new
+      intermediate index to carry the same itag as idx in PSI.
+ 
+   Usage #2 (abelian symmetries only)
+   [A1,A2,[,info]] = orthoQS(PSI,idx, lrdir [,OPTS]);
+ 
+      Similar to usage #1 above, except that for abelian symmetries,
+      idx may contain any number of indices consistent with PSI
+      (in constrast, for non-abelian symmetries, idx can only
+      specify a single index (or equivalently r-1 indices with
+      r the rank of PSI.
+ 
+   Usage #3 (abelian symmetries only)
+   [A1,A2,[,info]] = orthoQS(A1,A2,ic1,ic2, lrdir [,OPTS]);
+ 
+      Orthonormalize QSpace A1 towards index ic1 using SVD,
+      where the resulting tensor, split off from A1, is right
+      away merged with A2 at index ic2 (having lrdir='>>';
+      vice versa for lrdir='<<').
+ 
+      This internally connects to usage #2, in that the input tensors
+      A1 and A2 are right away contracted; e.g. for lrdir='>>':
+      PSI = contractQS(A1,ic1,A2,ic2);
+ 
+   INPUT
+ 
+      PSI      or PSI=A1*A2, where
+      A[12]    are two nearest neighbor tensor
+      ic[12]   that share the common index specified by ic1 and ic2.
+ 
+      lrdir    direction of orthonormalization; this accepts the
+               following equivalent values:
+               '>>', 'LR', or +1 for "left-to-right"
+               '<<', 'RL', or -1 for "right-to-left"
+   OPTIONS
+ 
+     'Nkeep',.. max. number of states/multiplets to keep (-1: all)
+     'Nkmin',.. min. number of states/multiplets to keep on index
+                connecting A1 to A2 (default: 0, i.e. no lower bound)
+     'stol',... absolute tolerance on SVD i.e. on sqrt(rho)
+                default: 1E-8 if Nkeep is not set, 0 otherwise.
+     'itag',... itag on newly generated index
+     '-v'       print info
+ 
+   OUTPUT
+ 
+      A1[2]   orthonormalized A1[2]
+      info      info structure containing (amongst other fields)
+        .svd    vectorized sorted complete singular value data;
+                multiplicity (i.e. multiplet dimension) is specified
+                in svd(:,2) in the presence of non-abelian symmetries.
+        .svd2tr truncated weight (singular values squared).
+        .sfac   factor to reestablish the orginal norm(PSI).
+        .flag   !=0 indicating potential trouble (see .info field).
+        .DD     (multiplet) dimension of original PSI.
+        .D1     (multiplet) dimension of A1.
+ 
+   See also svdQS.
+   AW (C) Jun 2006; Jun 2009; Aug 2015
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{permuteQS} % l=18/19
+
+\begin{verbatim}
+   Usage: A = permuteQS(A, P [,'conj'])
+ 
+       permute input QSpace using given permutation P.
+ 
+       Optional trailing 'conj' also applies (complex) conjugation
+       (note that this also affects real QSpaces in that qdir and
+       itags are altered!).
+ 
+       For convenience, P [,'conj'] may also be represented as
+       single string, e.g. [2 1],'conj' is equivalent to '2,1;*'
+       or '21*' where the convention on string notation
+       follows that of contraction indices [ctrIdx].
+ 
+       NB! [06/02/2019] the provided permutation can be shorter
+       than the rank of the QSpace; in this case it only affects the
+       leading range of indices, i.e., acts like an identity
+       on the remainder of indices.
+ 
+   AW (C) Aug 2006 ; May 2010 ; Oct 2014
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{plusQS} % l=9/43
+
+\begin{verbatim}
+   Usage: C = plusQS(A, B [, bfac, opts])
+ 
+       adds one QSpace to another as in C = A+bfac*B ([bfac=1])
+       block-diagonal identity matrix.
+ 
+   Options
+ 
+      '-v'  verbose mode (e.g. on remaining outer multiplicity)
+ 
+   (C) AW : Jun 2006 ; Oct 2014
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{setupRCStore} % l=19/58
+
+\begin{verbatim}
+   Usage #1: setupRCStore(sym [,opts])
+ 
+       Setup CGC container for given symmetry,
+       with the data stored in directory specified by the
+       environmental variable $RC_STORE.
+ 
+   Usage #2: setupRCStore(sym,q1,q2 [,opts])
+ 
+       explicitely generate tensor product decomposition q1*q2
+ 
+   Options
+ 
+      'npass',... number of passes through gCG data (3).
+      'dmax',...  specify max. average multiplet dimension sqrt(d1*d2)
+                  in tensor product decomposition (10*qlen).
+      '-a'        generate all, yet compatible with dmax (by default,
+                  multiplets with 2-digit qlabels are no longer used
+                  in decomposition)
+ 
+   (C) Wb,Aug07,14 ; Wb,Apr01,15
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{skipZerosQS} % l=11/24
+
+\begin{verbatim}
+   Usage: [A,n] = skipZerosQS(A [,eps,opts]);
+ 
+      skip data blocks that have all-zero entries to within eps
+      (default eps=1E-14). The total number of skipped blocks
+      is returned as 2nd argument.
+ 
+      For scalar (i.e. rank-2 block-diagonal) operators zero-
+      blocks are kept, by default (e.g. relevant for Hamiltonians
+      where states with energy zero are relevant states.
+      This can be disable by using the option '--all'.
+ 
+   Wb,May14,10
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{svdQS} % l=58/41
+
+\begin{verbatim}
+   Usage #1:
+   [U,S,Vd,[,info]] = svdQS(PSI,idx [,OPTS]);
+ 
+      Compute SVD decomposition of QSpace object PSI, where the
+      indices idx are split off into Vd, and the remaining indices
+      into U, which are '>>' and '<<'  orthonormalized, respectively
+      (i.e. are unitaries or isometries generated from the SVD.
+      Typically, the indices in PSI are 'all-in'.
+ 
+      Note that the 3rd argument returns Vd:=V' and not V,
+      i.e. already includes the dagger such that PSI = U*S*Vd
+      [for idx=2; this is also LAPACK convention; for idx=1
+      the transpose is returned for U, i.e., PSI = [(U^t)*S*Vd]^t,
+      since, by convention, U resembles the index order of PSI].
+ 
+      For non-abelian symmetries, idx is required to be a single
+      index (or conversely, all indices but one). If PSI is grouped
+      into two sets of indices each of which has more than one index,
+      then indices need to be fused prior to calling svdQS.
+      Also, in this case of a single index specified, U always
+      resembles PSI, i.e. has the same rank and index order.
+ 
+   Usage #2 (deprecated):
+   [U,S,V',[,info]] = svdQS(A1, A2, ic1, ic2 [,OPTS]);
+ 
+      Compute SVD decomposition of QSpace object PSI=A1*A2,
+      where '*' stands for the contraction (A1,ic1,A2,ic2).
+      The split occurs between the remaining indices in A1
+      and the remaining indices in A2. This indices are typically
+      'all-in', while the index/indices ic1 to be contracted
+      with ic2 can have any initial orientation. There will
+      always be a single new intermediate connecting index
+      between A1 and A2.
+ 
+   Input
+ 
+      PSI      or PSI=A1*A2, where
+      A[12]    are two nearest neighbor tensor
+      ic[12]   that share the common index specified by ic1 and ic2.
+ 
+   OPTIONS
+ 
+     'Nkeep',.. max. number of states/multiplets to keep (-1: all)
+     'Nkmin',.. min. number of states/multiplets to keep on index
+                connecting A1 to A2 (default: 0, i.e. no lower bound)
+     'stol',... absolute tolerance on SVD i.e. on sqrt(rho)
+                default: 1E-8 if Nkeep is not set, 0 otherwise.
+     'itag',... itag on newly generated index
+     'disp'     display info to stdout
+ 
+   OUTPUT
+ 
+     A1(2)   updated and properly orthonormalized A1(2)
+     info      info structure containing
+      .SVD     singular value data blocked within QS symmetry space
+      .svd     vectorized singular value data
+ 
+   See also orthoQS.
+   AW (C) Sep 2008 ; Aug 2015
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{traceQS} % l=8/46
+
+\begin{verbatim}
+   Usage: x = traceQS(A [,i1,i2])
+ 
+       trace out index set i1 with i2 of given QSpace object;
+       for even-rank A, missing index sets is interpreted as
+       full trace of indices i1=1:r/2 with iw=r/2+1:r.
+       if all indices of A are traced out, the returned x is
+       a number (QSpace otherwise).
+ 
+   AW (C) 2006 ; 2018
+\end{verbatim}
+
+\mysec[MEX routines (util)]{MEX routines (util)}
+
+
+\pagebreak[3]
+
+
+\mymex{filestat} % l=16/1
+
+\begin{verbatim}
+  Usage: i=filestat(f,tag [,'-s'])
+ 
+     get system file information
+ 
+     If '-s' is specified, a time string is returned;
+     otherwise (by default) the returned date is in Matlab datenum
+     format, e.g. can be used with datestr(t,*).
+ 
+  Available tags
+ 
+    'm'     modification time stamp
+    'c'     creation time stamp
+    'a'     last access time stamp
+ 
+  All these time stamps return split-second resolution.
+ 
+  Wb,Jan28,16
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{getchar} % l=4/23
+
+\begin{verbatim}
+   Usage: getchar()
+ 
+      C++ program that reads single character from keyboard
+ 
+   Wb,Jan09,09
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{kramers} % l=25/33
+
+\begin{verbatim}
+   Usage: [yr,I]=kramers(xi,yi [,OPTS])
+ 
+     calculate Kramers-Kronig transform from discrete data
+     using linear interpolation scheme.
+ 
+       xi         x-data
+       yi         y-data
+       yr         kramers kronig transformed data (default: imag->real)
+ 
+   Options
+ 
+      '-disc'     yi data is already discrete
+      'eps',..    for continuous data: regularization of principal
+                  value data for xi==xj (xi += eps*(xi-x[i-1]; 1E-10)
+    If isdisc
+ 
+      'faceta',.. width of Lorentzian delta function relative to
+                  data point spacing dx (1.)
+   else
+ 
+      'g1flag'    include tails to infinity by assuming that
+                  input yi decays like 1/x for large x
+      'g2flag'    same as g1flag but assuming 1/x^2 decay
+      'r2i'       do real->imag transform instead (=overall minus sign)
+ 
+   Wb,Dec12,06
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{matchIndex} % l=24/5
+
+\begin{verbatim}
+   Usage: [Ia,Ib,I] = matchIndex(QA, QB [,OPTS])
+ 
+      QA or QB are matrizes whos rows are matched; consequently, 
+      their number of columns (row dimension) must be equal.
+ 
+   Options
+ 
+       '-s'    sort indizes with respect to A
+       '-q'    quiet mode, i.e. do not issue warning when NaN's
+               are encountered.
+       'eps',..specify epsilon within which to accept match (0)
+       '-f'    use float instead of double (gets rid of numerical
+               noise in case of double precision input data)
+ 
+   Output
+       Ia      index into QA (QA.Q)
+       Ib      index into QB (QB.Q)
+ 
+       I       an info structure with elements
+       .n      number of matches [=length(Ia)]
+       .dim    number of input records [ size(QA,1), size(QB,1) ]
+       .ix1    entries in QA not matched in QB
+       .ix2    entries in QB not matched in QA
+ 
+   AW (C) 2006 ; Feb10,11
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{mexworld} % l=1/35
+
+\begin{verbatim}
+   This is a help on the mex-file mexworld
+   Wb,Jan12,19
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{mpfr2dec} % l=10/42
+
+\begin{verbatim}
+   Usage: [data vector]=mpfr2dec([char matrix] [,base]);
+ 
+      Convert mpfr data strings to decimals.
+      Since matlab is col-major, the data string for each
+      value is expected to represent an entire column.
+ 
+   Example
+ 
+      mpfr2dec(['0':'9', 'A':'Z', 'a':'z'],62)
+ 
+   Wb,Jul01,14
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{printfc} % l=9/58
+
+\begin{verbatim}
+   Usage: printfc(fmt)
+ 
+      C++ program that emulates C printf
+      ie. does not terminated automatically with a newline and
+      allows for escape sequences (in contrast to fprintf).
+ 
+      NB! If more than one onput argument is specified, all
+      arguments are forwarded to matlab's sprintf.
+ 
+   AWb (C) Jan 2006
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{sparse2wb} % l=4/14
+
+\begin{verbatim}
+   function S=sparse2wb(S)
+ 
+      convert matlab sparse array to wbsparse format.
+ 
+   AW (C) 2011
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{uniquerows} % l=11/24
+
+\begin{verbatim}
+   Usage: [A [,I,D]] = uniquerows(Q [,opts])
+ 
+      MEX file that makes rows of array unique. the second return
+      argument is a cell array of index sets of rows with the same
+      data. D specifies the corresponding multiplicity of the
+      unique rows.
+ 
+   Options
+ 
+     '-1'  return only first index in each group in I
+ 
+   Wb (C) Sep 2006
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{wbeig} % l=5/41
+
+\begin{verbatim}
+   Usage: [E,U] = wbeig(H);
+ 
+       eigenvalue decomposition based on BLAS dsyev
+       for (genearlized) symmetric rank-2 object.
+ 
+   AW (C) 2009
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{wbhash} % l=34/52
+
+\begin{verbatim}
+   Usage: [kk,I] = wbhash(dd,N [,opts]);
+ 
+      Compute keys kk using given hash for each row of the
+      input array using given hash specified by the hash
+      function (uses offset and multiplier) together with
+      the final dimension N of the hash key (hash mod N).
+      The hash function is given by
+ 
+          unsigned long h=offset;
+          for (i=0; i<len; ++i) {
+             h = mult*h + s[i];
+          }
+ 
+      Here s represents a row in dd of length len.
+      Default values for the hash function are
+ 
+          offset = 5381 (prime)
+          mult = 33 = 2^5 + 1;
+ 
+      which correspond to the hash function 'djb2'
+      as suggested by Daniel B. Bernstein Having mult=33,
+      the hash value is evaluated through h = (h<<5)+h+s[i].
+ 
+   Options
+ 
+    For algorithm based on multiplier
+      'mult',..   multiplier (33)
+      'offset',.. offset (5381)
+ 
+    Alternatively the following flags use default string hashes
+      '-stl'      uses hash<std::string> string_hash(char(dd)).
+      '-wbb'      adapted versions of algorithms in boost/hash.cpp
+      '-ump'      test mode for unordered_map
+ 
+   Wb,Jul01,14
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{wbhist} % l=31/33
+
+\begin{verbatim}
+   Usage: ybin=wbhist([strid,] x,y [,xbin]);
+ 
+      mex routine to collect binned data. If y is not specified,
+      this generates a simple histogram counting occurances.
+ 
+      NB! The binning occurs with respect to the mid-points of
+      the xbin data, where the first bin contains everything for
+      x < mean(xbin(1:2)), and the last bin everything for
+      x >= mean(xbin(end-1:end)).
+ 
+      NB! data is stored globally within mex file, i.e. is
+      cleared when using 'clear functions'. However, this allows
+      subsequent calls without last argument xbin to add to
+      existing binned data. The last argument must be specified
+      for the first call given some strid, and whenever the
+      histogram data shall be initialized.
+ 
+      default hist set has strid 'default'.
+ 
+   Further tags:
+ 
+     'stat'         current status of wbhist (global)
+     'clear'        clear entire wbhist (global)
+     'id,'remove'   remove wbhist data set associated with 'id'
+ 
+   Examples
+ 
+      wbhist([],[],xbin);
+      wbhist(x, []);   plain count (assumes y=ones(size(x))).
+      [a,b,c]=wbhist(['default']);
+ 
+   Wb,Feb12,11
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{wbrat} % l=27/11
+
+\begin{verbatim}
+   Usage: [q,I] = wbrat(q [,opts]);
+ 
+      get rational approximation of given number
+      based on continued fraction approach.
+ 
+   Options
+ 
+      '-h'      display this usage
+      '-v'      verbose mode
+      '-q'      quiet mode
+      '-r'      assume also square root data (using rat() on q^2)
+      '-a'      also return continued fraction sequence in I
+      'nmax',.. maximimum number of iterations (nmax)
+      'eps1',.. tolerance on continued fraction (1E-6)
+      'eps2',.. rel. overall tolerance wrt. to in put number q (1E-12)
+ 
+   Output
+ 
+       q        same as input, but 'fixed' to rational approximation
+       I        info structure
+                .P  integer enumerator
+                .Q  integer denominator
+                .relerr relative error of rational representation
+                .n  total number of continued fraction iterations used
+                .param  (input) parameters nmax, eps1, eps2 used
+ 
+   See also MatLab's rat.m
+   AWb (C) July 2010
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\mymex{wbsvd} % l=9/44
+
+\begin{verbatim}
+   Usage: [U,S,V] = wbsvd(H [,I]);
+ 
+       singular value decomposition based on BLAS dgesvd
+       for genearlized rank-r object.
+       index set I specifies which dimensions are combined
+       into first fused dimension. For rank-2 objects
+       and I omitted, this corresponds to the regular SVD
+       on matrizes.
+ 
+   AW (C) Sep 2009
+\end{verbatim}
+
+\newpage
+
+
+\mysec[QSpace member functions]{Class/@QSpace member functions}
+
+
+\pagebreak[3]
+
+
+\myfun{QSpace/Casimir.m} % l=1/0
+
+\begin{verbatim}
+  function Casimir(S)
+  Wb,Oct05,15
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/QSpace.m} % l=36/7
+
+\begin{verbatim}
+  Function [A,varargout] = QSpace(...)
+ 
+     Construct QSpace class object.
+ 
+     This serves to wrap QSpace structures into QSpace objects,
+     and also can be used to generate several specific QSpace objects.
+     For historical reasons, this also includes low-level QSpace
+     contructors for the case of only abelian quantum numbers.
+ 
+  Usage:
+ 
+  #1: A = QSpace(Q,data)
+      A = QSpace(A)   conversion e.g. from struct
+      A = QSpace(A,'check')  also performs full check on QSpace structure
+ 
+  #2: A = QSpace(q1, data1, q2, data2, ...) % see initQSpace
+ 
+  #3: A = initQSpace(Q1,M,DB)
+          square operator M with row/col Q1 block size given by DB
+ 
+  #4: A = initQSpace(Q1,Q2,M,'map')
+          matrix M with row/col QIDX given by Q1/Q2
+          eg. used for projectors
+ 
+  #5: A = QSpace(Q,M,'operator');
+  #6: A = QSpace(A,'unity');
+ 
+  #7: A0=initQSpace(QL,Qs1,Qs2,...); setup identity tensor
+          for product spaces (QL,Qs1,...)
+   
+          it must hold: size(QL,2) = size(Qs1,2) = size(Qs2,2) = ... = QDIM.
+          Qs and QL span the full Hilbert space, hence certain quantum
+          lables may appear several times.
+ 
+  Wb,May12,06 ; Wb,Apr16,16
+
+    Documentation for QSpace
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/SEntropy.m} % l=15/49
+
+\begin{verbatim}
+  function [se,rr,I]=SEntropy(Rho [,eps,opts])
+ 
+    Calculate von Neumann entropy of the mixed (reduced)
+    density matrix R.
+ 
+    R may also contain non-abelian symmetries in which case
+    the output weights rr are already weighted by their 
+    corresponding multiplet degeneracies such that sum(rr)=1.
+ 
+  Options
+ 
+     eps      check trace(Rho)=1 within numerical accuracy of eps (1E-12)
+    '-xm'     expand multiplet degeneracy in returned rr
+    'beta',.. assume R is a Hamiltonian => apply beta=1/T and exponentiate
+ 
+  Wb,Jan24,11
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/SetCC.m} % l=5/11
+
+\begin{verbatim}
+  Function [A,t]=SetCC(A [,idx])
+ 
+     Set "dagger" for specified index-labels (all if idx is not specified).
+     If any A.data{k} is complex, A.data will also be complex conjugated.
+ 
+  Wb,Aug04,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/SetOL.m} % l=11/22
+
+\begin{verbatim}
+  function A=SetOL(A,X,k [,otag])   % usage #1
+  function A=SetOL(A,itag[,otag])   % usage #2
+ 
+     Set operator labels of the type { itag, itag* [,'op*'] }.
+     default operator tag (otag) for rank-3 tensors is 'op'.
+ 
+  Usage #1
+ 
+     set index labels for operator A based on the label found
+     in tensor X at dimension k.
+ 
+  Wb,Aug04,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/acomm.m} % l=5/39
+
+\begin{verbatim}
+  function C=acomm(A [,B,cflag])
+ 
+     cflag if set, must equal 'conj'
+     and is interpreted as conjA, i.e. C = {A',B}
+ 
+  Wb,Feb06,16
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/appendScalarSymmetry.m} % l=20/50
+
+\begin{verbatim}
+  function A=appendScalarSymmetry(A,qtype [,opts])
+ 
+     Append scalar symmetry (e.g. new symmetry label,
+     where all existing states get a newly added qlabel q=0
+     with the zeros repeated according to the rank of the
+     added symmetry.
+ 
+  Options
+ 
+    'pos',..  actually insert symmetry at particular position
+              in symmetry order; e.g., 'pos',1 will prepend the symmetry.
+    'q',..    specify particular symmetry labels other than (default q=0).
+              if non-zero, this assumes A to be of operator type in that
+              specified q is applied to the first two indices only *)
+ 
+  *) rather than specifying non-zero q, consider starting with zeros
+     first, followed by mapping of operators into tensor product
+     of state spaces of operators
+ 
+  See also: 
+  Wb,Jul12,11 ; Wb,Dec08,14
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/appendSingletons.m} % l=23/17
+
+\begin{verbatim}
+  function A=appendSingletons(A,'new_itag[*]')
+  function A=appendSingletons(A,qdir)
+  function A=appendSingletons(A,r_new,qdir)
+ 
+     Add singleton dimension(s) to reach rank r_new.
+     qdir sets direction of new singleton dimensions (numeric; e.g. +/-1)
+ 
+     In usage #1 assigns the specified itag to the newly added singleton
+     dimension; this also permits to simultaneously specify qdir via a
+     trailing conjugation flag '*'.
+ 
+     If numel(qdir)>1, it is assumed it specifies qdir for all of A
+     where the values in qdir are ignored for the ones already existing
+     in A [this is useful if qdir was obtained via getqdir(Aother)].
+ 
+     NB! use makeIrop() to append irop dimension instead of this,
+     since there may be non-zero symmetry labels for all-abelians ops.
+ 
+  Examples
+ 
+     A4=appendSingletons(E,'  +-')
+ 
+  See also makeIrop, fixScalarOp.
+  Wb,Sep17,18
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/applyK1K2.m} % l=7/46
+
+\begin{verbatim}
+  function [S1,S2]=applyK1K2(S,H)
+ 
+     auxilliary routine that applies energy kernels
+     K1 (principal value) and K2 (remainder for diagonal values).
+     e.g. required for static magnetic susceptibility
+     (K2 accounts for correction due to degeneracies).
+ 
+  Wb,Jul05,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/applyZ.m} % l=15/0
+
+\begin{verbatim}
+  function A=applyZ(A,idx [,iq,opts])
+ 
+     apply fermionic signs to given index / indices (idx)
+     with fermionic charge (or parity Z2) assumed at position
+     iq in the Q-labels (iq may be skipped, if only one
+     abelian symmetry label is present).
+ 
+  Options
+ 
+    'qfac',.. : factor to apply on charge labels, to obtain
+     actual charge (must be integer; enforced); e.g. note that
+     single-flavor spinless fermions have an artificial factor
+     of 2 on their charge labels to permit simple symmetry around
+     half-filling; hence in this case: applyZ(...,'qfac',1/2);
+ 
+  Wb,Sep17,18
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/blkdiag.m} % l=1/21
+
+\begin{verbatim}
+  function M=blkdiag(A,varargin)
+  Wb,Aug10,16
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/cat.m} % l=7/28
+
+\begin{verbatim}
+  function X=cat(A1,A2,...,k)
+ 
+     Concatenate data sectors of given QSpaces along dimension k
+     (QSpace vectors are also included in the concatenation procedure).
+     NB! k may be a cell, i.e. {k,qdir} to specify qdir of newly added
+     dimensions.
+ 
+  Wb,Sep17,18
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/cgr\_size.m} % l=1/41
+
+\begin{verbatim}
+  function s=cgr_size(A,i,j)
+  Wb,Jan08,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/checkOM.m} % l=4/48
+
+\begin{verbatim}
+  function m=checkOM(A [,opts])
+ 
+     Check for outer multiplicity in given QSpace
+ 
+  Wb,Feb15,14
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/checkSameSpace.m} % l=10/58
+
+\begin{verbatim}
+  function i=checkSameSpace(A,ia,B,ib)
+ 
+     check whether QSpaces A and B share the same vector spaces
+     (simple check in terms of symmetry blocks and respective
+     multiplet [and Clebsch-Gordan dimensions, if applicable]).
+ 
+     This routine uses getQDimQS(A,ia) [and similar for B]
+     hence ia accepts the same index specification as getQDimQS
+     that is, a specific dimension or 'op'(erator).
+ 
+  Wb,Jan12,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/checkdim.m} % l=1/15
+
+\begin{verbatim}
+QSpace/checkdim is a function.
+    [ok, ii] = checkdim(A, pp)
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/chopd.m} % l=6/22
+
+\begin{verbatim}
+  function A=chopd(A [,aref])
+ 
+     apply chopd() to data
+     => sets small matrix elements to zero
+     => removes imaginary noise if any
+ 
+  Wb,Oct17,11
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/comm.m} % l=13/34
+
+\begin{verbatim}
+  function C=comm(A [,B,'conj','+'])
+ 
+     Compute commutator (or anticommutator, if '+' is specified).
+     if B is ommitted, this assumes B=A && 'conj'.
+     'conj' if set, is interpreted as conjA, i.e. C = {A',B}
+     For anticommutator, use comm(A [, B, cflag], '+');
+ 
+     The operators and B must be rank-2 or rank-3, where the latter
+     case assumes operator index order (ss',o), i.e. the irop (=spinor)
+     index comes last.
+ 
+  Ex. comm(F,'+') computes {F',F}
+ 
+  Wb,Feb06,16
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/compact.m} % l=1/53
+
+\begin{verbatim}
+  merge quantum numbers of tensor operator
+  Wb,Jul07,09
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/conj.m} % l=5/1
+
+\begin{verbatim}
+  Function: A=conj(A)
+ 
+     get complex conjugate of operator in QSpace format;
+     overloading the conj routine
+ 
+  Wb,Jun02,08
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/contract.m} % l=5/12
+
+\begin{verbatim}
+  function A=contract([args])
+ 
+     same as contractQS
+     but returns QSpace object (rather than plain structure).
+ 
+  Wb,Sep18,06 ; Wb,Mar31,16
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/ctranspose.m} % l=2/23
+
+\begin{verbatim}
+  overloading the hermitian conjugate operator '
+  accept hyper index
+  Wb,Nov30,09
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/datasize.m} % l=6/31
+
+\begin{verbatim}
+  Function [D,DD]=datasize(A [,'-s'])
+ 
+     get full listing of size(data{}),
+     except if option '-s' is specified which gives summary 
+     in terms of total size in bytes of A.data
+ 
+  Wb,Apr24,08
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/decomposeOp.m} % l=6/43
+
+\begin{verbatim}
+  function [cc,err,I]=decomposeOp(H,{O1,O2,...}[,R][,opts])
+ 
+     decompose operator H into operator (sets) specified in X={O1, O2, ...};
+     if R is specified, operator overerlap is calculated
+     w.r.t. density matrix R.
+ 
+  Wb,Apr16,13
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/deconj.m} % l=5/55
+
+\begin{verbatim}
+  Function [A,t]=deconj(A [,idx])
+ 
+     Unset "bra" (complex conjugate) label for specified dimensions
+     (all if idx is not specified).
+ 
+  Wb,Apr17,13
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/diag.m} % l=8/7
+
+\begin{verbatim}
+  Function: A=diag(A [,OPTS])
+ 
+     extract diagonal of operator in QSpace format
+     alternatively, if only diagonal is stored,
+     diagonals become full again.
+ 
+  Options
+ 
+  Wb,Sep08,06
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/dim.m} % l=9/21
+
+\begin{verbatim}
+  function s=dim(A [,opts])
+ 
+  Options
+ 
+    '-a'  all (simply return output from getDimQS())
+    '-f'  full dimension
+          (in case of CGC spaces, corresponds to state space dimension)
+    '-op' IROP dimension (i.e. checking for rank-3 QSpace)
+ 
+  Wb,Jul31,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/disp\_cgr.m} % l=2/36
+
+\begin{verbatim}
+  function disp_cgr(A)
+  see also plot_cgr()
+  Wb,Jan13,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/disp\_qdim.m} % l=2/44
+
+\begin{verbatim}
+  function disp_qdim(A,varargin)
+    example: disp_qdim(A0,2,IS.SOP)
+  Wb,Jan26,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/display.m} % l=12/52
+
+\begin{verbatim}
+  Function display(A [,OPTS])
+  Options
+ 
+    '-a'       show all entries
+    '-v'       verbose flag (shows CGS dimension separately for each symmetry)
+    '-E'       sort QSpace wrt. data (energy) [assumes diagonal Hamiltonian]
+    '-s'       sort QIDX
+    'sperm',.. sort QIDX using given permutation
+ 
+     By default, QSpaces with many entries (length > 14) will show
+     a truncated list, including also the two largest entries.
+ 
+  Wb,Mar01,08
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/dsize.m} % l=10/11
+
+\begin{verbatim}
+  Function [D,[DD|I]]=dsize(A [,opts])
+  get maximum D for every dimension of given MPS state
+ 
+      where D is a vector of length rank(A)
+ 
+  Options
+ 
+    '-d'  returns detailed block sizes of single input A in DD with
+          CG space considered if exists (overall size returned in D)
+ 
+  Wb,Aug08,06
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/eig.m} % l=3/27
+
+\begin{verbatim}
+  function [varargout]=eig(H,varargin)
+     ee=eig(H,varargin);
+     [A,E]=eig(H,varargin);
+  Wb,Aug30,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/eq.m} % l=0/36
+
+\begin{verbatim}
+  overload of == (equal) operator
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/expandQ.m} % l=1/42
+
+\begin{verbatim}
+  Function qq=expandQ(A,k)
+  deprecated: see getQRange.m
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/finditag.m} % l=5/49
+
+\begin{verbatim}
+  function i=finditag(A,pat [,n])
+ 
+     find itag with specit regexp pattern
+     if n is specified, the result must yield exactly n matches.
+ 
+  Wb,Jun03,19
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/fixAbelian.m} % l=8/1
+
+\begin{verbatim}
+  function fixAbelian(A,B,...)
+  Options
+ 
+     -xop3    reduce "scalar" rank-3 operators to regular rank-2.
+ 
+     -addCGR  add (trivial) CGR space to all-abelian operators.
+     -op3     together with -addCGR: make operator of rank 3 if rank 2.
+ 
+  Wb,Feb20,13
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/fixScalarOp.m} % l=11/15
+
+\begin{verbatim}
+  function fixScalarOp([opts,] A,B,...)
+ 
+    reduces "scalar" rank-3 operators to regular rank-2.
+    converting (yet keeping) the Clebsch Gordan coefficient
+    spaces to sparse.
+ 
+  Options
+ 
+    '-f'  enforce reduciblity if rank-3.
+ 
+  See also makeIrop() to append 3rd dimension
+  Wb,Aug21,13
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/full.m} % l=0/32
+
+\begin{verbatim}
+  wrapper routine for mpsFullQS()
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/full2.m} % l=0/38
+
+\begin{verbatim}
+  wrapper routine for mpsFull2QS()
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/gdisp.m} % l=4/44
+
+\begin{verbatim}
+  function gdisp(A)
+ 
+     graphical information regarding given QSpace A.
+ 
+  Wb,Feb09,11
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/getAtensorLoc.m} % l=15/54
+
+\begin{verbatim}
+  function A=getAtensorLoc(X [,qvac][,l])
+     
+     get Atensor by extracting local state space from local
+     operator X together with vacuum state on virtual bond
+     (default for qvac; optionally any other bond-space can
+     be specified as third argument, instead).
+ 
+     l \in {'L','R'} specifies the location of vacuum state
+     using LRs index order (default: l='L').
+ 
+     All arguments except for the last (l) are directly
+     handed over to getIdentityQS(); hence this also allows
+     more general QSpace tensors X and qvac together with
+     the explicit specification of the space index to use.
+ 
+  Wb,Dec28,14
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/getData.m} % l=1/16
+
+\begin{verbatim}
+QSpace/getData is a function.
+    B = getData(A)
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/getEQdata.m} % l=1/23
+
+\begin{verbatim}
+  function [E,Q,D]=getEQdata(HK [,opts])
+  Wb,Sep22,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/getId.m} % l=6/30
+
+\begin{verbatim}
+  function A=getId(A,qs [,k])
+ 
+     reduce QSpace A to rank-2 Id tensor which only has
+     vacuum state / scalar representation with each index.
+     if k is specified, itag{k} will be used.
+ 
+  Wb,Oct18,14
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/getIdentity.m} % l=5/42
+
+\begin{verbatim}
+  function A=getIdentity([args])
+ 
+     same as getIdentityQS
+     but returns QSpace object (rather than plain structure).
+ 
+  Wb,May28,16
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/getIdentity3.m} % l=13/53
+
+\begin{verbatim}
+  function E=getIdentity3(A,idx [,tag,opts])
+ 
+     Map pair of open indices to be combined as in delta_{ij}
+     into single index in E_(i,j,k) by mapping (i=j -> k).
+     The added third index therefore always transforms like a scalar
+     for all symmetry sectors present, i.e., has q-labels all zero.
+ 
+  Options
+ 
+     --rho normalize E
+           such that it resembles density matrix in (i,j) for fixed k.
+     tag   tag assigned to the new trailing index.
+ 
+  Wb,Aug28,20
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/getQRange.m} % l=0/13
+
+\begin{verbatim}
+  Function qq=getQRange(A,k)
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/getQSpectra.m} % l=17/19
+
+\begin{verbatim}
+  function [q,EE,qq,dz,DZ]=getQSpectra(H,ws)
+ 
+    get symmetry-resolved energy spectra.
+ 
+  Input
+ 
+    H  diagonal scalar operator (with diagonals stored only)
+    ws specifies which symmetry to pick
+ 
+  Output
+ 
+    q   unique set of labels for symmetry ws
+    EE  cell array of energies, one cell for each symmetry in q
+    qq  full set of symmetry labels (expanded to same size as EE)
+    dz  full set of multiplet degeneracies
+    DZ  full set of multiplet degeneracies (expanded to same size as EE)
+ 
+  Wb,Apr12,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/get\_cgr\_fac.m} % l=11/42
+
+\begin{verbatim}
+  function [dfac,s]=get_cgr_fac(A,i)
+ 
+     CGData is no longer stored with the QSpaces themselves,
+     only their weights cgw within outer multiplicity space.
+     Therefore CGData is globally normalized to 1. up to
+     outer multiplicity.
+ 
+  Options
+ 
+     sflag=='s' => also return range as string info
+ 
+  Wb,Oct17,14
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/get\_qdim.m} % l=4/0
+
+\begin{verbatim}
+  function [dd,D]=get_qdim(A,dim)
+ 
+    get cgr dimension for given dimension
+ 
+  Wb,Nov27,15
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/getitags.m} % l=5/10
+
+\begin{verbatim}
+  function t=getitags(A)
+ 
+     return itags as cell array.
+ 
+  adapted from QSpace/gotITags.m
+  Wb,Apr10,14
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/getproj.m} % l=10/21
+
+\begin{verbatim}
+  Function P=getproj(H [,eps,opts])
+ 
+     get projector with respect to H into ground state space
+     (diagonalize if necessary); eps determines the window wrt.
+     ground state energy, within which state are kept (1E-8).
+ 
+  Options
+ 
+     '-q'  quiet mode
+ 
+  Wb,Aug30,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/getqdim.m} % l=4/37
+
+\begin{verbatim}
+  function [dd,ss]=getqdim(A)
+ 
+    get symmetry specific length of q-labels
+ 
+  Wb,Sep18,11
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/getqdir.m} % l=9/47
+
+\begin{verbatim}
+  function t=getqdir(A [,'-s'])
+ 
+     qdir in numeric format (+- => [+1,-1])
+     NB! input arguments are directly handed over to getitags.m
+ 
+  Options
+ 
+     '-s'  return qdir as string (default: numeric; see above)
+ 
+  Wb,Mar30,15
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/getqfmt.m} % l=4/3
+
+\begin{verbatim}
+  function f=getqfmt(A [,opts])
+ 
+     get format string for a single Q{i}(j,:)
+ 
+  Wb,Dec14,15
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/getscalar.m} % l=1/13
+
+\begin{verbatim}
+  Function a=getscalar(A)
+  Wb,Aug28,08
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/getsub.m} % l=33/20
+
+\begin{verbatim}
+  Usage #1: function [A,B]=getsub(A,idx)
+ 
+     Select given subspace where idx represents direct index
+     into records of QSpace.
+ 
+  Usage #2: function [A,B]=getsub(A,q,dim)
+            function [A,B]=getsub(A,{q} [,dim]) // Wb,Feb21,21
+ 
+     Select subspace that has given symmetry sector(s) in given dimension(s).
+     if q is a cell array, then this directly relates to to dimensions in A
+     e.g. getsub(ops,{[],[],0}) = getsub(ops,0,3) picks scalar sector
+     on 3rd dimension; here '0' or 0 can be used as a shortcut to zeros(1,m)
+     in q, with m the number of symmetry labels.
+ 
+  Usage #3: function [A,B]=getsub(A,'-0')       // Wb,Dec04,20
+            function [A,B]=getsub(A,'-0!')
+ 
+     Assuming A is an irop (rank-3 with irop-index on 3rd leg)
+     select scalar operator part (q-labels 0); this is equivalent
+     to usage #2, having getsub(A,[0 0 ..],3));
+ 
+     in case of '-0!', also remove singleton irop dimension
+     (in case it is not a singleton, i.e., by having multiple
+     q=0 multiplets, an error is issued)
+ 
+  Options
+ 
+    -d   return A.data (rather than A itself)
+ 
+    If second output argument is requested, this will contain
+    whatever was left in A_in as compared to what was selected
+    in A_out.
+ 
+  Wb,Aug20,08 ; Wb,Jun19,13
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/getsym.m} % l=9/0
+
+\begin{verbatim}
+  function [ss,s]=getsym(A [,dim,opts])
+  Options
+ 
+    -c        return symmetries split as cell array
+    -d        get dimensions (rank) of each symmetry [returns 1 for Abelian]
+    -r        get symmetry-rank for each symmetry [returns 0 for Abelian]
+    'ir',dim  index range in q-labels for given dimension
+    '-I',dim  get extended info structure for given symmetry
+ 
+  Wb,Oct24,11
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/getvac.m} % l=11/15
+
+\begin{verbatim}
+  function A=getvac(A [,k])
+ 
+     reduce QSpace A to rank-2 Id tensor which only has
+     vacuum state / scalar representation with each index.
+     if k is specified, itag{k} will be used.
+ 
+  Options
+ 
+     -1d   reduce to rank-1 vector (NB! only permitted for
+           for scalar representation with all q-lables zero!)
+ 
+  Wb,Oct18,14
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/getzdim.m} % l=17/32
+
+\begin{verbatim}
+  function [dd,qq]=getzdim(A [,dim,opts])
+ 
+    get multiplet dimensions of QSpace A.
+ 
+  Options
+ 
+    -p   product of multiplet dimensions
+    -x   expand to match data (repmat)
+    -u   get dimension of unique qlabel set (returned as 2nd output argument)
+ 
+   The specification of the dimension (dim) may also take the following
+   string values:
+ 
+  '-op'  gets dimension of IROP set
+   'op'  gets dimension of state space dimension for scalar operator
+         (together with '-u' this is equivalent to 'op') // deprecated
+ 
+  Wb,Jan24,11
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/gotCGS.m} % l=1/55
+
+\begin{verbatim}
+  function i = gotCGS(A)
+  Wb,May16,10
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/gotITags.m} % l=5/3
+
+\begin{verbatim}
+  function r = gotITags(A)
+ 
+     return number of itags (if any).
+     second return argument contains listing of ilables as cell array.
+ 
+  Wb,Aug04,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/got\_orthogonal\_cgw.m} % l=4/14
+
+\begin{verbatim}
+  function got_orthogonal_cgw(A)
+ 
+     (double) check whether A got orthogonal cgw spaces
+ 
+  Wb,Feb19,16
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/hasQOverlap.m} % l=2/24
+
+\begin{verbatim}
+  Function: [ss,qq] = hasQOverlap(A,i1,B,i2)
+  check overlap in QIDX
+  Wb,Jun22,07
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/imag.m} % l=4/32
+
+\begin{verbatim}
+  Function: A=imag(A)
+ 
+     extract imaginary data of operator in QSpace format
+ 
+  Wb,Oct19,11
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/info.m} % l=5/42
+
+\begin{verbatim}
+  function info(A [,istr,cflag])
+ 
+     header routine used in display()
+     Options: istr (info string) and cflag (compact info).
+ 
+  Wb,Mar01,08
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/info2.m} % l=6/53
+
+\begin{verbatim}
+  function info2(A,[dim,opts])
+  Options
+  
+    dim  if dimension is specified, plot will be generated
+    -ll  log-log scale on plot
+  
+  show further size info // Wb,Sep17,11
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/info3.m} % l=1/6
+
+\begin{verbatim}
+  function info3(A,dim [,opts])
+  graphical analysis of size distribution of CGC spaces
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/isAbelian.m} % l=1/13
+
+\begin{verbatim}
+  function i=isAbelian(A [,opts])
+  Wb,Feb20,13
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/isOpConj.m} % l=1/20
+
+\begin{verbatim}
+  function i=isOpConj(A [,output_type])
+  Wb,Jun06,19
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/isOrtho.m} % l=1/27
+
+\begin{verbatim}
+  function a=isOrtho(A)
+  Wb,Jan15,15
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/isQSpace.m} % l=5/34
+
+\begin{verbatim}
+  function [i,s]=isQSpace(A [,opts])
+ 
+     overloaded routine (see also MEX/isQSpace.m)
+ 
+  see mpsIsQSpace.m for more information.
+  Wb,Feb15,13
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/isdiag.m} % l=18/45
+
+\begin{verbatim}
+  function [isd,estr]=isdiag(A)
+ 
+     check whether QSpace is in diagonal rank-2 format.
+ 
+  Return value isd:
+ 
+     1   if block-diagonal in symmetry space
+     2   if, in addition, all data{} sets are row-vectors, e.g.
+         compressed format as returned bei QSpace::EigenSymmetric()
+     3   same as 2, but if all entries in data{} are column-vectors
+     0   otherwise
+ 
+  Options
+ 
+   '-d'  If all data blocks are scalars, i.e., of dimension 1x1,
+         by default, this returns isd=1; with '-d' this returns
+         isd=2, instead.
+ 
+  Wb,Apr24,09
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/isempty.m} % l=1/10
+
+\begin{verbatim}
+  function ie=isempty(A)
+  Wb,May12,06;  Wb,Aug23,08
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/isequal.m} % l=13/17
+
+\begin{verbatim}
+  function i=isequal(A,B [,opts])
+  
+     overloading isequal and ==
+     where input A or B can also be struct( QSpace object ).
+ 
+     Note that the usage A==B is equivalent to isequal(A,B),
+     i.e. this assumes the default setting without any options.
+ 
+  Options
+ 
+    '-l'  lenient (ignore difference in itags)
+    '-f'  enforce all fields to be the same (no lenience at all)
+ 
+  Wb,Nov09,09 ; Wb,Jun28,21
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/isfield.m} % l=1/36
+
+\begin{verbatim}
+  wrapper for builtin isfield
+  Wb,Feb26,16
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/isop.m} % l=1/43
+
+\begin{verbatim}
+  function is=isop(A)
+  Wb,Nov25,11
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/isreal.m} % l=5/50
+
+\begin{verbatim}
+  function i=isreal(A)
+ 
+     checks whether A contains complex data
+     (this overloads matlabs isreal() function).
+ 
+  Wb,Apr23,15
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/isscalar.m} % l=14/2
+
+\begin{verbatim}
+  function i=isscalar(A [,opts])
+ 
+     Checks whether QSpace is a scalar, meaning rank-0
+     with a single number in data [e.g., a scalar is obtained
+     by tracing/contracting all indices resulting in a single
+     number].
+ 
+  Options
+ 
+      -l   lenient (also consider a QSpace with non-empty Q
+           a scalar, as long as data contains a single number)
+      -x   extended mode (in case of input QSpace array,
+           show isscalar() for each individual QSpace
+ 
+  Wb,Aug04,08
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/isscalarop.m} % l=12/22
+
+\begin{verbatim}
+  function [s,dd]=isscalarop(A [,opts])
+ 
+     requirements for scalar operators:
+      (1) rank-2
+      (2) block-diagonal in symmetries
+      (3) all cgc spaces are identities
+ 
+  Options
+ 
+    -l   lenient (also accept rank-3 operators)
+ 
+  See also QSpace/issingleop for non-scalar, yet still rank-2 operators.
+  Wb,Jul05,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/issingleop.m} % l=7/40
+
+\begin{verbatim}
+  function [s]=issingleop(A [,opts])
+ 
+     check for possibly non-scalar, yet still rank-2 operators.
+ 
+  See also QSpace/isscalarop for scalar, i.e. block-diagonal
+  (rank-2) operators.
+ 
+  Wb,May11,13
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/issingleton.m} % l=1/53
+
+\begin{verbatim}
+  Function i=issingleton(A,kk)
+  Wb,Apr24,08
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/itag2iter.m} % l=5/1
+
+\begin{verbatim}
+  function k=itag2iter(A)
+ 
+     extract site position to k from A.info.itags
+     with expected itag format '[non-number]##[non-number]'
+ 
+  Wb,Aug01,17
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/itagrep.m} % l=6/12
+
+\begin{verbatim}
+  function A=itagrep(A [,idx], )
+ 
+     Apply given regexprep() pattern to specified itags
+     idx specified a subset of itags to consider;
+     (otherwise, by default, all itags are considered)
+ 
+  Wb,Jan14,15
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/itags2int.m} % l=9/24
+
+\begin{verbatim}
+  function k=itags2int(A)
+ 
+     Extract integer indices carried with itags,
+     assuming the itag format '[non-number]##[non-number]'
+     where outgoing indices (i.e., which carry a trailing
+     conjugate flag `*') are returned as negative integers.
+     If no valid number is encountered, nan is returned
+     for that index.
+ 
+  Wb,Nov19,21
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/itags2odir.m} % l=1/39
+
+\begin{verbatim}
+  function odir=itags2odir(A)
+  Wb,May15,17
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/join.m} % l=1/46
+
+\begin{verbatim}
+  function A=join(A,idx)
+  Wb,May19,10
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/kron.m} % l=0/53
+
+\begin{verbatim}
+  overloading kron()
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/logical.m} % l=6/0
+
+\begin{verbatim}
+  function q=logical(A)
+ 
+     Overload of conversion to logicals (unary operator)
+     e.g. for conditionals: if A, ...; else ...; end
+ 
+  see also QSpace/ [which returns ~logical()]
+  Wb,Feb18,21
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/makeIrop.m} % l=13/12
+
+\begin{verbatim}
+  function A=makeIrop(A [,t_op])
+ 
+     make A an irreducible operator with a proper 3rd irop index,
+     which thus is only intended for rank-2 scalar operators.
+     Operators already in rank-3 format are checked for the
+     right format.
+ 
+  Options
+ 
+     t_op specifies itag for the irop leg, only if added
+     (empty by default).
+ 
+  See also: fixScalarOp, appendSingletons.
+  Wb,Feb12,16
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/mapQ.m} % l=8/31
+
+\begin{verbatim}
+  QM = Q map that transforms Q numbers to `rotated' set
+  Example: SIAM: (N1,N2) --> (Q,Sz)
+ 
+       QM      *  Q_old    + offset  =  Q_new
+ 
+     [ 1  1    *  [ N1     +  [-1    =  [ Q
+       1 -1 ]       N2 ]        0 ]       Sz ]
+ 
+  Wb,Aug10,6
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/minus.m} % l=0/45
+
+\begin{verbatim}
+  overloading the + operator
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/mrdivide.m} % l=1/51
+
+\begin{verbatim}
+  overloading * operator
+  Wb,Sep28,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/mtimes.m} % l=1/58
+
+\begin{verbatim}
+  function C=mtimes(A,B,ia,ib)
+  overloading * operator (matrix multiply)
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/norm.m} % l=0/6
+
+\begin{verbatim}
+  wrapper routine for normQS()
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/norm2.m} % l=1/12
+
+\begin{verbatim}
+  wrapper routine norm2 -> normQS()
+  Wb,Oct18,14
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/not.m} % l=5/19
+
+\begin{verbatim}
+  function q=not(A)
+ 
+     Overload of conversion to logicals (unary operator)
+     e.g. for conditionals: if ~A, ...; else ...; end
+ 
+  Wb,Feb18,21
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/numsym.m} % l=4/30
+
+\begin{verbatim}
+  function ns=numsym(A)
+ 
+     determine number of symmetries in QSpace(s) A.
+ 
+  Wb,Feb06,14
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/olap.m} % l=4/40
+
+\begin{verbatim}
+  function x=olap(A [,B,opts])
+ 
+     calculate frobenius norm / overlap.
+ 
+  Wb,May27,11
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/oplus.m} % l=15/50
+
+\begin{verbatim}
+  function C=oplus(A,B [r12,opts]
+ 
+     Direct sum (latex oplus) of two tensors A and B along dimension r.
+     If r12 is not specified, an MPS or MPO like setting is assumed
+     with L/R as first and second index, i.e., r12=[1 2].
+ 
+  Options
+ 
+    'first'             direct sum only in index r12(2)
+    'last'              direct sum only in index r12(1)
+                        otherwise: direct sum in both indices r12
+ 
+    'bfac',..           apply bfac to B prior to extending A
+ 
+  E.g. see https://mathworld.wolfram.com/MatrixDirectSum.html
+  Wb,Nov23,20
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/permute.m} % l=2/12
+
+\begin{verbatim}
+  Usage: A=permute(A)
+  permute QSpace with given permutation
+  Wb,Sep08,06 ; Wb,Nov24,14
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/plotEdata.m} % l=6/20
+
+\begin{verbatim}
+  function plotEdata(H [,opts])
+ 
+     plot eigenspectrum of given QSpace,
+     expecting scalar operator upon input!
+ 
+  see also QSpace/
+  Wb,Feb15,13
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/plotQSpectra.m} % l=24/32
+
+\begin{verbatim}
+  function Iq=plotQSpectra([H|R] [,opts][,SOP])
+ 
+     graphical analysis of eigenspectrum of Hamiltonian
+     (or entanglement spectrum of density matrix; requires '-ES' flag)
+     separating the data into its symmetry subspaces.
+ 
+  Options
+ 
+    '-ES'     entanglement spectrum (expects Rho as input)
+    '-x'      show state space dimensions (rather than multiplet dimensions)
+ 
+    'yl',...  ylim range
+    'y2',...  y-range within which degeneracies are indicated
+    'ws',...  which symmetries to pick (e.g. [1 2] for the first two)
+ 
+    SOP       more verbose description of symmetry labels, which also
+              appears in the title of the respective panels.
+              SOP my simply be specified through IS.SOP, i.e. as returned
+              by getLocalSpace() in the NRG setup; all that is used, however,
+              are the strings SOP(:).info, hence, alternatively, SOP may
+              only contain {SOP.info}. keywords looked for are 'spin' or
+              'charge' which effects the xlabels.
+ 
+  Adapted from getrhoESpectra.m
+  Wb,Apr11,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/plot\_op.m} % l=5/3
+
+\begin{verbatim}
+  function plot_op(S,H)
+ 
+     S operator (possibly IROP)
+     H Hamiltonian (in diagonal representation) => show energy range
+ 
+  Wb,Aug20,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/plus.m} % l=0/14
+
+\begin{verbatim}
+  overloading the + operator
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/randomize.m} % l=9/20
+
+\begin{verbatim}
+  function A=randomize(A [,nrm,opts])
+ 
+     Randomize A.data using randn()
+     while preserving overall norm (unless explicitly specified).
+ 
+  Options
+ 
+     -z   use complex random numbers (default: real)
+ 
+  Wb,Nov11,09
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/rank.m} % l=0/35
+
+\begin{verbatim}
+  overloading rank function
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/real.m} % l=4/41
+
+\begin{verbatim}
+  Function: A=real(A)
+ 
+     extract real data of operator in QSpace format
+ 
+  Wb,Oct19,11
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/rgbQSpectra.m} % l=13/51
+
+\begin{verbatim}
+  function [cc,Iout]=rgbQSpectra(H,q3 [,opts])
+ 
+    Encode given energy spectrum to rgb specturm
+    by using thermal weights in specified (or otherwise dominant)
+    symmetry sectors
+ 
+  Options
+ 
+    'beta',.. effective inverse `temperature' to use to compute
+             `thermal' weight in symmetry sectors (2)
+    '-R'      assume input is density matrix which already gives
+              weights (with beta ignored here)
+ 
+  Wb,Sep09,21
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/rmitags.m} % l=5/11
+
+\begin{verbatim}
+  function A=rmitags(A)
+ 
+     skip itags of given QSpace(s)
+ 
+  *** NB! deprecated; rather use untag ***
+  Wb,Apr14,16
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/rmtrace.m} % l=4/22
+
+\begin{verbatim}
+  function A=rmtrace(A)
+ 
+     remove trace from input tensor A
+ 
+  Wb,Apr24,13
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/sameas.m} % l=6/32
+
+\begin{verbatim}
+  function i=sameas(A,B [,eps=1E-10])
+ 
+     check whether QSpaces A and B are the same
+     except for minor differences such as 
+     info.cgr.cid(end) and info.cgr.nnz
+ 
+  Wb,Aug08,16
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/setitags.m} % l=41/44
+
+\begin{verbatim}
+  function A=setitags(A,...)
+ 
+    set itag(s) while preserving conj flag.
+ 
+  Usage #1: A=setitags(A,{t1,t2,...} [,[i1,i2,...]])
+ 
+    set specified or all itags
+    setitags(A,{'K1','K2','s2'})        sets itags { 'K1','K2,'s2' }
+    setitags(A,{'K','K','s'},{1,2,2})   same (numbers are appended to itags!)
+ 
+  Usage #2: A=setitags(A,tt,i)
+ 
+    set specific itags tt to itag{i}
+ 
+  Usage #3: set itags for A-tensor (conj-flags always remain in place)
+ 
+    A=setitags(A,'-A',k)           {'K<k-1>','K<k>','s<k>}
+    A=setitags(A,'-A:K,K,s',  k)   {'K<k-1>','K<k>','s<k>} more specific
+    A=setitags(A,'-A>K,K,s@n',k)   same, also using n-digit format (default: 2)
+    A=setitags(A,'-A<K,K,s@n',k)   {'K<k>','K<k+1>','s<k>} i.e. R->L order
+ 
+  Usage #4: set itags for operator
+ 
+    S=setitags(S,'-op:X', k )       {'<X><k>','<X><k>','op'}
+    S=setitags(S,'-op:X','s')       {'<X>','<X>','s'}
+    S=setitags(S,'-op:<regex>', A)  set itags based on behavior
+                                    that mimicks contractQS
+  Usage #5
+ 
+    A=setitags(A,ia,B,ib);  copy itags from B to A
+ 
+  Usage #6: any of the usages above, but return itags rather than A,
+  by requesting 2 output args, e.g.
+ 
+    [tt,i]=setitags(A,...)
+    [tt,~]=setitags(A,...)
+ 
+    this returns itags+indizes themselves, rather than setting the
+    itags in A (the conjugation is inherited from A; hence only a
+    single QSpace A is expected).
+ 
+  Wb,Mar24,16 ; Wb,May28,18
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/showdeg.m} % l=13/32
+
+\begin{verbatim}
+  function [I=]showdeg(H [,opts])
+ 
+     show degeneracy of given rank-2 operator, either in 
+     diagonal representation, or to be diagonalized.
+ 
+  Options
+ 
+    'dE',...  considere values degenerate within dE (1E-3)
+    'ng',...  number of degenerate groups to display
+    '-f'      force flag
+    '-v'      always print lowest part of spectrum
+    '-V'      more verbose still.
+ 
+  Wb,Apr12,11
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/skiprecs.m} % l=1/51
+
+\begin{verbatim}
+  function A=skiprecs(A,ix)
+  Wb,Aug01,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/skipzeros.m} % l=1/58
+
+\begin{verbatim}
+  function A=skipzeros(A [,eps,'--all'])
+  Wb,Nov10,07
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/sort.m} % l=10/6
+
+\begin{verbatim}
+  function [A,isd]=sort(A,perm)
+ 
+     sort records in QSpace according to q-labels after using
+     permutation perm (default: Id). Alternatively, perm may
+     also be specified as 
+ 
+       '-E' (sort by energy) or
+       '-R' (same as '-E', but sorts in descending order).
+       '-S' sort wrt. to size of data+cgr
+ 
+  Wb,Sep12,06
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/split\_ops.m} % l=15/22
+
+\begin{verbatim}
+  function [A,nsp]=split_ops(A [,opts])
+ 
+     split composite operators back to (irreducible) operator sets
+     that have well defined irop symmetry labels
+     (returns A -> A(:) expanded along dim2, such that
+     A(k) still references a (partial) original QSpace).
+ 
+  Options
+ 
+     --set-op    set as operator type
+     --s2f       move scalar operators to front
+     --trans     return transpose array
+     --vec       return as serialzed vector
+     --cell      return as cell array
+ 
+  Wb,Aug31,19
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/sqrt.m} % l=5/43
+
+\begin{verbatim}
+  function B=sqrt(A)
+ 
+     Compute sqrt(A) for diagonal QSpace(s) A
+     (error is issued if A is not diagonal)
+ 
+  Wb,Mar11,19
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/squeeze.m} % l=9/54
+
+\begin{verbatim}
+  Function [A,I]=squeeze(A [,OPTS])
+ 
+     remove singleton dimensions (similar to matlab's routine)
+ 
+  Options
+ 
+    '-start'  only singletons at the front
+    '-end'    only singletons at the end (default: all)
+ 
+  Wb,Apr24,08 ; Wb,Dec01,20
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/subsasgn.m} % l=4/10
+
+\begin{verbatim}
+  subsasgn
+ 
+  Reference http://www.cs.ubc.ca/~murphyk/Software/matlabObjects.html
+  Classes and objects in matlab: the quick and dirty way
+  Kevin Murphy, 2005
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/subsref.m} % l=4/20
+
+\begin{verbatim}
+  subsref
+ 
+  Reference http://www.cs.ubc.ca/~murphyk/Software/matlabObjects.html
+  Classes and objects in matlab: the quick and dirty way
+  Kevin Murphy, 2005
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/sum.m} % l=0/30
+
+\begin{verbatim}
+  overloading the sum operator
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/symperm.m} % l=4/36
+
+\begin{verbatim}
+  function A=symperm(A,perm)
+ 
+     Permute symmetries according to specified permutation.
+ 
+  Wb,Feb06,14
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/symrank.m} % l=1/46
+
+\begin{verbatim}
+  function r=symrank(A)
+  Wb,Jan09,17
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/tensor.m} % l=2/53
+
+\begin{verbatim}
+  function C=tensor(A,B,...)
+  kron including merging of quantum numbers
+  Wb,Jul07,09
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/times.m} % l=6/2
+
+\begin{verbatim}
+  overloading .* operator
+  Options
+ 
+    --skip-cgc   C inherits CGC space of tensor A *as it is*
+                 (yet only for the symmetry sectors shared with B).
+ 
+  Wb,Jul04,12
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/toStr.m} % l=1/14
+
+\begin{verbatim}
+QSpace/toStr is a function.
+    qs = toStr(A, varargin)
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/trace.m} % l=10/21
+
+\begin{verbatim}
+  Function x=trace(A,I [,opts])
+ 
+    trace of QSpace operator
+ 
+  Usage 1: A=trace(A)   - regular trace of rank-2 object
+  Usage 2: A=trace(A,I)
+ 
+     generalized trace with pairwise specification of indizes
+     to contract I = [i1 i2; j1 j2; ... ]
+ 
+  Wb,Sep11,06 ; Wb,Apr10,15
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/transpose.m} % l=0/37
+
+\begin{verbatim}
+  overloading the .' operator (element wise transpose)
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/tstfun.m} % l=1/43
+
+\begin{verbatim}
+  function tstfun(A)
+  Wb,Feb23,11
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/uminus.m} % l=4/50
+
+\begin{verbatim}
+  function A=uminus(A)
+ 
+     overloading the unary minus operator (as in -A)
+ 
+  Wb,Sep17,06
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/untag.m} % l=7/1
+
+\begin{verbatim}
+  Usage #1: function A=untag(A)
+  Usage #2: function untag(A1,A2,...)
+ 
+     remove itags from specified A's;
+     if no return argument is requested, the modified A's
+     are assigned back to caller by their inputname.
+ 
+  Wb,May11,17
+\end{verbatim}
+
+\pagebreak[3]
+
+
+\myfun{QSpace/uplus.m} % l=4/14
+
+\begin{verbatim}
+  function A=uplus(A)
+ 
+     overloading the unary plus operator (as in +A)
+ 
+  Wb,Sep17,06
+\end{verbatim}
+
+\end{document}

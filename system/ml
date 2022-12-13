@@ -1,0 +1,18 @@
+#!/bin/bash
+# Wb,Jan10,19
+
+# adapt paths and environmental variables in in the following bash script
+# may add something of the following to ~/.bashrc:
+# alias mlsetup='source <full-path-to>/matlab_setup.sh'
+  P=`dirname $(realpath "$0")`;
+  source $P/matlab_setup.sh
+
+# make sure that matlab finds/calls $MYMATLAB/startup.m
+# see also matlab command line option '-sd ..' 
+  P=`pwd`
+  cd $MYMATLAB
+
+# return back to original path matlab was started from in terminal
+# when arriving at matlab prompt
+  matlab -nodesktop -nosplash -r "cd('$P'); "
+

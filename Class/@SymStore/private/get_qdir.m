@@ -1,0 +1,20 @@
+function qdir=get_qdir(qstr);
+% function qdir=get_qdir(qstr);
+% Wb,Aug27,16
+
+  qdir=regexprep(qstr,'([\w\d]+)\*,*','-');
+  qdir=regexprep(qdir,'([\w\d]+),*','+');
+
+  i=find(qdir==';'); n=numel(i);
+
+  if n==1
+     if ~isempty(find(qdir=='-')), error('Wb:ERR',...
+       '\n   ERR unexpected QSet string\n    ERR %s',qstr);
+     end
+     qdir=[ qdir(1:i-1), regexprep(qdir(i+1:end),'\+','-') ];
+  elseif n>1
+     qstr, error('Wb:ERR','\n   ERR invalid input string'); 
+  end
+
+end
+

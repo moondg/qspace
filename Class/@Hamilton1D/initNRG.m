@@ -1,0 +1,399 @@
+function [H0,Iout]=initNRG(HAM,varargin)
+% function [H0,Iout]=initNRG(HAM [,opts])
+%
+%    initialize A by NRG like prescription using given
+%    Hamiltonian. This initializes both, AK as well
+%    as HK. To have an RL orthonormalized state with kc=1,
+%    the procedure starts at the right end of the system.
+%
+% Wb,Apr08,14 ; Wb,Jul06,16
+
+% added possibility to keep NPsi low-energy states simultaneously
+% for former version, see: Archive/initNRG_160728.m
+% Wb,Jul06,16 // Kyoto
+
+% TST clear; wsys='SU2_w2'; NPsi=1; dbwrn; tst_Hamilton1D
+% TST clear; wsys='SU2_w2'; NPsi=4; Qtot=[]; dbwrn; tstflag=2; tst_Hamilton1D
+  fflag=0; Iout=struct;
+
+  getopt('INIT',varargin);
+     Nkeep=getopt('Nkeep',16);
+     maxS =getopt('--maxS');
+     cplx =getopt('--cplx');
+
+     dQtotN=getopt('dQtotN',[]);
+     if ~isempty(dQtotN), [m,n]=size(dQtotN);
+        if n<2 || size(uniquerows(dQtotN(:,1:end-1)),1)<m
+           wberr('invalid dQtotN=[%s]',...
+           mat2str2(q0,'fmt','%g','rowsep','; ','-f'));
+        end
+        NPsi=sum(dQtotN(:,end)); Qtot=[];
+     else
+        NPsi=getopt('NPsi',0);
+        if NPsi>0
+             Qtot=[];
+        else Qtot=0;
+        end
+     end
+
+     Qtot=getopt('Qtot',Qtot);
+     if ~isempty(Qtot)
+        if getopt('-f'), fflag=1;
+        elseif getopt('-F'), fflag=2;
+        else
+           Qopl=getopt('Qop',[]);
+           if ~isempty(Qopl), Qop=QSpace; fflag=3; end
+        end
+     end
+
+     rtol=getopt('rtol',1E-8);
+
+     if getopt('-v'), vflag=1;
+     elseif getopt('-V'), vflag=2; else vflag=0; end
+  getopt('check_error');
+
+  gotsym=~isempty(get_sym_info(HAM));
+
+  consistency_check(HAM);
+  addto_dmrg_info(HAM,HAM);
+
+  L=numel(HAM.mpo);
+  E=get_ops_E(HAM,1,'-t'); nq=size(E.Q{1},2);
+
+  if ~isempty(dQtotN)
+     if ~isnumeric(dQtotN) || size(dQtotN,2)~=nq+1 || any(dQtotN(:,end)<=0)
+        dQtotN, wberr('got invalid dQtotN (%g/%g)',size(dQtotN,2),nq);
+     end
+     s=sprintf('dQtotN=[%s] @ n={%s}', ...
+       mat2str2(dQtotN(:,1:end-1),'fmt','%g','rowsep','; ','-f'), ...
+       vec2str(dQtotN(:,end),'sep',',','-f') ...
+     );
+  elseif ~isempty(Qtot)
+     if isequal(Qtot,0), Qtot=zeros(1,size(E.Q{1},2));
+     elseif ~isnumeric(Qtot) || ~isequal(size(Qtot),[1, nq]), Qtot
+        wberr('got invalid Qtot (%g/%g)',numel(Qtot),nq);
+     end
+     s=[ 'Qtot=[' vec2str(Qtot,'-f') ']' ];
+  else s='Qtot=[]';
+  end
+
+  wblog('---',repmat('-',1,50));
+  if NPsi>1
+       wblog('<i>','NRG initalization of %g DMRG (ground) states',NPsi);
+  else wblog('<i>','NRG initalization of DMRG ground state');
+  end
+  if length(s)>20
+  wblog(' * ','%s',s); s=''; else s=[s ', ']; end
+  wblog(' * ','%sNkeep=%g, rtol=%g',s,Nkeep,rtol);
+  wblog('---',repmat('-',1,50));
+
+  rs=symrank(HAM.oez(1).op);
+  ns=numel(rs); found=0;
+
+  for k=L:-1:1
+     E=get_ops_E(HAM,k,'-t');
+     Xk=load_dmrg_data(HAM,k);
+
+     if k<L
+        Xk.AK=QSpace(permuteQS(getIdentityQS(Xl.AK,1,E),[3 1 2]));
+     else
+        Xk.AK=getAtensorLoc(E,[],'R');
+        q=use_Hconj(HAM);
+        if q, q(2)=Xk.info.hconj;
+           if xor(q(1),q(2)), wberr('inconsistent hconj setting (%/%g)',q);
+           elseif any(q<0), wberr('invalid hconj setting (%/%g)',q); end
+        end
+     end
+
+     Xk.AK=setitags(Xk.AK,'-A',k);
+
+     if vflag>1
+        d=getDimQS(Xk.AK);
+        wblog(' * ','AK: [%s] @ [%s]',vec2str(d(1,:)), vec2str(d(end,:))); 
+     end
+
+     if ~gotsym && fflag>2, t3=sprintf('s%02g',k); Qop_=Qop;
+        Qop=QSpace(contractQS(Xk.AK,'!1*',{Xk.AK,Qop})) ...
+          + contractQS(Xk.AK,'!1*',{Xk.AK,Qopl,['-op:' t3]});
+     end
+
+     if k<L
+        Xk=updateHK(HAM,k,'<<',Xk);
+
+        HKt=getBlockHK(Xk,'--fix'); % HK `t'uned
+
+        if k>1, D=Nkeep; else D=-1; Iout.H0=HKt; end
+
+        if fflag
+           if fflag>2, ot={Qop};
+           elseif fflag>1, ot={'-f'}; else ot={}; end
+
+           [HKt,IK_]=tuneHamQtot(HKt,Qtot*((L-k)/(L-1)),ot{:});
+           dmu(k,:)=IK_.dmu;
+           qtot(k,:)=IK_.qtot;
+        end
+
+     end
+     if k<L && HKt
+
+        [ee,I]=eigQS(HKt,'Nkeep',D); EKt=I.EK;
+        Xk.AK=QSpace(contractQS(I.AK,1,Xk.AK,1));
+
+        q0=[]; eref=min(ee(:,1))+1E-12;
+        for i=1:numel(I.EK.data)
+            if ~isempty(find(I.EK.data{i}<eref))
+               q0(end+1,:)=I.EK.Q{1}(i,:);
+            end
+        end
+
+        qk=I.EK.Q{1}; qk=mat2cell(qk,size(qk,1),rs);
+        qd=zeros(1,ns);
+
+        for i=1:numel(qk)
+           qk{i}=uniquerows(qk{i});
+           qd(i)=size(qk{i},1);
+        end
+
+        if vflag || any(qd<=1), d=getDimQS(I.AK);
+
+           if vflag>1, f={'%3g','%4g'}; else f={'%2g','%3g'}; end
+           s=sprintf([f{1} '/' f{1}],d(1,[2 1]));
+           if size(d,1)>1
+              s=[s ' ' sprintf(f{2},d(end,1))];
+           end
+
+           s=sprintf('%5g  %+-10.6g  %12s %9s   %s', k, ee(1)/(L-k+1), ...
+            ['(' mat2str2(q0,'fmt','%g','rowsep','; ','-f') ')'],...
+            ['{' vec2str(qd,'-f','sep',',') '}'], s);
+
+           if gotsym && any(qd<=1)
+              if D>2
+                   s=[s '  WRN single symmetry sector'];
+              else s=[s '  single symmetry sector'];
+              end
+           end
+
+           if vflag>1
+              wblog('%s',s); % if k<=1, fprintf(1,'\n'); end
+           else
+              if k==L-1, fprintf(1,...
+                '\n  nrg_k  energy_e0  symmetry_q0 @ num-sector  DK/DX (DK*)\n\n');
+              end
+              fprintf(1,'  %s\n',s);
+           end
+        end
+
+        if vflag>1
+           wblog(' * ','AK: [%s] @ [%s]',vec2str(d(1,:),'-f'), ...
+           vec2str(d(end,:),'-f')); 
+        end
+     end
+
+     Xk.AK=setitags(Xk.AK,'-A',k);
+
+     if ~gotsym && fflag>2
+        Qop=QSpace(contractQS(Xk.AK,'!1*',{Xk.AK,Qop_})) ...
+          + contractQS(Xk.AK,'!1*',{Xk.AK,Qopl,['-op:' t3]});
+     end
+
+     NPsi1=max(1,NPsi); HK=getBlockHK(Xk);
+
+     if k==1,
+        ltag=iff(NPsi>0,'PSI','WRN');
+
+        eN=ee(:,1); q=1E-6*mean(diff(eN(1:min(end,10))));
+        i=find(abs(eN-min(eN))<q); g=numel(i);
+
+        if ~isempty(dQtotN)
+           if isempty(Qtot)
+              nd=numel(I.EK.data);
+              e0=zeros(1,nd); for i=1:nd, e0(i)=min(I.EK.data{i}); end
+              i=find(e0<=min(e0)+1E-12);
+              if numel(i)>1, wblog('WRN',...
+                'got %g degenerate ground state symmetry sectors',numel(i));
+              end
+              Qtot=I.EK.Q{1}(i(1),:);
+           elseif fflag
+              Qtot=round(Qtot);
+           end
+
+           QTOT=repmat(Qtot,size(dQtotN,1),1)+dQtotN(:,1:end-1);
+
+           [i1,i2,Im]=matchIndex(I.EK.Q{1},QTOT);
+           n=[numel(i1), size(dQtotN,1)];
+           if n(1)
+              if diff(n), wblog('PSI',...
+                'only %g/%g symmetry sectors in dQtotN present in H0',n);
+              end
+
+              I.EK=getsub(QSpace(I.EK),i1); ee=sort([I.EK.data{:}]);
+              for i=1:numel(i1)
+                  I.EK.data{i}=I.EK.data{i}(1:min(end,dQtotN(i2(i),end)));
+              end
+              q=I.EK.data; EKt=I.EK;
+              NPsi=numel([q{:}]); NPsi1=NPsi; found=2;
+
+           else Xk.AK, wblog('ERR',...
+             'invalid dQtotN=[%s] for NRG low-energy sector (L=%g)', ...
+              mat2str2(dQtotN,'fmt','%g','rowsep','; ','-f'),L);
+           end
+        elseif ~isempty(Qtot)
+           if fflag, Qtot=round(Qtot); end
+           i=find(~isnan(Qtot));
+           [i1,i2,Im]=matchIndex(I.EK.Q{1}(:,i),Qtot(i)); n=numel(i1);
+           if n==1
+              I.EK=getsub(QSpace(I.EK),i1); ee=I.EK.data{1}; found=1;
+              I.EK.data{1}=ee(1:NPsi1); EKt=I.EK;
+           elseif numel(i)<numel(Qtot)
+              i1=matchIndex(HK.Q{1}(:,i),Qtot(i));
+              HK=getsub(HK,i1);
+           else s=vec2str(Qtot,'-f');
+              if n>1, wberr('Qtot=[%s] found %g times in H0 !?',s,n);
+              else Xk.AK, wblog(...
+                'ERR','Qtot=[%s] not found in H0 (L=%g)',s,L);
+              end
+           end
+        end
+
+        if ~found
+           [ee,I]=eigQS(HK,'Nkeep',NPsi1); ee=ee(:,1);
+           Xk.AK=contract(I.AK,1,Xk.AK,1);
+           Xk.EK=I.EK; EKt=I.EK;
+
+           if NPsi>0
+              display(QSpace(I.EK),' ');
+           end
+
+           q=I.EK.Q{1}; l=size(q,1);
+           if l==1, wblog('==>',...
+             'got Qtot=[%s] for NRG ground state sector (L=%g)', ...
+              vec2str(q,'-f'),L);
+           elseif l>1, wblog(ltag,...
+             'keeping %g low-energy symmetry sectors %s',l,mat2str(q));
+           end
+        end
+
+        d=getDimQS(I.EK); d=d(:,2);
+        if d(1)~=NPsi1
+           wberr('got %g/%g low-energy states !?',d(1),NPsi1); 
+        end
+
+        if g>NPsi1, wblog('WRN',...
+           'got %g-fold degenerate ground state space (@ %.3g)',...
+           g, norm(diff(eN(1:g)))/max(1,norm(eN(1:g))));
+        elseif d(1)>1
+           wblog(ltag,'keeping %g global multiplets %s (%g states)',...
+           d(1),mat2str(I.EK.Q{1}),d(end));
+        elseif d(end)>1
+           wblog(' * ','got unique ground state multiplet [%s](%g)',...
+           vec2str(I.EK.Q{1},'-f'),d(end));
+        else
+           wblog(' * ','got unique ground state [%s] (d=%g)',...
+           vec2str(I.EK.Q{1},'-f'),d(end));
+        end
+
+        [i1,i2,Im]=matchIndex(Xk.AK.Q{1},I.EK.Q{1});
+        if isempty(i1), I.EK, Xk.AK
+           wberr('got symmetry sector mismatch !?');
+        end
+
+        if g>1 && NPsi1<=1 && maxS
+           wblog('NB!','using symmetrized ground state space (--maxS)');
+           u=repmat(1/sqrt(g),1,g);
+           for i=1:numel(i1)
+              j=i1(i); l=numel(I.EK.data{i2(i)});
+              Xk.AK.data{j}=contract(u,Xk.AK.data{j}(1:g,:,:),2,1);
+           end
+        else
+           for i=1:numel(i1)
+              j=i1(i); l=numel(I.EK.data{i2(i)});
+              Xk.AK.data{j}=Xk.AK.data{j}(1:l,:,:);
+           end
+        end
+
+      % WRN! still, by truncating to lowest NPsi1 multiplets,
+      % this might forever truncate local state space for the first site!
+      % => keep full i1 here [not just i1(1)!]  // Wb,Mar26,15
+      % => use full local state space in HAM.oez for DMRG iteration
+      %    see update_psi_2site => get_local_id // Wb,May19,17
+        Xk.AK=getsub(QSpace(Xk.AK),i1);
+
+        q=getIdentity(Xk.AK,3,'');
+        if ~sameas(q,E)
+            if NPsi1>1
+                 s=sprintf('%g multiplets',NPsi1);
+            else s='gs-multiplet'; end
+            wblog('WRN','using %s reduced local state space!',s);
+            display(E); fprintf(1,'-->\n'); display(q);
+        end
+
+        e=QSpace(contractQS(Xk.AK,'23*',Xk.AK,'23'));
+        if ~isIdentityQS(e), e
+           wberr('got unnormalized A(1) tensor !?');
+        end
+     end
+
+     if cplx, Ak=Xk.AK.data;
+        for i=1:numel(Ak)
+            Ak{i}=Ak{i}+1E-14i*randn(size(Ak{i}));
+        end
+        Xk.AK.data=Ak;
+     end
+
+     Xk=updateHK(HAM,k,'<<',Xk);
+
+     save_dmrg_data(HAM,Xk,k);
+     if k>1, Xl=Xk; end
+  end
+
+  H0=getBlockHK(Xk);
+
+  d=getDimQS(Xk.AK); d=d(:,1);
+
+  if d(end)>1 || NPsi>0
+     wblog(ltag,'keeping global Psi index with current site');
+     Q=getIdentity(getvac(Xk.AK),Xk.AK,1);
+     Q=setitags(Q,{'K00','','Psi'});
+     Xk.AK=contract(Q,'2',Xk.AK,1,[1 3 4 2]);
+  else
+     wblog('Psi','got single scalar state -> skip qlabel using 1j');
+     q=getIdentity(Xk.AK,1,'-0');
+     Xk.AK=contract(q,1,Xk.AK,1);
+  end
+
+  k2=min(5,floor(L/2));
+
+  q=Xl; Xl=Xk; Xk=q;
+  for l=1:k2, if l>1
+     Xk=load_dmrg_data(HAM,l+1); end
+     [Xl.AK,Xk.AK,r1,I1]=ortho2site(Xl.AK,Xk.AK,'>>',rtol);
+     Xl=updateHK(HAM,l,'>>',Xl);
+     save_dmrg_data(HAM,Xl,l);
+     if l<k2, Xl=Xk; end
+  end
+
+  q=Xl; Xl=Xk; Xk=q;
+  for k=k2:-1:1, if k<k2
+     Xk=load_dmrg_data(HAM,k); end
+     [Xk.AK,Xl.AK,r2,I2]=ortho2site(Xk.AK,Xl.AK,'<<',rtol);
+     Xl=updateHK(HAM,k+1,'<<',Xl);
+     save_dmrg_data(HAM,Xl,k+1);
+     if k>1, Xl=Xk; end
+  end
+
+  Xk.info.itags=Xk.AK.info.itags;
+
+  save_dmrg_data(HAM,Xk,1);
+
+  addto_dmrg_info(HAM,NPsi);
+
+  if nargout>1
+     Iout=add2struct(Iout,HKt,EKt,Qtot,dQtotN,found,Nkeep,maxS,rtol,Xk,NPsi);
+     if fflag>2,   Iout=add2struct(Iout,Qop,Qopl);
+     elseif fflag, Iout=add2struct(Iout,dmu,qtot); end
+  end
+
+end
+
+% -------------------------------------------------------------------- %
+

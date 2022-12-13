@@ -1,0 +1,42 @@
+
+% Wb,Oct09,18
+
+  \usepackage{amsfonts,amsmath,amssymb}
+
+  \textwidth       6.3in %% portrait
+  \textheight      9.0in %
+  \footskip        0.8in %
+  \headsep         0.0in %
+  \hoffset         0.0in
+  \topmargin      -0.3in
+  \columnsep       0.3in
+  \oddsidemargin   0in
+  \evensidemargin  0in
+
+  \RequirePackage[hyperindex,colorlinks,bookmarksnumbered,plainpages=true]{hyperref}
+  \hypersetup{
+     linkcolor=blue,urlcolor=darkblue,citecolor=darkgreen,
+     filecolor=magenta,colorlinks=true,
+     pdfauthor={Andreas Weichselbaum},  %% {\@author}
+     bookmarks=true,
+     pdfstartview={FitH}
+  }
+  \usepackage{hyperref}
+
+% \interlinepenalty 10000
+
+  \newcommand{\mysec}[2][(toc entry)]{
+     \section*{#2}
+     \addcontentsline{toc}{section}{#1}
+  }
+
+  \newcommand{\mymex}[1]{ % \filbreak
+     \subsubsection*{$\mathbf{>>}$ #1 $-h$}
+     \addcontentsline{toc}{subsection}{#1}
+  }
+
+  \newcommand{\myfun}[1]{ % \filbreak
+     \subsubsection*{$\mathbf{>>}$ help #1}
+     \addcontentsline{toc}{subsection}{#1}
+  }
+
