@@ -43,9 +43,9 @@ function [dfac,sw]=get_cgr_fac(A,i,sflag)
         elseif norm(w-w(1)*eye(size(w)))<1E-12, q(j)=w(1);
         elseif isvector(w), q(j)=norm(w);
         else
-           s=size(w);
-           if numel(s)>2 || diff(s)<0
-              wberr('unexpected cgw(%d,%d)  data',i,j); end
+           s=size(w); if numel(s)>2 || diff(s)>0
+              s=sprintf('x%d',s);
+              wberr('unexpected cgw(%d,%d) data size %s',i,j,s); end
 
            w2=w'*w;
            e=norm(w2-w2(1)*eye(size(w2)));
