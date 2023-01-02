@@ -2428,7 +2428,7 @@ class CData : public QSet<TQ> {
     );
 
     int Reduce2Ref(const char *F=0, int L=0, char force=0);
-    int LoadRef(const char *F=0, int L=0, char force=1);
+    int LoadRef   (const char *F=0, int L=0, char force=1);
 
     int Load_CRef(
        const char *F, int L, CData &Cr, const char *cgd_file) const;
@@ -2489,9 +2489,9 @@ class CData : public QSet<TQ> {
     bool isAbelian(const char *F=NULL, int L=0) const {
        if (this->t.isAbelian()) {
           if (cstat.t==CGD_ABELIAN) {
-              if (cgd.D.len || cgd.SIZE.len) wblog(F_L,
-                 "ERR %s() invalid abelian CData\n%s",FCT,STR_(this));
-              return 1;
+             if (cgd.D.len || cgd.SIZE.len) wblog(F_L,
+                "ERR %s() invalid abelian CData\n%s",FCT,STR_(this));
+             return 1;
           }
           if (!isScalar() || (cgd.D.len && (cgd.D.len>1 || cgd.D[0]!=1)))
           wblog(F_L,"ERR %s() invalid abelian CData\n%s",STR_(this));

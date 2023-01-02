@@ -198,7 +198,7 @@ function info_1(A,s,cflag)
            end
            q=normQS(A); q(2)=q*q;
            if q<0.01, i=[]; else i=find(abs(q-round(q))<1E-8); end
-           if ~isempty(i), q=rat2(q(1)); else q=sprintf('%.3g',q(1)); end
+           if ~isempty(i), q=rat2(q(1)); else q=sprintf('%.4g',q(1)); end
            dstr=[dstr sprintf('  @ norm = %s',q)];
         end
      else dstr=''; end
