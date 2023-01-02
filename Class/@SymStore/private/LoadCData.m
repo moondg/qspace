@@ -36,12 +36,12 @@ function [q,ss,qq]=LoadCData(sym,varargin)
      elseif getopt('--exist'); xflag=2;
      else xflag=0; end
 
-     if getopt('-a'), aflag=2;
+     if     getopt('-a'), aflag=2;
      elseif getopt('-f'), aflag=3;
      elseif getopt('-F'), aflag=1;
      else aflag=0; end
 
-     if getopt('-v'), vflag=1;
+     if     getopt('-v'), vflag=1;
      elseif getopt('-V'), vflag=2; else vflag=0; end
 
      if ~nargout, vflag=vflag+10; end
@@ -50,10 +50,11 @@ function [q,ss,qq]=LoadCData(sym,varargin)
 
   if cflag
      if ~isempty(varargin), varargin, wbdie('invalid usage'); end
-
-     f=[D0 '/' QSet2file(C)];
+     if vflag || nargout<=1, o={'-v'}; else o={}; end
+     [f,Iq]=QSet2file(C,o{:}); f=[D0 '/' f];
      if ~exist(f,'file')
-        wbdie('invalid CData (file not found)\n%s\n',f); end
+        wbdie('invalid CData (file not found)\n%s',f); end
+     if nargout>1, ss=Iq; end
 
      q=load_CData_1(f,aflag);
 

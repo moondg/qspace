@@ -1608,7 +1608,7 @@ CDATA_TQ& CStore<TQ>::getBUF(
          }
       }
       else if (Q.qdir.len<2) { 
-         if (Q.qdir.len!=1) wblog(F_L,"ERR %s() got QSet %s",STR(Q));
+         if (Q.qdir.len!=1) wblog(F_L,"ERR %s() got QSet %s",FCT,STR(Q));
          Cb->initScalar(Q); if (Cb->cstat.t != CGD_EXPLICIT) {
          gStore.save_CData(FL,*Cb); } 
       }

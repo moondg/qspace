@@ -376,6 +376,11 @@ int RCStore::load_CData(
       "WRN %s() got bflag=%c<%d>/%d",FCT,bflag,bflag,A.gotuser_BUF());
 
    if ((q=get_file_name(F_L,fs,Q,"cgd"))<=0) {
+      if (!q && A.cstat.ID==CID_RANK1_Q0) {
+         A.initScalar(Q); 
+         return q;
+      }
+
       if (bflag && A.cstat.ID) {
          wblog(F_L,"WRN %s() got missing CData file having (e=%d)\n"
          "Qin: %s\nBUF: %s\n%s",FCT,q,STR(Q),STR(A),STR2(A.cstat,'V'));
@@ -984,16 +989,15 @@ CGR_TYPE cgdStatus::init(const char *F, int L, const mxArray* a) {
 
       mxGetNumber(mxGetFieldByNumber(a,0,ic), ctime);
       mxGetNumber(mxGetFieldByNumber(a,0,im), mtime);
-      mxGetNumber(mxGetFieldByNumber(a,0,id),  ID  );
-      mxGetNumber(mxGetFieldByNumber(a,0,iflag), t );
+      mxGetNumber(mxGetFieldByNumber(a,0,id),    ID);
+      mxGetNumber(mxGetFieldByNumber(a,0,iflag),  t);
 
       if (t>=CGD_NUM_TYPES) wblog(F_L,
          "ERR %s() invalid CData type %g",FCT,t
       );
    }
    else wblog(F_L,
-     "ERR %s() unexpected cgdStatus (%s)",FCT,mxGetClassName(a)
-   );
+     "ERR %s() unexpected cgdStatus (%s)",FCT,mxGetClassName(a));
 
    return rt;
 };
