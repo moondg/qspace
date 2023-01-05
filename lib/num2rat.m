@@ -35,6 +35,7 @@ function [s,q]=num2rat(xx,varargin)
 
   xx(find(abs(xx)<1E-12))=0;
   [z,q]=wbrat(xx,'-q');
+  if ~isfield(q,'ee'), q.ee=zeros(size(q.P)); end
 
   ss=cell(size(xx)); n=numel(xx);
 
