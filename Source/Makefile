@@ -217,5 +217,8 @@ feature_tst: feature_tst.cc
 util: # keep this (otherwise this tries to make util.cc into a binary)
 	@echo call "'make utils'" instead!
 
+clean:
+	@rm -vf ../bin/*.o ../util/*.o
+
 # -------------------------------------------------------------------------- #
 

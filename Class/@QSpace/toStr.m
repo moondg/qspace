@@ -85,9 +85,9 @@ function qs=toStr_1(A)
 
       sa=sa*8;
 
-      if     sa<2^10, s=sprintf('%g B',sa);
-      elseif sa<2^20, s=sprintf('%.1f kB',sa/2^10);
-      else            s=sprintf('%.1f MB',sa/2^20);
+      if     sa<2^10, s=sprintf('%g b',sa);
+      elseif sa<2^20, s=sprintf('%.1f k',sa/2^10);
+      else            s=sprintf('%.1f M',sa/2^20);
       end
 
       qs=[qs, sprintf('%7s\n',s)];

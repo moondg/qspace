@@ -17,7 +17,7 @@
 
 char USAGE[]=""; // outsourced to getIdentityQS.m // Wb,Jan12,19
 
-#define PROG_TAG "id"
+#define PROG_TAG "gId"
 
 #ifdef MATLAB_MEX_FILE
    #define PROG mexFunctionName()

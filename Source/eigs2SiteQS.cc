@@ -334,18 +334,13 @@ mxArray* RunEigs(
    return S;
 }
 
-#ifdef WB_CLOCK
-   Wb::Clock wbc_eigs("RunEigs");
-   Wb::Clock wbc_eigb("RunEigs (basic)");
-#endif
-
 void mexFunction(
    int nargout, mxArray *argout[],
    int nargin, const mxArray *argin[]
 ){
 
 #ifdef WB_CLOCK
-   wbc_eigs.resume();
+   Wb::Clock clk("eigs:2Site:all",0); 
    ARG_CHECK=1;
 #else
    ARG_CHECK=0;
@@ -458,15 +453,10 @@ void mexFunction(
    PSI.getDistQtot(Qtot0,w); w.max(iw0);
 
    try {
-#ifdef WB_CLOCK
-   wbc_eigb.resume();
-#endif
-
+     #ifdef WB_CLOCK
+      Wb::Clock cl2("eigs:2Site:actual",0); 
+     #endif
      S=RunEigs(PSI,CP,xflag,disp,rnrm,maxit,nev,tol,randall);
-
-#ifdef WB_CLOCK
-   wbc_eigb.stop();
-#endif
    }
 
 #ifdef MATLAB_MEX_FILE
@@ -526,9 +516,5 @@ void mexFunction(
 
    if (nargout>2) argout[2]=S; else
    if (S) mxDestroyArray(S);
-
-#ifdef WB_CLOCK
-   wbc_eigs.stop();
-#endif
 }
 

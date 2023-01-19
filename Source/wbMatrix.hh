@@ -25,12 +25,6 @@
  * AW (C) Jan 2006
  * ---------------------------------------------------------------- */
 
-#ifdef WB_SPARSE_CLOCK
-Wb::Clock wbMat_group3("gr3::sortRecs");
-Wb::Clock wbMat_group2("gr2::groupRecs");
-Wb::Clock wbMat_group1("gr1::groupRecs");
-#endif
-
 template <class T>
 class wbMatrix { 
 
@@ -1408,72 +1402,9 @@ class wbRecs {
     };
 };
 
-#ifdef QS_USING_OMP
-
 template <class T>
 void getSortPerm_OMP(
-   const wbMatrix<T> &A, wbperm &P, char dir, char lex
-){
-   if (!A.dim2) { P.init(); return; }
-
-   wbRecs<T> R(A,P,dir,lex); 
-
- #ifdef WB_SPARSE_CLOCK
-   Wb::UseClock gr3(&wbMat_group3);
- #endif
-
-   if (A.dim1<128) {
-      sort(P.data, P.data+A.dim1, R); 
-      return;
-   }
-
-   int id=0, i,l, im=0, mp=MIN(
-      1 << unsigned(floor(log2(double(A.dim1)))-6), 
-      omp_get_max_threads()
-   );
-
-   double nsub=double(A.dim1)/mp;
-
-   wbindex idx(mp+1); wbperm PX(P.len);
-   for (i=0; i<mp; ++i) { idx[i]=size_t(i*nsub+0.5); }
-   idx[i]=A.dim1;
-
-#pragma omp parallel for 
-   for (i=0; i<mp; ++i) {
-      size_t i1=idx.data[i], i2=idx.data[i+1];
-      sort(P.data+i1, P.data+i2, R); 
-      id=MAX(id,omp_get_thread_num());
-   }
-
-   while (idx.len>2) { int m2=mp/2; P.swap(PX); ++im;
-
-#pragma omp parallel for 
-      for (i=0; i<m2; ++i) { 
-         size_t k=2*i, i1=idx.data[k], i2=idx.data[k+1], i3=idx.data[k+2];
-         merge( 
-            PX.data+i1, PX.data+i2,
-            PX.data+i2, PX.data+i3, P.data+i1, R
-         );
-         id=MAX(id,omp_get_thread_num());
-      }
-
-      if (mp%2) {
-         size_t i1=idx.data[mp-3], i2=idx.data[mp-1], i3=idx.data[mp];
-         memcpy(PX.data+i1,P.data+i1,(i2-i1)*sizeof(size_t));
-         merge( 
-            PX.data+i1, PX.data+i2,
-            PX.data+i2, PX.data+i3, P.data+i1, R
-         );
-         idx[mp-1]=idx[mp]; idx.len=(mp--);
-      }
-
-      for (l=1, i=2; i<mp; i+=2, ++l) { idx[l]=idx[i]; }
-      idx[l]=idx[mp]; mp=l; idx.len=l+1; 
-   }
-
-};
-
-#endif
+   const wbMatrix<T> &A, wbperm &P, char dir, char lex);
 
 template <class T>
 bool wbMatrix<T>::deepEqualP(const wbMatrix<T> &B) const {

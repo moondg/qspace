@@ -282,21 +282,7 @@ class STAT_DGEMM {
 };
 
 #ifdef WB_CLOCK
-
    STAT_DGEMM stat_dgemm;
-
-   Wb::Clock wbc_matprod("Wb::MatProd");
-
-   Wb::Clock wbc_dgemm("dgemm");
-
-   Wb::Clock wbc_zgemm("zgemm");
-   Wb::Clock wbc_zgeev("zgeev");
-   Wb::Clock wbc_zgeNN("zgeNN");
-   Wb::Clock wbc_zgeNX("zgeNX");
-
-   Wb::Clock wbc_dgesvd("dgesvd");
-   Wb::Clock wbc_zgesvd("zgesvd");
-
 #endif
 
 #endif

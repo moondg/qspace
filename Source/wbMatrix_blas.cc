@@ -75,8 +75,7 @@ inline void DZGEMM<double>(
 ){
 
 #ifdef WB_CLOCK
-   wbc_dgemm.resume();
-
+   Wb::Clock clk("dgemm",1); 
    if (aflag=='N')
         stat_dgemm.account(A.dim1*A.dim2*(A.dim2==B.dim1 ? B.dim2 : B.dim1));
    else stat_dgemm.account(A.dim1*A.dim2*(A.dim1==B.dim1 ? B.dim2 : B.dim1));
@@ -87,10 +86,6 @@ inline void DZGEMM<double>(
              A.data, int(A.dim2),
        cfac, C.data, int(C.dim2)
     );
-
-#ifdef WB_CLOCK
-   wbc_dgemm.stop();
-#endif
 }
 
 template<>
@@ -102,7 +97,7 @@ inline void DZGEMM<wbcomplex>(
     const wbcomplex afac, const wbcomplex cfac
 ){
 #ifdef WB_CLOCK
-    wbc_zgemm.resume();
+    Wb::Clock clk("zgemm",1); 
 
     if (bflag=='N')
          stat_dgemm.account(A.dim1*A.dim2*(A.dim2==B.dim1 ? B.dim2 : B.dim1));
@@ -116,16 +111,15 @@ inline void DZGEMM<wbcomplex>(
     );
 
 #ifdef WB_CLOCK
-    if (wbc_zgemm.stop()) {
-       wbc_zgeNX.flag+=2; 
-       wbc_zgeNX.tcpu+= (long unsigned)
-       (double(A.dim1*A.dim2*B.dim2)*(4E-9*CLOCKS_PER_SEC)+1.5);
-    }
-    else {
-       wbc_zgeNN.flag+=2; 
-       wbc_zgeNN.tcpu+= (long unsigned)
-       (double(A.dim1*A.dim2*B.dim2)*(4E-9*CLOCKS_PER_SEC)+1.5);
-    }
+  { Wb::Clock *clk;
+    if (clk.stop())
+         { Wb::Clock("zgeNX",1,0,&Wb::Clocks,&clk,0); } 
+    else { Wb::Clock("zgeNN",1,0,&Wb::Clocks,&clk,0); } 
+
+    clk.ncall+=2; 
+    clk.tcpu+= (long unsigned)
+    (double(A.dim1*A.dim2*B.dim2)*(4E-9*CLOCKS_PER_SEC)+1.5);
+  }
 #endif
 }
 
@@ -187,7 +181,7 @@ void MatProd(
     const char flags[]="NTCntc";
 
 #ifdef WB_CLOCK
-    wbc_matprod.resume();
+    Wb::Clock clk("MatProd",1);
 #endif
 
     if (!strchr(flags,aflag) || !strchr(flags,bflag)) wblog(FL,
@@ -233,10 +227,6 @@ void MatProd(
     if (A.isdiag || B.isdiag)
          MMDIAG(A,B,C,   aflag,bflag,afac,cfac);
     else DZGEMM(A,B,C,a2,aflag,bflag,afac,cfac);
-
-#ifdef WB_CLOCK
-    wbc_matprod.stop();
-#endif
 };
 
 template<class TA, class TB, class TC> 
@@ -594,7 +584,7 @@ inline void GESVD_M(
    wbvector<pINT> wi(ni);
 
 #ifdef WB_CLOCK
-    wbc_dgesvd.resume();
+   Wb::Clock clk("dgesvd",1); 
 #endif
 
    dgesdd('S',N,M,A.data,N,S.data,Vt.data,N,U.data,K,&nd,-1,wi.data,q);
@@ -609,10 +599,6 @@ inline void GESVD_M(
       wd.data, wd.len, wi.data,
       q
    );
-
-#ifdef WB_CLOCK
-    wbc_dgesvd.stop();
-#endif
 
    if (q) wblog(FL,"ERR DGESDD returned e=%d !?", q);
 };
@@ -636,7 +622,7 @@ inline void GESVD_M(
    if (!M || !N) wblog(FL,"ERR %s() got %dx%d matrix!?",FCT,M,N);
 
 #ifdef WB_CLOCK
-    wbc_zgesvd.resume();
+   Wb::Clock clk("zgesvd",1); 
 #endif
 
    zgesdd(
@@ -651,10 +637,6 @@ inline void GESVD_M(
       wz.data, wz.len, wd.data, wi.data,
       q
    );
-
-#ifdef WB_CLOCK
-    wbc_zgesvd.stop();
-#endif
 
    if (q) wblog(FL,"ERR ZGESDD returned e=%d !?", q);
 };

@@ -229,7 +229,8 @@ void FDM_NRG(
 
    NRG_N=0; NRG_ITER=0; gES.init();
 
-   fdmTime_0.start();
+   Wb::Clock *clt;
+   Wb::Clock clt_("FDM:all",0,0,&fdmClocks,&clt); 
 
 #ifdef MATLAB_MEX_FILE
    mexAtExit(myCleanUp);  
@@ -945,7 +946,7 @@ void FDM_NRG(
       doflush();
    }
 
-   fdmTime_0.stop();
+   clt_.done();
 
    if (!fname.isEmpty()) {
       C.updateInfo(FL, "om",      om.toMx('t'));
@@ -981,13 +982,17 @@ void FDM_NRG(
       doflush();
    }
 
-   if (vflag) wblog(FL,
-      "FIN NRGData I/O time usage: %s",SEC2STR(fdmTime_5.gettime()));
+   Wb::Clock *clio=fdmClocks.get("data:I/O",1);
 
-   if (vflag &12 || fdmTime_0.gettime()>3600 || CG_VERBOSE>5) {
-       fdmTime_0.info(); fdmTime_0.reset();
-       fdmTime_5.info(); fdmTime_5.reset();
+   if (vflag) wblog(FL,"FIN NRGData I/O time usage: %s",
+      clio ? SEC2STR(clio->gettime()) : "0");
+
+   if (vflag &12 || CG_VERBOSE>5 || (clt && clt->gettime()>3600)) {
+       if (clt ) { clt ->info(); }
+       if (clio) { clio->info(); }
    }
+   if (clt ) { clt ->reset(); }
+   if (clio) { clio->reset(); }
 
    if (vflag) { myCleanUp(); printf("\n"); }
 
@@ -1007,7 +1012,6 @@ void FDM_NRG(
    zz.init(); cc.init();
 
    getBoltzman_base(E0,D,E0,-1,-1); 
-   fdmTime_5.Init(); 
 
    Wb::MemCheck(FL,"LIST");
 #endif

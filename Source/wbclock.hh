@@ -22,17 +22,11 @@
 
 #include <set>
 
-namespace  Wb {
-
-   class Clock;
-
+namespace Wb {
    void pause(const char *F, int L, double tsec); 
    void pause(double tsec) { pause(0,0,tsec); }
    wbstring sec2Str(double t);
-
 };
-
-set<Wb::Clock*> gwb_Clocks;
 
 #define CHRONO_NOW  std::chrono::high_resolution_clock::now
 
@@ -40,37 +34,108 @@ set<Wb::Clock*> gwb_Clocks;
 #define CHRONO_DIFF2SEC(A) (1E-9 * \
 double(std::chrono::duration_cast<std::chrono::nanoseconds>(A).count()))
 
-namespace  Wb {
+#define WBCLK_USE_TAG 1
+
+namespace Wb {
+
+void get_Clock_name(wbstring &name, const char *s, char use_tag);
+
+class ClockSet { 
+
+  public:
+
+   ~ClockSet() { init(); }
+
+    void init(char vflag=1);  
+
+    int info_u (unsigned u, char rflag=1);
+    int reset_u(unsigned u, char iflag=0);
+
+    int reset(const char *istr, char uset_tag=1);
+
+    unsigned info(char vflag=0) const; 
+
+    Clock* use(const char *istr, char mode); 
+
+    Clock* use(const char *F, int L, char mode) {
+       return use(shortFL(F,L),mode); 
+    };
+
+    Clock* get(const char *s, char use_tag=1);
+
+    Clock* insert(Wb::Clock* clk, char lflag=0);
+
+    int erase(Wb::Clock* clk); 
+
+    int add2Mx(MXPut &Iout) const; 
+
+    map<std::string, Wb::Clock*> buf; 
+
+  protected:
+  private:
+};
+
+   ClockSet Clocks; 
 
 class Clock { 
 
   public:
 
-    Clock(const char *s=0)
-     : ttot(0), ctot(0), tneg(0), tref(), cref(0), nz(0), ncall(0)
-     { init(s); gwb_Clocks.insert(this); };
+    Clock()
+     : ttot(0), ctot(0), tneg(0), tref(), cref(0), nz(0), ncall(0),
+       clk_flags(0), user(0), gcs(NULL) {};
 
-   ~Clock() {
-       if (ncall) stop(); 
-       if (WBLOG_CLCK) info(); 
-       name.init(); gwb_Clocks.erase(this);
+    Clock(const char *F, int L, char use_tag=1, unsigned u=0)
+     : Clock( L>0? shortFL(F,L) : F, L>0 ? use_tag : L, u, &Clocks) { };
+
+    Clock(const char *istr, char use_tag=0)
+     : Clock(istr,use_tag,0,&Clocks) { };
+
+    Clock(const char *istr, char use_tag, unsigned u,
+       ClockSet *gcs_=NULL, 
+       Clock **g=NULL,      
+       char rflag=1
+     ) : Clock() { user=u;
+       if (istr) {
+          if (use_tag) { clk_flags|=WBCLK_USE_TAG; }
+
+          init(istr,use_tag); if (rflag) { resume(); }
+          gcs=gcs_;   if (!gcs && g) { gcs=&Wb::Clocks; }
+          if (gcs) {
+             Clock *x=gcs->use(name.data,0); 
+             if (g) { (*g)=x; }
+          }
+       }
+       else if (g || gcs) wblog(FL,"ERR %s() invalid usage",FCT);
     };
 
-    void Init() { info(); name.init(); }
+   ~Clock() {  done(); } 
 
-    void init(const char *s=NULL) { char s_[32]; reset();
-       #ifdef PROG_TAG
-         if (s) { snprintf(s_,32,"%.16s::%s",PROG_TAG,s); name=s_; }
-         else { name = PROG_TAG; }
-       #elif defined(myname)
-         if (s) { snprintf(s_,32,"%.16s::%s",myname,s); name=s_; }
-         else { name = myname; }
-       #else
-         name = s? s:"";
-       #endif
+    void done() {
+       if (ncall) { stop(); } 
+       if (gcs) {
+          Clock *g = gcs->use(name.data,0);
+          g->Add(*this); 
+       }
+       else if (WBLOG_CLK) { info(); }
+       init();
+    }
+
+    void init() {
+       ttot=ctot=tneg=0; tref=CHRONO_CLOCK();
+       nz=ncall=clk_flags=user=0; cref=0; gcs=NULL;
+       name.init();
     };
 
-    void reset() { ttot=ctot=tneg=0; cref=0; nz=ncall=0; } 
+    void reset() {
+       ttot=ctot=tneg=0; tref=CHRONO_CLOCK();
+       nz=ncall=0; cref=0;
+    };
+
+    void init(const char *s, char use_tag=1) {
+       reset();
+       get_Clock_name(name,s,use_tag);
+    };
 
     void start() {
        cref=clock(); ctot=ttot=tneg=0; nz=0; ncall=1;
@@ -86,7 +151,7 @@ class Clock {
     };
 
     int stop(const char *F=NULL, int L=0) {
-       if (ncall%2) { double tw,tc; ++ncall;
+       if (ncall%2) { double tw,tc; ++ncall; 
           ttot+=(tw=get_dt_wall());
           ctot+=(tc=double(clock()-cref)/CLOCKS_PER_SEC);
 
@@ -102,19 +167,48 @@ class Clock {
 
     double gettime(char cflag=0) const; 
 
-    mxArray* toMx (const char *F=NULL, int L=0);
-    mxArray* toMxS(const char *F=NULL, int L=0);
+    void Add(const Clock &t) { 
+       if (ncall%2) { wblog(FL,"WRN %s() clock still running",FCT); }
+       ttot += t.ttot;
+       ctot += t.ctot; ncall+=2;
+    };
 
-    void info(const char *istr=NULL) const;
+    int Switch(const char *istr, Clock **g=NULL, char rflag=1) {
+       if (!name.data || !gcs) wblog(FL,
+          "ERR %s() invalid usage (not yet initialized)",FCT);
+       int q=stop(); Clock *x;
+
+       reset();
+
+       init(istr,clk_flags&1); if (rflag) { resume(); }
+
+       x=gcs->use(name.data,0); 
+       if (g) { (*g)=x; }
+
+       return q;
+    };
+
+    mxArray* toMx (const char *F=NULL, int L=0) const;
+    mxArray* toMxS(const char *F=NULL, int L=0) const;
+
+    void info(const char *istr=NULL, char vflag=0) const;
 
     double ttot, ctot, tneg;
 
     CHRONO_CLOCK tref;
     clock_t  cref;
 
-    size_t nz, ncall;
+    size_t nz;  
+
+    size_t ncall;
 
     wbstring name;
+
+    unsigned clk_flags;
+
+    unsigned user;
+
+    ClockSet *gcs;
 
   protected:
   private:
@@ -124,61 +218,6 @@ class Clock {
     };
 
     double getTickFreq() const;
-};
-
-class Clock_resume { 
-  public:
-
-    Clock_resume(Clock *t_) : t(t_) { t->resume(); };
-
-   ~Clock_resume() { if (t) t->stop(); };
-
-    int stop() {
-       int r=0; if (t) { r=t->stop(); t=NULL; }
-       return r;
-    };
-
-    int Switch(Clock *t_) {
-       int r=0; if (t) r=t->stop(); t=t_; t->resume();
-       return r;
-    };
-
-    Clock *t;
-
-  protected:
-  private:
-};
-
-}; 
-
-unsigned showAllClocks() {
-   set<Wb::Clock*>::iterator i=gwb_Clocks.begin();
-   for (; i!=gwb_Clocks.end(); ++i) { (*i)->info(); }
-   return gwb_Clocks.size();
-};
-
-unsigned initAllClocks() {
-   set<Wb::Clock*>::iterator i=gwb_Clocks.begin();
-   for (; i!=gwb_Clocks.end(); ++i) { (*i)->info(); (*i)->reset(); }
-   return gwb_Clocks.size();
-};
-
-namespace Wb {
-
-class UseClock { 
-  public:
-
-    UseClock(Wb::Clock *c) : C(c) { if (C) C->resume(); };
-   ~UseClock() { if (C) C->stop(); };
-
-    void done() { if (C) { C->stop(); C=0; }};
-    void stop() { if (C) C->stop(); };
-    void resume() { if (C) C->resume(); };
-
-  protected:
-  private:
-
-    Wb::Clock *C;
 };
 
 }; 
@@ -192,36 +231,44 @@ double Wb::Clock::gettime(char cflag) const {
       dt+=double(clock()-cref)/CLOCKS_PER_SEC; }
    }
    else {
-      dt=ttot; if (ncall%2) { 
+      dt=ttot; if (ncall%2) {
       dt+=get_dt_wall(); }
    }
 
    return dt;
 };
 
-void Wb::Clock::info(const char *istr) const {
+void Wb::Clock::info(const char *istr, char vflag) const {
 
    static int first_call=1;
 
-   if (!ncall) return;
+   if (vflag>8) {
+      if (vflag=='v') { vflag=1; } else
+      if (vflag=='V') { vflag=2; } else
+      wblog(FL,"WRN %s() unexpected vflag=%s",FCT,cSTR(vflag));
+   }
+   if (!ncall && vflag<2) { return; }
 
-   char s[16];
+   unsigned l=0, n=16; char s[n];
    double tc=gettime('c'), tw=gettime();
 
    if (nz) {
-      double p0=1-nz/(double)(ncall/2);
-      snprintf(s,16,"/%5.1f%%", 100*p0);
+      double p0=1-nz/(double)(ncall/2); 
+      l=snprintf(s,16,"/%5.1f%%", 100*p0);
    }  else s[0]=0;
 
+   if (clk_flags && l<n) {
+   l+=snprintf(s+l,n-l,"/%d", clk_flags); } 
+
    if (first_call) { first_call=0;
-      PRINTF("\n  %-30s Count   CPU-time  Wall-time     / call\n",
+      PRINTF("\n   %-28s Count   CPU-time  Wall-time     / call\n",
       "Wb::Clocks"); 
    }
 
-   PRINTF("%c %-26s%10ld %10s %10s  %9.3g  %s\n",
-       (ncall%2) ? '*':' ', istr? istr:name.data, ncall/2,
-       sec2Str(tc).data, sec2Str(tw).data,  
-       tw/(ncall/2), s
+   PRINTF(" %c %-26s%8ld %10s %10s  %9.3g  %s\n",
+      (ncall%2) ? '*':' ', istr? istr:name.data, ncall/2, 
+      sec2Str(tc).data, sec2Str(tw).data,  
+      tw/(ncall/2), s
    );
 };
 

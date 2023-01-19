@@ -6696,7 +6696,7 @@ double CG::getSymmetryStates(const char *F, int L, const QType &q,
    TD eps=1E-8, eps2=1E-10;
 
 #ifdef WB_SPARSE_CLOCK
-   Wb::UseClock gss(&wbc_sparse_gss);
+   Wb::Clock clk("cgs:getSymStates",0); 
 #endif
 
    if (!nz || np>nz) wblog(F_L,
@@ -6961,16 +6961,10 @@ double CG::getSymmetryStates(const char *F, int L, const QType &q,
          wblog(FL,"NB! %s() "
            "got outer multiplicity (OM<=%d)",FCT,dJ.max());
       }
-#ifdef WB_SPARSE_CLOCK
-      wbc_sparse_gss.stop();
-#endif
       return r2;
    }
    else if (iOM) iOM->init();
 
-#ifdef WB_SPARSE_CLOCK
-   wbc_sparse_gss.stop();
-#endif
    return r2;
 };
 

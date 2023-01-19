@@ -237,7 +237,8 @@ wbarray<T>& wbarray<T>::Plus(
          if (iflag && afac && afac!=T(1)) { wblog(FL,
             "ERR %s() got empty A with afac=%s",FCT,NSTR(afac));
          }
-         if (!bfac) { return init(B.SIZE); }  
+         if (bfac==TB(1)) { return init(B); } else
+         if (!bfac) {  return init(B.SIZE); } 
          else {
             SIZE=B.SIZE; 
             NEW_DATA(B.SIZE.prod(0),NULL,0,0); 
@@ -2625,10 +2626,6 @@ wbarray<T>& wbarray<T>::permute(
     return permute(A,P,iflag);
 };
 
-#ifdef WB_CLOCK
-   Wb::Clock wbc_arr_perm("arr::permute");
-#endif
-
 template<class T>
 wbarray<T>& wbarray<T>::permute(   
     wbarray<T> &A,     
@@ -2648,7 +2645,7 @@ wbarray<T>& wbarray<T>::permute(
     wbperm P; wperm_t *p;
 
 #ifdef WB_CLOCK
-   Wb::Clock_resume sw(&wbc_arr_perm); 
+   Wb::Clock clk("arr:permute",0); 
 #endif
 
     if (iflag!=0 && iflag !='I') wblog(FL, 
@@ -3263,34 +3260,32 @@ wbarray<TC>& wbarray<T>::contract(
    return C;
 };
 
-#ifdef WB_CLOCK
-   Wb::Clock wbc_arr_ctr("arr::contract");
-#endif
-
 template<class TA>
 template<class TB, class TC>
 wbarray<TC>& wbarray<TA>::contract( 
    const char *F, const int L,
    const ctrIdx &ica, const wbarray<TB> &B, const ctrIdx &icb,
-   wbarray<TC> &C_, const wbperm &P, 
-   TA afac, TC cfac  
+   wbarray<TC> &C0, const wbperm &P, 
+   TA afac, 
+   TC cfac  
 ) const {
 
-   if ((void*)(&C_)==(void*)this || (void*)(&C_)==(void*)(&B)) {
+   if ((void*)(&C0)==(void*)this || (void*)(&C0)==(void*)(&B)) {
       wbarray<TC> Ci; 
       if (cfac) {
-         bool q1=((void*)(&C_)==(void*)this),
-              q2=((void*)(&C_)==(void*)(&B));
+         bool q1=((void*)(&C0)==(void*)this),
+              q2=((void*)(&C0)==(void*)(&B));
          wblog(FL,"ERR %s() got cfac=%s with self-reference (%s)",
          FCT, NSTR(cfac), q1 && q2 ? "A=B=C" : (q1 ? "A=C" : "B=C"));
       }
       contract(F,L,ica,B,icb,Ci,P,afac,cfac);
-      return Ci.save2(C_);
+      return Ci.save2(C0);
    }
 
 #ifdef WB_CLOCK
-   Wb::Clock_resume sw(&wbc_arr_ctr); 
+   Wb::Clock clk("arr:contract",0); 
 #endif
+   Wb::Clock clk("arr:contract",0);
 
    unsigned i,s; size_t s1=1;
    char aflag, bflag;
@@ -3304,10 +3299,13 @@ wbarray<TC>& wbarray<TA>::contract(
    wbvector<unsigned> i2(icb);
 
    char gotC_=1; 
-   if (C_.isEmpty()) {
-      if (isEmpty() || B.isEmpty()) { return C_; }
+   if (C0.isEmpty()) {
+      if (isEmpty() || B.isEmpty()) { return C0; }
       if (cfac && cfac!=TC(1)) wblog(FL,
          "ERR %s() got cfac=%s with empty C",FCT,NSTR(cfac));
+      if (C0.mtype && C0.mtype!=Wb::MEX_RETURN) wblog(FL,
+         "WRN %s() unexpected mt=%s",FCT,Wb::MTYPE_STR[C0.mtype]);
+      SWAP(Ci.mtype,C0.mtype); 
       gotC_=0;
    }
 
@@ -3322,8 +3320,10 @@ wbarray<TC>& wbarray<TA>::contract(
       "ERR wbarray::%s() incompatible data size\n[%s] @ %d <> [%s] @ %d",
       FCT,SSTR_(this),i1[i]+1,SSTR(B),i2[i]+1); }
 
+{  Wb::Clock cl2("arr:ctr:2Mat",0);
      toMatrixRef(FL,MA,i1,2,aflag);    SIZE.getI(i1,S1); 
    B.toMatrixRef(FL,MB,i2,1,bflag);  B.SIZE.getI(i2,S2);
+}
 
    if ((i=S1.len+S2.len)<2) { 
       if (!i) { S2.init2val(2,s1); } else
@@ -3333,38 +3333,39 @@ wbarray<TC>& wbarray<TA>::contract(
    if (!afac) { 
       WBINDEX S(S1,S2); if (P) S.Permute(P);
       if (gotC_) {
-         if (C_.SIZE!=S) wblog(F_L,
-            "ERR %s() size mismatch %s / %s",FCT,SSTR(S),SSTR(C_));
-         C_*=cfac;
+         if (C0.SIZE!=S) wblog(F_L,
+            "ERR %s() size mismatch %s / %s",FCT,SSTR(S),SSTR(C0));
+         C0*=cfac;
       }
       else {
-         C_.init(S); 
+         Ci.init(S).save2(C0); 
       }
-      return C_;
+      return C0;
    }
 
-   char gotTransP = P.isCyclic2F(S1.len,S2.len,'i');
+   char isPtrans = P.isCyclic2F(S1.len,S2.len,'i');
 
    if (aflag<0 || aflag>1) wblog(FL,
       "ERR %s() invalid aflag=%d !?",FCT,aflag);
    if (bflag<0 || bflag>1) wblog(FL,
       "ERR %s() invalid bflag=%d !?",FCT,bflag);
 
-   if (gotTransP) { aflag=!aflag; bflag=!bflag; }
+   if (isPtrans) { aflag=!aflag; bflag=!bflag; }
 
    if (ica.conj && ISCOMPLX_(TA)) { 
-      if (aflag) aflag='C';
+      if (aflag)
+           { aflag='C'; }
       else { aflag='N'; MA.Instantiate().Conj(); }
-   }
-   else { aflag=(aflag ? 'T':'N'); }
+   }  else { aflag=(aflag ? 'T':'N'); }
 
    if (icb.conj && ISCOMPLX_(TB)) { 
-      if (bflag) bflag='C';
+      if (bflag)
+           { bflag='C'; }
       else { bflag='N'; MB.Instantiate().Conj(); }
-   }
-   else { bflag=(bflag ? 'T':'N'); }
+   }  else { bflag=(bflag ? 'T':'N'); }
 
-   if (!gotTransP) {
+{  Wb::Clock cl3("arr:ctr:3",0);
+   if (!isPtrans) {
       Wb::MatProd(MA,MB,Ci, aflag, bflag);
       Ci.Reshape(UVEC(S1,S2)).Permute(P);
    }
@@ -3372,12 +3373,21 @@ wbarray<TC>& wbarray<TA>::contract(
       Wb::MatProd(MB,MA,Ci, bflag, aflag);
       Ci.Reshape(UVEC(S2,S1));
    }
+}
+Wb::Clock cl4("arr:ctr:4",0);
 
-   if (C_ && !Ci.sameSize(C_)) wblog(F,L,
-      "ERR %s() size mismatch\n%s cannot add %s / %s",
-      FCT,SHORT_FL,SSTR(Ci),SSTR(C_));
-
-   return C_.Plus(Ci, TC(afac),gotC_? 0:'i',cfac); 
+   if (gotC_) {
+      if (!Ci.sameSize(C0)) wblog(F,L,
+         "ERR %s() size mismatch\n%s cannot add %s / %s",
+         FCT,SHORT_FL,SSTR(Ci),SSTR(C0));
+      return C0.Plus(Ci, TC(afac), 0, cfac); 
+   }
+   else {
+      if (cfac!=TC(1)) wblog(FL, 
+         "WRN %s() got cfac=%s with empty input",FCT,NSTR(cfac));
+      if (afac!=TA(1)) { Ci*=afac; }
+      return Ci.save2(C0);
+   }
 };
 
 template<class T>
@@ -3870,7 +3880,7 @@ bool wbarray<T>::requiresDataPerm(const wbperm &P, char lflag) const {
    if (!P.len) { return 0; }
 
    const wperm_t *p=P.data; const size_t *s=SIZE.data;
-   unsigned i,j,l;
+   unsigned i,j, j_=-1;
 
    if (P.len!=SIZE.len) {
       if (lflag<0 || lflag>3) wblog(FL,
@@ -3881,9 +3891,9 @@ bool wbarray<T>::requiresDataPerm(const wbperm &P, char lflag) const {
    }
    if (numel()<=1) { return 0; }
 
-   for (l=i=0; i<P.len; ++i) { if ( p[i]<SIZE.len && s[j=p[i]] != 1 ) {
-      if (l<j)
-           { l=j; } 
+   for (i=0; i<P.len; ++i) { if ((j=p[i])<SIZE.len && s[j]>1) {
+      if (j_<j || int(j_)<0)
+           { j_=j; } 
       else { return 1; }
    }}
 

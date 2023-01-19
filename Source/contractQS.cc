@@ -222,7 +222,9 @@ int contractCD(
 void mexFunction(
     int nargout, mxArray *argout[],
     int nargin, const mxArray *argin[]
-){ Wb::CleanUp aclu; try { 
+){
+Wb::Clock cl0("ctr:mexFunction");
+ Wb::CleanUp aclu; try { 
     MX_CHECK_HELPER_NARGS(2,-1,3); 
 
     if (nargin==1) {
@@ -510,7 +512,6 @@ unsigned contractQS_itags(
    unsigned level, unsigned vflag,
    QSpace<gTQ,TD> &C 
 ){
-
    unsigned i, l=-1, len=0; char mark[nargin];
    icFlags q;
 

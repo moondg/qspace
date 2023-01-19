@@ -134,9 +134,20 @@ class wbindex;
 class iTags;
 class ctrIdx;
 
-namespace CG { class FileLock; }
+namespace CG {
+   class FileLock;
+}
+
+namespace Wb {
+   class Clock;
+   class ClockSet;
+}
 
 using namespace std;
+
+#ifdef MATLAB_MEX_FILE
+class MXPut;
+#endif
 
 #define ENABLE_IF_COMPLEX(T__) typename \
    std::enable_if<  WbUtil<T__>::isComplex(), T__ >::type* = nullptr

@@ -3413,7 +3413,7 @@ double wbsparray<TD>::Compress(
    }
 
 #ifdef WB_SPARSE_CLOCK
-   Wb::UseClock spf(&wbc_sparse_cmpr); 
+   Wb::Clock clk("sparse:cmpr",0); 
 #endif
 
    SPIDX_T i,j,k,d; wperm_t *p=P.data;
@@ -3662,7 +3662,7 @@ char wbsparray<TD>::contract_check_2full(
    if (!flag) return 0;
 
 #ifdef WB_SPARSE_CLOCK
-   Wb::UseClock spf(&wbc_sparse_cntf); 
+   Wb::Clock clk("sparse:ctr-full",0); 
 #endif
 
    wbarray<TD> Af,Bf,ABf; this->toFull(Af); B.toFull(Bf);
@@ -3689,7 +3689,7 @@ wbsparray<TD>& wbsparray<TD>::contract(
    static int nvlog=0;
 
 #ifdef WB_SPARSE_CLOCK
-   Wb::UseClock spc(&wbc_sparse_cont);
+   Wb::Clock clk("sparse:ctr:all",0); 
 #endif
 
    if (D.len<=1 && B.D.len<=1) { 
@@ -3771,7 +3771,7 @@ wbsparray<TD>& wbsparray<TD>::contract(
    }
 
 #ifdef WB_SPARSE_CLOCK
-   Wb::UseClock sp2(&wbc_sparse_cnt2);
+   Wb::Clock cl2("sparse:ctr:2",0); 
 #endif
 
    sparseIndex2D<SPIDX_T> a2, b2;
@@ -3931,8 +3931,7 @@ wbsparray<TD>& wbsparray<TD>::contract(
       "nnz inconsistency (%ld/%ld) !?",FCT,ltot,nnzc);
 
 #ifdef WB_SPARSE_CLOCK
-   sp2.done();
-   Wb::UseClock sp4(&wbc_sparse_cnt3);
+   cl2.Switch("sparse::ctr:3"); 
 #endif
 
    if (!nnzc) {
@@ -4035,9 +4034,8 @@ wbsparray<TD>& wbsparray<TD>::contract(
          "TST %s() size(C) = %s",FCT,Wb::size2Str(s).data);
       Wb::MemStat(FL); 
    }
-
 #ifdef WB_SPARSE_CLOCK
-   sp4.done();
+   cl2.stop();
 #endif
 
    C.Permute(pfinal); if (afac!=1) C*=afac;

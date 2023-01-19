@@ -34,15 +34,6 @@ bool mxIsWbsparray(
 
 bool mxIsWbsparray(const mxArray *a) { return mxIsWbsparray(0,0,a); }
 
-#ifdef WB_SPARSE_CLOCK
-Wb::Clock wbc_sparse_cont("sp::contract");
-Wb::Clock wbc_sparse_cntf("spF::contract");
-Wb::Clock wbc_sparse_cnt2("sp2::contract");
-Wb::Clock wbc_sparse_cnt3("sp3::contract");
-Wb::Clock wbc_sparse_cnt4("sp4::contract");
-Wb::Clock wbc_sparse_cmpr("sp::compress");
-#endif
-
 #define wbSparray    wbsparray<double>
 #define wbSparrayTD  wbsparray<TD>
 

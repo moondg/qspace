@@ -101,18 +101,13 @@ mxArray* RunDavidson(
    unsigned nev, double rtol,  char randall
 );
 
-#ifdef WB_CLOCK
-   Wb::Clock wbc_david("RunDavidson");
-   Wb::Clock wbc_davidb("RunDavidson (basic)");
-#endif
-
 void mexFunction(
    int nargout, mxArray *argout[],
    int nargin, const mxArray *argin[]
 ){
 
 #ifdef WB_CLOCK
-   wbc_david.resume();
+   Wb::Clock clk("davidson:2Site:all",0); 
    ARG_CHECK=1;
 #else
    ARG_CHECK=0;
@@ -253,15 +248,10 @@ void mexFunction(
    PSI.getDistQtot(Qtot0,w); w.max(iw0);
 
    try {
-#ifdef WB_CLOCK
-   wbc_davidb.resume();
-#endif
-
-     S=RunDavidson(PSI,CP,xflag,disp,rnrm,npass,ddav,nev,rtol,randall);
-
-#ifdef WB_CLOCK
-   wbc_davidb.stop();
-#endif
+     #ifdef WB_CLOCK
+      Wb::Clock cl2("davidson:2Site:actual",0); 
+     #endif
+      S=RunDavidson(PSI,CP,xflag,disp,rnrm,npass,ddav,nev,rtol,randall);
    }
 
 #ifdef MATLAB_MEX_FILE
@@ -322,9 +312,6 @@ void mexFunction(
    if (nargout>2) argout[2]=S; else
    if (S) mxDestroyArray(S);
 
-#ifdef WB_CLOCK
-   wbc_david.stop();
-#endif
 }; 
 
 template<class TQ, class TD>

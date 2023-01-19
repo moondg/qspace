@@ -81,8 +81,10 @@ void DZGEMM(
    unsigned a2=A.SIZE[1], b2=B.SIZE[1];
 
    stat_dgemm.account(a1*a2*(a2==b1 ? b2 : b1));
-   Wb::Clock_resume sw(&wbc_dgemm); 
+
+   Wb::Clock clk("dgemm",1); 
 #endif
+   Wb::Clock clk("dgemm",1);
 
    dgemm(
       aflag, bflag, (pINT)c1, (pINT)c2, (pINT)k,
@@ -121,7 +123,7 @@ void DZGEMM(
    unsigned a2=A.SIZE[1], b2=B.SIZE[1];
 
    stat_dgemm.account(a1*a2*(a2==b1 ? b2 : b1));
-   Wb::Clock_resume sw(&wbc_zgemm); 
+   Wb::Clock clk("zgemm",1); 
 #endif
 
    zgemm (
@@ -131,16 +133,15 @@ void DZGEMM(
    );
 
 #ifdef WB_CLOCK
-   if (sw.stop()) {
-      wbc_zgeNX.flag+=2; 
-      wbc_zgeNX.tcpu+= (long unsigned)
-      (double(a1*a2*b2)*(4E-9*CLOCKS_PER_SEC)+1.5);
-   }
-   else {
-      wbc_zgeNN.flag+=2; 
-      wbc_zgeNN.tcpu+= (long unsigned)
-      (double(a1*a2*b2)*(4E-9*CLOCKS_PER_SEC)+1.5);
-   }
+ { Wb::Clock *clk;
+   if (clk.stop())
+        { Wb::Clock("zgeNX",1,0,&Wb::Clocks,&clk,0); } 
+   else { Wb::Clock("zgeNN",1,0,&Wb::Clocks,&clk,0); } 
+
+   clk.ncall+=2; 
+   clk.tcpu+= (long unsigned)
+   (double(a1*a2*b2)*(4E-9*CLOCKS_PER_SEC)+1.5);
+ }
 #endif
 };
 
@@ -282,7 +283,7 @@ wbarray<TC>& Wb::MatProd(
     char iflag=0; 
 
 #ifdef WB_CLOCK
-    Wb::Clock_resume sw(&wbc_matprod); 
+    Wb::Clock clk("MatProd",1); 
 #endif
 
     if (A.rank()!=2 || B.rank()!=2) wblog(FL,
@@ -326,7 +327,7 @@ void Wb::DMatProd(
    }
 
 #ifdef WB_CLOCK
-   Wb::Clock_resume sw(&wbc_matprod); 
+   Wb::Clock clk("MatProd",1); 
 #endif
 
    if (A0.SIZE.len<1 || A0.SIZE.len>2 || B0.SIZE.len<1 || B0.SIZE.len>2)
@@ -638,7 +639,7 @@ void wbEigen_CS (
    aux.init(lwork);
 
 #ifdef WB_CLOCK
-   Wb::Clock_resume sw(&wbc_zgeev); 
+   Wb::Clock clk("zgeev",1); 
 #endif
 
  { wbarray<wbcomplex> X(M); 
@@ -918,7 +919,7 @@ int GESVD(
    wbvector<pINT> wi(ni);
 
 #ifdef WB_CLOCK
-   Wb::Clock_resume sw(&wbc_dgesvd); 
+   Wb::Clock clk("dgesvd",1); 
 #endif
 
    dgesdd('S',dim1,dim2,A.data,dim1,S.data,U.data,dim1,Vd.data,k,
@@ -963,7 +964,7 @@ int GESVD(
    pINT nd = n1*(3*n1+6 >= 2*n2 ? 5*n1+7 : 2*(n1+n2)+1);
 
 #ifdef WB_CLOCK
-   Wb::Clock_resume sw(&wbc_zgesvd); 
+   Wb::Clock clk("zgesvd",1); 
 #endif
 
    wbcomplex nz;

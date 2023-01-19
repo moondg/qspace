@@ -357,18 +357,13 @@ int checkStag(
 
 char RFLAG='r'; 
 
-#ifdef WB_CLOCK
-   Wb::Clock wbc_bcg("RunBiCG");
-   Wb::Clock wbc_rbcg("RunBiCG (basic)");
-#endif
-
 void mexFunction(
    int nargout, mxArray *argout[],
    int nargin, const mxArray *argin[]
 ){
 
 #ifdef WB_CLOCK
-   wbc_bcg.resume();
+   Wb::Clock clk("bicg:2Site:all",0);
    ARG_CHECK=1;
 #else
    ARG_CHECK=0;
@@ -511,20 +506,14 @@ void mexFunction(
    }
 
    try {
-
-#ifdef WB_CLOCK
-     wbc_rbcg.resume();
-#endif
+     #ifdef WB_CLOCK
+      Wb::Clock cl2("bicg:2Site:actual",0);
+     #endif
 
      S=RunBiCG(
         PSI, PSIB, CP,
         idat, maxit, btol, rtol, disp
      );
-
-#ifdef WB_CLOCK
-     wbc_rbcg.stop();
-#endif
-
    }
 
 #ifdef MATLAB_MEX_FILE
@@ -576,9 +565,5 @@ void mexFunction(
 
    if (nargout>2) argout[2]=S; else
    if (S) mxDestroyArray(S);
-
-#ifdef WB_CLOCK
-   wbc_bcg.stop();
-#endif
-}
+};
 

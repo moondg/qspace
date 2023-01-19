@@ -480,10 +480,6 @@ int CPAT_Set<TQ,TD>::getCtrIndex(
    return (CQi.QDIM!=CQ0.QDIM || CQi.QIDX!=CQ0.QIDX || CIi!=CI0);
 }
 
-#ifdef WB_CLOCK
-   Wb::Clock wbc_hzt("HZTimes");
-#endif
-
 template <class TQ, class TD>
 QSpace<TQ,TD>& CPAT<TQ,TD>::HZTimes(
    const QSpace<TQ,TD> &PSI,
@@ -494,7 +490,7 @@ QSpace<TQ,TD>& CPAT<TQ,TD>::HZTimes(
    unsigned i,j,n;
 
 #ifdef WB_CLOCK
-   wbc_hzt.resume();
+   Wb::Clock clk("cpat:HZTimes",0); 
 #endif
 
    wbvector< QSpace<TQ,TD> > X1,X2;
@@ -522,10 +518,6 @@ QSpace<TQ,TD>& CPAT<TQ,TD>::HZTimes(
    }
 
    HZPsi.makeUnique();
-
-#ifdef WB_CLOCK
-   wbc_hzt.stop();
-#endif
 
    return HZPsi;
 };
@@ -1001,10 +993,6 @@ inline void CPAT_Set<TQ,TD>::contract_diag(
    contract_diag(i,PSI1[i],C[i],a,b,Iflag);
 }
 
-#ifdef WB_CLOCK
-   Wb::Clock wbc_cpat_ctr("cpat::contract");
-#endif
-
 template <class TQ, class TD>
 void CPAT_Set<TQ,TD>::contract(
    const unsigned k,
@@ -1018,7 +1006,7 @@ void CPAT_Set<TQ,TD>::contract(
    wbarray<TD> XX;
 
 #ifdef WB_CLOCK
-   wbc_cpat_ctr.resume();
+   Wb::Clock clk("cpat:contract",0); 
 #endif
 
    if (tflag=='C' && ISREAL(TD)) tflag='T';
@@ -1043,10 +1031,6 @@ void CPAT_Set<TQ,TD>::contract(
          contract(2, *(PSI.DATA[ib]), ic+1, *(C.DATA[iu]), P);
       }
    }
-
-#ifdef WB_CLOCK
-   wbc_cpat_ctr.stop();
-#endif
 }
 
 template <class TQ, class TD>
@@ -1062,7 +1046,7 @@ void CPAT_Set<TQ,TD>::contract_diag(
    wbarray<TD> XX;
 
 #ifdef WB_CLOCK
-   wbc_cpat_ctr.resume();
+   Wb::Clock clk("cpat:contract",0); 
 #endif
 
    C.QDIM=PSI.QDIM; C.QIDX=CQn[k].QIDX;
@@ -1076,10 +1060,6 @@ void CPAT_Set<TQ,TD>::contract_diag(
          ic+1,*A[k].DATA[ia], a,b, *C.DATA[iu], Iflag
       );
    }
-
-#ifdef WB_CLOCK
-   wbc_cpat_ctr.stop();
-#endif
 }
 
 template <class TQ, class TD>

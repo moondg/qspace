@@ -65,14 +65,157 @@ void Wb::pause(const char *F, int L, double tsec) {
     nanosleep(&t,0); 
 };
 
-mxArray* Wb::Clock::toMxS(const char *F, int L) {
+void Wb::get_Clock_name(wbstring &name, const char *s, char use_tag) {
+
+   if (use_tag) { 
+      unsigned l, n=16+(s ? strlen(s) : 0); char sx[n];
+      l=snprintf(sx,n,"%.12s:",
+        #ifdef PROG_TAG
+          PROG_TAG
+        #elif defined(myname)
+          myname
+        #else
+          "???"
+        #endif
+      );
+      if (s && l<n) {
+         if (l && !strncmp(sx,s,l))
+              { wblog(FL,"WRN %s() '%s :? %s'",FCT,sx,s); }
+         else { l+=snprintf(sx+l,n-l,"%s",s); }
+      }
+      name=sx;
+   }
+   else { name=(s ? s : ""); }
+};
+
+Wb::Clock* Wb::ClockSet::insert(Wb::Clock* clk, char lflag) {
+
+   if (!clk) { wblog(FL,"ERR %s() got null clock",FCT); }
+   if (!clk->name) { wblog(FL,"WRN %s() got empty clock name",FCT); }
+
+   auto q=buf.insert({ clk->name.data, clk });
+
+   if (!q.second && !lflag) wblog(FL,
+      "ERR %s() got existing clock entry \f'%s'",FCT,clk->name.data);
+   if (q.first->second!=clk) wblog(FL,
+      "ERR %s() clk inconsistency %p / %p",FCT,q.first->second,clk);
+   return q.first->second;
+};
+
+int Wb::ClockSet::erase(Wb::Clock* clk) {
+   if (!clk) { wblog(FL,"ERR %s() got null clock",FCT); }
+   if (!clk->name) {
+      wblog(FL,"ERR %s() got empty clock name",FCT);
+   }
+
+   return buf.erase(clk->name.data);
+};
+
+Wb::Clock* Wb::ClockSet::use(const char *istr, char mode) {
+   Wb::Clock* clk; 
+
+   if (!istr   ) wblog(FL,"ERR %s() got null clock string", FCT);
+   if (!istr[0]) wblog(FL,"WRN %s() got empty clock string",FCT);
+
+   auto i=buf.find(istr);
+   if (i!=buf.end()) { clk=i->second; }
+   else {
+      clk = new Wb::Clock(istr,mode&2,0,NULL,NULL,0); 
+      auto q=buf.insert({ istr, clk });         
+      if (!q.second) wblog(FL,"WRN %s() failed to insert clock",FCT);
+   }
+
+   if (mode>1) {
+      if (mode&1) { clk->resume(); } 
+      if (mode>3) wblog(FL,"WRN %s() got mode = %s",FCT,cSTR(mode));
+   }
+   return clk;
+};
+
+void Wb::ClockSet::init(char vflag) {
+   unsigned n=buf.size();
+
+   if (vflag>3) {
+      if (vflag=='v') { vflag=1; } else
+      if (vflag=='V') { vflag=2; } else
+      if (vflag=='q') { vflag=0; } else
+      wblog(FL,"WRN %s() got vflag=%s",FCT,cSTR(vflag));
+   }
+
+   for (auto i=buf.begin(); i!=buf.end(); ++i) {
+      if (!vflag) { i->second->init(); }
+      delete i->second; 
+   }
+   if (n) { PRINTF("\n"); }
+};
+
+unsigned Wb::ClockSet::info(char vflag) const {
+   for (auto i=buf.begin(); i!=buf.end(); ++i) {
+      i->second->info(NULL,vflag);
+   }
+   return buf.size();
+};
+
+int Wb::ClockSet::info_u(unsigned u, char rflag) {
+   unsigned m=0; 
+
+   for (auto i=buf.begin(); i!=buf.end(); ++i) {
+      Wb::Clock &clk = *(i->second);
+      if ((u && (clk.user & u)) || u==clk.user) { ++m;
+          clk.info();  if (rflag) {
+          clk.reset(); }
+      }
+   }
+   return m;
+};
+
+int Wb::ClockSet::reset_u(unsigned u, char iflag) {
+   unsigned m=0; 
+
+   for (auto i=buf.begin(); i!=buf.end(); ++i) {
+      Wb::Clock &clk = *(i->second);
+      if ((u && (clk.user & u)) || u==clk.user) { ++m;
+          if (iflag) { clk.info(); }
+          clk.reset();
+      }
+   }
+   return m;
+};
+
+Wb::Clock* Wb::ClockSet::get(const char *istr, char use_tag) {
+   wbstring s;
+   get_Clock_name(s,istr,use_tag);
+
+   auto i=buf.find(s.data);
+   return ( i!=buf.end() ? i->second : NULL);
+};
+
+int Wb::ClockSet::reset(const char *istr, char use_tag) {
+
+   int q=0; 
+   Wb::Clock *clk=get(istr,use_tag);
+   if (clk) { clk->reset(); ++q; }
+   return q;
+};
+
+int Wb::ClockSet::add2Mx(MXPut &Iout) const {
+   for (auto i=buf.begin(); i!=buf.end(); ++i) {
+      const Wb::Clock &clk=*(i->second);
+      const char *s=i->second->name.data;
+      if (!s || !s[0]) wblog(FL,"ERR %s() got empty name",FCT);
+      Iout.addP(clk.toMx(),s); 
+   }
+   return buf.size();
+};
+
+mxArray* Wb::Clock::toMxS(const char *F, int L) const {
    return MXPut(F,L).add(name,"istr")
      .add(sec2Str(gettime('c')),"cpu")
      .add(sec2Str(gettime(  )),"wall")
    .toMx();
 };
 
-mxArray* Wb::Clock::toMx(const char *F, int L) {
+mxArray* Wb::Clock::toMx(const char *F, int L) const {
    return MXPut(F,L).add(name,"istr")
      .addP(numtoMx(gettime('c')),"cpu")
      .addP(numtoMx(gettime(  )),"wall")

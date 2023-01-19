@@ -631,7 +631,7 @@ int wblogs(
     unsigned i,j,k,l,m, nesc=0;
     const unsigned nt=32;
 
-    char isfmt=0, hflag=1, bflag=0, iflag=0, eflag=0, wflag=0;
+    char isfmt=0, hflag=1, bflag=0, iflag=0, eflag=0, wflag=0, fwd=0;
 
     char fstr[128];  
     char time_stamp[nt], tag[8];
@@ -724,7 +724,13 @@ int wblogs(
 
    i=isfmt=0;
 
-   while ((c=(*fmt++))) { fstr[i++]=c;
+   while ((c=(*fmt++))) {
+      if (c=='\f') { fwd|=1; continue; } 
+      if (c=='\'') { fwd ^= 2; } else
+      if (c=='\"') { fwd ^= 4; }
+
+      fstr[i++]=c;
+
       if (i>124) { fstr[i-1]=0;
          snprintf(str,512,
            "ERR fstr out ouf bounds %d/128 (%s'%s)",i,fstr,fmt-1);
@@ -781,7 +787,7 @@ int wblogs(
                   else break;
                }
 
-               k=check_update_header(log_header,s1,"> ");
+               k=(fwd ? 0 : check_update_header(log_header,s1,"> "));
                if (k) { s1+=k; k=0;
                   if (!ck && *fmt==' ') { ++fmt; }
 

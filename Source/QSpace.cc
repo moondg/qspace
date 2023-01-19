@@ -3918,10 +3918,6 @@ void QSpace<TQ,TD>::contractMat(
    contract(ica, B, icb, C, P);
 };
 
-#ifdef WB_CLOCK
-   Wb::Clock wbc_qs_cidx("QS::contract.getIdx");
-#endif
-
 template <class TQ, class TD>
 template <class TB, class TC>
 int QSpace<TQ,TD>::contract_getIdxSet(const char *F, int L,
@@ -3941,7 +3937,7 @@ int QSpace<TQ,TD>::contract_getIdxSet(const char *F, int L,
    iTags &idC=C.itags;
 
 #ifdef WB_CLOCK
-   Wb::Clock_resume sw(&wbc_qs_cidx); 
+   Wb::Clock clk("QS:ctr:getIdx",1); 
 #endif
 
    if (QDIM!=B.QDIM) wblog(F_L,
@@ -4031,10 +4027,6 @@ int QSpace<TQ,TD>::contract_getIdxSet(const char *F, int L,
    return e;
 };
 
-#ifdef WB_CLOCK
- Wb::Clock wbc_qs_cact("QS::contract.actual");
-#endif
-
 template <class TQ, class TD>
 template <class TB, class TC>
 double QSpace<TQ,TD>::contract(const char *F, int L, 
@@ -4053,7 +4045,7 @@ double QSpace<TQ,TD>::contract(const char *F, int L,
    if (isEmpty() || B.isEmpty()) { return 1; }
 
 #ifdef WB_CLOCK
-   Wb::Clock_resume sw(&wbc_qs_cact); 
+   Wb::Clock clk("QS:ctr:actual",1); 
 #endif
 
 #ifdef LOAD_CGC_QSPACE
@@ -4079,6 +4071,8 @@ double QSpace<TQ,TD>::contract(const char *F, int L,
       wblog(FL,"ERR %s() qtype inconsistency '%s' / '%s'",
       FCT, qStr().data, B.qStr().data);
    }
+
+Wb::Clock cl1("QS:contract");
 
    contract_getIdxSet(FL,ica,B,icb, Ia,Ib,D, C);
    C.initQ(F,L,*this,0, cgflag<=0? NULL : &B);

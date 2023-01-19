@@ -59,9 +59,9 @@ function [D,DD]=dsize(A,varargin)
      DD=add2struct('-',DD,QQ,sd,sc); clear QQ
 
      s=whos('A');
-     if s.bytes>2^30, sfac=2^30; t='GB';
-     elseif s.bytes>2^20, sfac=2^20; t='MB';
-     elseif s.bytes>2^10, sfac=2^10; t='kB';
+     if s.bytes>2^30, sfac=2^30; t='G';
+     elseif s.bytes>2^20, sfac=2^20; t='M';
+     elseif s.bytes>2^10, sfac=2^10; t='k';
      end
 
      f=sprintf('size_%s',t); DD=setfield(DD,f,s.bytes/sfac);

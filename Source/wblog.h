@@ -29,7 +29,7 @@
 #define WBL_MSEC__   (1U<<10) 
 #define WBL_TCAST__  (1U<<12) 
 
-#define WBL_CLCK__   (1U<<20) 
+#define WBL_CLK__    (1U<<20) 
 #define WBL_CTR__    (1U<<21) 
 #define WBL_MMEX__   (1U<<22) 
 
@@ -39,7 +39,7 @@
 
 #define WBLOG_MSEC   (Wb::envVRB & WBL_MSEC__  )
 #define WBLOG_TCAST  (Wb::envVRB & WBL_TCAST__ )
-#define WBLOG_CLCK   (Wb::envVRB & WBL_CLCK__  ) 
+#define WBLOG_CLK    (Wb::envVRB & (WBL_CLK__ | 192)) 
 #define WBLOG_CTR    (Wb::envVRB & WBL_CTR__   )
 #define WBLOG_MMEX   (Wb::envVRB & WBL_MMEX__  )
 #define WBLOG_IO     (Wb::envVRB & WBL_IO__    )

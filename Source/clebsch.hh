@@ -350,10 +350,6 @@ const { return rcopy_to(b,P,tcheck); };
 
 };
 
-#ifdef WB_SPARSE_CLOCK
-Wb::Clock wbc_sparse_gss("cgs::getSymStates");
-#endif
-
 template <class T> class qset;
 template <class T> class CStore;
 

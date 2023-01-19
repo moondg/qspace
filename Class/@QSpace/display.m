@@ -300,9 +300,9 @@ function display_1(A,m,Eflag,vflag,varargin)
       if s, q=Ai(1); q=whos('q'); s=s*q.bytes;
       end
 
-      if     s<2^10, s=sprintf('%g B ',s);
-      elseif s<2^20, s=sprintf('%.1f kB',s/2^10);
-      else           s=sprintf('%.1f MB',s/2^20); end
+      if     s<2^10, s=sprintf('%g b ',s);
+      elseif s<2^20, s=sprintf('%.1f k',s/2^10);
+      else           s=sprintf('%.1f M',s/2^20); end
 
       if ~isempty(sc)
            sout{l}=sprintf(fstr{2},s,sc,'');

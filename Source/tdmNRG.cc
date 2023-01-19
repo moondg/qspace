@@ -111,8 +111,7 @@ void mexFunction(
    NRG_N=0; NRG_ITER=0; gES.init();
 
 #ifdef WB_CLOCK
-   Wb::Clock wbc_tdmNRG(myname);
-   wbc_tdmNRG.start();
+   Wb::Clock clk(myname,0); 
 #endif
 #ifdef MATLAB_MEX_FILE
    mexAtExit(myCleanUp);
@@ -598,16 +597,14 @@ void mexFunction(
         argout[1]=S;
    else mxDestroyArray(S);
 
-#ifdef WB_CLOCK
-   wbc_tdmNRG.stop();
-#endif
 #ifdef MATLAB_MEX_FILE
    myCleanUp();
 #endif
 
+   Wb::Clock *clio=fdmClocks.get("data:I/O",1);
    wblog(FL,"I/O %s time usage: %s%N", myname,
-      SEC2STR(fdmTime_5.gettime())); 
-      fdmTime_5.reset();
+      clio ? SEC2STR(clio->gettime()) : "0"); 
+   if (clio) { clio->reset(); }
 
 }  catch (Wb::LogException &e) { ExitMsg(e.istr); }
    catch (...) { ExitMsg("caught exception in tdmNRG"); }

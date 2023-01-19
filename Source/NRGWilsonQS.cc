@@ -42,8 +42,7 @@ char USAGE[]=""; // outsourced to NRGWilsonQS.m // Wb,Jan12,19
 #define LOAD_CGC_QSPACE
 #include "wblib.h"
 
-   Wb::Clock nrgTime_0("NRG all"); 
-   Wb::Clock nrgTime_5("NRG data I/O");
+   Wb::ClockSet nrgClocks;
 
 unsigned NRG_N, NRG_ITER;
 
@@ -211,17 +210,15 @@ void NRG_Wilson(
 
     time_t tstart=time(NULL);
 
+    Wb::Clock *clt=NULL, *clio=NULL;
+
     Wb::SigHandler SIG(FL);
-    Wb::Clock nrgTime_1("build H4"); 
-    Wb::Clock nrgTime_2("eig(H4)");
-    Wb::Clock nrgTime_3("compute AK,AD");
-    Wb::Clock nrgTime_4("update ops");
 
     gCPUTime.init();
 
     FNfac=-1; 
 
-    Wb::Clock_resume sw0(&nrgTime_0); 
+    Wb::Clock clt_("NRG:all",0,0,&nrgClocks,&clt); 
 
     #ifdef __WB_MEM_CHECK__
        Wb::MemCheck(FL,"start");
@@ -837,8 +834,7 @@ void NRG_Wilson(
     #endif
 
     for (iter=0, NRG_N=N; iter<N; ++iter) { NRG_ITER=iter; SIG.check911();
-
-        Wb::Clock_resume sw(&nrgTime_1); 
+       Wb::Clock clk_iter("NRG:build-H4",0,1,&nrgClocks);
 
        if (iter) {
           HK_ *= (nrgScale(iter-1) / nrgScale(iter));
@@ -871,7 +867,7 @@ void NRG_Wilson(
              }
           }
 
-          sw.Switch(&nrgTime_2); 
+          clk_iter.Switch("NRG:eig-H4");
 
           #ifdef __WB_MEM_CHECK__
              Wb::MemCheck(FL,"info");
@@ -895,7 +891,7 @@ void NRG_Wilson(
              Wb::MemCheck(FL,"info");
           #endif
 
-          sw.Switch(&nrgTime_3); 
+          clk_iter.Switch("NRG:get-AK-AD");
 
           if (cgflag>0) { widx_t nx;
              n=AK.getDim(AK.rank(FL)-1, &nx); NK(iter,1)=nx;
@@ -926,14 +922,14 @@ void NRG_Wilson(
 
        wf=(char(iter%2)==(zflag-2));
 
-       sw.Switch(&nrgTime_4); 
+       clk_iter.Switch("NRG:get-ops");
 
        updateFOps(F1K, AK,AK,
           (zflag<=1 || wf) ? F1 : F2, 
           iter+1>=N
        );
 
-       sw.stop();
+       clk_iter.stop();
 
        l=MIN( size_t(NK(iter,0)), EE.dim2 ); 
        memcpy(EE.rec(iter), E4.data, l*sizeof(double));
@@ -976,7 +972,7 @@ void NRG_Wilson(
           mxReplaceField(FL, S, k, idES, numtoMx(nrgScale(iter)));
 
           if (toFile) {
-             Wb::UseClock NT5(&nrgTime_5);
+             Wb::Clock clio_("NRG:I/O",0,0,&nrgClocks,&clio);
 
              sprintf(str, "%s_%02d.mat", fout.data, iter);
              if (vflag &4) wblog(FL,"\nI/O writing %s",Wb::basename(str));
@@ -1026,18 +1022,15 @@ void NRG_Wilson(
     sprintf(str,"NRG data obtained using %s",myname);
     wbstring ver(str);
 
-    MXPut Iout(0,0,"Inrg"); sw0.stop();
-    Iout.add(ver,"istr").add(Wb::TimeStamp(),"stamp");
-    Iout.addP(MXPut(0,0)
-         .add (wbstring().time_sys(tstart),"started")
-         .add (wbstring().time_sys(),"finished")
-         .addP(nrgTime_0.toMx(),"time_all")
-         .addP(nrgTime_1.toMx(),"time_1")
-         .addP(nrgTime_2.toMx(),"time_2")
-         .addP(nrgTime_3.toMx(),"time_3")
-         .addP(nrgTime_4.toMx(),"time_4")
-         .addP(nrgTime_5.toMx(),"time_5")
-     .toMx(),"usage");
+    MXPut Iout(0,0,"Inrg"); clt_.done();
+    MXPut Iusg(0,0); {
+       Iusg.add(wbstring().time_sys(tstart),"started")
+           .add(wbstring().time_sys(),"finished");
+       nrgClocks.add2Mx(Iusg);
+    }
+    Iout.add(ver,"istr")
+      .add(Wb::TimeStamp(),"stamp")
+      .addP(Iusg.toMx(),"usage");
 
 #ifdef __WB_MEM_CHECK__
     Iout.addP(Wb::gML.totStr('l'),"MEM");
@@ -1095,20 +1088,16 @@ void NRG_Wilson(
     if (nargout>=2)        { argout[1]=S; } else
     if (toFile && nargout) { argout[0]=S; } else { mxDestroyArray(S); }
 
-    if (vflag) { wblog(FL,
-       "NRG I/O time usage: %s",SEC2STR(nrgTime_5.gettime()));
+    if (vflag) {
+       wblog(FL,"NRG I/O time usage: %s",
+          clio ? SEC2STR(clio->gettime()) : "0");
        myCleanUp(); 
        printf("\n");
     }
 
-    if (!(vflag &12) && nrgTime_0.gettime()<3600 && CG_VERBOSE<6) {
-       nrgTime_1.reset(); nrgTime_2.reset();
-       nrgTime_3.reset(); nrgTime_4.reset();
-    }
-    else {
-       nrgTime_0.info(); nrgTime_0.reset();
-       nrgTime_5.info(); nrgTime_5.reset();
-    }
+    if (!(vflag &12) && CG_VERBOSE<6 && (clt && clt->gettime()<3600))
+         { nrgClocks.reset_u(1); }    
+    else { nrgClocks.info_u(0,'r'); } 
 
 #ifdef __WB_MEM_CHECK__
 

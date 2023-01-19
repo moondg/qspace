@@ -1504,10 +1504,6 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::plus(
    return C;
 };
 
-#ifdef WB_CLOCK
- Wb::Clock wbc_qs_scprod("QS::scalarProd");
-#endif
-
 template <class TQ, class TD>
 TD QSpace<TQ,TD>::scalarProd(const QSpace<TQ,TD> &B) const {
 
@@ -1519,7 +1515,7 @@ TD QSpace<TQ,TD>::scalarProd(const QSpace<TQ,TD> &B) const {
    if (this==&B) return norm2();
 
 #ifdef WB_CLOCK
-   Wb::Clock_resume sw(&wbc_qs_scprod);
+   Wb::Clock clk("QS:scalarProd",1); 
 #endif
 
    if (isEmpty() || B.isEmpty()) {
@@ -2664,10 +2660,6 @@ mxArray* QSpace<TQ,TD>::save2Mx(char vflag) {
    return S;
 };
 
-#ifdef WBC_QSPACE_IO
-   Wb::Clock wbc_qs_toMx("QS::toMx");
-#endif
-
 template <class TQ, class TD>
 mxArray* QSpace<TQ,TD>::mxCreateStruct(unsigned m, unsigned n) const {
 
@@ -2685,7 +2677,7 @@ void QSpace<TQ,TD>::add2MxStruct(
    mxArray *a; 
 
 #ifdef WBC_QSPACE_IO
-   Wb::Clock_resume sw(&wbc_qs_toMx); 
+   Wb::Clock clk("QS:toMx",1); 
 #endif
 
    if (chk) { unsigned s=0; int q=0; 
@@ -2711,7 +2703,7 @@ void QSpace<TQ,TD>::save2MxStruct(
    mxArray *a; 
 
 #ifdef WBC_QSPACE_IO
-   Wb::Clock_resume sw(&wbc_qs_toMx);
+   Wb::Clock clk("QS:toMx",1); 
 #endif
 
    if (tst) {
@@ -2729,10 +2721,6 @@ void QSpace<TQ,TD>::save2MxStruct(
    init();
 };
 
-#ifdef WBC_QSPACE_IO
-   Wb::Clock wbc_qs_mxInit("QS::mxInit");
-#endif
-
 template <class TQ, class TD> 
 void QSpace<TQ,TD>::init(
    const char *F, int L, const mxArray *S,
@@ -2747,7 +2735,7 @@ void QSpace<TQ,TD>::init(
    char refD=0, refC=1, isa=0;
 
    #ifdef WBC_QSPACE_IO
-      Wb::Clock_resume sw(&wbc_qs_mxInit);
+      Wb::Clock clk("QS:mxInit",1); 
    #endif
 
    clearQSpace(); 

@@ -166,8 +166,7 @@ void MEX_FUNCTION(
    memset(str,0,STRLEN); 
 
 #ifdef WB_CLOCK
-   Wb::Clock wbc_fgrNRG(myname);
-   Wb::Clock_resume sw0(&wbc_fgrNRG);
+   Wb::Clock clk(myname,0); 
 #endif
 #ifdef MATLAB_MEX_FILE
    mexAtExit(myCleanUp);
@@ -777,16 +776,14 @@ void MEX_FUNCTION(
    if (nargout>=2) { argout[nargout-2]=a0.toMx('r'); }
    if (nargout>=3) { argout[0]=om.toMx('t'); }
 
-#ifdef WB_CLOCK
-   sw0.stop(); 
-#endif
 #ifdef MATLAB_MEX_FILE
    myCleanUp();
 #endif
 
-   wblog(FL,"I/O %s time usage: %s%N",
-      myname, SEC2STR(fdmTime_5.gettime())); 
-   fdmTime_5.reset();
+   Wb::Clock *clio=fdmClocks.get("data:I/O",1);
+   wblog(FL,"I/O %s time usage: %s%N", myname,
+      clio ?  SEC2STR(clio->gettime()) : "0"); 
+   if (clio) { clio->reset(); }
 
 }; 
 

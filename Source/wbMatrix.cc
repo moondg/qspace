@@ -1452,6 +1452,73 @@ void wbMatrix<T>::mat2mxs(mxArray* S, char fid) const {
    mxSetFieldByNumber(S,0,fid, a);
 };
 
+#ifdef QS_USING_OMP
+
+template <class T>
+void getSortPerm_OMP(
+   const wbMatrix<T> &A, wbperm &P, char dir, char lex
+){
+   if (!A.dim2) { P.init(); return; }
+
+   wbRecs<T> R(A,P,dir,lex); 
+
+ #ifdef WB_SPARSE_CLOCK
+   Wb::Clock clk("grp:sortRecs",0);
+ #endif
+
+   if (A.dim1<128) {
+      sort(P.data, P.data+A.dim1, R); 
+      return;
+   }
+
+   int id=0, i,l, im=0, mp=MIN(
+      1 << unsigned(floor(log2(double(A.dim1)))-6), 
+      omp_get_max_threads()
+   );
+
+   double nsub=double(A.dim1)/mp;
+
+   wbindex idx(mp+1); wbperm PX(P.len);
+   for (i=0; i<mp; ++i) { idx[i]=size_t(i*nsub+0.5); }
+   idx[i]=A.dim1;
+
+#pragma omp parallel for 
+   for (i=0; i<mp; ++i) {
+      size_t i1=idx.data[i], i2=idx.data[i+1];
+      sort(P.data+i1, P.data+i2, R); 
+      id=MAX(id,omp_get_thread_num());
+   }
+
+   while (idx.len>2) { int m2=mp/2; P.swap(PX); ++im;
+
+#pragma omp parallel for 
+      for (i=0; i<m2; ++i) { 
+         size_t k=2*i, i1=idx.data[k], i2=idx.data[k+1], i3=idx.data[k+2];
+         merge( 
+            PX.data+i1, PX.data+i2,
+            PX.data+i2, PX.data+i3, P.data+i1, R
+         );
+         id=MAX(id,omp_get_thread_num());
+      }
+
+      if (mp%2) {
+         size_t i1=idx.data[mp-3], i2=idx.data[mp-1], i3=idx.data[mp];
+         memcpy(PX.data+i1,P.data+i1,(i2-i1)*sizeof(size_t));
+         merge( 
+            PX.data+i1, PX.data+i2,
+            PX.data+i2, PX.data+i3, P.data+i1, R
+         );
+         idx[mp-1]=idx[mp]; idx.len=(mp--);
+      }
+
+      for (l=1, i=2; i<mp; i+=2, ++l) { idx[l]=idx[i]; }
+      idx[l]=idx[mp]; mp=l; idx.len=l+1; 
+   }
+
+};
+
+#endif
+
 template <class T> inline
 wbMatrix<T>& wbMatrix<T>::SortRecs(
    wbperm &P, char dir, char lex
@@ -1616,7 +1683,7 @@ void wbMatrix<T>::groupRecs(
    }
 
  #ifdef WB_SPARSE_CLOCK
-   Wb::UseClock gr1(&wbMat_group1);
+   Wb::Clock clk("grp:groupRecs:1",0);
  #endif
 
    if (!isSorted(+1,lex)) 
@@ -1624,8 +1691,7 @@ void wbMatrix<T>::groupRecs(
    else P.init(dim1);
 
  #ifdef WB_SPARSE_CLOCK
-   gr1.done();
-   Wb::UseClock gr2(&wbMat_group2);
+   clk.Switch("grp:groupRecs:2"); 
  #endif
 
    if (int(m)<0) { groupSortedRecs(D,0,-1,lex); }

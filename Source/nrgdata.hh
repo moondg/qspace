@@ -42,8 +42,7 @@
 
    unsigned STRICT_ITER0=1;
 
-   Wb::Clock fdmTime_0("FDM all");
-   Wb::Clock fdmTime_5("NRG data I/O");
+   Wb::ClockSet fdmClocks;
 
    wbvector<double> gES;
 
@@ -606,7 +605,7 @@ void NRGData<TQ,TD>::setupIO(
    }
    else {
       Wb::matFile f; unsigned n=strlen(s);
-      Wb::Clock_resume sw(&fdmTime_5); 
+      Wb::Clock clio("data:I/O",1,0,&fdmClocks); 
 
       if (!n || n+16>NRG_FLEN) wblog(FL,
       "ERR invalid file/variable name `%s' (%d/%d)", s, n, NRG_FLEN);
@@ -1179,7 +1178,7 @@ void NRGData<TQ,TD>::updatePara(
       mxUpdateField(F,L, MX,str,iter,a); 
    }
    else {
-      Wb::Clock_resume sw(&fdmTime_5); 
+      Wb::Clock clio("data:I/O",1,0,&fdmClocks); 
       matPutVariable(F,L,getFileName(iter),str,a); 
    }
 };
@@ -1225,7 +1224,7 @@ void NRGData<TQ,TD>::updatePara(const char *F, int L,
       mxUpdateField(F,L, MX,str,iter,a); 
    }
    else {
-      Wb::Clock_resume sw(&fdmTime_5); 
+      Wb::Clock clio("data:I/O",1,0,&fdmClocks); 
       matPutVariable(F,L,getFileName(iter),str,a); 
    }
 };
@@ -1281,7 +1280,7 @@ void NRGData<TQ,TD>::updateInfo(const char *F, int L,
       if (!keep) mxDestroyArray(a);
    }
    else {
-      Wb::Clock_resume sw(&fdmTime_5); 
+      Wb::Clock clio("data:I/O",1,0,&fdmClocks); 
       matPutVariable(F,L,getFileNameI(),vname,a,keep);
    }
 }
@@ -1787,7 +1786,7 @@ mxArray* NRGData<TQ,TD>::getMxData(const char *vs, int iter, char ionly) {
     }
     else {
        Wb::matFile F(FL,getFileName(iter),"r");
-       Wb::Clock_resume sw(&fdmTime_5); 
+       Wb::Clock clio("data:I/O",1,0,&fdmClocks); 
 
        if (aux) { mxDestroyArray(aux); aux=NULL; }
        if (ionly)
@@ -1811,8 +1810,8 @@ const mxArray* NRGData<TQ,TD>::getMxInfo(const char *v) {
     }
     else {
        Wb::matFile F(FL,getFileNameI(),"r");
+       Wb::Clock clio("data:I/O",1,0,&fdmClocks); 
 
-       Wb::Clock_resume sw(&fdmTime_5); 
        aux=matGetVariable(F.mfp, v);  
 
        return aux;
