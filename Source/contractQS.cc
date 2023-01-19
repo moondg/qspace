@@ -222,9 +222,7 @@ int contractCD(
 void mexFunction(
     int nargout, mxArray *argout[],
     int nargin, const mxArray *argin[]
-){
-Wb::Clock cl0("ctr:mexFunction");
- Wb::CleanUp aclu; try { 
+){ Wb::CleanUp aclu; try { 
     MX_CHECK_HELPER_NARGS(2,-1,3); 
 
     if (nargin==1) {

@@ -3285,7 +3285,6 @@ wbarray<TC>& wbarray<TA>::contract(
 #ifdef WB_CLOCK
    Wb::Clock clk("arr:contract",0); 
 #endif
-   Wb::Clock clk("arr:contract",0);
 
    unsigned i,s; size_t s1=1;
    char aflag, bflag;
@@ -3320,10 +3319,8 @@ wbarray<TC>& wbarray<TA>::contract(
       "ERR wbarray::%s() incompatible data size\n[%s] @ %d <> [%s] @ %d",
       FCT,SSTR_(this),i1[i]+1,SSTR(B),i2[i]+1); }
 
-{  Wb::Clock cl2("arr:ctr:2Mat",0);
      toMatrixRef(FL,MA,i1,2,aflag);    SIZE.getI(i1,S1); 
    B.toMatrixRef(FL,MB,i2,1,bflag);  B.SIZE.getI(i2,S2);
-}
 
    if ((i=S1.len+S2.len)<2) { 
       if (!i) { S2.init2val(2,s1); } else
@@ -3364,7 +3361,6 @@ wbarray<TC>& wbarray<TA>::contract(
       else { bflag='N'; MB.Instantiate().Conj(); }
    }  else { bflag=(bflag ? 'T':'N'); }
 
-{  Wb::Clock cl3("arr:ctr:3",0);
    if (!isPtrans) {
       Wb::MatProd(MA,MB,Ci, aflag, bflag);
       Ci.Reshape(UVEC(S1,S2)).Permute(P);
@@ -3373,8 +3369,6 @@ wbarray<TC>& wbarray<TA>::contract(
       Wb::MatProd(MB,MA,Ci, bflag, aflag);
       Ci.Reshape(UVEC(S2,S1));
    }
-}
-Wb::Clock cl4("arr:ctr:4",0);
 
    if (gotC_) {
       if (!Ci.sameSize(C0)) wblog(F,L,
@@ -3383,7 +3377,7 @@ Wb::Clock cl4("arr:ctr:4",0);
       return C0.Plus(Ci, TC(afac), 0, cfac); 
    }
    else {
-      if (cfac!=TC(1)) wblog(FL, 
+      if (cfac && cfac!=TC(1)) wblog(FL, 
          "WRN %s() got cfac=%s with empty input",FCT,NSTR(cfac));
       if (afac!=TA(1)) { Ci*=afac; }
       return Ci.save2(C0);

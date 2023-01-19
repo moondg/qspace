@@ -1462,8 +1462,8 @@ void getSortPerm_OMP(
 
    wbRecs<T> R(A,P,dir,lex); 
 
- #ifdef WB_SPARSE_CLOCK
-   Wb::Clock clk("grp:sortRecs",0);
+ #ifdef WB_CLK_SPARSE
+   Wb::Clock clk("mat:sort:recs-omp",0);
  #endif
 
    if (A.dim1<128) {
@@ -1682,16 +1682,16 @@ void wbMatrix<T>::groupRecs(
       return;
    }
 
- #ifdef WB_SPARSE_CLOCK
-   Wb::Clock clk("grp:groupRecs:1",0);
+ #ifdef WB_CLK_SPARSE
+   Wb::Clock clk("mat:sort:recs",0);
  #endif
 
    if (!isSorted(+1,lex)) 
         SortRecs(P,+1,lex); 
    else P.init(dim1);
 
- #ifdef WB_SPARSE_CLOCK
-   clk.Switch("grp:groupRecs:2"); 
+ #ifdef WB_CLK_SPARSE
+   clk.Switch("mat:group:recs"); 
  #endif
 
    if (int(m)<0) { groupSortedRecs(D,0,-1,lex); }

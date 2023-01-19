@@ -37,8 +37,6 @@ char USAGE[]=""; // outsourced to NRGWilsonQS.m // Wb,Jan12,19
    #define PROG "NRGWilsonQS"
 #endif
 
-   #define WB_SPARSE_CLOCK
-
 #define LOAD_CGC_QSPACE
 #include "wblib.h"
 

@@ -3412,7 +3412,7 @@ double wbsparray<TD>::Compress(
       X.groupRecs(P,dg,-1,lex);
    }
 
-#ifdef WB_SPARSE_CLOCK
+#ifdef WB_CLK_SPARSE
    Wb::Clock clk("sparse:cmpr",0); 
 #endif
 
@@ -3661,7 +3661,7 @@ char wbsparray<TD>::contract_check_2full(
 
    if (!flag) return 0;
 
-#ifdef WB_SPARSE_CLOCK
+#ifdef WB_CLK_SPARSE
    Wb::Clock clk("sparse:ctr-full",0); 
 #endif
 
@@ -3688,7 +3688,7 @@ wbsparray<TD>& wbsparray<TD>::contract(
 
    static int nvlog=0;
 
-#ifdef WB_SPARSE_CLOCK
+#ifdef WB_CLK_SPARSE
    Wb::Clock clk("sparse:ctr:all",0); 
 #endif
 
@@ -3770,7 +3770,7 @@ wbsparray<TD>& wbsparray<TD>::contract(
       return C;
    }
 
-#ifdef WB_SPARSE_CLOCK
+#ifdef WB_CLK_SPARSE
    Wb::Clock cl2("sparse:ctr:2",0); 
 #endif
 
@@ -3930,8 +3930,8 @@ wbsparray<TD>& wbsparray<TD>::contract(
    if (nnzc!=ltot) wblog(FL,"ERR %s() "
       "nnz inconsistency (%ld/%ld) !?",FCT,ltot,nnzc);
 
-#ifdef WB_SPARSE_CLOCK
-   cl2.Switch("sparse::ctr:3"); 
+#ifdef WB_CLK_SPARSE
+   cl2.Switch("sparse:ctr:3"); 
 #endif
 
    if (!nnzc) {
@@ -4034,7 +4034,7 @@ wbsparray<TD>& wbsparray<TD>::contract(
          "TST %s() size(C) = %s",FCT,Wb::size2Str(s).data);
       Wb::MemStat(FL); 
    }
-#ifdef WB_SPARSE_CLOCK
+#ifdef WB_CLK_SPARSE
    cl2.stop();
 #endif
 

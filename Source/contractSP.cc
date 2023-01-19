@@ -16,7 +16,7 @@ char USAGE[]=
 #endif
 
 // #define CG_CHECK_MW_PERM
-   #define WB_SPARSE_CLOCK
+// #define WB_CLK_SPARSE
 
 #include "wblib.h"
 

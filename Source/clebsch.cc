@@ -6695,7 +6695,7 @@ double CG::getSymmetryStates(const char *F, int L, const QType &q,
 
    TD eps=1E-8, eps2=1E-10;
 
-#ifdef WB_SPARSE_CLOCK
+#ifdef WB_CLK_SPARSE
    Wb::Clock clk("cgs:getSymStates",0); 
 #endif
 

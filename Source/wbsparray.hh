@@ -20,7 +20,7 @@
 #ifndef __WB_SPARRAY_HH__
 #define __WB_SPARRAY_HH__
 
-// #define WB_SPARSE_CLOCK
+// #define WB_CLK_SPARSE
 
    int sp_num_threads = 0; 
 

@@ -97,268 +97,268 @@ inline void DZGEMM<wbcomplex>(
     const wbcomplex afac, const wbcomplex cfac
 ){
 #ifdef WB_CLOCK
-    Wb::Clock clk("zgemm",1); 
+   Wb::Clock clk("zgemm",1); 
 
-    if (bflag=='N')
-         stat_dgemm.account(A.dim1*A.dim2*(A.dim2==B.dim1 ? B.dim2 : B.dim1));
-    else stat_dgemm.account(A.dim1*A.dim2*(A.dim1==B.dim1 ? B.dim2 : B.dim1));
+   if (bflag=='N')
+        stat_dgemm.account(A.dim1*A.dim2*(A.dim2==B.dim1 ? B.dim2 : B.dim1));
+   else stat_dgemm.account(A.dim1*A.dim2*(A.dim1==B.dim1 ? B.dim2 : B.dim1));
 #endif
 
-    zgemm (
-      bflag, aflag, (int)C.dim2, (int)C.dim1, (int)k,
-      afac, B.data, (int)B.dim2, A.data, (int)A.dim2,
-      cfac, C.data, (int)C.dim2
-    );
+   zgemm (
+     bflag, aflag, (int)C.dim2, (int)C.dim1, (int)k,
+     afac, B.data, (int)B.dim2, A.data, (int)A.dim2,
+     cfac, C.data, (int)C.dim2
+   );
 
 #ifdef WB_CLOCK
-  { Wb::Clock *clk;
-    if (clk.stop())
-         { Wb::Clock("zgeNX",1,0,&Wb::Clocks,&clk,0); } 
-    else { Wb::Clock("zgeNN",1,0,&Wb::Clocks,&clk,0); } 
+ { Wb::Clock *clk;
+   if (clk.stop())
+        { Wb::Clock("zgeNX",1,0,&Wb::Clocks,&clk,0); } 
+   else { Wb::Clock("zgeNN",1,0,&Wb::Clocks,&clk,0); } 
 
-    clk.ncall+=2; 
-    clk.tcpu+= (long unsigned)
-    (double(A.dim1*A.dim2*B.dim2)*(4E-9*CLOCKS_PER_SEC)+1.5);
-  }
+   clk.ncall+=2; 
+   clk.tcpu+= (long unsigned)
+   (double(A.dim1*A.dim2*B.dim2)*(4E-9*CLOCKS_PER_SEC)+1.5);
+ }
 #endif
 }
 
 namespace Wb {
 
 void MatProd( 
-    const wbMatrix<double> &A,
-    const wbMatrix<wbcomplex> &B, wbMatrix<wbcomplex> &C,
-    char aflag='N', char bflag='N',
-    const double afac=1., const double cfac=0.,
-    const char i00flag=0
+   const wbMatrix<double> &A,
+   const wbMatrix<wbcomplex> &B, wbMatrix<wbcomplex> &C,
+   char aflag='N', char bflag='N',
+   const double afac=1., const double cfac=0.,
+   const char i00flag=0
 ){
-    wbMatrix<double> R,I, rC, iC;
+   wbMatrix<double> R,I, rC, iC;
 
-    B.getReal(R);
-    B.getImag(I);
+   B.getReal(R);
+   B.getImag(I);
 
-    if (bflag=='C') I.flipSign();
+   if (bflag=='C') I.flipSign();
 
-    if (cfac!=0.) { C.getReal(rC); C.getImag(iC); }
+   if (cfac!=0.) { C.getReal(rC); C.getImag(iC); }
 
-    MatProd(A, R, rC, aflag, bflag, afac, cfac, i00flag);
-    MatProd(A, I, iC, aflag, bflag, afac, cfac, i00flag);
+   MatProd(A, R, rC, aflag, bflag, afac, cfac, i00flag);
+   MatProd(A, I, iC, aflag, bflag, afac, cfac, i00flag);
 
-    C.set(rC,iC);
+   C.set(rC,iC);
 };
 
 void MatProd( 
-    const wbMatrix<wbcomplex> &A,
-    const wbMatrix<double> &B, wbMatrix<wbcomplex> &C,
-    char aflag='N', char bflag='N',
-    const double afac=1., const double cfac=0.,
-    const char i00flag=0
+   const wbMatrix<wbcomplex> &A,
+   const wbMatrix<double> &B, wbMatrix<wbcomplex> &C,
+   char aflag='N', char bflag='N',
+   const double afac=1., const double cfac=0.,
+   const char i00flag=0
 ){
-    wbMatrix<double> R,I, rC, iC;
+   wbMatrix<double> R,I, rC, iC;
 
-    A.getReal(R);
-    A.getImag(I);
+   A.getReal(R);
+   A.getImag(I);
 
-    if (aflag=='C') I.flipSign();
+   if (aflag=='C') I.flipSign();
 
-    if (cfac!=0.) { C.getReal(rC); C.getImag(iC); }
+   if (cfac!=0.) { C.getReal(rC); C.getImag(iC); }
 
-    MatProd(R, B, rC, aflag, bflag, afac, cfac, i00flag);
-    MatProd(I, B, iC, aflag, bflag, afac, cfac, i00flag);
+   MatProd(R, B, rC, aflag, bflag, afac, cfac, i00flag);
+   MatProd(I, B, iC, aflag, bflag, afac, cfac, i00flag);
 
     C.set(rC,iC);
 };
 
 template<class T>  
 void MatProd( 
-    const wbMatrix<T> &A,
-    const wbMatrix<T> &B, wbMatrix<T> &C,
-    char aflag, char bflag,
-    const T afac, const T cfac,
-    const char i00flag
+   const wbMatrix<T> &A,
+   const wbMatrix<T> &B, wbMatrix<T> &C,
+   char aflag, char bflag,
+   const T afac, const T cfac,
+   const char i00flag
 ){
-    unsigned a1=A.dim1, a2=A.dim2, b1=B.dim1, b2=B.dim2;
-    const char flags[]="NTCntc";
+   unsigned a1=A.dim1, a2=A.dim2, b1=B.dim1, b2=B.dim2;
+   const char flags[]="NTCntc";
 
 #ifdef WB_CLOCK
-    Wb::Clock clk("MatProd",1);
+   Wb::Clock clk("MatProd",1);
 #endif
 
-    if (!strchr(flags,aflag) || !strchr(flags,bflag)) wblog(FL,
-       "ERR %s() invalid flags %c<%d>, %c<%d>",
-       FCT,aflag,aflag,bflag,bflag);
+   if (!strchr(flags,aflag) || !strchr(flags,bflag)) wblog(FL,
+      "ERR %s() invalid flags %c<%d>, %c<%d>",
+      FCT,aflag,aflag,bflag,bflag);
 
-    if (aflag!='N') SWAP(a1,a2);
-    if (bflag!='N') SWAP(b1,b2);
+   if (aflag!='N') SWAP(a1,a2);
+   if (bflag!='N') SWAP(b1,b2);
 
-    if (a2!=b1) {
-        wblog(FL, "ERR %s() dimension mismatch: (%d,%d) * (%d,%d) ?",
-        FCT,a1,a2,b1,b2); return;
-    }
+   if (a2!=b1) {
+       wblog(FL, "ERR %s() dimension mismatch: (%d,%d) * (%d,%d) ?",
+       FCT,a1,a2,b1,b2); return;
+   }
 
-    if (cfac!=0.) {
-        if (C.data==NULL && i00flag) {
-           if (cfac!=1.) wblog(FL,
-              "WRN C = A*B + c*[] with c=%s !?", toStr(cfac).data);
-           C.init(a1,b2);
-        }
-        else if (C.dim1!=a1 || C.dim2!=b2) { wblog(FL,
-           "ERR %s() dimension mismatch: C=(%d,%d) =? (%d,%d)",
-            FCT,C.dim1,C.dim2,a1,b2); return;
-        }
-    }
+   if (cfac!=0.) {
+       if (C.data==NULL && i00flag) {
+          if (cfac!=1.) wblog(FL,
+             "WRN C = A*B + c*[] with c=%s !?", toStr(cfac).data);
+          C.init(a1,b2);
+       }
+       else if (C.dim1!=a1 || C.dim2!=b2) { wblog(FL,
+          "ERR %s() dimension mismatch: C=(%d,%d) =? (%d,%d)",
+           FCT,C.dim1,C.dim2,a1,b2); return;
+       }
+   }
 
-    if (a1==0 || b2==0) {
-       if (cfac==0.) C.init(a1,b2);
-       return;
-    }
+   if (a1==0 || b2==0) {
+      if (cfac==0.) C.init(a1,b2);
+      return;
+   }
 
-    if (a2==0) { wblog(FL, 
-       "ERR %s() cannot multiply (%dx%d)*(%dx%d)!",
-       FCT,a1,a2,b1,b2); return; }
+   if (a2==0) { wblog(FL, 
+      "ERR %s() cannot multiply (%dx%d)*(%dx%d)!",
+      FCT,a1,a2,b1,b2); return; }
 
-    if (&C==&A || &C==&B) { wblog(FL, 
-       "ERR I/O spaces must be distinct!\n[%7lX %7lX %7lX]",
-       &A, &B, &C); return; }
+   if (&C==&A || &C==&B) { wblog(FL, 
+      "ERR I/O spaces must be distinct!\n[%7lX %7lX %7lX]",
+      &A, &B, &C); return; }
 
-    if (cfac==0.)
-    C.init(a1,b2);
+   if (cfac==0.)
+   C.init(a1,b2);
 
-    if (A.isdiag || B.isdiag)
-         MMDIAG(A,B,C,   aflag,bflag,afac,cfac);
-    else DZGEMM(A,B,C,a2,aflag,bflag,afac,cfac);
+   if (A.isdiag || B.isdiag)
+        MMDIAG(A,B,C,   aflag,bflag,afac,cfac);
+   else DZGEMM(A,B,C,a2,aflag,bflag,afac,cfac);
 };
 
 template<class TA, class TB, class TC> 
 void MatProd(
-    const wbMatrix<TA> &A,
-    const wbvector<TB> &B, wbvector<TC> &C,
-    char aflag, const TC afac, const TC cfac,
-    const char i00flag 
+   const wbMatrix<TA> &A,
+   const wbvector<TB> &B, wbvector<TC> &C,
+   char aflag, const TC afac, const TC cfac,
+   const char i00flag 
 ){
-    unsigned m=A.dim1, n=A.dim2;
-    if (aflag!='N') SWAP(m,n);
+   unsigned m=A.dim1, n=A.dim2;
+   if (aflag!='N') SWAP(m,n);
 
-    if (B.len!=n) wblog(FL,
-       "ERR severe size mismatch Ax=b (%dx%d, %d)",m,n,B.len);
+   if (B.len!=n) wblog(FL,
+      "ERR severe size mismatch Ax=b (%dx%d, %d)",m,n,B.len);
 
-    if (!C.data) {
-       if (cfac!=0. && i00flag) wblog(FL,
-          "WRN C = A*B + c*[] with c=%s !?",toStr(cfac).data);
-       C.init(m);
-    }
-    else if (C.len!=m) {
-       if (cfac==0.) C.init(m); else wblog(FL,
-          "ERR severe size mismatch Ax=b (%d, %d)", m, C.len);
-    }
+   if (!C.data) {
+      if (cfac!=0. && i00flag) wblog(FL,
+         "WRN C = A*B + c*[] with c=%s !?",toStr(cfac).data);
+      C.init(m);
+   }
+   else if (C.len!=m) {
+      if (cfac==0.) C.init(m); else wblog(FL,
+         "ERR severe size mismatch Ax=b (%d, %d)", m, C.len);
+   }
 
-    DZGEMM_VEC(A,B,C,m,n,aflag,afac,cfac);
+   DZGEMM_VEC(A,B,C,m,n,aflag,afac,cfac);
 };
 
 }; 
 
 template<>
 inline void DZGEMM_VEC(
-    const wbMatrix<double> &A,
-    const wbvector<double> &B,
-    wbvector<double> &C, int m, int n,
-    char aflag, const double afac, const double cfac
+   const wbMatrix<double> &A,
+   const wbvector<double> &B,
+   wbvector<double> &C, int m, int n,
+   char aflag, const double afac, const double cfac
 ){
-    dgemm (
-      'N', aflag, 1, m, n, afac,
-       B.data, 1, A.data, A.dim2, cfac,
-       C.data, 1
-    );
+   dgemm (
+     'N', aflag, 1, m, n, afac,
+      B.data, 1, A.data, A.dim2, cfac,
+      C.data, 1
+   );
 }
 
 template<>
 inline void DZGEMM_VEC(
-    const wbMatrix<wbcomplex> &A,
-    const wbvector<wbcomplex> &B,
-    wbvector<wbcomplex> &C, int m, int n,
-    char aflag, const wbcomplex afac, const wbcomplex cfac
+   const wbMatrix<wbcomplex> &A,
+   const wbvector<wbcomplex> &B,
+   wbvector<wbcomplex> &C, int m, int n,
+   char aflag, const wbcomplex afac, const wbcomplex cfac
 ){
-    zgemm (
-      'N', aflag, 1, m, n, afac,
-       B.data, 1, A.data, A.dim2, cfac,
-       C.data, 1
-    );
+   zgemm (
+     'N', aflag, 1, m, n, afac,
+      B.data, 1, A.data, A.dim2, cfac,
+      C.data, 1
+   );
 }
 
 template<>
 inline void DZGEMM_VEC(
-    const wbMatrix<double> &A,
-    const wbvector<wbcomplex> &B,
-    wbvector<wbcomplex> &C, int m, int n,
-    char aflag, const double afac, const wbcomplex cfac
+   const wbMatrix<double> &A,
+   const wbvector<wbcomplex> &B,
+   wbvector<wbcomplex> &C, int m, int n,
+   char aflag, const double afac, const wbcomplex cfac
 ){
-    wbvector<double> b,cr,ci;
+   wbvector<double> b,cr,ci;
 
-    if (cfac && cfac!=1.) { C*=cfac; }
+   if (cfac && cfac!=1.) { C*=cfac; }
 
-    B.getReal(b); C.getReal(cr); DZGEMM_VEC(A,b,cr,m,n,aflag,afac,1.);
-    B.getImag(b); C.getImag(ci); DZGEMM_VEC(A,b,ci,m,n,aflag,afac,1.);
+   B.getReal(b); C.getReal(cr); DZGEMM_VEC(A,b,cr,m,n,aflag,afac,1.);
+   B.getImag(b); C.getImag(ci); DZGEMM_VEC(A,b,ci,m,n,aflag,afac,1.);
 
-    C.set(cr,ci);
+   C.set(cr,ci);
 };
 
 inline void DZGEMM_aux(
-    const wbMatrix<double> &A,
-    const wbMatrix<double> &B, wbMatrix<double> &C,
-    const unsigned k, 
-    char aflag='N', char bflag='N',
-    const double afac=1., const double cfac=0.
+   const wbMatrix<double> &A,
+   const wbMatrix<double> &B, wbMatrix<double> &C,
+   const unsigned k, 
+   char aflag='N', char bflag='N',
+   const double afac=1., const double cfac=0.
 ){
-    if (A.isdiag || B.isdiag)
-         MMDIAG(A, B, C,    aflag, bflag, afac, cfac);
-    else DZGEMM(A, B, C, k, aflag, bflag, afac, cfac);
+   if (A.isdiag || B.isdiag)
+        MMDIAG(A, B, C,    aflag, bflag, afac, cfac);
+   else DZGEMM(A, B, C, k, aflag, bflag, afac, cfac);
 }
 
 template<class TA, class TB, class TC>
 inline void MMDIAG(
-    const wbMatrix<TA> &A,
-    const wbMatrix<TB> &B, wbMatrix<TC> &C,
-    char aflag, char bflag,
-    const TA afac, const TC cfac
+   const wbMatrix<TA> &A,
+   const wbMatrix<TB> &B, wbMatrix<TC> &C,
+   char aflag, char bflag,
+   const TA afac, const TC cfac
 ){
-    unsigned i, s=C.dim1*C.dim2, dmax;
+   unsigned i, s=C.dim1*C.dim2, dmax;
 
-    if (!A.isdiag && !B.isdiag) wblog(FL,
-    "ERR Wrong call - elements not diagonal.");
+   if (!A.isdiag && !B.isdiag) wblog(FL,
+   "ERR Wrong call - elements not diagonal.");
 
-    if (A.isdiag && A.dim1>1 && A.dim2>1)  
-    if (A(1,0)!=0. || A(0,1)!=0.) wblog(FL,
-    "ERR Input A is NOT diag even though isdiag=%d", A.isdiag);
+   if (A.isdiag && A.dim1>1 && A.dim2>1)  
+   if (A(1,0)!=0. || A(0,1)!=0.) wblog(FL,
+   "ERR Input A is NOT diag even though isdiag=%d", A.isdiag);
 
-    if (B.isdiag && B.dim1>1 && B.dim2>1)  
-    if (B(1,0)!=0. || B(0,1)!=0.) wblog(FL,
-    "ERR Input B is NOT diag even though isdiag=%d", B.isdiag);
+   if (B.isdiag && B.dim1>1 && B.dim2>1)  
+   if (B(1,0)!=0. || B(0,1)!=0.) wblog(FL,
+   "ERR Input B is NOT diag even though isdiag=%d", B.isdiag);
 
-    if (cfac!=1.) for (i=0; i<s; i++) C.data[i]*=cfac;
+   if (cfac!=1.) for (i=0; i<s; i++) C.data[i]*=cfac;
 
-    if (A.isdiag && !B.isdiag) {
-        MMDIAG(A.getDiag(), B, C, aflag, bflag, afac);
-    }
-    else
-    if ((!A.isdiag) && B.isdiag) {
-        MMDIAG(A, B.getDiag(), C, aflag, bflag, afac);
-    }
-    else { 
-        wbvector<TA> adiag;
-        wbvector<TB> bdiag;
-        A.getDiag(adiag); B.getDiag(bdiag);
+   if (A.isdiag && !B.isdiag) {
+       MMDIAG(A.getDiag(), B, C, aflag, bflag, afac);
+   }
+   else
+   if ((!A.isdiag) && B.isdiag) {
+       MMDIAG(A, B.getDiag(), C, aflag, bflag, afac);
+   }
+   else { 
+       wbvector<TA> adiag;
+       wbvector<TB> bdiag;
+       A.getDiag(adiag); B.getDiag(bdiag);
 
-        if (aflag=='C')
-        for (i=0; i<adiag.len; i++) adiag[i]=conj(adiag[i]);
+       if (aflag=='C')
+       for (i=0; i<adiag.len; i++) adiag[i]=conj(adiag[i]);
 
-        if (bflag=='C')
-        for (i=0; i<bdiag.len; i++) bdiag[i]=conj(bdiag[i]);
+       if (bflag=='C')
+       for (i=0; i<bdiag.len; i++) bdiag[i]=conj(bdiag[i]);
 
-        dmax=MIN( MIN(A.dim1,A.dim2), MIN(B.dim1,B.dim2) );
-        for (i=0; i<dmax; i++) C(i,i) += afac * adiag[i] * bdiag[i];
-    }
+       dmax=MIN( MIN(A.dim1,A.dim2), MIN(B.dim1,B.dim2) );
+       for (i=0; i<dmax; i++) C(i,i) += afac * adiag[i] * bdiag[i];
+   }
 
-    if (C.isdiag) if (!A.isdiag || !B.isdiag) C.isdiag=0;
+   if (C.isdiag) if (!A.isdiag || !B.isdiag) C.isdiag=0;
 }
 
 template<class TA, class TB, class TC>

@@ -4072,8 +4072,6 @@ double QSpace<TQ,TD>::contract(const char *F, int L,
       FCT, qStr().data, B.qStr().data);
    }
 
-Wb::Clock cl1("QS:contract");
-
    contract_getIdxSet(FL,ica,B,icb, Ia,Ib,D, C);
    C.initQ(F,L,*this,0, cgflag<=0? NULL : &B);
    C.setupDATA(); if (cgflag>0) {

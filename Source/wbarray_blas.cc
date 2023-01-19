@@ -84,7 +84,6 @@ void DZGEMM(
 
    Wb::Clock clk("dgemm",1); 
 #endif
-   Wb::Clock clk("dgemm",1);
 
    dgemm(
       aflag, bflag, (pINT)c1, (pINT)c2, (pINT)k,
@@ -269,50 +268,50 @@ T Wb::VMatVprod(
 
 template<class TA, class TB, class TC>  
 wbarray<TC>& Wb::MatProd(
-    const wbarray<TA> &A, const wbarray<TB> &B, wbarray<TC> &C,
-    char aflag, char bflag, TA afac, TC cfac,
-    char cforce
+   const wbarray<TA> &A, const wbarray<TB> &B, wbarray<TC> &C,
+   char aflag, char bflag, TA afac, TC cfac,
+   char cforce
 ){
-    if ((void*)&A==(void*)&C || (void*)&B==(void*)&C) {
-       wbarray<TC> XC; if (cfac!=TC(0)) XC.init(C);
-       Wb::MatProd(A,B,XC,aflag,bflag,afac,cfac,cforce);
-       XC.save2(C); return C;
-    }
+   if ((void*)&A==(void*)&C || (void*)&B==(void*)&C) {
+      wbarray<TC> XC; if (cfac!=TC(0)) XC.init(C);
+      Wb::MatProd(A,B,XC,aflag,bflag,afac,cfac,cforce);
+      XC.save2(C); return C;
+   }
 
-    unsigned a1,a2,b1,b2;
-    char iflag=0; 
+   unsigned a1,a2,b1,b2;
+   char iflag=0; 
 
 #ifdef WB_CLOCK
-    Wb::Clock clk("MatProd",1); 
+   Wb::Clock clk("MatProd",1); 
 #endif
 
-    if (A.rank()!=2 || B.rank()!=2) wblog(FL,
-       "ERR %s() rank-2 objects required (%s; %s)",FCT,SSTR(A),SSTR(B));
+   if (A.rank()!=2 || B.rank()!=2) wblog(FL,
+      "ERR %s() rank-2 objects required (%s; %s)",FCT,SSTR(A),SSTR(B));
 
-    a1=A.SIZE[0]; a2=A.SIZE[1]; if (aflag!='N') SWAP(a1,a2);
-    b1=B.SIZE[0]; b2=B.SIZE[1]; if (bflag!='N') SWAP(b1,b2);
+   a1=A.SIZE[0]; a2=A.SIZE[1]; if (aflag!='N') SWAP(a1,a2);
+   b1=B.SIZE[0]; b2=B.SIZE[1]; if (bflag!='N') SWAP(b1,b2);
 
-    if (a2!=b1) wblog(FL,
-       "ERR %s() size mismatch %dx%d * %dx%d",FCT,a1,a2,b1,b2);
+   if (a2!=b1) wblog(FL,
+      "ERR %s() size mismatch %dx%d * %dx%d",FCT,a1,a2,b1,b2);
 
-    if (cfac!=TC(0)) {
-        if (C.data==NULL) { iflag=1;
-           if (cforce) wblog(FL,          
-           "WRN C = A*B + c*[] with c=%s",toStr(double(cfac)).data);
-        }
-        else if (!C.isMatrix() || C.SIZE[0]!=a1 || C.SIZE[1]!=b2) {
-           wblog(FL,"ERR %s() dimension mismatch: C=(%s) =? (%d,%d).",
-           FCT, SSTR(C), a1, b2); iflag=1;
-        }
-    } else iflag=1;
+   if (cfac!=TC(0)) {
+       if (C.data==NULL) { iflag=1;
+          if (cforce) wblog(FL,          
+          "WRN C = A*B + c*[] with c=%s",toStr(double(cfac)).data);
+       }
+       else if (!C.isMatrix() || C.SIZE[0]!=a1 || C.SIZE[1]!=b2) {
+          wblog(FL,"ERR %s() dimension mismatch: C=(%s) =? (%d,%d).",
+          FCT, SSTR(C), a1, b2); iflag=1;
+       }
+   } else iflag=1;
 
-    if (iflag) {
-       C.init(a1,b2);
-    }
+   if (iflag) {
+      C.init(a1,b2);
+   }
 
-    DZGEMM(A,B,C,a2,aflag,bflag,afac,cfac);
+   DZGEMM(A,B,C,a2,aflag,bflag,afac,cfac);
 
-    return C;
+   return C;
 };
 
 template<class TA, class TB, class TC>  
