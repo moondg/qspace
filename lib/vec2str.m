@@ -79,9 +79,9 @@ function sout=vec2str(v, varargin)
         end
      else
         i=regexp(bR,'[\}\)\]]');
-        if isempty(i)
-             sep=bR; bR='';
-        else sep=bR(1:i-1); bR=bR(i:end); end
+        if ~isempty(i),      sep=bR(1:i-1); bR=bR(i:end);
+        elseif ~isempty(bR), sep=bR; bR='';
+        end
      end
   end
 

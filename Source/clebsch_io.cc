@@ -1428,7 +1428,7 @@ CRef<TQ>& CRef<TQ>::init(
          PRINTF("\n     %s\n  <> %s\n", STR2(Cb.cstat,'V'), STR2(st,'V'));
 
          if (wrn>1 || (Cb.gotuser_BUF() && Cb.cstat.ID!=st.ID)) {
-            PRINTF("   hint: got different RC_STORE?\n\n"); }
+            PRINTF("  hint: got different RC_STORE?\n\n"); }
 
          wblog(FL, wrn<2? "WRN %s() %s":"ERR %s() %s",FCT,PSTR);
       }}

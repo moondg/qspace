@@ -25,7 +25,7 @@ function [ff,Iout]=getFiles(HAM)
   if isempty(HAM.mat), wberr('invalid storage specification'); end
   mat=HAM.mat;
 
-  ff=dir(sprintf('%s_*.mat',mat));
+  ff=dir([mat '_*.mat']);
   if isempty(ff)
      wblog('WRN','no files found');
      if nargout>1, ff={}; Iout=struct; end
@@ -36,14 +36,32 @@ function [ff,Iout]=getFiles(HAM)
   if ~isempty(i), disp(ff(i(1)))
      wberr('file listing includes directories !? (L=%g)',L); 
   end
+  ff=rmfield(ff,'isdir');
+
+  q=regexprep(mat,'.*\/','');
+  ipat=[q '_info.mat'];
+  kpat=[q '_([0-9]+)(?@k=str2num($1);)\.mat'];
 
   for i=1:numel(ff)
-     k=0; regexp(ff(i).name,'.*_([0-9]+)(?@k=str2num($1);)\.mat');
+     k=-1; regexp(ff(i).name,kpat);
+     if k<0 && ~isempty(regexp(ff(i).name,ipat)), k=0; end
      ff(i).k=k;
   end
 
-  i=find([ff.k]>0);
+  i=find([ff.k]>=0);
+  if isempty(i)
+     wblog('WRN','no files found');
+     if nargout>1, ff={}; Iout=struct; end
+     return
+  end
+
   [kk,is]=sort([ff(i).k]); ff=ff(i(is));
+
+  i=find(kk<1); fI={};
+  if ~isempty(i)
+      fI={ ff(i).name }; ff(i)=[]; kk(i)=[];
+      if numel(fI)==1, fI=fI{1}; end
+  end
 
   if ~isequal(kk,1:L), q=[min(kk), max(kk), numel(kk), L];
      wberr('unexpected DMRG file listing (%g .. %g; %g/%g)',q); 
@@ -72,8 +90,12 @@ function [ff,Iout]=getFiles(HAM)
      end
   end
 
-  Iout=struct('folder',ff(1).folder,...
-    'bytes',sum([ff.bytes]),'tt',[ff.datenum],'kc',kc,'sdir',sdir);
+  if nargout>1
+     Iout=struct('folder',ff(1).folder,...
+     'bytes',sum([ff.bytes]),'tt',[ff.datenum],'kc',kc,'sdir',sdir,...
+     'info',fI);
+  end
+
   ff={ff.name};
 
 end 
