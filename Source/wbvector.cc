@@ -755,6 +755,9 @@ int wbvector<T>::init_base(
          { init2ref(n,A.data); }
     else { init(n); A.copyTo(data,tcheck); }
 
+    if (data && !Wb::is_finite(data,1)) wblog(FL,
+       "WRN %s() encountered nan or inf in mex input data",FCT);
+
     return 0;
 };
 

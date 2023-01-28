@@ -2861,13 +2861,26 @@ class CRef {
        return *this;
     };
 
-    CRef& init_wId(const CRef &R, unsigned wid=1, unsigned l1=-1) {
+    CRef& init_wId(const CRef &R,
+        unsigned wid=1, unsigned l1=-1, const unsigned *d_=NULL
+    ){
+       double w=1;
        unsigned m = (wid==1 ? R.wdim1() : R.wdim2());
        if (!wid || wid>2) { wblog(FL,"ERR %s() invalid wid=%d",FCT,wid); }
+
        init(R,0); 
-       cgw.initIdentity(m); if (int(l1)>=0) {
-          cgw*=::sqrt(double(qdim(l1)));
+
+       if (int(l1)>=0) { unsigned d=qdim(l1);
+          if (d_ && d!=(*d_)) wblog(FL, 
+             "ERR %s() qdim inconsistency (%d/%d)",FCT,d,*d_);
+          w=::sqrt(double(d));
        }
+       else if (d_) {
+          if (*d_<1) wblog(FL,"ERR %s() invalid qdim=%d",FCT,*d_);
+          w=::sqrt(double(*d_));
+       }
+
+       cgw.initIdentity(m,0,w); 
        return *this;
     };
 
@@ -3012,9 +3025,13 @@ class CRef {
     template <class T>
     wbvector<T>& getSize(wbvector<T> &S, char bare=0) const;
 
-    unsigned Size(unsigned k, unsigned r=-1) const;
+    unsigned Size( 
+       unsigned k, 
+       unsigned r=-1) const;
 
-    unsigned qdim(unsigned k, const QType *qt=NULL) const;
+    unsigned qdim( 
+       unsigned k, 
+       const QType *qt=NULL) const;
 
     int checkAbelian(const char *F=NULL, int L=0) const;
 
@@ -3023,7 +3040,7 @@ class CRef {
 
     int wisId() const;
 
-    double norm2(char xflag=0) const;
+    double norm2(char checks=1) const;
 
     double NormSignW(
        const char *F=NULL, int L=0,

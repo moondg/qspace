@@ -199,12 +199,16 @@ bool gotMemOverlap(
    const T1* src, size_t len0,
    const T2* dest, size_t len2
 ){
-   const char
-     *L=(char*)src,  *R=(char*)(src+len0)-1,
-     *a=(char*)dest, *b=(char*)(dest+(long(len2)<0 ? len0 : len2))-1;
+   if (len0 && len2) {
+      const char
+        *L=(char*)src,  *R=(char*)(src+len0)-1,
+        *a=(char*)dest, *b=(char*)(dest+(long(len2)<0 ? len0 : len2))-1;
 
-   if (!len0 || !len2) return 0;
-   return ((a<=L && b>=L) || (a<=R && b>=R) || (a>=L && b<=R) );
+      if (!src || !dest) wblog(FL,
+         "ERR %s() received null pointer (%p, %p)",FCT,src,dest);
+      return ((a<=L && b>=L) || (a<=R && b>=R) || (a>=L && b<=R) );
+   }
+   return 0;
 };
 
 #endif

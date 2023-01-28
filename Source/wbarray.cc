@@ -251,27 +251,7 @@ wbarray<T>& wbarray<T>::Plus(
    if (SIZE!=B.SIZE) wblog(FL,
       "ERR %s() size mismatch %s / %s",FCT,SSTR_(this), SSTR(B));
 
-   if (bfac) {
-      size_t i=0, n=numel(); const TB* b=B.data;
-      if (iflag || !afac) {
-         if (bfac==T(+1)) for (; i<n; ++i) { data[i]  = b[i]; } else
-         if (bfac==T(-1)) for (; i<n; ++i) { data[i]  =-b[i]; }
-         else             for (; i<n; ++i) { data[i]  = b[i]*bfac; }
-      }
-      else if (afac==T(1)) {
-         if (bfac==T(+1)) for (; i<n; ++i) { data[i] += b[i]; } else
-         if (bfac==T(-1)) for (; i<n; ++i) { data[i] -= b[i]; }
-         else             for (; i<n; ++i) { data[i] += b[i]*bfac; }
-      }
-      else {
-         if (bfac==T(+1)) for (; i<n; ++i) { (data[i]*=afac) += b[i]; } else
-         if (bfac==T(-1)) for (; i<n; ++i) { (data[i]*=afac) -= b[i]; }
-         else             for (; i<n; ++i) { (data[i]*=afac) += b[i]*bfac; }
-      }
-   }
-   else if (afac!=T(1)) {
-      for (size_t n=numel(), i=0; i<n; ++i) { data[i]*=afac; }
-   }
+   Wb::cpyRange(data, B.data, numel(), iflag? T(0) : afac, bfac);
 
    return *this;
 };

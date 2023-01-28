@@ -2708,6 +2708,13 @@ int CData<TQ,TD>::checkNormSign(
       return 5;
    }
 
+   if (xflag>3 || xflag<0) { 
+      if (xflag=='X') { xflag=2; } else {
+      if (xflag!='x') wblog(FL,
+         "WRN %s() unexpected xflag=%s -> 1",FCT,cSTR(xflag));
+      xflag=1; }
+   }
+
    if (m<2 || !xflag) {
       RTD cn2=cgd.D.norm2(); if (m>1) { cn2/=m; }
       double e=std::fabs(double(cn2-1));
@@ -2718,7 +2725,7 @@ int CData<TQ,TD>::checkNormSign(
          return 11;
       }
    }
-   else if (xflag!='X') {
+   else if (xflag<2) {
       wbvector<RTD> cv2; cgd.norm2vec(r,cv2);
       RTD cn2=cv2.avg(); double e=std::fabs(double(cn2-1));
 
@@ -4659,7 +4666,7 @@ double CRef<TQ>::normExt(const char *F, int L) const {
 };
 
 template <class TQ>
-double CRef<TQ>::norm2(char xflag) const { 
+double CRef<TQ>::norm2(char checks) const { 
 
    double w2=0; 
 
@@ -4676,15 +4683,17 @@ double CRef<TQ>::norm2(char xflag) const {
 
    if (!isfinite(w2)) { wblog(FL,"ERR %s() w2=%g",FCT,w2); }
 
-   if (fabs(w2-1)>CG_SKIP_DEPS1) {
+   if ((checks&1) && fabs(w2-1)>CG_SKIP_DEPS1) {
       double x=normExt(FL); 
       if (w2<1 || fabs(w2-x*x)>CG_SKIP_DEPS1) { wblog(FL,
-         "ERR %s() got CRef with |cgw|^2=%g (expeced %g)",FCT,w2,x*x);
+         "ERR %s() got CRef with |cgw|^2=%g (expected %g)",FCT,w2,x*x);
       }
    }
 
    if (cgb) { 
-      if (xflag && !isRefInit()) { cgb->checkNormSign(FL,xflag); }
+      if (checks>1 && !isRefInit()) {
+         cgb->checkNormSign(FL, checks<<1);
+      }
       else {
          unsigned r=cgb->rank(FL); check(FL);
          if (r<2) {

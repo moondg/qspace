@@ -366,6 +366,11 @@ class wbarray {
        return *this;
     };
 
+    wbarray& init_bare(size_t d1, size_t d2) { 
+       wbvector<size_t> S(2); S[0]=d1; S[1]=d2;
+       return init_bare(S);
+    };
+
     wbarray& init(const char *F, int L,
     const mxArray *a, char ref=0, char vec=0);  
 
@@ -1194,11 +1199,13 @@ class wbarray {
 
     template <class T_>
     wbarray& Times(const T_ a, char rcpy=0) { 
-       if (!rcpy || !isRef()) { return (*this)*=a; }
-       else {
-          wbarray<T> X; this->times(a,X);
-          return X.save2(*this);
-       }
+       if (a!=T_(1)) {
+          if (!rcpy || !isRef()) { return (*this)*=a; }
+          else {
+             wbarray<T> X; this->times(a,X);
+             X.save2(*this);
+          }
+       }; return *this;
     };
 
     template <class T_>
@@ -2351,6 +2358,9 @@ wbarray<T>& wbarray<T>::init(
          "WRN ignoring ref (%s)",A.toStrT().data);
    }
 
+   if (data && !Wb::is_finite(data,1)) wblog(FL,
+      "WRN %s() encountered nan or inf in mex input data",FCT);
+
    return *this;
 };
 
@@ -2403,9 +2413,10 @@ wbarray<T>& wbarray<T>::initIdentity(size_t d, char dflag, T dval) {
    if (dflag) { init(d); set(T(1)); }
    else {
       init(d,d);
-      for (size_t i=0; i<d; ++i) data[i+d*i]=dval;
+      for (size_t i=0; i<d; ++i) {
+         data[i+d*i]=dval; 
+      }
    }
-
    return *this;
 };
 

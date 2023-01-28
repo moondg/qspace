@@ -105,8 +105,8 @@ void MPS_ORTHO_2(
    QSpace<gTQ,T3> UQ,SQ,VQ;
    OPTS opts;
 
-   if (A1.isEmpty()) wblog(FL,"ERR arg #1 (A1) is empty!");
-   if (A2.isEmpty()) wblog(FL,"ERR arg #2 (A2) is empty!");
+   if (A1.isEmpty()) wblog(FL,"ERR arg #1 (A1) is empty");
+   if (A2.isEmpty()) wblog(FL,"ERR arg #2 (A2) is empty");
 
    r1=A1.rank(); r2=A2.rank();
 

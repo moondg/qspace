@@ -819,9 +819,8 @@ class QSpace {
 
     int NormCGW(char full=0, char skipzeros=1, char rcpy=0);
 
-    TD norm2() const;
-
-    TD norm() const { return sqrt(norm2()); }
+    TD norm2(char checks=1) const;
+    TD norm (char checks=1) const { return sqrt(norm2(checks)); }
 
     TD normDiff2(const QSpace &B) const;
     TD scalarProd(const QSpace &B) const;

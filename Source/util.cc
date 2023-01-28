@@ -21,7 +21,6 @@
 #define __WB_UTIL_CC__
 
 /* -------------------------------------------------------------------- */
-namespace Wb {
 // NB! this requires
 //    fabs() => [std]::fabs
 //    sqrt() => [std]::sqrt(), etc.
@@ -29,7 +28,7 @@ namespace Wb {
 // and so compiler complains that MPFR routine got double // Wb,Jul05,22
 /* -------------------------------------------------------------------- */
 
-int Rational( 
+int Wb::Rational( 
    double &x0,          
    long &P, long &Q,    
    double *dx,          
@@ -122,7 +121,7 @@ int Rational(
 };
 
 template<class T>
-double FixRational(
+double Wb::FixRational(
    const char *F  __attribute__ ((unused)),
    int L          __attribute__ ((unused)),
    T *d           __attribute__ ((unused)),
@@ -140,7 +139,7 @@ double FixRational(
 };
 
 template<> 
-double FixRational( 
+double Wb::FixRational( 
    const char *F, int L, double *A, unsigned n,
    char rflag, unsigned niter,
    long pqmax,     
@@ -228,7 +227,7 @@ double FixRational(
    return err2;
 };
 
-wbstring rat2Str( 
+wbstring Wb::rat2Str( 
    const char *F, int L, double d, unsigned niter,
    long pqmax,    
    double eps,    
@@ -305,7 +304,7 @@ wbstring rat2Str(
 };
 
 template<>
-double SkipZeros(double *d, unsigned n, double eps){
+double Wb::SkipZeros(double *d, unsigned n, double eps){
 
    unsigned i=0; double s2=0;
    for (; i<n; ++i) {
@@ -316,7 +315,7 @@ double SkipZeros(double *d, unsigned n, double eps){
 };
 
 template<>
-double SkipZeros(long double *d, unsigned n, double eps){
+double Wb::SkipZeros(long double *d, unsigned n, double eps){
 
    unsigned i=0; double s2=0;
    for (; i<n; ++i) {
@@ -327,7 +326,7 @@ double SkipZeros(long double *d, unsigned n, double eps){
 };
 
 template<>
-double SkipZeros(wbcomplex *z, unsigned n, double eps){
+double Wb::SkipZeros(wbcomplex *z, unsigned n, double eps){
 
    unsigned i=0; double s2=0;
    for (; i<n; ++i) {
@@ -338,7 +337,7 @@ double SkipZeros(wbcomplex *z, unsigned n, double eps){
    return s2;
 };
 
-inline wbstring size2Str(
+inline wbstring Wb::size2Str(
    double n,   
    char p  
 ){
@@ -366,7 +365,7 @@ inline wbstring size2Str(
    return s;
 };
 
-inline const char* filename(const char *s) { 
+inline const char* Wb::filename(const char *s) { 
 
    if (s==NULL) { wblog(FL,"WRN %s() got NULL string",FCT); }
    else {
@@ -376,7 +375,7 @@ inline const char* filename(const char *s) {
    return s;
 };
 
-size_t getFileSize(const char* f) {
+size_t Wb::getFileSize(const char* f) {
    struct stat S;
    if (!f || !f[0] || stat(f, &S)!=0) { return 0; }
    return S.st_size;
@@ -384,7 +383,7 @@ size_t getFileSize(const char* f) {
 
 #ifdef __APPLE__
 
-double GET_mtime(const char *F, int L, const char *f, const struct stat &S) {
+double Wb::GET_mtime(const char *F, int L, const char *f, const struct stat &S) {
 
    if (S.st_mtimespec.tv_nsec>1E9) wblog(F,L,
       "WRN %s%s got mtime %ld @ %.3g", f?f:"", f?"()":"",
@@ -395,7 +394,7 @@ double GET_mtime(const char *F, int L, const char *f, const struct stat &S) {
 
 #else
 
-double GET_mtime(const char *F, int L, const char *f, const struct stat &S) {
+double Wb::GET_mtime(const char *F, int L, const char *f, const struct stat &S) {
 
    if (S.st_mtim.tv_sec!=S.st_mtime || S.st_mtim.tv_nsec>1E9)
       wblog(F,L,"WRN %s() got difference in mtime (%ld @ %.3g)",
@@ -408,7 +407,7 @@ double GET_mtime(const char *F, int L, const char *f, const struct stat &S) {
 
 #ifdef __APPLE__
 
-double GET_atime(const char *F, int L, const char *f, const struct stat &S) {
+double Wb::GET_atime(const char *F, int L, const char *f, const struct stat &S) {
 
    if (S.st_atimespec.tv_nsec>1E9) wblog(F,L,
       "WRN %s%s got atime %ld @ %.3g", f?f:"", f?"()":"",
@@ -419,7 +418,7 @@ double GET_atime(const char *F, int L, const char *f, const struct stat &S) {
 
 #else
 
-double GET_atime(const char *F, int L, const char *f, const struct stat &S) {
+double Wb::GET_atime(const char *F, int L, const char *f, const struct stat &S) {
 
    if (S.st_atim.tv_sec!=S.st_atime || S.st_atim.tv_nsec>1E9)
       wblog(F,L,"WRN %s() got difference in atime (%ld @ %.3g)",
@@ -432,7 +431,7 @@ double GET_atime(const char *F, int L, const char *f, const struct stat &S) {
 
 #ifdef __APPLE__
 
-double GET_ctime(const char *F, int L, const char *f, const struct stat &S) {
+double Wb::GET_ctime(const char *F, int L, const char *f, const struct stat &S) {
 
    if (S.st_ctimespec.tv_nsec>1E9) wblog(F,L,
       "WRN %s%s got ctime %ld @ %.3g", f?f:"", f?"()":"",
@@ -443,7 +442,7 @@ double GET_ctime(const char *F, int L, const char *f, const struct stat &S) {
 
 #else
 
-double GET_ctime(const char *F, int L, const char *f, const struct stat &S) {
+double Wb::GET_ctime(const char *F, int L, const char *f, const struct stat &S) {
 
    if (S.st_ctim.tv_sec!=S.st_ctime || S.st_ctim.tv_nsec>1E9)
       wblog(F,L,"WRN %s() got difference in ctime (%ld @ %.3g)",
@@ -454,7 +453,7 @@ double GET_ctime(const char *F, int L, const char *f, const struct stat &S) {
 
 #endif
 
-double getFileTime(const char* f, char w) {
+double Wb::getFileTime(const char* f, char w) {
 
    struct stat S;
    if (!f || !f[0] || stat(f, &S)!=0) { return 0; }
@@ -474,7 +473,7 @@ double getFileTime(const char* f, char w) {
    return 0;
 };
 
-bool fexist(const char *f, char type) {
+bool Wb::fexist(const char *f, char type) {
 
    if (!f || !f[0]) wblog(FL,"ERR %s() invalid (empty) file name",FCT);
 
@@ -486,7 +485,7 @@ bool fexist(const char *f, char type) {
    return 1;
 };
 
-bool isFile(const char *f) { 
+bool Wb::isFile(const char *f) { 
    if (f && f[0]) {
       struct stat S;
       if (stat(f,&S)==0) { return (S.st_mode & S_IFREG); }
@@ -494,7 +493,7 @@ bool isFile(const char *f) {
    return 0;
 };
 
-bool isDir(const char *f) { 
+bool Wb::isDir(const char *f) { 
    if (f && f[0]) {
       struct stat S;
       if (stat(f,&S)==0) { return (S.st_mode & S_IFDIR); }
@@ -502,7 +501,7 @@ bool isDir(const char *f) {
    return 0;
 };
 
-wbstring hostname(unsigned len) {
+wbstring Wb::hostname(unsigned len) {
 
    wbstring s(MAX(16U,len)); 
    int e=gethostname(s.data,s.len);
@@ -527,7 +526,7 @@ wbstring hostname(unsigned len) {
    return s;
 };
 
-wbstring hostid(char pflag) {
+wbstring Wb::hostid(char pflag) {
 
    wbstring hid=hostname(pflag ? 24 : 16); 
 
@@ -560,7 +559,7 @@ wbstring hostid(char pflag) {
 };
 
 template <class TI> inline
-TI sub2ind(const TI *s, const TI *I, unsigned n){
+TI Wb::sub2ind(const TI *s, const TI *I, unsigned n){
    if (n) {
       unsigned j=n-1; TI k=I[j];
       for (--j; j<n; --j) k=k*s[j]+I[j];
@@ -570,7 +569,7 @@ TI sub2ind(const TI *s, const TI *I, unsigned n){
 };
 
 template <class T1, class T2> inline
-void ind2sub(T1 k, const T1 *s, T2 *I, unsigned n) {
+void Wb::ind2sub(T1 k, const T1 *s, T2 *I, unsigned n) {
 
    unsigned x,i=0;
    for (; i<n; ++i) { 
@@ -587,7 +586,7 @@ void ind2sub(T1 k, const T1 *s, T2 *I, unsigned n) {
    }
 };
 
-int atoi(const char *s, int &iout,
+int Wb::atoi(const char *s, int &iout,
    unsigned n, 
    char white  
 ){
@@ -615,7 +614,7 @@ int atoi(const char *s, int &iout,
    return i;
 };
 
-int isUIntString(const char *s, char white) {
+int Wb::isUIntString(const char *s, char white) {
    if (!s) { return -1; }
 
    if (white) {
@@ -642,7 +641,7 @@ int isUIntString(const char *s, char white) {
 };
 
 template <class T>
-wbstring bits(const T &x, char compact) {
+wbstring Wb::bits(const T &x, char compact) {
    wbstring s_; 
    int i, j=0, n=sizeof(T), l=9*n; { s_.init(l); if (!l) return s_; }
    char *s; unsigned char c;
@@ -662,7 +661,7 @@ wbstring bits(const T &x, char compact) {
    return s_;
 };
 
-void IOstat::print(const char *istr,
+void Wb::IOstat::print(const char *istr,
    const char *hstr, const char *xstr1, const char *xstr2
 ){
    if (hstr && hstr[0]) printf("\n  I/O stats for %-9s "
@@ -679,7 +678,10 @@ void IOstat::print(const char *istr,
    );
 };
 
-}; 
+bool Wb::is_finite(const wbcomplex *x, size_t n) {
+   for (size_t i=0; i<n; ++i) { if (!x[i].isfinite()) { return 0; }}
+   return 1;
+};
 
 wbstring cpu_time::toStr(char flag) {
 

@@ -351,10 +351,8 @@ int Wb::charGetNumber(const char *F, int L, const char *s, T &x) {
     return 0;
 }
 
-namespace Wb {
-
 template<>
-int GetEnv (const char *F, int L, const char *name, double &val) {
+int Wb::GetEnv (const char *F, int L, const char *name, double &val) {
 
     char *s, *s2;
     double dbl;
@@ -376,7 +374,7 @@ int GetEnv (const char *F, int L, const char *name, double &val) {
 };
 
 template<>
-int GetEnv (const char *F, int L, const char *name, int &val) {
+int Wb::GetEnv (const char *F, int L, const char *name, int &val) {
 
     double dbl=0;
 
@@ -389,7 +387,7 @@ int GetEnv (const char *F, int L, const char *name, int &val) {
 }
 
 template<>
-int GetEnv (const char *F, int L, const char *name, unsigned &val) {
+int Wb::GetEnv (const char *F, int L, const char *name, unsigned &val) {
 
     double dbl=0;
     int i=GetEnv(F,L,name,dbl); if (i) return i;
@@ -401,7 +399,7 @@ int GetEnv (const char *F, int L, const char *name, unsigned &val) {
 };
 
 template<>
-int GetEnv (const char *F, int L, const char *name, char &val) {
+int Wb::GetEnv (const char *F, int L, const char *name, char &val) {
 
     char *s=getenv(name); if (!s || !s[0]) return -1;
     if (s[1]) { return -2; }
@@ -412,7 +410,7 @@ int GetEnv (const char *F, int L, const char *name, char &val) {
 };
 
 template<>
-int GetEnv (const char *F, int L, const char *name, wbstring &val) {
+int Wb::GetEnv (const char *F, int L, const char *name, wbstring &val) {
 
    if (!name || !name[0]) wblog1(F_L,
       "ERR %s() invalid env '%s' !?",FCT,name);
@@ -429,12 +427,12 @@ int GetEnv (const char *F, int L, const char *name, wbstring &val) {
    }
 };
 
-int EnvIsSet(const char *F, int L, const char *name) {
+int Wb::EnvIsSet(const char *F, int L, const char *name) {
    int x=0, e=GetEnv(F,L,name,x);
    return (!e && x>0 ? 1 : 0);
 };
 
-int get_WB_VERBOSE(const char *F, int L) {
+int Wb::get_WB_VERBOSE(const char *F, int L) {
 
    const char *vname="WB_VERBOSE";
    int i, k=0xF1; 
@@ -466,7 +464,7 @@ int get_WB_VERBOSE(const char *F, int L) {
    return k;
 };
 
-int got_DBSTOP(const char *F, int L) {
+int Wb::got_DBSTOP(const char *F, int L) {
 
    int i=0,x=0,e,q;
    const char *ss[]={"DBSTOP","ML_DEBUG","DEBUG"};
@@ -489,7 +487,7 @@ int got_DBSTOP(const char *F, int L) {
 };
 
 #ifdef MATLAB_MEX_FILE
-int got_DESKTOP() { 
+int Wb::got_DESKTOP() { 
 
    int q=(
        Wb::CallMatlab(0,0,"isdeployed") ? 0 :
@@ -503,18 +501,18 @@ int got_DESKTOP() {
    return q;
 };
 
-int is_DEPLOYED(const char *F, int L) { 
+int Wb::is_DEPLOYED(const char *F, int L) { 
    return (int)Wb::CallMatlab(F,L,"isdeployed");
 };
 
 #else
-int got_DESKTOP() { return 0; } 
-int is_DEPLOYED(
+int Wb::got_DESKTOP() { return 0; } 
+int Wb::is_DEPLOYED(
    const char *F=0 __attribute__ ((unused),
    int L=0 __attribute__ ((unused)) { return 1; } 
 #endif
 
-int GetNumThreads(const char *F, int L, int &n, const char *name) {
+int Wb::GetNumThreads(const char *F, int L, int &n, const char *name) {
 
 #ifndef QS_USING_OMP
     return 0; 
@@ -548,16 +546,7 @@ int GetNumThreads(const char *F, int L, int &n, const char *name) {
     return q;
 };
 
-int strrep(
-   const char *S0, 
-   const char *t0, 
-   const char *t2, 
-   char *Sout,     
-   size_t N,       
-   char gflag='g'  
-);
-
-int strrep(
+int Wb::strrep(
    const char *S0, 
    const char *t0, 
    const char *t2, 
@@ -595,7 +584,7 @@ int strrep(
    return nrep;
 };
 
-wbstring repHome(const char *file) {
+wbstring Wb::repHome(const char *file) {
 
    size_t n=2*strlen(file);
    const char *s; char F0[n+1], F[n+1];
@@ -617,7 +606,7 @@ wbstring repHome(const char *file) {
    return f;
 };
 
-void print_backtrace(const char *F, int L, const char *istr) {
+void Wb::print_backtrace(const char *F, int L, const char *istr) {
 
    unsigned i=0, n=4;
    GetEnv(0,0,"QS_NUM_BTRACE",i); if (n<i) { n=i; }
@@ -639,8 +628,6 @@ void print_backtrace(const char *F, int L, const char *istr) {
       free(ss); 
    }
 };
-
-}; 
 
 std::string getName(
    const std::type_info &t, 
@@ -731,8 +718,6 @@ Wb::num2Fmt<T>::operator wbstring() const {
    get_fmt(s); return s;
 };
 
-namespace Wb {
-
 template<class T>
 void Wb::num2Fmt<T>::get_fmt(wbstring &s) const {
 
@@ -759,7 +744,7 @@ void Wb::num2Fmt<T>::get_fmt(wbstring &s) const {
 };
 
 template<>
-void num2Fmt<wbcomplex>::get_fmt(wbstring &s) const {
+void Wb::num2Fmt<wbcomplex>::get_fmt(wbstring &s) const {
 
    unsigned l=0; s.init(16); 
 
@@ -789,13 +774,13 @@ void num2Fmt<wbcomplex>::get_fmt(wbstring &s) const {
 };
 
 template<class T>
-int num2Fmt<T>::check_init() {
+int Wb::num2Fmt<T>::check_init() {
    wblog(FL,"ERR %s<> invalid data type `%s'",FCT,TSTR(T));
    return 1;
 };
 
 template<> inline
-int num2Fmt<double>::check_init() {
+int Wb::num2Fmt<double>::check_init() {
    if (m<-1) m=8;
    if (p<-1) p=5;
    if (t[0])
@@ -804,16 +789,16 @@ int num2Fmt<double>::check_init() {
    return 0;
 };
 template<> inline
-int num2Fmt<float>::check_init() {
+int Wb::num2Fmt<float>::check_init() {
    return ((num2Fmt<double>*)this)->check_init();
 };
 template<> inline
-int num2Fmt<wbcomplex>::check_init() {
+int Wb::num2Fmt<wbcomplex>::check_init() {
    return ((num2Fmt<double>*)this)->check_init();
 };
 
 template<> inline
-int num2Fmt<int>::check_init() {
+int Wb::num2Fmt<int>::check_init() {
    if (m<-1) m=4;
    if (p>=0) return 'p'; 
    if (t[0])
@@ -822,12 +807,12 @@ int num2Fmt<int>::check_init() {
    return 0;
 };
 template<> inline
-int num2Fmt<unsigned>::check_init() {
+int Wb::num2Fmt<unsigned>::check_init() {
    return ((num2Fmt<int>*)this)->check_init();
 };
 
 template<> inline
-int num2Fmt<long>::check_init() {
+int Wb::num2Fmt<long>::check_init() {
    if (m<-1) m=4;
    if (p>=0) return 'p'; 
    if (t[0])
@@ -837,12 +822,12 @@ int num2Fmt<long>::check_init() {
 };
 
 template<> inline
-int num2Fmt<unsigned long>::check_init() {
+int Wb::num2Fmt<unsigned long>::check_init() {
    return ((num2Fmt<long>*)this)->check_init();
 };
 
 template<> inline
-int num2Fmt<char>::check_init() {
+int Wb::num2Fmt<char>::check_init() {
    if (m<-1) m=4;
    if (p>=0) return 'p'; 
    if (t[0])
@@ -852,7 +837,7 @@ int num2Fmt<char>::check_init() {
 };
 
 template<> inline
-int num2Fmt<char*>::check_init() {
+int Wb::num2Fmt<char*>::check_init() {
    if (m<-1) m=-1;
    if (p>=0) return 'p'; 
    if (t[0])
@@ -860,8 +845,6 @@ int num2Fmt<char*>::check_init() {
    else { strcpy(t,"s"); }
    return 0;
 };
-
-}; 
 
 template <class T> inline
 char* defaultFmt(char *fmt,
@@ -940,10 +923,8 @@ wbstring Wb::TimeStamp(char type) {
    return s;
 }
 
-namespace Wb {
-
 template <class T1, class T2> inline
-void safeConvert(const char *F, int L, const T1 &x1, T2 &x2) {
+void Wb::safeConvert(const char *F, int L, const T1 &x1, T2 &x2) {
    x2=T2(x1); if (T1(x2)!=x1) wblog(F_L,
       "ERR converting %s -> %s changes value\n%g, %g",
        TSTR(T1), TSTR(T2),
@@ -952,20 +933,20 @@ void safeConvert(const char *F, int L, const T1 &x1, T2 &x2) {
 }
 
 template <> inline
-void safeConvert(const char *F, int L, const wbcomplex &x1, double &x2) {
+void Wb::safeConvert(const char *F, int L, const wbcomplex &x1, double &x2) {
    if (x1.i!=0.) wblog(F_L,
       "ERR cannot cast complex number to real (%.4g%+.4gi)",x1.r,x1.i);
    x2=x1.r;
 }
 
 template <> inline 
-void safeConvert(
+void Wb::safeConvert(
    const char *F __attribute__ ((unused)), int L __attribute__ ((unused)),
    const double &x1, wbcomplex &x2
 ){ x2=wbcomplex(x1,0); }
 
 template <class T> inline
-bool isLower(const T* a, const T* b, const size_t n) {
+bool Wb::isLower(const T* a, const T* b, const size_t n) {
    for (size_t i=0; i<n; i++) {
        if (a[i]<b[i]) return 1; else
        if (a[i]>b[i]) return 0;
@@ -974,34 +955,34 @@ bool isLower(const T* a, const T* b, const size_t n) {
 }
 
 template <class T> inline
-bool isEqual(const T* a, const T* b, const size_t n) {
+bool Wb::isEqual(const T* a, const T* b, const size_t n) {
 
    for (size_t i=0; i<n; i++) { if (a[i]!=b[i]) return 0; }
    return 1;
 }
 
 template <class T> inline
-bool allEqual(const T* a, const size_t n, const T &x) {
+bool Wb::allEqual(const T* a, const size_t n, const T &x) {
 
    for (size_t i=0; i<n; i++) { if (a[i]!=x) return 0; }
    return 1;
 }
 
 template <class T> inline
-bool anyUnequal(const T* a, const size_t n, const T &x) {
+bool Wb::anyUnequal(const T* a, const size_t n, const T &x) {
    for (size_t i=0; i<n; i++) { if (a[i]!=x) return 1; }
    return 0;
 };
 
 template <class T> inline
-bool anyEqual(const T* a, const size_t n, const T &x) {
+bool Wb::anyEqual(const T* a, const size_t n, const T &x) {
 
    for (size_t i=0; i<n; i++) { if (a[i]==x) return 1; }
    return 0;
 };
 
 template <class T> inline
-void scale_eps(T &eps, const T* d, size_t n) {
+void Wb::scale_eps(T &eps, const T* d, size_t n) {
    if (double(eps)>0) {
       if (double(eps)>1E-8) wblog(FL,
          "WRN %s() got eps=%g (ignore)",FCT,double(eps));
@@ -1013,7 +994,7 @@ void scale_eps(T &eps, const T* d, size_t n) {
 };
 
 template <class T>
-T getdscale(const T* data, size_t n) {
+T Wb::getdscale(const T* data, size_t n) {
 
    if (n) { T d,x=0;
       for (size_t i=0; i<n; ++i) { d=ABS(data[i]); if (x<d) x=d; }
@@ -1023,7 +1004,7 @@ T getdscale(const T* data, size_t n) {
 };
 
 inline 
-void update_range_stride(size_t &n, const size_t stride) {
+void Wb::update_range_stride(size_t &n, const size_t stride) {
    if (stride!=1) {
       if (int(stride)<=0 && n) wblog(FL,
          "ERR %s() got stride=%ld (n=%ld) !?",FCT,stride,n);
@@ -1032,27 +1013,27 @@ void update_range_stride(size_t &n, const size_t stride) {
 };
 
 template <class T> inline
-T addRange2(const T* d, size_t n, const size_t stride) {
+T Wb::addRange2(const T* d, size_t n, const size_t stride) {
    T s=0; Wb::update_range_stride(n,stride);
    for (size_t i=0; i<n; i+=stride) { s+=ABS2(d[i]); }
    return s;
 };
 
 template <class T> inline
-T addRange(const T* d, size_t n, const size_t stride) {
+T Wb::addRange(const T* d, size_t n, const size_t stride) {
    T s=0; Wb::update_range_stride(n,stride);
    for (size_t i=0; i<n; i+=stride) { s+=d[i]; }
    return s;
 };
 
 template <class T> inline
-void addRange(const T* a, T* c, size_t n, const size_t stride) {
+void Wb::addRange(const T* a, T* c, size_t n, const size_t stride) {
    Wb::update_range_stride(n,stride);
    for (size_t i=0; i<n; i+=stride) { c[i]+=a[i]; }
 };
 
 template <class T> inline
-void addRange( 
+void Wb::addRange( 
    const T* a, const T* b, T* c, size_t n, size_t stride
 ){
    Wb::update_range_stride(n,stride);
@@ -1060,7 +1041,7 @@ void addRange(
 };
 
 template <class T> inline
-void minusRange( 
+void Wb::minusRange( 
    const T* a, const T* b, T* c, size_t n, size_t stride
 ){
    Wb::update_range_stride(n,stride);
@@ -1068,7 +1049,7 @@ void minusRange(
 };
 
 template <class T> inline
-void diffRange( 
+void Wb::diffRange( 
    const T* a, const T* b, T* c, size_t n, size_t stride
 ){
    Wb::update_range_stride(n,stride);
@@ -1076,21 +1057,21 @@ void diffRange(
 };
 
 template <class T> inline
-void setRange2avg(T* a, size_t n) {
+void Wb::setRange2avg(T* a, size_t n) {
    T x=0; size_t i;
    for (i=0; i<n; ++i) { x+=a[i]; }; x*=(T(1)/n);
    for (i=0; i<n; ++i) { a[i]=x;  }
 };
 
 template <class T> inline 
-size_t nnzRange(const T* a, size_t n) {
+size_t Wb::nnzRange(const T* a, size_t n) {
    size_t m=0, i=0;
    for (; i<n; ++i) { if (a[i]!=0) m++; }
    return m;
 };
 
 template <class T> inline
-T rangeNormDiff2(
+T Wb::rangeNormDiff2(
    const T* d1, const T* d2, size_t n
 ){
    if (!n || d1==d2) return 0;
@@ -1106,7 +1087,7 @@ T rangeNormDiff2(
 };
 
 template <class T> inline
-T rangeNormDiff2(
+T Wb::rangeNormDiff2(
    const T* d1, const T* d2, size_t n, const T &fac, size_t *k
 ){
    if (fac==1 && !k) { return rangeNormDiff2(d1,d2,n); }
@@ -1131,7 +1112,7 @@ T rangeNormDiff2(
 };
 
 template <class T> inline
-T rangeNorm2(const T* d, size_t n, size_t *k
+T Wb::rangeNorm2(const T* d, size_t n, size_t *k
 ){
    T x2sum=0;
    if (!n) { if (k) { (*k)=0; }; return x2sum; }
@@ -1152,7 +1133,7 @@ T rangeNorm2(const T* d, size_t n, size_t *k
 };
 
 template <class T> inline 
-T rangeMaxDiff(const T* d1, const T* d2, size_t n, size_t *k) {
+T Wb::rangeMaxDiff(const T* d1, const T* d2, size_t n, size_t *k) {
    size_t imax=0, i=0; T x,xmax=0;
 
    if (!n || d1==d2) { if (k) (*k)=0;
@@ -1168,55 +1149,96 @@ T rangeMaxDiff(const T* d1, const T* d2, size_t n, size_t *k) {
    return xmax;
 };
 
-template <class T, class T2> inline
-void cpyStride(    
-   T2* d,          
+template <class T, class T2>
+void Wb::cpyStride(
+   T2* d2,         
    const T* d0,    
    unsigned n,     
-   const unsigned *idx, unsigned m,
+   const unsigned *idx, unsigned m, 
    unsigned D2,    
    unsigned D0,    
-   char add_flag
+   char add
 ){
-   unsigned i,k; if (!n || !m) return;
+   if (!n || !m) { return; }
+   if (!idx) { return Wb::cpyStride(d2,d0,n,m,D2,D0, T2(add? 1:0), T(1)); }
 
-   if (int(D0)<0) D0=n;
-   if (int(D2)<0) D2=n;
+   unsigned i=0, j; const T *d0_=d0;
 
-   if (D0<n || D2<n) wblog(FL,
+   if (int(D0)<0) { D0=n; } else if (D0<n) { ++i; }
+   if (int(D2)<0) { D2=n; } else if (D2<n) { ++i; }
+
+   if (i) wblog(FL,
       "ERR %s() stride too small (%d,%d/%d)",FCT,D0,D2,n);
-   if (gotMemOverlap(d0, (m-1)*D0+n, d, (m-1)*D2+n)) wblog(FL,
+   if (gotMemOverlap(d0, (m-1)*D0+n, d2, (m-1)*D2+n)) wblog(FL,
+      "ERR %s() must not copy onto itself",FCT); 
+
+   for (j=0; j<m; ++j, d2+=D2) { d0 = d0_+ idx[j] * D0;
+      if (!add) { for (i=0; i<n; ++i) { d2[i]  = d0[i]; }}
+      else      { for (i=0; i<n; ++i) { d2[i] += d0[i]; }}
+   }
+};
+
+template <class T, class T2>
+void Wb::cpyStride(
+   T2* d2,       
+   const T* d0,  
+   size_t n,     
+   size_t m,     
+   size_t D2,    
+   size_t D0,    
+   T2 fac2, T fac0
+){
+   if (!n || !m) { return; }
+
+   unsigned j=0;
+   if (int(D0)<0) { D0=n; } else if (D0<n) { ++j; }
+   if (int(D2)<0) { D2=n; } else if (D2<n) { ++j; }
+
+   if (j) wblog(FL,
+      "ERR %s() stride too small (%d,%d/%d)",FCT,D0,D2,n);
+   if (gotMemOverlap(d0, (m-1)*D0+n, d2, (m-1)*D2+n)) wblog(FL,
       "ERR %s() must not copy onto itself",FCT);
 
-   if (add_flag) {
-      if (idx) { const T *d0_=d0;
-         for (k=0; k<m; ++k, d+=D2) { d0 = d0_+ idx[k] * D0;
-         for (i=0; i<n; ++i) { d[i]+=d0[i]; }}
+   for (j=0; j<m; ++j, d2+=D2, d0+=D0) {
+      Wb::cpyRange(d2,d0,n,fac2,fac0);
+   }
+};
+
+template <class T, class TB>
+void Wb::cpyRange(T* a, const TB* b, size_t n, T afac, TB bfac) {
+
+   size_t i=0;
+
+   if (bfac) {
+      if (!afac) {
+         if (bfac==TB( 1)) { for (; i<n; ++i) { a[i] = b[i]; }} else
+         if (bfac==TB(-1)) { for (; i<n; ++i) { a[i] =-b[i]; }}
+         else              { for (; i<n; ++i) { a[i] = b[i]*bfac; }}
+      }
+      else if (afac==T(1)) {
+         if (bfac==TB( 1)) { for (; i<n; ++i) { a[i]+= b[i]; }} else
+         if (bfac==TB(-1)) { for (; i<n; ++i) { a[i]-= b[i]; }}
+         else              { for (; i<n; ++i) { a[i]+= b[i]*bfac; }}
       }
       else {
-         for (k=0; k<m; ++k, d+=D2, d0+=D0) {
-         for (i=0; i<n; ++i) { d[i]+=d0[i]; }}
+         if (bfac==TB( 1)) { for (; i<n; ++i) { (a[i]*=afac) += b[i]; }} else
+         if (bfac==TB(-1)) { for (; i<n; ++i) { (a[i]*=afac) -= b[i]; }}
+         else              { for (; i<n; ++i) { (a[i]*=afac) += b[i]*bfac; }}
       }
    }
-   else {
-      if (idx) { const T *d0_=d0;
-         for (k=0; k<m; ++k, d+=D2) { d0 = d0_+ idx[k] * D0;
-         for (i=0; i<n; ++i) { d[i]=d0[i]; }}
-      }
-      else {
-         for (k=0; k<m; ++k, d+=D2, d0+=D0) {
-         for (i=0; i<n; ++i) { d[i]=d0[i]; }}
-      }
+   else if (afac!=T(1)) {
+      if (afac) {    for (; i<n; ++i) { a[i]*=afac; }}
+      else { T z=0;  for (; i<n; ++i) { a[i]=z;     }}
    }
 };
 
 template <class T>
-void cpyRange(T* a, const T* b, size_t n) { 
+void Wb::cpyRange(T* a, const T* b, size_t n) { 
    for (size_t i=0; i<n; ++i) { a[i]=b[i]; }
 };
 
 template <class T, class Tb>
-void cpyRange(T* a, const Tb* b, size_t n, char tcheck) { 
+void Wb::cpyRange(T* a, const Tb* b, size_t n, char tcheck) { 
 
    if (!tcheck) {
       for (size_t i=0; i<n; ++i) { a[i]=T(b[i]); }} 
@@ -1230,22 +1252,22 @@ void cpyRange(T* a, const Tb* b, size_t n, char tcheck) {
 };
 
 template <>
-void cpyRange(double* a, const double* b, size_t n) { 
+void Wb::cpyRange(double* a, const double* b, size_t n) { 
    memcpy(a,b,n*sizeof(double));
 };
 
 template <>
-void cpyRange(wbcomplex* a, const wbcomplex* b, size_t n) { 
+void Wb::cpyRange(wbcomplex* a, const wbcomplex* b, size_t n) { 
    memcpy(a,b,n*sizeof(wbcomplex));
 };
 
 template <>
-void cpyRange(int* a, const int* b, size_t n) { 
+void Wb::cpyRange(int* a, const int* b, size_t n) { 
    memcpy(a,b,n*sizeof(int));
 };
 
 template <> 
-void cpyRange(double* a, const wbcomplex* b, size_t n, char tcheck) {
+void Wb::cpyRange(double* a, const wbcomplex* b, size_t n, char tcheck) {
 
    double i2=0;
    for (size_t i=0; i<n; ++i) {
@@ -1259,33 +1281,33 @@ void cpyRange(double* a, const wbcomplex* b, size_t n, char tcheck) {
 };
 
 template <> 
-void cpyRange(wbcomplex* a, const double* b, size_t n, char tcheck) {
+void Wb::cpyRange(wbcomplex* a, const double* b, size_t n, char tcheck) {
    for (size_t i=0; i<n; ++i) { a[i]=b[i]; }
 };
 
 template <class T>
-void cpyRangeR(T* a, const wbcomplex* z, size_t n) { 
+void Wb::cpyRangeR(T* a, const wbcomplex* z, size_t n) { 
    for (size_t i=0; i<n; ++i) { a[i]=z[i].r; }
 };
 
 template <class T>
-void cpyRangeI(T* a, const wbcomplex* z, size_t n) { 
+void Wb::cpyRangeI(T* a, const wbcomplex* z, size_t n) { 
    for (size_t i=0; i<n; ++i) { a[i]=z[i].i; }
 };
 
 template <class T>
-void cpyRangeA(T* a, const wbcomplex* z, size_t n) { 
+void Wb::cpyRangeA(T* a, const wbcomplex* z, size_t n) { 
    for (size_t i=0; i<n; ++i) { a[i]=z[i].abs(); }
 };
 
 template <class T> inline
-bool uniformRange(const T* d, size_t n) {
+bool Wb::uniformRange(const T* d, size_t n) {
    for (size_t i=1; i<n; ++i) if (d[i]!=d[0]) return 0;
    return 1;
 };
 
 template <class T> inline
-T maxRange(const T* d, size_t n) {
+T Wb::maxRange(const T* d, size_t n) {
 
    if (!n) wblog(FL,"ERR %s() got empty range",FCT);
 
@@ -1295,7 +1317,7 @@ T maxRange(const T* d, size_t n) {
 };
 
 template <class T> inline
-T minRange(const T* d, size_t n) {
+T Wb::minRange(const T* d, size_t n) {
 
    if (!n) wblog(FL,"ERR %s() got empty range",FCT);
 
@@ -1305,13 +1327,13 @@ T minRange(const T* d, size_t n) {
 };
 
 template <class T> inline
-T prodRange(const T* d, size_t n) {
+T Wb::prodRange(const T* d, size_t n) {
    if (!n) wblog(FL,"WRN %s() got empty range (returning 0)",FCT);
    return prodRange(d,n,T(0));
 };
 
 template <class T> inline
-T prodRange(const T* d, size_t n, T x) {
+T Wb::prodRange(const T* d, size_t n, T x) {
    if (n) { size_t i=1;
       if (!d) wblog(FL,"ERR %s() got null space (n=%d)",FCT,n);
       for (x=d[0]; i<n; ++i) x*=d[i];
@@ -1320,7 +1342,7 @@ T prodRange(const T* d, size_t n, T x) {
 };
 
 template <class TD, class TX> inline
-void timesRange(TD* d, TX x, size_t n, size_t stride) {
+void Wb::timesRange(TD* d, TX x, size_t n, size_t stride) {
    if (!n) return;
    if (!d) wblog(FL,"ERR %s() got null space (n=%d)",FCT,n);
 
@@ -1329,7 +1351,7 @@ void timesRange(TD* d, TX x, size_t n, size_t stride) {
 };
 
 template <class T> inline
-char check_conj_flag(const T* a, char &conj) {
+char Wb::check_conj_flag(const T* a, char &conj) {
    if (conj) {
       if (!ISCOMPLX_(T)) { conj=0; } else {
       if (conj>2) { 
@@ -1344,7 +1366,7 @@ char check_conj_flag(const T* a, char &conj) {
 };
 
 template <class T> inline
-T dotProd(const T* a, const T* b, size_t n, T x, char conj) {
+T Wb::dotProd(const T* a, const T* b, size_t n, T x, char conj) {
    if (n) {
       size_t i=0; x=0;
       if (!a || !b) wblog(FL,"ERR %s() got null (%p, %p)",FCT,a,b);
@@ -1360,7 +1382,7 @@ T dotProd(const T* a, const T* b, size_t n, T x, char conj) {
 };
 
 template <class T> inline
-T dotProd(const T* a, const T* b, size_t n, char conj) {
+T Wb::dotProd(const T* a, const T* b, size_t n, char conj) {
    T x=T(0); 
 
    if (n) { x=dotProd(a,b,n,x,conj); }
@@ -1372,7 +1394,7 @@ T dotProd(const T* a, const T* b, size_t n, char conj) {
 };
 
 template <class T> inline
-void TimesElRange(T* a, const T* b, size_t n, char conj) {
+void Wb::TimesElRange(T* a, const T* b, size_t n, char conj) {
 
    if (!n) { return; }
 
@@ -1388,7 +1410,7 @@ void TimesElRange(T* a, const T* b, size_t n, char conj) {
 };
 
 template <class T> inline
-void timesElRange(T* c, const T* a, const T* b, size_t n, char conj) {
+void Wb::timesElRange(T* c, const T* a, const T* b, size_t n, char conj) {
 
    if (!n) { return; }
    if (!a || !b || !c) wblog(FL,
@@ -1404,7 +1426,7 @@ void timesElRange(T* c, const T* a, const T* b, size_t n, char conj) {
 };
 
 template <class T> inline
-void timesElRange_add(
+void Wb::timesElRange_add(
    T* c, const T* a, const T* b, size_t n, T bfac, char conj
 ){
    size_t i=0;
@@ -1432,7 +1454,7 @@ void timesElRange_add(
 };
 
 template <class T> inline
-void timesElRange_OM(T* c, 
+void Wb::timesElRange_OM(T* c, 
    const T* a, const T* b, 
    size_t N, unsigned M, char conj
 ){
@@ -1463,7 +1485,7 @@ void timesElRange_OM(T* c,
 };
 
 template<class T> inline
-T overlap(
+T Wb::overlap(
    const T* a, const T* b, size_t n,
    size_t stride, 
    char tnorm __attribute__ ((unused))
@@ -1478,7 +1500,7 @@ T overlap(
 };
 
 template<> inline
-wbcomplex overlap(
+wbcomplex Wb::overlap(
    const wbcomplex* a, const wbcomplex* b, size_t n,
    size_t stride, char tnorm 
 ){
@@ -1497,7 +1519,7 @@ wbcomplex overlap(
 };
 
 template<class T>
-T gs_project_range(
+T Wb::gs_project_range(
    T *a, const T *b, 
    size_t n, size_t stride, char isnorm, char tnorm
 ){
@@ -1517,7 +1539,7 @@ T gs_project_range(
 };
 
 template <class T> inline 
-size_t replRange(T* a, size_t n, T x, T v) {
+size_t Wb::replRange(T* a, size_t n, T x, T v) {
 
    size_t i,m=0;
 
@@ -1528,23 +1550,14 @@ size_t replRange(T* a, size_t n, T x, T v) {
    return m;
 }
 
-template <class T> inline 
-size_t replRange(
-   const char *F, int L, T *a, size_t n, T x, T v
-){
-   size_t m=replRange(a,n,x,v);
-   if (m) wblog(F,L,"Skipped %d NaN's",m);
-   return m;
-};
-
-inline size_t countNaN(double* a, size_t m) {
+inline size_t Wb::countNaN(double* a, size_t m) {
    size_t i,n=0;
    for (i=0; i<m; i++) { if (std::isnan(a[i])) ++n; }
    return n;
 };
 
    template <class T>
-   void cpyZRange(
+   void Wb::cpyZRange(
       const double *R, const double *I, T *Z, size_t n
    ){
       wblog(FL,"ERR %s not applicable for type '%s'\n(%p,%p,%p,%d)",
@@ -1552,7 +1565,7 @@ inline size_t countNaN(double* a, size_t m) {
    };
 
    template <>
-   void cpyZRange(
+   void Wb::cpyZRange(
       const double *R, const double *I, wbcomplex *Z, size_t n
    ){
       for (size_t i=0; i<n; i++)
@@ -1560,7 +1573,7 @@ inline size_t countNaN(double* a, size_t m) {
    }
 
    template <class T>
-   void splitZRange(
+   void Wb::splitZRange(
       const T *Z, double *R, double *I, size_t n
    ){
       wblog(FL,"ERR %s not applicable for type `%s'",
@@ -1568,7 +1581,7 @@ inline size_t countNaN(double* a, size_t m) {
    }
 
    template <>
-   void splitZRange(
+   void Wb::splitZRange(
       const wbcomplex *Z, double *R, double *I, size_t n
    ){
       for (size_t i=0; i<n; i++) {
@@ -1576,7 +1589,7 @@ inline size_t countNaN(double* a, size_t m) {
    }
 
 template<> 
-void chopTiny_float(double *d, size_t n, double ref) {
+void Wb::chopTiny_float(double *d, size_t n, double ref) {
 
    size_t i; if (!n) return;
 
@@ -1601,7 +1614,7 @@ void chopTiny_float(double *d, size_t n, double ref) {
 };
 
 template<> 
-double chopTiny_imag(wbcomplex *z, size_t n, double eps) {
+double Wb::chopTiny_imag(wbcomplex *z, size_t n, double eps) {
 
    double i2=0, r2=0; size_t k=0; 
 
@@ -1617,7 +1630,7 @@ double chopTiny_imag(wbcomplex *z, size_t n, double eps) {
 };
 
 template<> 
-void chopTiny_z(wbcomplex *z, size_t n, double eps) {
+void Wb::chopTiny_z(wbcomplex *z, size_t n, double eps) {
 
    size_t k=0; double a2, r2=0, i2=0;
 
@@ -1632,7 +1645,7 @@ void chopTiny_z(wbcomplex *z, size_t n, double eps) {
 };
 
 template<class T>
-void invertIndex(
+void Wb::invertIndex(
     const wbvector<T> &i1, unsigned N,
     wbvector<T> &i2, char lflag
 ){
@@ -1652,7 +1665,7 @@ void invertIndex(
    for (k=i=0; i<N; i++) if (flag[i]==0) i2[k++]=i;
 }
 
-void setRand(wbvector<wbcomplex> &zz, double fac, double shift) {
+void Wb::setRand(wbvector<wbcomplex> &zz, double fac, double shift) {
    size_t i=0; fac/=(double)RAND_MAX;
 
    if (shift==0.)
@@ -1664,14 +1677,14 @@ void setRand(wbvector<wbcomplex> &zz, double fac, double shift) {
 }
 
 template<class T>
-void set2avg(T *dd, const size_t n) {
+void Wb::set2avg(T *dd, const size_t n) {
    size_t i;  T dbl=0; if (!n) return;
    for (i=0; i<n; ++i) { dbl+=dd[i]; }; dbl/= n;
    for (i=0; i<n; ++i) { dd[i]=dbl;  }
 };
 
 template<class T>
-void getDiff(const wbvector<T> &xx, wbvector<T> &dx) {
+void Wb::getDiff(const wbvector<T> &xx, wbvector<T> &dx) {
    size_t i, n=xx.len; dx.init(n);
    for (i=1; i<n; i++) {
        dx[i-1] += (dx[i] = xx[i]-xx[i-1]);
@@ -1680,7 +1693,7 @@ void getDiff(const wbvector<T> &xx, wbvector<T> &dx) {
 }
 
 template<class TX, class TY>
-TY IntTrapez(const TX *xx, const TY *yy, const size_t n) {
+TY Wb::IntTrapez(const TX *xx, const TY *yy, const size_t n) {
    TY s=0;
 
    for (size_t i=1; i<n; ++i) {
@@ -1689,8 +1702,6 @@ TY IntTrapez(const TX *xx, const TY *yy, const size_t n) {
 
    return s;
 };
-
-}; 
 
 template<class T>
 void markSet(

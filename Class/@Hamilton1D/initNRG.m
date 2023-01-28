@@ -1,10 +1,59 @@
 function [H0,Iout]=initNRG(HAM,varargin)
 % function [H0,Iout]=initNRG(HAM [,opts])
 %
-%    initialize A by NRG like prescription using given
-%    Hamiltonian. This initializes both, AK as well
-%    as HK. To have an RL orthonormalized state with kc=1,
-%    the procedure starts at the right end of the system.
+%    Initialize A-tensors in DMRG matrix product state by NRG like
+%    prescription of iterative diagonalization using given Hamiltonian.
+%    This initializes both, AK as well as HK. In order to generate
+%    an RL orthonormalized state with kc=1, the procedure starts
+%    at the right end of the system (k=L) and stops at k=1. At k=1
+%    then the DMRG states to be targeted globally are selected.
+%
+% Options
+%
+%   '-v'        more verbose mode
+%   'Nkeep',..  number of states/multiplets to keep during NRG iterations (16)
+%   'rtol',...  tolerance used with ortho2site()
+%   '--maxS'    use fully symmetrized superposition within ground state space
+%   '--cplx'    make data complex (even if Hamiltonian is real)
+%
+% Final targeting of states at iteration / site k=(1 <- L):
+%
+%   'Qtot',..   (ground state) symmetry sector to choose;
+%               if empty, the symmetry sector(s) of the NRG
+%               low-energy states is/are taken (default:
+%               [] if NPsi or dQtotN is set, all-zero otherwise)
+%
+%   'NPsi',...  global number of states/multiplets to target
+%
+%      Here NPsi>0 enforces global Psi index, including NPsi=1.
+%      Default: NPsi=0, in which case if also Qtot is not set
+%      this tries to initialize the DMRG starting state in
+%      the NRG ground state in the global scalar symmetry sector
+%      also representing the vacuum state, namely with Qtot all-zeros.
+%      In this case no additional index for the global state
+%      is required. For NPsi>1, a global index is required
+%      in any case as this simultaneously targets multiple states.
+%      Its label / itag by default is set to `Psi'. This label
+%      is also expected later when performing DMRG sweeps for the
+%      case that multiple states are targeted.
+%
+%   'dQtotN',.. is alternative to NPsi above, specifying [d(Qtot),nPsi]
+%
+%      dQtotN may contain multiple rows and thus permits to explicitly
+%      set the number of multiplets to target in the global symmetry
+%      sectors specified. The additional trailing column represents
+%      nPsi=dQtotN(:,end) such that NPsi = sum(nPsi); the specified
+%      symmetry sectora are relative to Qtot, hence the naming `d(Qtot)'.
+%      Same as with NPsi above, if Qtot is not specified, the symmetry
+%      sector of the `NRG ground state' is taken for Qtot.
+%
+%      Note that for NPsi>1 or dQtotN the distribution ov states or
+%      multiplets over the symmetry sectors may change via truncation
+%      in the Davidson algorithm in the DMRG sweeps. However, the DMRG
+%      ensures that in each symmetry sector chosen during initialization
+%      at least one state or multipiplet is maintained throughout,
+%      irrespective whether lower discarded global eigenstates exist
+%      in other symmetry sectors also targeted.
 %
 % Wb,Apr08,14 ; Wb,Jul06,16
 
@@ -196,9 +245,8 @@ function [H0,Iout]=initNRG(HAM,varargin)
           + contractQS(Xk.AK,'!1*',{Xk.AK,Qopl,['-op:' t3]});
      end
 
-     NPsi1=max(1,NPsi); HK=getBlockHK(Xk);
-
      if k==1,
+        NPsi1=max(1,NPsi); HK=getBlockHK(Xk);
         ltag=iff(NPsi>0,'PSI','WRN');
 
         eN=ee(:,1); q=1E-6*mean(diff(eN(1:min(end,10))));
@@ -300,8 +348,7 @@ function [H0,Iout]=initNRG(HAM,varargin)
         if g>1 && NPsi1<=1 && maxS
            wblog('NB!','using symmetrized ground state space (--maxS)');
            u=repmat(1/sqrt(g),1,g);
-           for i=1:numel(i1)
-              j=i1(i); l=numel(I.EK.data{i2(i)});
+           for i=1:numel(i1), j=i1(i);
               Xk.AK.data{j}=contract(u,Xk.AK.data{j}(1:g,:,:),2,1);
            end
         else

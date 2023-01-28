@@ -51,6 +51,15 @@ namespace Wb {
 
    const char* rstrstr (const char *s1, const char *s2);
 
+   int strrep(
+      const char *S0, 
+      const char *t0, 
+      const char *t2, 
+      char *Sout,     
+      size_t N,       
+      char gflag='g'  
+   );
+
    void shift(char *s, unsigned n, int p, char erase=0);
 
    void shift(char *s, unsigned n, int p, const char *srep);
@@ -94,6 +103,9 @@ namespace Wb {
 
    template <class T>
    bool anyUnqual(const T* a, const size_t n, const T &x);
+
+   template <class T> inline
+   bool anyUnequal(const T* a, const size_t n, const T &x);
 
    template <class T>
    T getdscale(const T* d, size_t n);
@@ -314,6 +326,8 @@ class num2Fmt {
    template <class T> 
    size_t nnzRange(const T* a, size_t m);
 
+   void update_range_stride(size_t &n, const size_t stride);
+
    template <class T, class T2> inline
    void cpyStride(
       T2* d,          
@@ -322,21 +336,22 @@ class num2Fmt {
       const unsigned *idx, unsigned m,
       unsigned D2=-1, 
       unsigned D0=-1, 
-      char add_flag=0
+      char add=0
    );
 
-   template <class T, class T2> inline
+   template <class T, class T2>
    void cpyStride(
-      T2* d,          
+      T2* d2,         
       const T* d0,    
-      unsigned n,     
-      unsigned m,     
-      unsigned D2=-1, 
-      unsigned D0=-1, 
-      char add_flag=0
-   ){
-      return cpyStride(d,d0,n,(unsigned*)NULL,m,D2,D0,add_flag);
-   };
+      size_t n,       
+      size_t m,       
+      size_t D2=-1,   
+      size_t D0=-1,   
+      T2 fac2=0, T fac0=1 
+   );
+
+   template <class T, class TB> 
+   void cpyRange(T* a, const TB* b, size_t n, T afac, TB bfac);
 
    template <class T>        
    void cpyRange(T* a, const T* b, size_t n); 
@@ -409,6 +424,18 @@ class num2Fmt {
       T *v1, const T *v2, 
       size_t n, size_t stride=1, char isnorm=0, char tnorm=0
    );
+
+   template <class T> 
+   size_t replRange(T* a, size_t n, T x, T v);
+
+   template <class T> inline 
+   size_t replRange(const char *F, int L, T *a, size_t n, T x, T v) {
+      size_t m=replRange(a,n,x,v);
+      if (m) wblog(F,L,"Skipped %d NaN's",m);
+      return m;
+   };
+
+   size_t countNaN(double* a, size_t m);
 
    template<class T>
    void chopTiny_float(T *d, size_t n, T dref=-1) { return; };

@@ -60,18 +60,18 @@ template <class TQ, class TD, class TE=double>
 class QBlock { 
   public:
 
-    QBlock() : qdim(1) {};
+    QBlock() : qdim_tot(1) {};
 
-    QBlock& init() {
-       I0.init(); Ik.init(); It.init(); idx.init(); qdim=1;
+    QBlock& init() { qdim_tot=1; qdim.init();
+       I0.init(); Ik.init(); It.init(); idx.init();
        Q1.init(); S1.init(); D1.init(); A.init(); S.init();
        Q2.init(); S2.init(); D2.init(); U.init(); Vc.init();
        return *this;
     };
 
     QBlock& operator=(const QBlock &B) {
-       if (this!=&B) {
-          I0=B.I0; Ik=B.Ik; idx=B.idx; qdim=B.qdim;
+       if (this!=&B) { qdim_tot=B.qdim_tot; qdim=B.qdim;
+          I0=B.I0; Ik=B.Ik; idx=B.idx;
           Q1=B.Q1; S1=B.S1; D1=B.D1; A=B.A; S=B.S;
           Q2=B.Q2; S2=B.S2; D2=B.D2; U=B.U; Vc=B.Vc;
        }
@@ -87,12 +87,11 @@ class QBlock {
     );
 
     void initFromBlockMatrix(const char *F, int L,
-       QSpace<TQ,TD> &B,
-       const wbarray<TD> &MM,   
-       const iTags &it,   
-       char flag,
-       const wbperm *cgp=NULL   
-    );
+       QSpace<TQ,TD> &B,      
+       const wbarray<TD> &MM, 
+       const iTags &it,       
+       const wbperm *cgp=NULL 
+    ) const;
 
     void updateBlockDim(unsigned dim2);
 
@@ -102,7 +101,7 @@ class QBlock {
           "length mismatch (mark.len=%d/%d)",FCT,mark.len,S.len);
        mark.find(Ik);
           for (; i<mark.len; ++i) { if (!mark[i]) s2t+=S[i]*S[i]; }
-          if (qdim!=1) { s2t*=qdim; }
+          if (qdim_tot!=1) { s2t*=qdim_tot; }
        return s2t;
     };
 
@@ -113,7 +112,7 @@ class QBlock {
        wblog(F_L,"%s() QBlock content ======================= %N",FCT);
        A.print("sub(PSI)"); if (t) {
        printf("=> itags: \"%s\"",STR_(t)); }
-       printf("      qdim=%d\n\n",qdim);
+       printf("      qdim_tot=%d\n\n",qdim_tot);
        printf("      Q =[ %s; %s ]\n",STR(Q1),STR(Q2));
        printf("      S =[ %s; %s ]\n",STR(S1),STR(S2));
        printf("      D1=[ %s ]\n",STR(D1));
@@ -121,27 +120,28 @@ class QBlock {
     };
 
     mxArray* toMx() const { 
-       const char *f[]={
-          "A","qdim", "Q1","S1","D1", "Q2","S2","D2", 
-          "I0","Ik","idx","U","S","Vc"                
+       const char *f[]={ "A","qdim_tot","qdim",  
+          "Q1","S1","D1", "Q2","S2","D2",        
+          "I0","Ik","idx","U", "S", "Vc"         
        };
        unsigned i=0, n=1;
-       mxArray *q=mxCreateStructMatrix(n,1,14,f);
+       mxArray *q=mxCreateStructMatrix(n,1,15,f);
 
        mxSetFieldByNumber(q,i, 0, A .toMx());
-       mxSetFieldByNumber(q,i, 1, numtoMx(double(qdim)));
-       mxSetFieldByNumber(q,i, 2, Q1.toMx());
-       mxSetFieldByNumber(q,i, 3, S1.toMx());
-       mxSetFieldByNumber(q,i, 4, D1.toMx());
-       mxSetFieldByNumber(q,i, 5, Q2.toMx());
-       mxSetFieldByNumber(q,i, 6, S2.toMx());
-       mxSetFieldByNumber(q,i, 7, D2.toMx());
-       mxSetFieldByNumber(q,i, 8, I0.toMx());
-       mxSetFieldByNumber(q,i, 9, Ik.toMx());
-       mxSetFieldByNumber(q,i,10, idx.toMx());
-       mxSetFieldByNumber(q,i,11, U .toMx());
-       mxSetFieldByNumber(q,i,12, S .toMx());
-       mxSetFieldByNumber(q,i,13, Vc.toMx());
+       mxSetFieldByNumber(q,i, 1, numtoMx(double(qdim_tot)));
+       mxSetFieldByNumber(q,i, 2, qdim.toMx());
+       mxSetFieldByNumber(q,i, 3, Q1.toMx());
+       mxSetFieldByNumber(q,i, 4, S1.toMx());
+       mxSetFieldByNumber(q,i, 5, D1.toMx());
+       mxSetFieldByNumber(q,i, 6, Q2.toMx());
+       mxSetFieldByNumber(q,i, 7, S2.toMx());
+       mxSetFieldByNumber(q,i, 8, D2.toMx());
+       mxSetFieldByNumber(q,i, 9, I0.toMx());
+       mxSetFieldByNumber(q,i,10, Ik.toMx());
+       mxSetFieldByNumber(q,i,11, idx.toMx());
+       mxSetFieldByNumber(q,i,12, U .toMx());
+       mxSetFieldByNumber(q,i,13, S .toMx());
+       mxSetFieldByNumber(q,i,14, Vc.toMx());
 
        return q;
     };
@@ -150,6 +150,9 @@ class QBlock {
        mxArray *a=toMx();
        mxPutAndDestroy(FL,a,vname,ws);
     };
+
+    unsigned qdim_tot;       
+    wbvector<unsigned> qdim; 
 
     QSpace<TQ,TD> A;  
     wbindex I0;       
@@ -165,16 +168,14 @@ class QBlock {
     wbarray<TD> U,Vc; 
     wbvector<TE> S;   
 
-    unsigned qdim;    
-
   protected:
   private:
 };
 
 template <class TQ, class TD>
-class SVDData { 
+class SVD_Data { 
   public:
-    SVDData() {};
+    SVD_Data() {};
 
     void blockSVD(const QSpace<TQ,TD> &PSI, const unsigned K);
 

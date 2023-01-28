@@ -846,10 +846,14 @@ void GESVD_old(
       W.data, W.len, i
    );
 
-   if (i) { i=-i;
-      wblog(FL,"ERR %s() dgesvd: invalid argument %d\n%s",FCT,i,
-      i==5 || i==8 ? "hint: check input data for NAN or INF values" : "");
+   if (i) { if (i<0) { i=-i; wblog(FL,
+      "ERR %s() dgesvd: invalid argument %d\nhint: %s",FCT,i,
+      i==5 || i==8? "check input data for NAN or INF values":"??");
    }
+   else { wblog(FL,
+      "ERR %s() dgesvd returned e=%d\n"
+      "hint: check input data for NAN or INF values",FCT,i);
+   }}
 };
 
 template<> inline

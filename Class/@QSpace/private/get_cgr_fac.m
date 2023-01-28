@@ -69,7 +69,7 @@ function [dfac,sw]=get_cgr_fac(A,i,sflag)
   if nargout>1 || nargin>=3 && sflag
      if norm(q-1)>1E-12, q=prod(q);
         if numel(q)==1
-           if sflag>1
+           if sflag>1 && q && abs(q)~=1
               [sw,~]=wbrat(q); r=0;
               sw=regexprep(sw{1},'sqrt\((.*)\)(?@r=1;)',[srd '$1']);
               if ~r, sw_=sw;

@@ -252,7 +252,6 @@ function [E,e0]=getEnergy(HAM,k,dir)
      else wblog('WRN','%s',s); end
    end
 
-wbstop
    [J,hconj]=get_bondH(HAM,k1);
    [HPsi,E]=get_HPsi(Psi,X1,X2,J,hconj);
 

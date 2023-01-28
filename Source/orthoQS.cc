@@ -143,8 +143,7 @@ void MPS_ORTHO_1(
    wbperm P,iP,pb;
    OPTS opts;
 
-   if (PSI.isEmpty()) wblog(FL,
-      "ERR input arg #1 (PSI) is empty!");
+   if (PSI.isEmpty()) wblog(FL,"ERR input arg #1 (PSI) is empty");
    if (I.len!=1 || I.data[0]>r) wblog(FL,
       "ERR invalid index set arg #2 (%s/%d)",STR(I),r);
 
@@ -164,7 +163,7 @@ void MPS_ORTHO_1(
       "ERR invalid index set%N%N%s%N",str);
    iP.init(P,'i');
 
-   PSI.Permute(P,0,'i'); K=I.len; 
+   PSI.Permute(P,0,'i'); K=I.len;
 
    if (Nkeep<0) {
    Nkeep=get_Nkeep_estimate(PSI,K); }
@@ -195,8 +194,7 @@ void MPS_ORTHO_2(
    mxArray *S;
    OPTS opts;
 
-   if (PSI.isEmpty()) wblog(FL,
-      "ERR input arg #1 (PSI) is empty!");
+   if (PSI.isEmpty()) wblog(FL,"ERR input arg #1 (PSI) is empty");
    r=PSI.rank(FL);
 
    opts.init(argin,nargin);

@@ -2137,13 +2137,13 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::initIdentityCG(
 };
 
 template <class TQ, class TD>
-TD QSpace<TQ,TD>::norm2() const {
+TD QSpace<TQ,TD>::norm2(char checks) const {
 
    if (gotCGS(FL)>0) {
       unsigned i=0, j=0; TD c2, x2=0;
       for (i=0; i<DATA.len; ++i) {
          for (c2=1,j=0; j<CGR.dim2; ++j) {
-            if (CGR(i,j)) { c2*=TD(CGR(i,j).norm2()); }
+            if (CGR(i,j)) { c2*=TD(CGR(i,j).norm2(checks)); }
          }
          x2+=c2*(DATA[i]->norm2());
       }
@@ -3628,7 +3628,7 @@ int QSpace<TQ,TD>::NormCGW(char full, char skipzeros,
          }
       }
    }
-   else {
+   else { 
       unsigned r=rank(FL);
       wbvector<unsigned> iOM;
 
@@ -4560,7 +4560,7 @@ void QSpace<TQ,TD>::EigenSymmetric(
           double *em=EM.rec(l);
           for (j=0; j<d; ++j, em+=2) {
              em[0]=b.S[j] - Eref; 
-             em[1]=QB[i].qdim;
+             em[1]=QB[i].qdim_tot;
           }
        }
 
@@ -4570,7 +4570,7 @@ void QSpace<TQ,TD>::EigenSymmetric(
           b.S.select(b.Ik,Ek); if (E0) Ek-=(*E0);
 
           x.updateBlockDim(b.Ik.len);
-          x.initFromBlockMatrix(FL,A1, UX, tk,'U');
+          x.initFromBlockMatrix(FL,A1, UX, tk); 
 
           E1.initDiagonal(x.Q2, D2_,Ek,'r'); 
 
@@ -4584,7 +4584,7 @@ void QSpace<TQ,TD>::EigenSymmetric(
           b.S.select(b.It,Et); if (E0) Et-=(*E0);
 
           x.updateBlockDim(b.It.len);
-          x.initFromBlockMatrix(FL,A1, UX, td,'U');
+          x.initFromBlockMatrix(FL,A1, UX, td); 
 
           E1.initDiagonal(x.Q2, D2_,Et, 'r');  
 

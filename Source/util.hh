@@ -79,6 +79,10 @@ namespace Wb {
    size_t getFileSize(const char* f); 
    double getFileTime(const char* f, char w='m'); 
 
+   double GET_mtime(const char *F, int L, const char *f, const struct stat &S);
+   double GET_atime(const char *F, int L, const char *f, const struct stat &S);
+   double GET_ctime(const char *F, int L, const char *f, const struct stat &S);
+
    bool fexist(const char *f, char type='*');
    bool isFile(const char *f);
    bool isDir(const char *f);
@@ -402,12 +406,14 @@ void rand::scale_rand(int *x, size_t n, double fac) {
 template <class T,
 typename std::enable_if< std::is_floating_point<T>::value , T>::type* = nullptr >
 bool is_finite(const T *x, size_t n) {
-   for (size_t i=0; i<n; ++i) { if (!is_finite(x[i])) return 0; }
+   for (size_t i=0; i<n; ++i) { if (!::isfinite(x[i])) { return 0; }}
    return 1;
 };
 
+bool is_finite(const wbcomplex *x, size_t n);
+
 template <class T, 
-typename std::enable_if< !std::is_floating_point<T>::value , T>::type* = nullptr >
+typename std::enable_if< is_integral<T>::value , T>::type* = nullptr >
 bool is_finite(const T *x, size_t n) { return 1; }
 
 }; 
