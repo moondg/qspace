@@ -36,7 +36,7 @@ function A=getAtensorLoc(varargin)
   end
 
   n=numel(varargin);
-  if n<2 || (n==2 && ~mpsIsQSpace(varargin{2}))
+  if n<2 || (n==2 && ~isQSpace(varargin{2}))
      varargin=[varargin, {getvac(varargin{1},0)}];
   end
 

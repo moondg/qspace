@@ -146,8 +146,8 @@ function [A,varargout] = QSpace(varargin)
      error('Wb:ERR','\n%s ERR invalid QSpace constructor set',lineno);
   end
 
-  check_QSpace(A);
   A=struct_to_QSpace(A);
+  check_QSpace(A);
 
 end
 
@@ -166,9 +166,11 @@ end
 % -------------------------------------------------------------------- %
 function check_QSpace(A)
 
-  for k=1:numel(A), [q,s]=mpsIsQSpace(A(k));
-     if ~q, A(k), s, error('Wb:ERR', ...
-        sprintf('%s ERR invalid QSpace constructor (%d)',lineno,k));
+  nA=numel(A);
+  for k=1:nA, [q,s]=isQSpace(A(k));
+     if ~q, A(k), 
+        if nA>1, s=[s, sprintf(', %d/%d',k,nA)]; end
+        wbdie('invalid QSpace (%s)',s);
      end
   end
 

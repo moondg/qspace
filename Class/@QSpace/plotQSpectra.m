@@ -25,100 +25,100 @@ function Iq=plotQSpectra(H,varargin)
 % Adapted from getrhoESpectra.m
 % Wb,Apr11,12
 
-   getopt('INIT',varargin);
-      Rflag= getopt('-ES');
-      scale= getopt('-sc');
-      e0   = getopt('e0',[]);
+  getopt('INIT',varargin);
+     Rflag= getopt('-ES');
+     scale= getopt('-sc');
+     e0   = getopt('e0',[]);
 
-      if     getopt('-x'), vflag=1;
-      elseif getopt('-v'), vflag=2;
-      elseif getopt('-V'), vflag=3;
-      else vflag=0; end
+     if     getopt('-x'), vflag=1;
+     elseif getopt('-v'), vflag=2;
+     elseif getopt('-V'), vflag=3;
+     else vflag=0; end
 
-      yl = getopt('yl',[]);
-      y2 = getopt('y2',[]);
-      is = getopt('ws',[]);
-      mat= getopt('mat','');
-      istr=getopt('istr',-1);
-      eps= getopt('eps',[]);
-      x2 = getopt('x2',[]);
+     yl = getopt('yl',[]);
+     y2 = getopt('y2',[]);
+     is = getopt('ws',[]);
+     mat= getopt('mat','');
+     istr=getopt('istr',-1);
+     eps= getopt('eps',[]);
+     x2 = getopt('x2',[]);
 
-      if getopt('-gca'), ah=gca;
-      else ah=getopt('ah',[]); end
+     if getopt('-gca'), ah=gca;
+     else ah=getopt('ah',[]); end
 
-      odeg=getopt('odeg',{});
-   SOP=getopt('get_last',[]);
+     odeg=getopt('odeg',{});
+  SOP=getopt('get_last',[]);
 
-   if isempty(H)
-      error('Wb:ERR','\n   ERR invalid usage (empty H)');
-   end
+  if isempty(H)
+     error('Wb:ERR','\n   ERR invalid usage (empty H)');
+  end
 
-   d=getsym(H,'-d');
-   if isempty(is)
-      i=find(d==1); if numel(i)>1, is=i(1:2);
-      elseif numel(d)>1
-        is=[i, find(d==2)]; if numel(is)>2, is=is(1:2); end
-      else is=1;
-      end
-   end
+  d=getsym(H,'-d');
+  if isempty(is)
+     i=find(d==1); if numel(i)>1, is=i(1:2);
+     elseif numel(d)>1
+       is=[i, find(d==2)]; if numel(is)>2, is=is(1:2); end
+     else is=1;
+     end
+  end
 
-   ns=numel(is);
-   for i=1:ns
-      ws(i)=getsym(H,'-I',is(i));
-   end
+  ns=numel(is);
+  for i=1:ns
+     ws(i)=getsym(H,'-I',is(i));
+  end
 
-   q=isdiag(H); ylb=''; tstr='';
-   if ~q
-      [ee,Ie]=eigQS(H); R_=H; q=2; ee=ee(:,1);
-      if ~isreal(ee)
-         error('Wb:ERR','\n   ERR got complex eigenvalues !?'); end
-      H=QSpace(Ie.EK); ylb='eig()';
-   else
-      if q==1,
-         for i=1:numel(H.data), H.data{i}=diag(H.data{i}).'; end
-      elseif q==3,
-         for i=1:numel(H.data), H.data{i}=H.data{i}.'; end
-      elseif q~=2, error('Wb:ERR',['\n   ' ...
-         'ERR invalid input QSpace (not an operator!? [%g])'],q);
-      end
-      ee=sort(cat(2,H.data{:}));
-   end
+  q=isdiag(H); ylb=''; tstr='';
+  if ~q
+     [ee,Ie]=eigQS(H); R_=H; q=2; ee=ee(:,1);
+     if ~isreal(ee)
+        error('Wb:ERR','\n   ERR got complex eigenvalues !?'); end
+     H=QSpace(Ie.EK); ylb='eig()';
+  else
+     if q==1,
+        for i=1:numel(H.data), H.data{i}=diag(H.data{i}).'; end
+     elseif q==3,
+        for i=1:numel(H.data), H.data{i}=H.data{i}.'; end
+     elseif q~=2, error('Wb:ERR',['\n   ' ...
+        'ERR invalid input QSpace (not an operator!? [%g])'],q);
+     end
+     ee=sort(cat(2,H.data{:}));
+  end
 
-   if Rflag
-      se=SEntropy(H);
-      q=[trace(QSpace(H)), sum(ee(find(ee<0)))];
-      if abs(q(1)-1)>1E-10, error('Wb:ERR',...
-        '\n   ERR got invalid density matrix (trace=%g !?)',q(1)); end
-      if abs(q(2))>1E-10, error('Wb:ERR',...
-        '\n   ERR got invalid density matrix (rho<0 @ %.3g !?)',q(2)); end
-      ee(find(ee<=0))=[]; ee=sort(-log10(ee));
-      e0=min(ee);
-      for i=1:numel(H.data), dd=H.data{i}; 
-         dd(find(dd<=0))=[];
-         H.data{i} = sort(-log10(dd))-e0;
-      end
-      ylb={'entanglement spectrum (', '[-log_{10}(\rho)]', ylb};
-      if ~isempty(ylb{end})
-           ylb=[ylb{1}, ylb{3}, ', ' ylb{2}];
-      else ylb=[ylb{:}];
-      end
-   else
-      if isempty(e0), e0=min(ee); end
-      if abs(e0)>1E-12
-         for i=1:numel(H.data)
-            H.data{i}=H.data{i}-e0; 
-         end
-      end
-      ylb={'energy', ylb};
-      if ~isempty(ylb{end})
-           ylb=[ylb{1} ' (' ylb{2} ')'];
-      else ylb=[ylb{:}];
-      end
-   end
+  if Rflag
+     se=SEntropy(H);
+     q=[trace(QSpace(H)), sum(ee(find(ee<0)))];
+     if abs(q(1)-1)>1E-10, error('Wb:ERR',...
+       '\n   ERR got invalid density matrix (trace=%g !?)',q(1)); end
+     if abs(q(2))>1E-10, error('Wb:ERR',...
+       '\n   ERR got invalid density matrix (rho<0 @ %.3g !?)',q(2)); end
+     ee(find(ee<=0))=[]; ee=sort(-log10(ee));
+     e0=min(ee);
+     for i=1:numel(H.data), dd=H.data{i}; 
+        dd(find(dd<=0))=[];
+        H.data{i} = sort(-log10(dd))-e0;
+     end
+     ylb={'entanglement spectrum (', '[-log_{10}(\rho)]', ylb};
+     if ~isempty(ylb{end})
+          ylb=[ylb{1}, ylb{3}, ', ' ylb{2}];
+     else ylb=[ylb{:}];
+     end
+  else
+     if isempty(e0), e0=min(ee); end
+     if abs(e0)>1E-12
+        for i=1:numel(H.data)
+           H.data{i}=H.data{i}-e0; 
+        end
+     end
+     ylb={'energy', ylb};
+     if ~isempty(ylb{end})
+          ylb=[ylb{1} ' (' ylb{2} ')'];
+     else ylb=[ylb{:}];
+     end
+  end
 
-   if nargout
-      Iq=add2struct('-',H,ee,e0,Rflag);
-   end
+  if nargout
+     Iq=add2struct('-',H,ee,e0,Rflag);
+  end
 
   if isempty(ah)
      s=mfilename; if Rflag, s=[s ':R']; else s=[s ':E']; end

@@ -125,13 +125,13 @@ double contractDATA_group(const char *F, int L,
                if (Cr.cgw) {
                   if (Cr.rtype==CGR_ABELIAN) {
                      if (Cr.wscalar1()) { Cr.cgw.init(); continue; }
-                     else { q|=1; }    
+                     else { q|=1; }  
                   }
-                  else if (Cr.wnumel()==1) {
-                     if (Cr.rtype!=CGR_CTR_ZERO &&
-                         Cr.rtype!=CGR_CTR_SCALAR) { q|=2; }
+                  else { size_t n=Cr.wnumel();
+                     if (Cr.rtype==CGR_CTR_SCALAR) { if (!n) { q|=2; }} else
+                     if (Cr.rtype==CGR_CTR_ZERO  ) { if ( n) { q|=4; }}
+                     else { q|=8; }
                   }
-                  else { q|=4; }
                   if (q) {
                      wblog(FL,"ERR %s() invalid %sCRef\n%s",
                      FCT, q&1? "abelian ": (q&2 ? "scalar ":""), STR(Cr));

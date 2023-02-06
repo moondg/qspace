@@ -1,11 +1,18 @@
 function A=diag(A,varargin)
 % Function: A=diag(A [,OPTS])
 %
-%    extract diagonal of operator in QSpace format
-%    alternatively, if only diagonal is stored,
-%    diagonals become full again.
+%    Toggle that switches between diagonal formats similar to matlab's
+%    behavior of diag(): for full operator A, extract diagonal of A
+%    in QSpace format; if already in diagonal format, diagonals become
+%    restored to full format again.
 %
 % Options
+%
+%    -d    return numeric data vector of diagonal only
+%    -t    store diagonal as rows (by default,
+%          diag(M) of matrix M puts diagonal of M into column)
+%    -c    compact diagonal QSpace to diagonal only
+%          this throws an error if non-diagonal data is present in A
 %
 % Wb,Sep08,06
 
@@ -13,33 +20,53 @@ function A=diag(A,varargin)
    % lflag=getopt('-l'); % lenient (accept Psi with all-in arrows) // Wb,Oct08,19
      dflag=getopt('-d');
      trans=getopt('-t');
+     cflag=getopt('-c');
   getopt('check_error');
 
   if nargin<1 || nargout>1
      eval(['help ' mfilename]);
-     if nargin || nargout, error('Wb:ERR','invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
+  if dflag && numel(A)~=1, wbdie(...
+    'invalid usage (single QSpace object required)'); end
+
   if dflag
-     if numel(A)~=1, error('Wb:ERR',...
-        'Invalid QSpace (need single QSpace object)'); end
-     A=diag_1(A,dflag,trans);
+     A=diag_1(A,cflag,dflag,trans);
   else
      for k=1:numel(A)
-        A(k)=diag_1(A(k),dflag,trans);
+        A(k)=diag_1(A(k),cflag,dflag,trans);
      end
   end
 end
 
 % -------------------------------------------------------------------- %
-function A=diag_1(A,dflag,trans)
+function A=diag_1(A,cflag,dflag,trans)
+
+  nd=numel(A.data);
+
+  if cflag, fullD=repmat(-1,1,nd);
+     for i=1:nd, s=size(A.data{i}); m=numel(find(s~=1));
+        if numel(s)~=2, wbdie('unexpected data size'); end
+        if prod(s)>1, fullD(i)=(m>1);
+           if fullD(i), M=A.data{i};
+              j=1:min(s); j = j + s(1)*(j-1);
+              x=norm(M(j)); M(j)=0;
+              e=norm(M,'fro')/max(1,x); if e>1E-12
+              wbdie('got non-diagonal data @ %.3g (got option -c)',e); end
+           end
+        end
+     end
+     if numel(unique(fullD(fullD>=0)))>1
+        wbdie('invalid usage (got mixed diagonal setting)'); 
+     end
+  end
 
   if isempty(A.Q)
-     if isempty(A.data)
+     if ~nd
         if dflag, A=[]; end
      else
-        if numel(A.data)~=1
-           error('Wb:ERR','\n   ERR unexpected QSpace structure'); end
+        if nd~=1, wbdie('unexpected QSpace structure'); end
         q=diag(A.data{1}); if trans, q=q.'; end
         if dflag, A=q; else A.data{1}=q; end
      end
@@ -47,15 +74,14 @@ function A=diag_1(A,dflag,trans)
   end
 
   if numel(A.Q)~=2
-     wberr('%s requires rank-2 object (%d).',mfilename,length(A.Q)); 
+     wbdie('%s requires rank-2 object (%d)',mfilename,length(A.Q)); 
   elseif ~isdual_(A.Q{1},A.Q{2})
-     wberr('%s requires block-diagonal operator.',mfilename);
+     wbdie('%s requires block-diagonal operator',mfilename);
   end
 
-  n=length(A.data);
   if trans
-       for i=1:n, A.data{i}=diag(A.data{i}).'; end
-  else for i=1:n, A.data{i}=diag(A.data{i})  ; end
+       for i=1:nd, A.data{i}=diag(A.data{i}).'; end
+  else for i=1:nd, A.data{i}=diag(A.data{i})  ; end
   end
 
   if dflag

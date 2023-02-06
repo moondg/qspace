@@ -771,7 +771,8 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
      a=fixScalarOp(Y(end)); q=trace(a)/trace(E2);
      Iout.Y(end)=makeIrop(skipzeros(a-q*E2));
 
-     wblog(' * ','%g Y-op%s (SW)',nY,iff(nY~=1,'s',''));
+     if vflag
+     wblog(' * ','%g Y-op%s (SW)',nY,iff(nY~=1,'s','')); end
 
   end
 

@@ -5359,12 +5359,13 @@ wbstring CRef<TQ>::toStr(char lflag) const {
 
       if (!cgw) {
          if (rtype==CGR_ABELIAN)
-              l=snprintf(s,n,"(abelian @ [1])");
-         else l=snprintf(s,n,"(%s @ [])", rtype.tostr());
+              { l=snprintf(s,n,"(abelian @ [1])"); }
+         else { l=snprintf(s,n,"(%s @ [])", rtype.tostr()); }
       }
       else {
-         if (wnumel()>1) wblog(FL,"ERR %s() "
+         if (wnumel()>1 && rtype!=CGR_CTR_SCALAR) { wblog(FL,"ERR %s() "
             "got cgw %s for %s (cgb=0)",FCT,SSTR(cgw),rtype.tostr());
+         }
          l=snprintf(s,n,"%s to %s", 
          rtype==CGR_CTR_SCALAR ? "fully contracted": rtype.tostr(), STR(cgw));
       }

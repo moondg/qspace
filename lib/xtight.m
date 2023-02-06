@@ -36,10 +36,10 @@ function xl=xtight(varargin)
         s=sprintf('getxlim() returned [%s]',vec2str(xl));
         if dx<0, wberr(s); else wblog('WRN',s); end
      else
-        xl=xlim__(ah,xl)
+        xl=xlim__(ah,xl);
      end
   elseif dflag
-     xl=xlim__(ah,getxlim('-data'))
+     xl=xlim__(ah,getxlim('-data'));
   else
      xopts={'YLim',get(ah,'YLim'),'YLimMode',get(ah,'YLimMode')};
      axis tight;

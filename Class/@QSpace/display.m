@@ -16,7 +16,9 @@ function display(A,varargin)
   getopt('init',varargin);
      m  = getopt('m',[6 2 2]);
      nm = getopt('nm','');
-     vflag=getopt('-v');
+
+     if getopt('-v'), vflag=2;
+     elseif getopt('-c'), vflag=0; else vflag=1; end
 
      aflag=getopt('-a'); if ~aflag,
      aflag=getopt('-f'); end
@@ -47,7 +49,7 @@ function display(A,varargin)
      if sflag, A=sort(A,sperm{:}); end
   end
 
-  sA=size(A); n=prod(sA);
+  sA=size(A); nA=prod(sA);
   i=find(sA>1); rA=numel(i);
   if rA<2
      if  sA(1)==1, sA(1)=[]; else rA=2; end
@@ -60,7 +62,11 @@ function display(A,varargin)
 
   ov2s={'-f','nofac','sep'};
 
-  nl=char(10); if n>2 && ~vflag, cflag=1; nl=''; else cflag=0; end
+  cflag=1; nl=''; nl_='';
+  if nA<=2 || vflag
+     cflag=0; nl=char(10); if vflag>1, nl_='\n'; end
+  end
+
   if isequal(nm,'ans'), nm=''; end
 
   if rA<2
@@ -70,7 +76,7 @@ function display(A,varargin)
   if ~isempty(nm) && ~cflag, fmt(1)=[]; end
   fmt=regexprep(fmt,'%1g','%g');
 
-  if n==1
+  if nA==1
      if ~isempty(nm)
         if any(nm~=' ')
              s={sprintf('%s = ',nm)};
@@ -79,15 +85,16 @@ function display(A,varargin)
         s={''};
      end
      display_1(A,m,Eflag,vflag,s{:});
-  elseif n>1
-     ise=zeros(1,n);
-     for i=1:n, ise(i)=is_empty(A(i)); end
+  elseif nA>1
+     ise=zeros(1,nA); nl2=nl;
+     for i=1:nA, ise(i)=is_empty(A(i)); end
 
-     for i=1:n
-        if i>1 && i<n && all(ise(i-1:i+1))
-           if ~eflag, fprintf(1,'    :\n'); end % '\n...' : ┋┊
+     for i=1:nA
+        if i>1 && i<nA && all(ise(i-1:i+1))
+           if ~eflag, fprintf(1,[nl_ '    :\n']); end % '\n...' : ┋┊
            eflag=eflag+1; continue;
-        else eflag=0; end
+        elseif eflag, eflag=0; if vflag<2, nl2=''; end
+        else nl2=nl; end
 
         iA=ind2sub_aux(sA,i); l=sum(nm=='%');
         if l==length(iA), s=sprintf(nm,iA);
@@ -102,18 +109,18 @@ function display(A,varargin)
            if ~cflag || vflag
                 display_1(A(i),m,Eflag,vflag,s);
            else info(A(i),s,'-C'); end
-        else fprintf(1,[nl '%s(empty)\n'],s); end
+        else fprintf(1,[nl2 '%s(empty)\n'],s); end
      end
   else
-     s=sprintf('x%g',size(A(i)));
+     s=sprintf('x%g',size(A));
      s={'empty QSpace array', s(2:end)};
      if ~isempty(nm)
-          fprintf(1,[nl '   %s is %s (%s)\n'],nm,s{:});
-     else fprintf(1,[nl '   (%s; %s)\n'], s{:});
+          fprintf(1,[nl '   %s is %s (%s)\n' nl],nm,s{:});
+     else fprintf(1,[nl '   (%s; %s)\n'      nl],   s{:});
      end
   end
 
-  if ~cflag
+  if ~cflag && nA
      q=[isempty(A(end).Q) isempty(A(end).data)];
      if ~q(1) || all(q), fprintf(1,'\n'); end
   end

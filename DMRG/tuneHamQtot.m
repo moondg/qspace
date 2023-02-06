@@ -1,175 +1,192 @@
-function [Hq,Iq]=tuneHamQtot(H0,Qtot,varargin)
-% function [Hq,Iq]=tuneHamQtot(H0,Qtot [,opts])
+function [Ht,Iout]=tuneHamQtot(H0,Qtot,varargin)
+% function [Ht,Iout]=tuneHamQtot(H0,Qtot,Qop [,opts])
 %    
 %    Adjust `chemical potential' (dmu) in every symmetry label
-%    such that Hq = H0+dmu*NQ has low-energy expectation value
+%    such that Ht = H0+dmu*NQ has low-energy expectation value
 %    equal or close to Qtot.
 %
-%     * here Qtot can be an arbitrary float
-%     * symmetry labels with nan-entries in Qtot are ignored
-%     * by default, also non-abelian symmetry labels with q=0
-%       are ignored (use flag -f to also include them).
+%     - here Qtot can be an arbitrary float
+%
+%     - symmetries that have NaN-entries in Qtot are not tuned,
+%       i.e., ignored, abelian and non-abelian alike
 %
 % Wb,Aug18,18
 
+% previously for non-abelian symmetries also Qtot==0 enries
+% were ignored, i.e., set to NaN
+
   getopt('init',varargin);
-     pflag=getopt('-p');
-     bfac =getopt('bfac',1.5);
-     miter=getopt('miter',8);
-     fflag=getopt('-f');
+     nrep=getopt('nrep',2);
+     Ufac=getopt('Ufac',[]);
   Qop=getopt('get_last',[]);
 
   if numel(H0.data)==1 && isequal(H0.Q{1},0)
-       oR={'-q'};
-  else oR={};
+     if ~Qop, wbdie(...
+     'invalid usage (Qop needs to be specified hqving Q=0)'); end
   end
 
-  nq=size(H0.Q{1},2); nd=numel(H0.data);
-  if ~isempty(Qop)
-     if ~isQSpace(Qop), error('Wb:ERR',...
-       '\n   ERR invalid usage (invalid QSpace Qop)'); end
-     if numel(Qop)~=nq, error('Wb:ERR',...
-       '\n   ERR invalid usage (numel(Qop)=%g/%g)',numel(Qop),nq); end
-     Q=H0.Q{1};
-  else
-     Qop=repmat(QSpace(getIdentityQS(H0,2)),1,nq);
+  if ~isempty(Qop), wtune=1; else wtune=2; end
+
+  EK0=get_EK0(H0);
+  dE=mean(diff(sort(cat(1,EK0.data{:}))));
+  if dE<1E-3
+     if dE<=0, wbdie('invalid dE=%g',dE); 
+     else wblog('WRN','got small dE=%g',dE); end
+  end
+
+  Ek=cat(1,EK0.data{:});
+  Q=EK0.Q{1}; q=sum((Q-repmat(Qtot,size(Q,1),1)).^2,2);
+  i=(q==min(q)); 
+
+  if any(Ek(i)<min(Ek)+1E-6)
+   % already got lowest (closest) symmetry sector correct - done!
+   % WRN! the tuning below may lead to collaps to single symmetry
+   % sector after truncation due to dense spectrum at low energies
+   % i.e., when having dE >> level spacing since dE necessarily is a
+   % rather crude estimate that does not care about model specifics
+   % => avoid tuning if there is no need! // Wb,Feb02,23
+     Ht=H0;
+     if nargout>1, EKt=EK0; mu=[]; xd=[]; yd=[];
+        Iout=add2struct('-',Qtot,wtune,Qop,EK0,EKt,dE);
+        if wtune, Ufac=0;
+             Iout=add2struct(Iout,Ufac);
+        else Iout=add2struct(Iout,mu,xd,yd); end
+        Iout.wtune=-Iout.wtune;
+     end
+     return
+  end
+
+  if wtune==2
+     if isempty(Ufac) || iscell(Ufac), x=dE/25;
+        if isempty(Ufac)
+             Ufac=x;
+        else Ufac=x*Ufac{1}; end
+     end
+  elseif ~isempty(Ufac)
+     wbdie('invalid usage (got Ufac with Qop)');
+  end
+
+  r=getsym(H0,'-r'); nsym=numel(r);
+  s=r; s(find(r==0))=1;
+
+  Q=H0.Q{1}; n2=size(Q,2);
+  if sum(s)~=n2, wbdie('got nq=%g/%g',n2,sum(s)); end
+
+  if ~isequal(size(Qtot),[1,n2]), wbdie('invalid Qtot'); end
+  nd=numel(H0.data); iq=cumsum([0,s]); 
+
+  for k=1:nsym, j=iq(k)+1:iq(k+1);
+     qj=Qtot(j); Qj=uniquerows(Q(:,j)); dQ=Qj-repmat(qj,size(Qj,1),1);
+     x=sum(dQ.^2,2); l=find(x==min(x)); 
+
+     if r(j)>1 && ~isfinite(norm(qj)) && any(~isnan(qj))
+        wbdie('invalid usage (got partial NaN for non-abelian)');
+     elseif wtune==1 && r(j), wbdie(['invalid usage ' ... 
+        '(Qop may only be specified for abelian symmetry)']);
+     end
+  end
+
+  if all(isnan(Qtot)), wbdie([
+     'invalid usage (0/%g symmetries to tune)\n' ...
+     'hint: use flag -f or Qtot~=0'],nsym); 
+  end
+
+  if wtune==2
+   % NB! this case acts differently as compared to when Qop is
+   % specified (see below) where the latter case acts like shifting
+   % the chemical potential in a linear fashion assuming U1 symmetry.
+   % Here by building Qop from scratch, this can only make use of the
+   % total symmetry labels for given block as found in H0.Q.
+   % Here for the case no Qop: H0 -> H0 + HU with HU = U*Id
+   %  * Qop is initialized to diagonal matrices
+   %    with U = Ufac*norm(symmetry labels - Qtot)^2
+   %  * by using norm2(), this acts like an interaction (Casimir) that
+   %    favors Qtot, like Hubbard (U/2)*(\hat{n}-nd)^2 to favor filling nd.
+   % => the correction added to H0 here with no Qop this needs to be
+   %    substracted in the caller (NRG) routine, prior to reentering
+   %    here for the next iteration, since otherwise iteraction at
+   %    earlier iterations gets included multiplet times!
+   %    (this is in contrast to no Qop, in which case only the local
+   %    chemical potential at a given iteration/site is tuned).
+   % #UNDO_TUNE_QOP // Wb,Jan31,23
+     Qop=repmat(getIdentity(H0,2),1,nsym);
      Q=Qop(1).Q{1};
 
+     q=size(Ufac);
+     if q(1)~=1 || q(2)>1 && q(2)~=nsym
+        wbdie('invalid usage (size mismatch of Ufac (%d/%d)',q(2),nsym); 
+     end
+
      for i=1:nd, s=size(Qop(1).data{i});
-         for k=1:nq
-             Qop(k).data{i}=diag(repmat(Q(i,k),1,s(1)));
-         end
+        for k=1:nsym, j=iq(k)+1:iq(k+1);
+           U=Ufac(min(end,k))*sum((Q(i,j)-Qtot(j)).^2);
+           Qop(k).data{i}=diag(repmat(U,1,s(1)));
+        end
      end
+
+     Ht=H0;
+     for k=1:numel(Qop), Ht=Ht+Qop(k); end
+
+     if nargout>1
+        EKt=get_EK0(Ht);
+        for k=1:nsym, Qop(k)=diag(Qop(k),'-c'); end
+        Iout=add2struct('-',Qtot,wtune,Qop,EK0,EKt,dE,Ufac);
+     end
+     return
   end
 
-  [ee,Ie]=eigQS(H0);
-  EK=Ie.EK; nd=numel(EK.data);
+  nQ=numel(Qop);
 
-  de=zeros(1,nd);
-  l=0; for i=1:nd, l=max(l,numel(EK.data{i})); end;
-  l1=min(8,max(2,ceil(0.6*l)));
-  for i=1:nd
-      q=EK.data{i}; l=numel(q); if l>=l1
-      de(i)=mean(diff(q(1:l1))); end
-  end
-  de=de(find(de));
-  de=min(de);
-
-  beta=bfac/de;
-
-  EK=QSpace(EK);
-
-  R=getrhoQS(EK,beta);
-  E=getIdentityQS(R,2);
-
-  qr=zeros(2,nq);
-  for i=1:nq
-     x0(i)=getscalar(QSpace(contractQS(R,'*',Qop(i))));
-     qr(:,i)=[min(Q(:,i)); max(Q(:,i))];
+  if ~isQSpace(Qop), wbdie('invalid usage (invalid QSpace Qop)'); end
+  for k=1:nQ, Q=Qop(k).Q; l=numel(Q);
+     if l~=2, wbdie('invalid Qop (got rank-%d)',l);
+     elseif ~isequal(Q{:}), wbdie('invalid Qop (non-scalar)'); end
   end
 
-  if pflag
-    m=32; x1=linspace(-4,4,m); y1=zeros(m,nq);
-    for j=1:nq
-       for i=1:m
-          R=getrhoQS(diag(EK)+x1(i)*Qop(j),beta,oR{:});
-          y1(i,j)=getscalar(QSpace(contractQS(R,'*',Qop(j))));
-       end
-    end
-  end
+  nx=5; xd=linspace(-1,1,nx); yd=zeros(1,nx);
 
-  if ~isequal(size(Qtot),[1,nq])
-     error('Wb:ERR','\n   ERR invalid Qtot'); end
+  Ht=H0;
+  for irep=1:nrep
+     for k=1:nQ
+        j=find(sum(Qop(k).Q{1}.^2,1));
+        j=j(find(~isnan(Qtot(j))));
+        if isempty(j), wbdie('invalid Qop (fails to address Qtot)'); end
 
-  if ~fflag
-     r=getsym(H0,'-r'); s=r; s(find(r==0))=1; ns=numel(r);
-     if sum(s)~=nq
-        error('Wb:ERR','\n   ERR got nq=%g/%g !?',nq,sum(s)); end
-     q=cell(1,ns); for i=1:ns, q{i}=repmat(r(i),1,s(i)); end
-     q=[q{:}]; Qtot(find(q & Qtot==0))=nan;
-  end
-
-  y2=zeros(miter,nq); x2=zeros(miter,nq); y2(1,:)=x0;
-
-  for j=1:nq
-     w=1; if isnan(Qtot(j)), continue; end
-     for i=2:miter
-        dy=flipud(y2(max(1,i-2):i-1,j)-Qtot(j));
-        if dy(1)==0
-           x2(i:end,j)=x2(i-1,j);
-           y2(i:end,j)=y2(i-1,j); continue;
-        end
-
-        if w==1
-           if     all(dy>0), x2(i,j)=x2(i-1,j)+1;
-           elseif all(dy<0), x2(i,j)=x2(i-1,j)-1;
-           else w=2; end
-        end
-        if w==2
-           if dy(1)*dy(2)<0
-                x2(i,j)=mean(x2([i-1,i-2],j));
-           else x2(i,j)=x2(i-1,j)+0.5*diff(x2(i-2:i-1,j));
+        for i=1:nx, [Ex,Ix]=eigQS( Ht + xd(i) * Qop(k) );
+           Rx=Ix.EK; Rq=Rx; Q=Rq.Q{1}; E0=min(Ex(:,1));
+           Qop(k)
+           for l=1:numel(Rx.data)
+              x = exp( -(Rx.data{l}(1)-E0) / dE);
+              Rq.data{l} = x*sum( (Qtot(j) - Q(l,j)).^2 );
+              Rx.data{l} = x;
            end
+           yd(i) = trace(Rq)/trace(Rx);
         end
 
-        R=getrhoQS(diag(EK)+x2(i,j)*Qop(j),beta,oR{:});
-        y2(i,j)=getscalar(QSpace(contractQS(R,'*',Qop(j))));
+        p=polyfit(xd,yd,2);
+        x=-p(2)/(2*p(1));
+        mu(irep,k)=x;
+
+        Ht = Ht + x*Qop(k);
      end
   end
 
-  Hq=H0; dmu=zeros(1,nq); qtot=zeros(1,nq);
-  for j=1:nq, if isnan(Qtot(j)), continue; end
-     q=abs(y2(:,j)-Qtot(j)); i=find(q==min(q),1);
-     dmu(j)=x2(i,j);
-     Hq=Hq+dmu(j)*Qop(j);
+  if nargout>1
+     EKt=get_EK0(Ht);
+     Iout=add2struct('-',Qtot,wtune,Qop,EK0,EKt,dE,mu,xd,yd);
   end
-
-  [~,I2]=eigQS(Hq);
-  R=getrhoQS(I2.EK,beta);
-  for j=1:nq
-     qtot(j)=getscalar(QSpace(contractQS(R,'*',Qop(j))));
-  end
-
-  Iq=add2struct('-',qr,dmu,qtot,beta);
-
-  if ~pflag, return, end
-ah=smaxis(2,1,'tag',mfilename); addt2fig Wb
-header('%M :: \beta=%.4g, m_{iter}=%g',beta,miter);
-
-setax(ah(1,1))
-
-  xl=[min(x1), max(x1); min(x2(:)), max(x2(:))];
-  xl=[min(xl(:,1)), max(xl(:,2))];
-
-  for i=1:nq
-     lo={'Color',getcolor(i)};
-     h=plot(x1,y1(:,i),lo{:}); if i==1, xlim(xl); hold on; end
-     set(h,'Disp',sprintf('sym-label q_{%g}',i));
-     if ~isnan(Qtot(i))
-        plot(x2(:,i),y2(:,i),'*',lo{:});
-        plot(xl,Qtot([i i]),':',lo{:});
-     end
-     ymark(qr(:,i),':',lo{:});
-  end
-  sms(3); xmark(0,'k:'); ytight(1.1);
-  legdisp
-
-setax(ah(2,1))
-
-  for i=1:nq, if isnan(Qtot(i)), continue; end
-      lo={'Color',getcolor(i)};
-      plot(x2(:,i),y2(:,i)-Qtot(i),'o-',lo{:}); hold on
-  end
-  sms(3); togglelogy
-
-  l=0;
-  for i=1:nq, if isnan(Qtot(i)), continue; end
-     q=[y2(end,i), Qtot(i)]; l=l+1;
-     postext({'NW',[0 -0.1*(l-1)]},...
-        'Qtot(%g) = %g @ %.2g  having d\mu=%+.3g\n',...
-        i,q(1),abs(diff(q)/max(1,abs(mean(q)))),x2(end,i));
-  end
-  label('{\delta}\mu','{\delta}Qtot');
 
 end
+
+% -------------------------------------------------------------------- %
+
+function EK=get_EK0(HK)
+
+  [ee,Ie]=eigQS(HK);
+  EK=Ie.EK; nd=numel(EK.data);
+  for i=1:nd, EK.data{i}=min(EK.data{i}); end
+
+end
+
+% -------------------------------------------------------------------- %
 

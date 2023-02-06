@@ -595,8 +595,8 @@ unsigned contractQS_itags(
       }
       catch (...) {
          A.print("A"); B.print("B"); 
-         wblog(FL,"ERR invalid cell-contraction (l=%d: k=%d/%d)\n"
-        "%s <> %s, P=[%s]",level,k,len,STR(ica),STR(icb),STR(P));
+         wblog(FL,"ERR invalid cell-contraction (l=%d: k=%d/%d)\nhaving "
+         "ic = %s <> %s, P=[%s]",level,k,len,STR(ica),STR(icb),STR(P));
       }
 
       C.UnsetFlags();

@@ -11,7 +11,7 @@ function isf=isFermOp(HAM,varargin)
 
   nargs=numel(varargin); isf=cell(1,nargs);
   for k=1:nargs, Ak=varargin{k};
-     if ~mpsIsQSpace(Ak), wberr('invalid usage'); end
+     if ~isQSpace(Ak), wberr('invalid usage'); end
      isf{k}=zeros(size(Ak)); NK=numel(Ak);
   end
 
