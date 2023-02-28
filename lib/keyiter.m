@@ -21,20 +21,24 @@ function k=keyiter(k,varargin)
 % Example usage:
 %
 %   while 1, ..., k=keyiter(k); if k<1 || k>kmax, break; end
-%   k=[1 15]; while keyiter(k), ...; end  % k is altered here in caller!
+%   k=1:15; while keyiter(k), ...; end  % k is altered here in caller!
 %
 % Wb,Jan09,09
 
    persistent kold kmin kmax krange kflag fflag; k__=kold;
-   if isempty(kmin), kmin=1; fflag=0; end
 
-   if nargin==1 && ischar(k) && nargout==0
-      if isequal(k,'next'), kflag=+1; clear k; return, end
+   if nargin==1 && ischar(k)
+      if ~nargout && isequal(k,'next'), kflag=+1; clear k
+      elseif isequal(k,'--status')
+         k=add2struct('-',krange,kmin,kmax,kold,kflag,fflag);
+      end
+      return
    end
 
+   if isempty(kmin), kmin=1; fflag=0; end
+
    if nargin && isnumeric(k) && numel(k)>1
-      if nargin>1 && isnumeric(varargin{1})
-      wberr('invalid usage'); end
+      if nargin>1 && isnumeric(varargin{1}), wberr('invalid usage'); end
 
       krange=k; kmin=1; kmax=numel(k); kold=1; k=krange(kold);
          vn=inputname(1);
@@ -52,7 +56,7 @@ function k=keyiter(k,varargin)
       '\n   clear keyiter: press <ctrl-c> ...\n\n');
    else
       if isempty(kold), fprintf(1,...
-      '\n   keyiter: press keys to navigate ...\n\n'); end
+      '\n   keyiter: press keys to navigate (see help) ...\n\n'); end
       kold=k;
 
       if nargin>1 && isnumeric(varargin{1})
@@ -113,6 +117,10 @@ function k=keyiter(k,varargin)
 
    if ~isempty(krange) && k>=kmin && k<=kmax
    kold=k; k=krange(k); end
+
+   if isempty(kmax)
+      wblog('WRN','got k=%d empty/initialized kmax',k);
+   end
 
       vn=inputname(1);
       if ~isempty(vn), assignin('caller',vn,k); end

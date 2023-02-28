@@ -15,6 +15,7 @@ function mfig(varargin)
 %    '-all'    make .pdf and .eps
 %    '-q'      quiet mode
 %    '-f'      force overwriting of preexisting pdf-file with same name.
+%    '~h'      hide header
 %
 % Wb (C) 2005 / Jan26,05 / Feb06,07 / Wb,Aug02,16
 
@@ -40,6 +41,8 @@ function mfig(varargin)
      elseif getopt('-V'); vflag=4;
      else vflag=2;
      end
+
+     hflag=getopt('~h');
 
   varargin=getopt('get_remaining'); narg=length(varargin);
 
@@ -77,9 +80,11 @@ function mfig(varargin)
         'PaperSize',fs,'PaperPosition',[0 0 fs] ...
    );
 
-  h=findall(groot,'type','axes','tag','frame');;
-  if ~isempty(h)
-     set(h,'visible','off')
+  if hflag
+     h=findall(groot,'type','axes','tag','frame');;
+     if ~isempty(h)
+        set(h,'visible','off')
+     end
   end
 
 % wblog('TST','ppi=%g', ppi);
@@ -122,7 +127,7 @@ function mfig(varargin)
 
   set(fh,'Position',fp);
 
-  if ~isempty(h), set(h,'visible','on'); end
+  if hflag && ~isempty(h), set(h,'visible','on'); end
 
 end
 

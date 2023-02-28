@@ -29,6 +29,7 @@ function [ss,Iout]=calc_ScorS(HAM,varargin)
   getopt('init',varargin);
      kflag=getopt('-k');
      vflag=getopt('-v');
+     Rc=getopt('Rc',[]);
   k0=getopt('get_last',[]);
 
   [kc,Ic]=Load_DMRG_AK(HAM); AA=QSpace(1,0);
@@ -60,7 +61,7 @@ function [ss,Iout]=calc_ScorS(HAM,varargin)
         else k0=[]; end
      end
   end
-  if isempty(k0), k0=floor((L+1)/2); end
+  if isempty(k0), k0=ceil(L/2); end
 
   rop=zeros(1,nops);
   for i=1:nops, rop(i)=rank(ops(i)); end
@@ -74,21 +75,76 @@ function [ss,Iout]=calc_ScorS(HAM,varargin)
 
   kmax=min(L,max([k0,kc])+3);
 
-  SL=QSpace(1,nops); XL=QSpace(1,L);
-  SR=QSpace(1,nops); XR=QSpace(1,L);
+  k=kc;
+  [Ak,AA]=Load_DMRG_AK(HAM,k,AA);
+
+  IPsi=-1;
+  if rank(Ak)==4, Akc=Ak;
+     dg=getDimQS(Ak); nPsi=dg(1,end); NPsi=dg(end);
+     if NPsi>1
+        if isempty(Rc), IPsi=1;
+        elseif isint(Rc), IPsi=Rc;
+        elseif isequal(Rc,'all'), IPsi=1:nPsi;
+        else IPsi=0;
+           if ~isa(Rc,'QSpace'), wbdie('invalid Rc'); end
+           q=normQS(Rc); if abs(q-1)>1E-12
+              wblog('WRN','invalid trace(Rc) = %.4g',q); 
+              Rc=Rc/normQS(Rc);
+           end
+        end
+     end
+
+     Ik=load_dmrg_data(HAM,k,'info');
+     if isfield(Ik,'Eg'), Eg=Ik.Eg(end); 
+     else
+        wblog('WRN','missing field HAM(%d).info.Eg',kc);
+        Eg=getIdentity(Ak,4);
+     end
+     e=max(abs(diag(Eg,'-d'))); e=1E-12*max(1,e);
+
+     nd=numel(Eg.data); j=0;
+     for i=1:nd
+         n=length(Eg.data{i}); j=j+1:j+n;
+         Eg.data{i}=double(single(Eg.data{i})) + e*j; j=j+n;
+     end
+  end
+
+for iPsi=IPsi
+  if iPsi>=0
+     if iPsi>0
+        wblog(' * ','computing correlations based on state %d/%d',iPsi,nPsi);
+
+        e0=diag(Eg,'-d'); e0=e0(iPsi);
+        for i=1:nd, j=find(Eg.data{i}==e0,1);
+           if ~isempty(j)
+              Rc=getsub(Eg,i);
+                 n=length(Eg.data{i});
+                 q=zeros(n,1); q(j)=1;
+              Rc.data{1}=q; break
+           end
+        end
+        Rc=Rc/normQS(Rc);
+     end
+     Ak=contract(Akc,4,Rc,1);
+     AA(k)=Ak;
+  end
+
+  SL=QSpace(1,nops);
+  SR=QSpace(1,nops);
+
+ if kc<k0, XL=QSpace(1,L); XL(k)=contract(Ak,'!2*',Ak); end
+ if kc>k0, XR=QSpace(1,L); XR(k)=contract(Ak,'!1*',Ak); end
 
   if vflag, fprintf(1,'\n'); end
-  for k=kc:k0-1
+  for k=kc+1:k0-1
      if vflag, wblog('>> ','overlap %g/%g (L=%g) \r\\',k,k0,L); end
      [Ak,AA]=Load_DMRG_AK(HAM,k,AA);
-     if k>kc, Q={XL(k-1),Ak}; else Q=Ak; end
-     XL(k)=contract(Ak,'!2*',Q);
+     XL(k)=contract(Ak,'!2*',{XL(k-1),Ak});
   end
-  for k=kc:-1:k0
+  for k=kc-1:-1:k0
      if vflag, wblog('<< ','overlap %g/%g (L=%g) \r\\',k,k0,L); end
      [Ak,AA]=Load_DMRG_AK(HAM,k,AA);
-     if k<kc, Q={Ak,XR(k+1)}; else Q=Ak; end
-     XR(k)=contract(Ak,'!1*',Q);
+     XR(k)=contract(Ak,'!1*',{Ak,XR(k+1)});
   end
   if vflag, fprintf(1,'\n'); end
 
@@ -169,9 +225,14 @@ function [ss,Iout]=calc_ScorS(HAM,varargin)
         end, end
      end
   end
+  if iPsi>0, SS{iPsi}=ss; end
+end
+
   if vflag, fprintf(1,'\n\n'); end
 
-  Iout=add2struct('-',istr,ops,isf,isc,iloc,kc,k0);
+  if isvar('SS') && numel(SS)~=1, ss=SS; end
+  if nargout>1
+     Iout=add2struct('-',istr,ops,isf,isc,iloc,Rc,kc,k0); end
   if kflag, wbstop, end
 
 end

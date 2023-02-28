@@ -112,10 +112,18 @@
 
 #define MX_CHECK_HELPER_NARGS(n1,n2,m) \
    if (nargin>0 && \
-       checkHelpVersion(argin[0], nargout ? argout : NULL)) { return; } \
-   if (nargin<n1 || (n2>=n1 && nargin>n2) || (m>=0 && nargout>m)) { \
-       sprintf(str,"ERR invalid usage (%d/%d args)",nargin,nargout); \
-       if (nargin || nargout) wblog(FL,str); else usage(FL,str); \
+       checkHelpVersion(argin[0], nargout ? argout : NULL)) { return; }; \
+   if (nargin<n1 || (n2>=0 && nargin>n2)) { \
+      strcpy(str,"ERR invalid number of input args"); unsigned l=strlen(str); \
+      if (nargin<n1) \
+           { snprintf(str+l,32," (%d / %d required)",nargin,n1); } \
+      else { snprintf(str+l,32," (%d / %d %s)",nargin,n2, \
+         n1==n2? "expected":"at most"); }; \
+      if (nargin || nargout) wblog(FL,str); else usage(FL,str); \
+   }; \
+   if (m>=0 && nargout>m) { \
+      sprintf(str,"ERR invalid number of output args (%d)",nargout); \
+      if (nargin || nargout) wblog(FL,str); else usage(FL,str); \
    }
 
 template <class T> class wbvector;

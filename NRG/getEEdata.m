@@ -36,7 +36,7 @@ function [EE,hh,iQ,Iout]=getEEdata(HK,varargin)
 % Wb,May29,11
 
   getopt('init',varargin);
-     Ekeep =getopt('EK',Inf);
+     EK    =getopt('EK',Inf);
      E0    =getopt('E0',[]);
      qsel  =getopt('qsel',[]);
      dk    =getopt('dk',[]);
@@ -147,22 +147,23 @@ function [EE,hh,iQ,Iout]=getEEdata(HK,varargin)
   end
 
   QQ=cell(1,L); DD=cell(1,L); DC=cell(1,L);
-  for i=1:L, H=HK(i); if isempty(H.Q), continue; end
-     if Ekeep<Inf, n=numel(H.data);
-       for j=1:n, h=H.data{j};
-          H.data{j}=h(find(h<=Ekeep));
-       end
-       HK(i)=H;
+  for i=1:L, if ~isempty(HK(i).Q)
+     if EK<Inf, q=HK(i).data;
+       for j=1:numel(q), q{j}=q{j}(find(q{j}<=EK)); end
+       HK(i).data=q;
      end
-     [QQ{i},DD{i},DC{i}]=getQDimQS(H,2);
-  end
+     [QQ{i},DD{i},DC{i}]=getQDimQS(HK(i),2);
+     if ~isequal(QQ{i},HK(i).Q{1})
+        wbdie('getQDimQS returned different Q (order)!');
+     end
+  end, end
 
   Q=uniquerows(cat(1,QQ{:})); nQ=size(Q,1); EE=cell(nQ,L);
   D=zeros(1,nQ); d=[];
 
   for i=1:L, if isempty(QQ{i}), continue; end
      [i1,i2,I]=matchIndex(Q,QQ{i});
-     if ~isempty(I.ix2), error('Wb:ERR','\n   ERR missing Q-data !?'); end
+     if ~isempty(I.ix2), wbdie('missing Q entries !?'); end
      D(i1)=max(D(i1),DD{i}(i2));
      d(i1,:)=DC{i}(i2,:);
      EE(i1,i)=HK(i).data(i2);
@@ -211,7 +212,7 @@ function [EE,hh,iQ,Iout]=getEEdata(HK,varargin)
      end
      if nx, n2=sum(D);
         wblog(1,'<i> removing %g degenerate records (%g, E<%g: %.3g%%)',...
-        nx,eps,Ekeep,100*nx/n1)
+        nx,eps,EK,100*nx/n1)
      end
   end
 
@@ -353,9 +354,6 @@ function [EE,hh,iQ,Iout]=getEEdata(HK,varargin)
         end
      end
   end
-
-  for j=1:ns, hh{1,j}=cat(2,hh{:,j}); end
-  hh=hh(1,:);
 
   if isempty(xd), xl=[1 L];
   else xl=[min(xd), max(xd)]; end

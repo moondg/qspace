@@ -286,7 +286,7 @@ function [H0,Iout]=initNRG(HAM,varargin)
            n=[numel(i1), size(dQtotN,1)];
            if n(1)
               if diff(n), wblog('WRN',...
-                 'only %g/%g symmetry sectors of dQtotN found for PSI',n);
+                 'only %g/%g symmetry sectors found for dQtotN @ k=%d',n,k);
               end
 
               EKt=getsub(QSpace(EKt),i1); ee=sort([EKt.data{:}]);
@@ -320,6 +320,8 @@ function [H0,Iout]=initNRG(HAM,varargin)
 
         if ~found
            [ee,Ie]=eigQS(HK,'Nkeep',NPsi1); ee=ee(:,1);
+           EKt=Ie.EK;
+
            Xk.AK=contract(Ie.AK,1,Xk.AK,1);
            Xk.EK=EKt;
 
@@ -381,7 +383,7 @@ function [H0,Iout]=initNRG(HAM,varargin)
         Xk.AK=getsub(QSpace(Xk.AK),i1);
 
         q=getIdentity(Xk.AK,3,'');
-        if ~sameas(q,E)
+        if ~sameas(q,E,'-l')
             if NPsi1>1
                  s=sprintf('%g multiplets',NPsi1);
             else s='gs-multiplet'; end

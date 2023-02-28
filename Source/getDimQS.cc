@@ -24,7 +24,7 @@ void mexFunction(
     wbvector<widx_t> D,D2;
     char cgflag=0; 
 
-    MX_CHECK_HELPER_NARGS(1,-1,2); 
+    MX_CHECK_HELPER_NARGS(1,1,2); 
 
     str[0]=0;
 
@@ -35,11 +35,11 @@ void mexFunction(
     }
 
     if (mxIsQSpace(argin[0])>0) { 
-       const QSpace<gTQ,gTD> A(argin[0],'r');
+       const QSpace<gTQ,gTD> A(argin[0],'r',0); 
        A.getDim(D,&D2); cgflag=A.gotCGS(FL);
     }
     else {
-       const QSpace<gTQ,wbcomplex> A(argin[0]);
+       const QSpace<gTQ,wbcomplex> A(argin[0],'r',0); 
        A.getDim(D,&D2); cgflag=A.gotCGS(FL);
     }
 

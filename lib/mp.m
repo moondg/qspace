@@ -81,8 +81,11 @@ function Iout=mp(M,varargin)
      if ~cmap
         lght=getopt('-lh');
         cl  =getopt('clim',[]);
-        addrc=~getopt('~addrc');
-     else lght=0; cl=[]; addrc=0; end
+     else lght=0; cl=[]; end
+
+     if ~isempty(v3) && v3, addrc=0;
+     else addrc=~getopt('~addrc');
+     end
 
      tstr=getopt('tstr','z =');
 

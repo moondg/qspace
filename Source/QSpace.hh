@@ -90,13 +90,14 @@ class QSpace {
        }
     };
 
-    QSpace(const char *F, int L, const mxArray *a, char ref=0)
+    QSpace( const char *F, int L, const mxArray *a,
+       char ref=0, char skip_empty=1)
      : otype(QS_NONE), mt(Wb::MEM_DEF), isref(0), ctime(0.)
-     { init(F,L,a,ref); };
+     { init(F,L,a,ref,skip_empty); };
 
-    QSpace(const mxArray *a, char ref=0)
+    QSpace(const mxArray *a, char ref=0, char skip_empty=1)
      : otype(QS_NONE), mt(Wb::MEM_DEF), isref(0), ctime(0.)
-     { init(FL,a,ref); };
+     { init(FL,a,ref,skip_empty); };
 
    ~QSpace() { clearQSpace(); };
 
@@ -221,15 +222,17 @@ class QSpace {
     };
 
     void init(const char *F, int L,
-       const mxArray *S, char ref, unsigned k);
+       const mxArray *S, char ref, unsigned k, char skip_empty);
 
-    void init(const char *F, int L, const mxArray *S, char ref=0) {
+    void init(const char *F, int L, const mxArray *S,
+         char ref=0, char skip_empty=1
+     ) {
         unsigned n = (S ? mxGetNumberOfElements(S) : 0);
         if (n!=1) {
            if (!n) wblog(FL,"ERR %s() got empty array",FCT);
            else    wblog(FL,"ERR %s() got QSpace array (%d entries)",FCT,n);
         }
-        init(F,L,S,ref,0);
+        init(F,L,S,ref,0,skip_empty);
     };
 
     QSpace& setupDATA(const char *F=NULL, int L=0){
@@ -2724,7 +2727,8 @@ template <class TQ, class TD>
 void QSpace<TQ,TD>::init(
    const char *F, int L, const mxArray *S,
    char ref, 
-   unsigned k
+   unsigned k,
+   char skip_empty 
 ){
    unsigned i,j,l,m,n,r,dim1=0,dim2=0; unsigned rk=-1;
    mxArray *aq,*ad,*ai;
@@ -2900,8 +2904,8 @@ void QSpace<TQ,TD>::init(
       if (!*DATA[i]) { ++n; }
    }
 
-   if (n) {
-      m=SkipEmptyData(FL);
+   if (n && skip_empty) {
+      m=SkipEmptyData(FL); 
    }
 
 };

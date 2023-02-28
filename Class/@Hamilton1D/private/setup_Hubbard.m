@@ -4,8 +4,9 @@ function [HAM]=setup_Hubbard(varargin)
 %    'L',...   length of system
 %    'Ly',..   width of system (1)
 %
+%    'U',..    Hubbard onsite interaction [H=U*n(n-1)/2] (0.5)
 %    'mu',..   chemical potential (=> epsilon_i = -mu; 0)
-%    'U',..    Hubbard onsiste interaction [H=U*n(n-1)/2] (0.5)
+%              (alternative option: --ph)
 %
 %    't',...   hopping amplitude (-1)
 %    'tx',..   hopping amplitude in x-direction (tx)
@@ -15,6 +16,8 @@ function [HAM]=setup_Hubbard(varargin)
 %    '--spin'  use spinfull fermions (by default: spinless fermions)
 %    '--perBC' periodic boundary condition
 %              (if Ly<=2, in x-, otherwise y-direction)
+%    '--ph'    choose particle/hole symmetric sector
+%              (only valid if 'mu' is not specified)
 %
 % Wb,Feb06,18
 
@@ -24,17 +27,20 @@ function [HAM]=setup_Hubbard(varargin)
   end
 
   getopt('init',varargin);
-     NC   = getopt('NC',   1);
+     Lx=getopt('L', []);
+     Ly=getopt('Ly', 1);
+     NC=getopt('NC',  1);
 
-     U    = getopt('U',  1/2);
-     mu   = getopt('mu', 0.);
+     U =getopt('U', 1/2);
+     mu=getopt('mu',[]);
+     if isempty(mu)
+        if getopt('--ph'), mu=U/2;
+        else mu=0; end
+     end
 
-     Lx   = getopt('L',   []);
-     Ly   = getopt('Ly',   1);
-
-     t    = getopt('t',   -1);
-     tx   = getopt('tx',  []); if isempty(tx), tx=t; end
-     ty   = getopt('ty',  []); if isempty(ty), ty=t; end
+     t =getopt('t', -1);
+     tx=getopt('tx',[]); if isempty(tx), tx=t; end
+     ty=getopt('ty',[]); if isempty(ty), ty=t; end
 
      perBC= getopt('--perBC');
      if     getopt('--spin' ), Sflag=+1;

@@ -263,7 +263,10 @@ else % !CONTINUE_DMRG
       setdef('NC',1);
 
       oham={Lx,'NC',NC,oham{:}};
-      oham=setopts(oham,'Ly?','mu?','U?','tx?','ty?');
+      oham=setopts(oham,'Ly?','tx?','ty?','U?');
+      if isset('mu') oham=[oham {'mu',mu}];
+      else oham{end+1}='--ph'; end
+
       if isset('thub'), oham={oham{:},'t',thub}; end
       if isset('use_spin' ), oham{end+1}='--spin'; s='S'; else s=''; end
       if isset('u1_charge'), oham{end+1}='--U1charge'; end
@@ -272,23 +275,18 @@ else % !CONTINUE_DMRG
 
       onrg={'Nkeep',Nkeep,'-v'};
 
-      if isset('NPsi') && NPsi>1
-         onrg={onrg{:},'NPsi',NPsi};
-      elseif abs(mu)<1E-8
-         q=0.5*Lx*Ly;
-           if isset('use_spin'), q=[0 2*q]; end
-           if NC>1, q=[q*NC, zeros(1,NC-1)]; end
-         onrg={onrg{:},'Qtot',q}; % half-filling
-      else
-       % Qtot=[] => pick low-energy symmetry sector automatically 
-       % [since in spinless case, charge cumulates]
-         onrg={onrg{:},'Qtot',[]};
-      end
+	% NB! cannot know/fix Qtot yet even for mu~0 since U
+	% may not be specified yet, e.g., by taking default value
+	% Qtot=[] => pick low-energy symmetry sector automatically
+	% [since in spinless case, charge accumulates]
+	  q=[]; if isset('Qtot'), q=Qtot; end
+      onrg={onrg{:},'Qtot',q};
+      if isset('NPsi') && NPsi>1, onrg={onrg{:},'NPsi',NPsi}; end
 
       [HAM]=Hamilton1D('Hubbard',oham,ofout{:});
 
       L=numel(HAM.mpo);
-      if tstflag==1, wblog('TST','%g return',tstflag); return; end
+      if tstflag== 1, wblog('TST','%g return',tstflag); return; end
       if tstflag==-1, wblog('TST',''); keyboard; end
 
       [H0]=initNRG(HAM,onrg{:}); HAM

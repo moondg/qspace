@@ -49,9 +49,7 @@ function Iq=plotQSpectra(H,varargin)
      odeg=getopt('odeg',{});
   SOP=getopt('get_last',[]);
 
-  if isempty(H)
-     error('Wb:ERR','\n   ERR invalid usage (empty H)');
-  end
+  if isempty(H), wbdie('invalid usage (empty H)'); end
 
   d=getsym(H,'-d');
   if isempty(is)
@@ -70,16 +68,14 @@ function Iq=plotQSpectra(H,varargin)
   q=isdiag(H); ylb=''; tstr='';
   if ~q
      [ee,Ie]=eigQS(H); R_=H; q=2; ee=ee(:,1);
-     if ~isreal(ee)
-        error('Wb:ERR','\n   ERR got complex eigenvalues !?'); end
-     H=QSpace(Ie.EK); ylb='eig()';
+     if ~isreal(ee), wbdie('got complex eigenvalues !?'); end
+     H=QSpace(Ie.EK); ylb='eig';
   else
      if q==1,
         for i=1:numel(H.data), H.data{i}=diag(H.data{i}).'; end
      elseif q==3,
         for i=1:numel(H.data), H.data{i}=H.data{i}.'; end
-     elseif q~=2, error('Wb:ERR',['\n   ' ...
-        'ERR invalid input QSpace (not an operator!? [%g])'],q);
+     elseif q~=2, wbdie('invalid input QSpace (not an operator!? [%g])',q);
      end
      ee=sort(cat(2,H.data{:}));
   end
@@ -87,10 +83,10 @@ function Iq=plotQSpectra(H,varargin)
   if Rflag
      se=SEntropy(H);
      q=[trace(QSpace(H)), sum(ee(find(ee<0)))];
-     if abs(q(1)-1)>1E-10, error('Wb:ERR',...
-       '\n   ERR got invalid density matrix (trace=%g !?)',q(1)); end
-     if abs(q(2))>1E-10, error('Wb:ERR',...
-       '\n   ERR got invalid density matrix (rho<0 @ %.3g !?)',q(2)); end
+     if abs(q(1)-1)>1E-10, wbdie(...
+       'got invalid density matrix (trace=%g !?)',q(1)); end
+     if abs(q(2))>1E-10, wbdie(...
+       'got invalid density matrix (rho<0 @ %.3g !?)',q(2)); end
      ee(find(ee<=0))=[]; ee=sort(-log10(ee));
      e0=min(ee);
      for i=1:numel(H.data), dd=H.data{i}; 
@@ -131,9 +127,8 @@ function Iq=plotQSpectra(H,varargin)
      end
      hflag=1;
   else hflag=0;
-     if numel(ah)<ns, error('Wb:ERR',['\n   ERR ' ...
-       'insufficient number of axis handle (%d/%d)'],numel(ah),ns); 
-     end
+     if numel(ah)<ns, wbdie(...
+       'insufficient number of axis handle (%d/%d)',numel(ah),ns); end
      setax(ah(1));
   end
 
@@ -187,13 +182,14 @@ function Iq=plotQSpectra(H,varargin)
      end
   end
 
-  if isempty(yl)
-     yl=max(ee)-min(ee);
-     if numel(ee)>99
-          yl=yl*[-0.05, 0.8 ];
-     else yl=yl*[-0.05, 1.05];
+  if isempty(yl), q=max(ee)-min(ee);
+     if q>0
+        if numel(ee)>99
+             yl=q*[-0.05, 0.8 ];
+        else yl=q*[-0.05, 1.05];
+        end
+        if Rflag, yl(1)=-0.02*diff(yl); end
      end
-     if Rflag, yl(1)=-0.02*diff(yl); end
   elseif numel(yl)==1
      q=max(ee)-e0;
      yl=[ min(ee)-0.02*q, yl ];

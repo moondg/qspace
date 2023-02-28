@@ -969,7 +969,7 @@ void QSpace<TQ,TD>::getQDim(unsigned k,
    wbindex Ig;
    wbperm P;
 
-   if (k>=r) wblog(FL,"ERR %s() dim out of bounds (%d/%d)",FCT,k,r);
+   if (k>=r) wblog(FL,"ERR %s() dim out of bounds (%d/%d)",FCT,k+1,r);
    if (QIDX.dim1!=n) wblog(FL,
       "ERR %s() QSpace inconsistency (%d/%d)",FCT,QIDX.dim1,n);
 

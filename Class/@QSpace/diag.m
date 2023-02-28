@@ -28,10 +28,9 @@ function A=diag(A,varargin)
      if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
-  if dflag && numel(A)~=1, wbdie(...
-    'invalid usage (single QSpace object required)'); end
-
   if dflag
+     if numel(A)~=1, wbdie(...
+       'invalid usage (single QSpace object required)'); end
      A=diag_1(A,cflag,dflag,trans);
   else
      for k=1:numel(A)
@@ -45,11 +44,16 @@ function A=diag_1(A,cflag,dflag,trans)
 
   nd=numel(A.data);
 
-  if cflag, fullD=repmat(-1,1,nd);
-     for i=1:nd, s=size(A.data{i}); m=numel(find(s~=1));
-        if numel(s)~=2, wbdie('unexpected data size'); end
-        if prod(s)>1, fullD(i)=(m>1);
-           if fullD(i), M=A.data{i};
+  if cflag || dflag, fullD=zeros(1,nd);
+     for i=1:nd
+        s=size(A.data{i}); n=prod(s);
+           if numel(s)~=2, wbdie('unexpected data size'); end
+           if n==1, continue; end
+        j=find(s~=1); m=numel(j);
+
+        if m==1, fullD(i)=-j;
+        else fullD(i)=2;
+           if cflag, M=A.data{i};
               j=1:min(s); j = j + s(1)*(j-1);
               x=norm(M(j)); M(j)=0;
               e=norm(M,'fro')/max(1,x); if e>1E-12
@@ -57,9 +61,12 @@ function A=diag_1(A,cflag,dflag,trans)
            end
         end
      end
-     if numel(unique(fullD(fullD>=0)))>1
+     q=unique(fullD(find(fullD)));
+     if isempty(q), q=1;
+     elseif numel(q)>1
         wbdie('invalid usage (got mixed diagonal setting)'); 
      end
+     fullD=q;
   end
 
   if isempty(A.Q)
@@ -79,14 +86,14 @@ function A=diag_1(A,cflag,dflag,trans)
      wbdie('%s requires block-diagonal operator',mfilename);
   end
 
-  if trans
+  if dflag, A=A.data;
+       if fullD>0, for i=1:nd, A{i}=diag(A{i}); end
+            A=cat(1,A{:});
+       else A=cat(-fullD,A{:}); end
+       if trans, A=A.'; end
+  elseif trans
        for i=1:nd, A.data{i}=diag(A.data{i}).'; end
   else for i=1:nd, A.data{i}=diag(A.data{i})  ; end
-  end
-
-  if dflag
-     if trans, i=2; else i=1; end
-     A=cat(i,A.data{:});
   end
 
 end

@@ -21,7 +21,7 @@
            n__(2:2:l__-1)=[];
         end
      else
-        Nspeed, error('Wb:ERR','\n   ERR invalid Nspeed');
+        Nspeed, wbdie('invalid Nspeed');
      end
 
      NKEEP=round(2.^n__);
@@ -44,9 +44,7 @@
      end
   end
 
-  if isempty(NKEEP)
-     error('Wb:ERR','\n   ERR got empty NKEEP (%g,%g)',nk1,nk2); 
-  end
+  if isempty(NKEEP), wbdie('got empty NKEEP (%g,%g)',nk1,nk2); end
 
   if isset('NK1')
        Nkeep=NK1;

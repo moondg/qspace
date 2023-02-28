@@ -39,8 +39,7 @@ void mexFunction(
     wbvector<widx_t> dd;
     wbMatrix<widx_t> dc; str[0]=0;
 
-    MX_CHECK_HELPER_NARGS(2,-1,4); 
-    if (nargin!=2) usage(FL,"ERR invalid number of I/O arguments");
+    MX_CHECK_HELPER_NARGS(2,2,4); 
 
     try { i=mxIsQSpace(FL,argin[0],r,'c'); }
     catch (...) { wblog(FL,"ERR invalid QSpace argument"); }
@@ -61,8 +60,8 @@ void mexFunction(
     }
 
     if (mxIsQSpace(argin[0])>0) { 
-       const QSpace<gTQ,double> A(argin[0],'r');
-       if (isop)
+       const QSpace<gTQ,double> A(argin[0],'r',0);
+       if (isop)     
             A.getQDim(  Q,dd,&dc);
        else A.getQDim(k,Q,dd,&dc);
 
@@ -70,8 +69,8 @@ void mexFunction(
        if (nargout>3) argout[3]=get_Qinfo(A);
     }
     else {
-       const QSpace<gTQ,wbcomplex> A(argin[0],'r');
-       if (isop)
+       const QSpace<gTQ,wbcomplex> A(argin[0],'r',0);
+       if (isop)     
             A.getQDim(  Q,dd,&dc);
        else A.getQDim(k,Q,dd,&dc);
 
