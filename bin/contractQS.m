@@ -136,4 +136,4 @@
 %  within matlab's Class/@QSpace (see MPS Pack), having a QSpace
 %  input A, this may be shortended to contract(A,...).
 %
-%  AW (C) May10 ; Aug12 ; Dec14 ; Sep16
+%  AW (C) May 2010 ; Aug 2012 ; Dec 2014 ; Sep 2016

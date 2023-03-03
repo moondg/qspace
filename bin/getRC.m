@@ -1,6 +1,13 @@
-% Usage: [...]=getRC(...)
+% Usage: C=getRC(cgr [,opt])
 %
-%     C=getRC(cgr)  get RCStore data as specified by input
-%     C=getRC(<sym>,'--info');
+%     get RCStore data as specified by input
+%     Options:
+%        -f  returns CGC data in double format (by default just CG reference)
+%        -F  returns CGC data in multiprecision format
 %
-%  Wb,Oct02,15 ; Wb,Nov06,16
+%  Usage: C=getRC(<sym>,'--info');
+%
+%     return currently loaded RC data
+%     specifically also <sym>.
+%
+%  Wb,Oct 2015 ; Nov 2016

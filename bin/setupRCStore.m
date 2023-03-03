@@ -6,7 +6,8 @@
 %
 %  Usage #2: setupRCStore(sym,q1,q2 [,opts])
 %
-%      explicitely generate tensor product decomposition q1*q2
+%      explicitely request to generate tensor product
+%      decomposition q1*q2
 %
 %  Options
 %
@@ -17,4 +18,4 @@
 %                 multiplets with 2-digit qlabels are no longer used
 %                 in decomposition)
 %
-%  (C) Wb,Aug07,14 ; Wb,Apr01,15
+%  Wb (C) Aug 2014 ; Apr 2015

@@ -1479,7 +1479,7 @@ function [S0,Iout]=getLocalSpace_SUN(N,varargin)
 %
 %    spin operator for plain SU(N) site in the defining
 %    representation with single local IROP transforming
-%    according to the adjoint represenation.
+%    according to the adjoint representation.
 %
 % Wb,Nov03,12
 

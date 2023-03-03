@@ -2251,7 +2251,7 @@ class cdata : public wbsparray<TD> {
     cdata& init(const CRef<TQ> &R, unsigned l, char full=1); 
 
     template <class T2>
-    cdata& init(wbsparray<T2> &C) {
+    cdata& init(const wbsparray<T2> &C) {
        wbsparray<TD>::init(C);
        return *this;
     };

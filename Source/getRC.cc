@@ -16,6 +16,10 @@ char USAGE[]=""; // outsourced to getRC.m // Wb,Jan12,19
 #define LOAD_CGC_QSPACE
 #include "wblib.h"
 
+template<class TD>
+mxArray* load_CData(
+   wbMatrix< CData<gTQ,TD> > &C, const mxArray *a0, char full=0);
+
 void mexFunction(
     int nargout, mxArray *argout[],
     int nargin, const mxArray *argin[]
@@ -26,15 +30,26 @@ void mexFunction(
     MX_CHECK_HELPER_NARGS(1,-1,-1);
 
     if (CG::isCRef(argin[0],0)>0) {
-       unsigned i=0, m=mxGetM(argin[0]), n=mxGetN(argin[0]), nm=n*m;
-       CRef<gTQ> R; wbMatrix< CData<gTQ,RTD> > C(m,n);
-       if (nargin>1 || nargout>1) usage(FL,
-          "ERR invalid number of I/O arguments.");
-       for (; i<nm; ++i) {
-          R.init(FL,argin[0],i);
-          C[i].init(R); C[i].cstat=R.cgb->cstat;
+       char full=0;
+
+       if (nargin==2 && mxIsChar(argin[1])) { char s[8];
+          if (!mxGetString(argin[1],s,8)) { 
+             if (!strcmp(s,"-f")) { full=1; --nargin; } else
+             if (!strcmp(s,"-F")) { full=2; --nargin; }
+          }
        }
-       a=C.toMx();
+
+       if (nargin>1 || nargout>1) usage(FL,
+          "ERR invalid number of I/O arguments");
+
+       if (full<=1) {
+          wbMatrix< CData<gTQ,double> > C;
+          a=load_CData(C,argin[0],full);
+       }
+       else {
+          wbMatrix< CData<gTQ,RTD> > C;
+          a=load_CData(C,argin[0],full);
+       }
     }
     else if (CG::isQSet(argin[0],0)>0) {
        QSet<gTQ> Q(FL,argin[0]); CData<gTQ,RTD> C(Q); CRef<gTQ> R(C);
@@ -80,5 +95,26 @@ void mexFunction(
 
 }  catch (Wb::LogException &e) { ExitMsg(e.istr); }
    catch (...) { ExitMsg("caught exception in getRC"); }
+};
+
+template<class TD>
+mxArray* load_CData(
+   wbMatrix< CData<gTQ,TD> > &C, const mxArray *a0, char full) {
+
+   unsigned i=0, m=mxGetM(a0), n=mxGetN(a0), nm=n*m;
+   CRef<gTQ> R;
+
+   C.init(m,n);
+
+   for (; i<nm; ++i) {
+      R.init(FL,a0,i);
+      C[i].init(R); 
+      C[i].cstat=R.cgb->cstat;
+      if (full) {
+         if (R.isRefInit()) { R.LoadRef(FL); }
+         C[i].cgd.init(R.cgb->cgd);
+      }
+   }
+   return C.toMx();
 };
 

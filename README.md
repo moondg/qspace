@@ -48,7 +48,7 @@ Robert Konik (Brookhaven National Lab, USA)
 ```text
 German Research Foundation grants no.
 
-     DPG WE-4819/1-1 Independent researcher
+     DFG WE-4819/1-1 Independent researcher
      DFG WE-4819/2-1 Heisenberg fellowship
      DFG WE-4819/3-1 on applications,
      as well as SFB631 and TR12 in the early stages.

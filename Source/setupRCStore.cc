@@ -20,14 +20,14 @@ void mexFunction(
     int nargin, const mxArray *argin[]
 ) { Wb::CleanUp aclu; try { 
 
-   MX_CHECK_HELPER_NARGS(2,-1,1); 
+   MX_CHECK_HELPER_NARGS(1,-1,1); 
    QType t(FL,argin[0]);
 
    if (nargin==2 && Mx::IsEqual(argin[1],"info")) { 
       genRG_struct<gTQ,RTD> &B=gRS.buf[t];
       if (!B.q.isKnown()) B.checkInit(FL,t);
       argout[0]=B.toMx(0); 
-      if (nargout<2) return; 
+      if (nargout<2) { return; } 
    }
    if (nargout) { 
    MX_CHECK_HELPER_NARGS(2,-1,0); }
@@ -41,14 +41,14 @@ void mexFunction(
       gRS.buf[t].checkInit(FL,t);
 
       if (q1.len!=n || q2.len!=n) wblog(FL,
-         "ERR %s() got invalid qsets for sym=%s (len=%d,%d/%d)",
-         FCT,t.toStr().data,q1.len,q2.len,n);
+         "ERR got invalid qsets for sym=%s (len=%d,%d/%d)",
+         t.toStr().data,q1.len,q2.len,n);
       if (gStore.load_RSet(0,1,t,q1)<=0) wblog(FL,
-         "ERR %s() 1st multiplet %s (%s) does not yet exist",
-         FCT,t.toStr().data,q1.toStr().data);
+         "ERR 1st multiplet %s (%s) does not yet exist",
+         t.toStr().data,q1.toStr().data);
       if (gStore.load_RSet(0,1,t,q2)<=0) wblog(FL,
-         "ERR %s() 2nd multiplet %s (%s) does not yet exist",
-         FCT,t.toStr().data,q2.toStr().data);
+         "ERR 2nd multiplet %s (%s) does not yet exist",
+         t.toStr().data,q2.toStr().data);
 
       wblog(FL,"%N==> "
         "%s() tensor product decomposition\n==> for %s [%s] x [%s]%N",
@@ -82,8 +82,7 @@ void mexFunction(
    for (n=0; ip<npass; ++ip) { if (CG_VERBOSE>1) {
       wblog(FL,"=== pass %d/%d (dmax=%d) %30R",ip+1,npass,dmax,"=");  }
       n3=gRS.buf[t].getTensorProdReps(dmax,sdig);
-      wblog(FL,"%s() "
-        "%d multiplets generated or loaded (dmax=%d)",FCT,n3,dmax);
+      wblog(FL,"%d multiplets generated or loaded (dmax=%d)",n3,dmax);
       SIG.check911();
    }
 

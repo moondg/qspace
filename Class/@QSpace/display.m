@@ -2,10 +2,13 @@ function display(A,varargin)
 % Function display(A [,OPTS])
 % Options
 %
-%   '-a','-f'  show all entries (like full, force)
-%   '-v'       verbose flag (shows CGS dimension separately for each symmetry)
-%   '-E'       sort QSpace wrt. data (energy) [assumes diagonal Hamiltonian]
-%   '-s'       sort QIDX
+%    -a, -f    show all record entries even if many (-f like full, force)
+%    -c        compact mode (e.g, shows combined CGS dimensions only)
+%    -v        verbose flag (in case of QSpace array, show detailed content 
+%              for all entries
+%
+%    -E        sort QSpace wrt. data (energy) [assumes diagonal Hamiltonian]
+%    -s        sort QIDX
 %   'sperm',.. sort QIDX using given permutation
 %
 %    By default, QSpaces with many entries (length > 14) will show

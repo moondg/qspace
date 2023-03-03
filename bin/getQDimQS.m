@@ -10,4 +10,4 @@
 %      dd   corresponding dimension of reduced data (n)
 %      dc   corresponding dimension of Clebsch-Gordan (n x nsym)
 %
-%  AW (C) Jun 2007 ; Wb,Oct12,10
+%  AW (C) Jun 2007 ; Oct 2010

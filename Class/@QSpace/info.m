@@ -140,10 +140,11 @@ function info_1(A,s,cflag)
      if numel(A.data)==1 && numel(A.data{1})==1, scalar=1; end
      fprintf(1,'     Q:  []');
   else
-     fprintf(1,'     Q:  %sx [%s]', ...
-        vec2str(cellarrsize(A.Q,1),'-f'), ...
-        vec2str(cellarrsize(A.Q,2),'-f') ...
-     );
+     s=size(A.Q{1});
+     for i=2:numel(A.Q)
+        if ~isequal(s,size(A.Q{i})), wbdie('invalid Q data'); end
+     end
+     fprintf(1,'     Q:  %dx {%2d x %d }',numel(A.Q),s);
   end
 
   s={};
