@@ -10,12 +10,13 @@ function [HAM]=setup_Heisenberg(varargin)
   getopt('init',varargin);
      qloc = getopt('qloc',[]);
      qend = getopt('qend',[]);
-     sym  = getopt('sym','SU2');
+     sym  = getopt('sym','SU2'); % value 'Spin' uses abelian
      L    = getopt('L',[]);
 
      B    = getopt('B',0.);
 
      J    = getopt('J', []);
+     Jz   = getopt('Jz',[]);
      J2   = getopt('J2',[]);
      J3   = getopt('J3',[]);
      perBC= getopt('-perBC');
@@ -51,8 +52,7 @@ function [HAM]=setup_Heisenberg(varargin)
   if isempty(L)
      if     size(J,1)>1, L=size(J,1)+1; if perBC, L=L-1; end
      elseif size(B,1)>1, L=size(B,1);
-     else error('Wb:ERR','missing length specification');
-     end
+     else wberr('missing length specification'); end
      wblog(' * ','got implicit length specification (L=%g)',L);
   end
   if L<=1 || L~=round(L)
@@ -65,18 +65,26 @@ function [HAM]=setup_Heisenberg(varargin)
      if isequal(sym,'SU2'), sym='Spin'; end
      if size(B,1)==1 && size(B,2)>3, B=B.'; end
      if numel(B)>3 && size(B,1)~=L
-        error('Wb:ERR','\n   ERR invalid B (len=%g/%g) !?',numel(B),L);
+        wberr('invalid B (len=%g/%g) !?',numel(B),L);
      end
      gotBz=norm(B(:,1)); m=size(B,2);
      if m>1
-        if m>3, error('Wb:ERR','\n   ERR invalid usage'); end
+        if m>3, wberr('invalid usage'); end
         if m>1, gotDz=norm(B(:,2)); end
         if m>2, gotBx=norm(B(:,3)); end
      end
   end
 
-  Aflag=isequal(sym,'Spin');
-  Sflag=(~gotB && ~gotDz);
+  gotJz=0;
+  if ~isempty(Jz) && ~isequal(J,Jz), gotJz=1; end
+
+  if gotJz || gotBz || gotBx || gotDz, Aflag=1;
+      if ~isequal(sym,'Spin')
+         wblog('WRN','got sym=''%s'' -> ''%s'' (abelian)',sym,'Spin');
+         sym='Spin';
+      end
+  else Aflag=isequal(sym,'Spin');
+  end
 
   if perBC, L_=L; else L_=L-1; end
   if size(J,1)>1
@@ -99,7 +107,10 @@ function [HAM]=setup_Heisenberg(varargin)
   if ~Aflag || s(2)>2
      while norm(J(:,end))==0, J(:,end)=[]; end
      ncpl=size(J,2)-1;
-     if ncpl>8, wberr('unexpected ncpl = %g !?)',ncpl); end
+     if ncpl>8, wberr('unexpected ncpl=%g !?',ncpl); end
+     if ncpl && gotJz
+        wberr('invalid usage (got Jz with size(J,2)>1)');
+     end
   end
 
   gotJ2=~isempty(J2);
@@ -115,17 +126,11 @@ function [HAM]=setup_Heisenberg(varargin)
   end
 
   if Ising
-     if gotDz, error('Wb:ERR',...
-        'invalid usage (got Dz with Ising)'); end
-     if gotBz && gotBx, error('Wb:ERR',...
-        'invalid usage (got Bz and Bx with Ising)'); end
-     if gotJ2 && gotJ3, error('Wb:ERR',...
-        'invalid usage (got J2 or J3 with Ising)'); end
-     if ncpl, error('Wb:ERR',...
-        'invalid usage (got ncpl ith Ising)'); end
-     if ~isempty(qend), error('Wb:ERR',...
-        'invalid usage (got ncpl ith Ising)');
-     end
+     if gotDz, wberr('invalid usage (got Dz with Ising)'); end
+     if gotBz && gotBx, wberr('invalid usage (got Bz and Bx with Ising)'); end
+     if gotJ2 && gotJ3, wberr('invalid usage (got J2 or J3 with Ising)'); end
+     if ncpl, wberr('invalid usage (got ncpl ith Ising)'); end
+     if ~isempty(qend), wberr('invalid usage (got ncpl ith Ising)'); end
   end
 
 % -------------------------------------------------------------------- %
@@ -137,8 +142,6 @@ function [HAM]=setup_Heisenberg(varargin)
 
   HAM=struct(Hamilton1D);
 
-  J2flag=0;
-
   if Aflag, q=unique(J(:,1));
      if Ising, sJ='Jz'; else sJ='J'; end
      if numel(q)>1
@@ -147,7 +150,7 @@ function [HAM]=setup_Heisenberg(varargin)
 
      [s1,s2]=size(J);
      if s2>1
-        if s2==2, q=unique(J(:,2)); J2flag=norm(q);
+        if s2==2, q=unique(J(:,2)); gotJz=norm(q);
            if Ising, sJ='Jx'; else sJ='Jz'; end
            if numel(q)>1
                 jstr=[jstr, sprintf(', %s=[%.4g .. %.4g]',sJ,q([1,end]))];
@@ -155,7 +158,7 @@ function [HAM]=setup_Heisenberg(varargin)
         elseif s1==1
            s=sprintf(',%.3g',J);
            jstr=sprintf('J=[%s]',s(2:end));
-        else error('Wb:ERR','\n   ERR invalid usage'); end
+        else wberr('invalid usage'); end
      end
      HAM.info.mpo.J=J;
 
@@ -209,6 +212,8 @@ function [HAM]=setup_Heisenberg(varargin)
      end
   end
 
+  Sflag=(~gotB && ~gotDz && ~gotJz);
+
   if isequal(sym,'SU2')
      if isempty(qloc), qloc=[1];
      elseif numel(qloc)~=1 || qloc<1, wberr('invalid spin S=%g',S); end
@@ -232,7 +237,7 @@ function [HAM]=setup_Heisenberg(varargin)
         wberr('invalid spin S=%g',qloc/2);
      end
 
-     if gotBx || J2flag
+     if gotBx
           [S,IS]=getLocalSpace('Spin',qloc/2,'--nosym',o{:});
      else [S,IS]=getLocalSpace('Spin',qloc/2,'-A',o{:});
      end
@@ -256,9 +261,9 @@ function [HAM]=setup_Heisenberg(varargin)
            end
            S(iz2)=q;
         end
-        if gotBx || J2flag
+        if gotBx || gotJz
            if iz==1, ix=2;
-           else error('Wb:ERR','\n   ERR unexpected iz=%g',iz); end
+           else wberr('unexpected iz=%g',iz); end
         end
      end
      end
@@ -307,15 +312,15 @@ function [HAM]=setup_Heisenberg(varargin)
   if numel(S)==1
      HAM.ops=init_ops(S,'spin operator S','~hconj');
   else
-     if numel(S)~=3, error('Wb:ERR','\n   ERR invalid S-op'); end
+     if numel(S)~=3, wberr('invalid S-op'); end
      if Ising
         HAM.ops=[
            init_ops(S(1),'spin-op (Ising Sz)','~hconj');
         ];
-        if gotB>0 || J2flag
+        if gotB>0 || gotJz
            m=size(B,3); if m>3 || m>1 && norm(B(:,1)), whos B
-             error('Wb:ERR','invalid usage (Ising @ L+%g)',L); end
-          if gotBx || J2flag
+             wberr('invalid usage (Ising @ L+%g)',L); end
+          if gotBx || gotJz
              HAM.ops(end+1,1)=init_ops(...
              (1/sqrt(2))*(S(2)+S(2)'),'spin-op (Ising Sx)','~hconj');
           end
@@ -488,7 +493,7 @@ function [HAM]=setup_Heisenberg(varargin)
   if isequal(sym,'Spin')
      if Sflag
         if size(HAM.ops,1)~=1, wberr('invalid usage'); end
-     elseif ~Ising || J2flag
+     elseif ~Ising || gotJz
         if size(HAM.ops,1)~=2, wberr('invalid usage'); end
         i=find(sum(HH(:,[2 4])-1,2)==0);
 
@@ -497,8 +502,11 @@ function [HAM]=setup_Heisenberg(varargin)
 
         if size(J,2)==2
            if Ising
-                H3(:,end,ix)=J(:,2);
-           else H3(:,end,iz)=J(:,2); end
+              H3(:,end,ix)=J(:,2);
+           else 
+              if isempty(Jz), Jz=J(:,2); end
+              H3(:,end,iz)=Jz;
+           end
         end
 
         HH=[HH; reshape(permute(H3,[3 1 2]),[],size(H3,2)) ];
@@ -508,13 +516,10 @@ function [HAM]=setup_Heisenberg(varargin)
   if gotB, l=size(HH,1)+1;
      if gotBx
         if Ising
-           if HAM.ops(ix).hconj
-              error('Wb:ERR','\n   ERR invalid Sx');
-           end
+           if HAM.ops(ix).hconj, wberr('invalid Sx'); end
         else
            B(:,3)=B(:,3)/sqrt(2);
-           if ~HAM.ops(ix).hconj
-           error('Wb:ERR','\n   ERR invalid Sx !?'); end
+           if ~HAM.ops(ix).hconj, wberr('invalid Sx !?'); end
         end
      end
 

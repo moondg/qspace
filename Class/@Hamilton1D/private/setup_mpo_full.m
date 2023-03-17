@@ -236,10 +236,11 @@ function [HAM]=setup_mpo_full(HAM,varargin)
          if l>0 && l<k, X=contract(opl(l),'*',opl(k)); l=-2;
          elseif l<0, X=contract(X,opl(k)); l=l-1; end
       end
-      q=norm(X); if q<1E-8, wberr(...
-         'invalid %g-site interaction term (nrm=%g)',n,q); end
-      q=numel(X.Q); if q~=2*(-l), wberr(...
-         'invalid %g-site interaction term (contracts to rank %g)',n,q);
+      if l
+         q=norm(X); if q<1E-8, wberr(...
+          'invalid %g-site interaction term (nrm=%g)',n,q); end
+         q=numel(X.Q); if q~=2*(-l), wberr(...
+          'invalid %g-site interaction term (contracts to rank %g)',n,q); end
       end
    end 
 

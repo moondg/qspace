@@ -48,7 +48,8 @@ else % !CONTINUE_DMRG
      Imain.ctf=dir('./*.ctf'); % Wb,Jan17,18
   end
 
-  setdef('use_endspins',0,'NPsi',0,'tstflag',0);
+% tflag = test flag
+  setdef('use_endspins',0,'NPsi',0,'tflag',0); 
 
 % threshold in weights to discard in reduced density matrix
 % i.e. singular values squared
@@ -62,9 +63,38 @@ else % !CONTINUE_DMRG
 
 % NB! initNKEEP also initializes Nkeep=NKEEP(1)
 
-  clear J* % safeguard
+% clear J* % safeguard
 
   switch wsys
+  % ================================================================ %
+    case {'Heisenberg'}
+  % ================================================================ %
+      setdef('L',32,'nk1',3,'Qtot',0);
+      initNKEEP;
+
+      setdef('qloc',1,'J',1);
+      oham={L,'sym','SU2'}; setopts(oham,qloc);
+
+    % 2nd column in J specifies Jz
+      if isset('Jz') && Jz~=1
+         oham{3}='Spin'; % uses all-abelian
+         if size(J,2)==1, J(2)=Jz; 
+         else setopts(oham,Jz);
+         end
+      end
+
+      if isset('J'), setopts(oham,J); end
+      if isset('B'), setopts(oham,B); end
+
+      ofout={'fout',[odir '/DMRG_' wsys]};
+
+      [HAM]=Hamilton1D('Heisenberg',oham,ofout{:});
+
+      L=numel(HAM.mpo);
+      if tflag==2, wblog('TST','%g return',tflag); return; end
+
+      [H0]=initNRG(HAM,'Nkeep',Nkeep,'-v',onrg{:}); HAM
+
   % ================================================================ %
     case 'Spin1-AKLT'
   % ================================================================ %
@@ -115,8 +145,7 @@ else % !CONTINUE_DMRG
       [HAM]=Hamilton1D('Heisenberg',{J,'sym','SU2',oham{:}},ofout{:});
 
       L=numel(HAM.mpo);
-      if tstflag== 1, wblog('TST','%g return',tstflag); return; end
-      if tstflag==-1, wblog('TST',''); keyboard; end
+      if tflag==2, wblog('TST','%g return',tflag); return; end
 
       [H0]=initNRG(HAM,'Nkeep',Nkeep,'-v',onrg{:}); HAM
 
@@ -166,8 +195,7 @@ else % !CONTINUE_DMRG
       end
 
       [HAM]=Hamilton1D('HsbgLadder',oham,ofout{:});
-      if tstflag== 1, wblog('TST','%g return',tstflag); return; end
-      if tstflag==-1, wblog('TST',''); keyboard; end
+      if tflag==2, wblog('TST','%g return',tflag); return; end
 
       [H0]=initNRG(HAM,onrg{:}); HAM
 
@@ -241,14 +269,14 @@ else % !CONTINUE_DMRG
       ofout={'fout',[odir sprintf('/DMRG_TB%g_Ladder',NC)]};
 
       [HAM]=Hamilton1D('tb_ladder',oham,ofout{:});
+
+      if tflag==2, wblog('TST','%g return',tflag); return; end
+
       [H0]=initNRG(HAM,'Nkeep',Nkeep,'-v','Qtot',[NC*L, zeros(1,NC-1)]); HAM
     % assuming half-filling => Qtot = (NC*L/2) x (2 for ladder)
 
       H=HAM.info.mpo.H; ee=eig(H);
       E0x=NC*sum(ee(find(ee<0))) / (2*L);
-
-      if tstflag== 1, wblog('TST','%g return',tstflag); return; end
-      if tstflag==-1, wblog('TST',''); keyboard; end
 
   % ================================================================ %
     case {'Hubbard'} % Hubbard lattice
@@ -286,8 +314,7 @@ else % !CONTINUE_DMRG
       [HAM]=Hamilton1D('Hubbard',oham,ofout{:});
 
       L=numel(HAM.mpo);
-      if tstflag== 1, wblog('TST','%g return',tstflag); return; end
-      if tstflag==-1, wblog('TST',''); keyboard; end
+      if tflag==2, wblog('TST','%g return',tflag); return; end
 
       [H0]=initNRG(HAM,onrg{:}); HAM
 
@@ -326,9 +353,11 @@ else % !CONTINUE_DMRG
   fprintf(1,[' => Total of %g sweeps at NKEEP =' s ' [%s ]\n\n'],...
      numel(NKEEP), sprintf(' %g',NKEEP));
 
-  if tstflag==2, wblog('TST','%g return',tstflag); return; end
-  if tstflag>=3, NKEEP=NKEEP(1); end
-  if tstflag< 0, wblog('TST',''); keyboard; return; end
+  if tflag<0, NKEEP=NKEEP(1);
+  elseif tflag
+     wblog('TST','%g return',tflag);
+     return
+  end
 
 end % !CONTINUE_DMRG
 
