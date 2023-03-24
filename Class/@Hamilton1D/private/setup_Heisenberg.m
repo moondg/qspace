@@ -150,7 +150,7 @@ function [HAM]=setup_Heisenberg(varargin)
 
      [s1,s2]=size(J);
      if s2>1
-        if s2==2, q=unique(J(:,2)); gotJz=norm(q);
+        if s2==2, q=unique(J(:,2)); gotJz=norm(diff(J,[],2));
            if Ising, sJ='Jx'; else sJ='Jz'; end
            if numel(q)>1
                 jstr=[jstr, sprintf(', %s=[%.4g .. %.4g]',sJ,q([1,end]))];

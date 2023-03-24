@@ -76,7 +76,7 @@ else % !CONTINUE_DMRG
       oham={L,'sym','SU2'}; setopts(oham,qloc);
 
     % 2nd column in J specifies Jz
-      if isset('Jz') && Jz~=1
+      if isvar('Jz') && ~isempty(Jz) && Jz~=1
          oham{3}='Spin'; % uses all-abelian
          if size(J,2)==1, J(2)=Jz; 
          else setopts(oham,Jz);
