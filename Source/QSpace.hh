@@ -222,7 +222,7 @@ class QSpace {
     };
 
     void init(const char *F, int L,
-       const mxArray *S, char ref, unsigned k, char skip_empty);
+       const mxArray *S, char ref, unsigned k, char skip_empty=1);
 
     void init(const char *F, int L, const mxArray *S,
          char ref=0, char skip_empty=1

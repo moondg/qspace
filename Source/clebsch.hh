@@ -2844,15 +2844,24 @@ class CRef {
        return *this;
     };
 
+    CRef& operator=(const CRef &R) { return init(R); }
+
     void swap(CRef &R) { 
-       if (this!=&R) {
-          SWAP(cgb,  R.cgb  );
-          SWAP(rtype,R.rtype);
-          SWAP(conj, R.conj ); cgp.swap(R.cgp); cgw.swap(R.cgw);
+       if (this!=&R) {     SWAP(cgb,  R.cgb  );
+          cgp.swap(R.cgp); SWAP(conj, R.conj );
+          cgw.swap(R.cgw); SWAP(rtype,R.rtype);
        }
     };
 
-    CRef& operator=(const CRef &R) { return init(R); }
+    CRef& save2(CRef &R) {
+       if (this!=&R) {     R.cgb=cgb;     cgb=0;
+          cgp.swap(R.cgp); R.conj=conj;   conj=0;
+          cgw.swap(R.cgw); R.rtype=rtype; rtype=0;
+          cgp.init(); cgw.init(); 
+       }; return R;
+    };
+
+    double safeCpy(const char *F, int L, const CRef &B, CRef &C) const;
 
     CRef& init_1(const CRef &R, unsigned j) {
        unsigned m=R.wdim2(); if (j>=m) wblog(FL, 
@@ -3199,16 +3208,6 @@ class CRef {
 
     QDir get_qdir() const { QDir qd; 
        return get_qdir(qd);
-    };
-
-    double safeCpy(const char *F, int L, const CRef &B, CRef &C) const;
-
-    CRef& save2(CRef &S) {
-       if (this!=&S) {
-          S.cgb=cgb;
-          cgw.save2(S.cgw); S.conj=conj; conj=0;
-          cgp.save2(S.cgp); S.rtype=rtype; rtype=0;
-       }; return S;
     };
 
     wbstring qdir2Str(char vflag=0) const {

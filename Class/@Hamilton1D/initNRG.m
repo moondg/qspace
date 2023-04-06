@@ -65,7 +65,7 @@ function [H0,Iout]=initNRG(HAM,varargin)
 % TST clear; wsys='SU2_w2'; NPsi=4; Qtot=[]; dbwrn; tstflag=2; tst_Hamilton1D
   Iout=struct; tuneH=0; ot={};
 
-  rs=symrank(HAM.oez(1).op);
+  [rs,nq]=symrank(HAM.oez(1).op);
   ns=numel(rs);
 
   getopt('INIT',varargin);
@@ -75,9 +75,9 @@ function [H0,Iout]=initNRG(HAM,varargin)
 
      dQtotN=getopt('dQtotN',[]);
      if ~isempty(dQtotN), [m,n]=size(dQtotN);
-        if n~=ns+1 || size(uniquerows(dQtotN(:,1:end-1)),1)<m
+        if n~=nq+1 || size(uniquerows(dQtotN(:,1:end-1)),1)<m
            wberr('invalid dQtotN=[%s]',...
-           mat2str2(q0,'fmt','%g','rowsep','; ','-f'));
+           mat2str2(dQtotN,'fmt','%g','rowsep','; ','-f'));
         end
         NPsi=sum(dQtotN(:,end)); Qtot=[];
      else
@@ -388,7 +388,7 @@ function [H0,Iout]=initNRG(HAM,varargin)
                  s=sprintf('%g multiplets',NPsi1);
             else s='gs-multiplet'; end
             wblog('WRN','using %s reduced local state space!',s);
-            display(E); fprintf(1,'-->\n'); display(q);
+            display(E,'-c'); fprintf(1,'-->'); display(q,'-c');
         end
 
         e=QSpace(contractQS(Xk.AK,'23*',Xk.AK,'23'));

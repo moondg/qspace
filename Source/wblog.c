@@ -207,17 +207,15 @@ Wb::VersionInfo& Wb::VersionInfo::init() {
    __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 #endif
 
+#ifdef LOAD_CGC_QSPACE
    n=sizeof(qspace);
    l=snprintf(qspace,n,"%.1f",double(QS_VERSION));
 
    i=strlen(QS_VERSION_SUB_);
-   if (i && !QS_VERSION_SUB) {
-      l+=snprintf(qspace+l,n-l,"-%s",QS_VERSION_SUB_);
-   }
-   else {
-      l+=snprintf(qspace+l,n-l,".%g",double(QS_VERSION_SUB)); if (i) {
-      l+=snprintf(qspace+l,n-l,"-%s",QS_VERSION_SUB_); }
-   }
+   if (QS_VERSION_SUB || !i)
+          { l+=snprintf(qspace+l,n-l,".%g",double(QS_VERSION_SUB)); }
+   if (i) { l+=snprintf(qspace+l,n-l,"-%s",QS_VERSION_SUB_); }
+#endif
 
 #ifdef __QS_GIT_BRANCH__
    str_cpy(git,sizeof(git),PP_STRFY(__QS_GIT_BRANCH__));

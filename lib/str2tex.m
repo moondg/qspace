@@ -4,7 +4,7 @@ function s=str2tex(s,varargin)
 
 % outsourced from param2str.m
 
-  s=regexprep(s,'\\*\<(Lambda|Gamma|Delta|alpha|delta|omega|sigma)\>','\\$1');
+  s=regexprep(s,'\\*\<(Lambda|Gamma|Delta|alpha|delta|omega|sigma|mu)\>','\\$1');
   s=strrep(s,'_','\_');
   s=regexprep(s,'\\*\<epsd\>','\\epsilon_d');
 

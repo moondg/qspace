@@ -11,6 +11,8 @@ char USAGE[]=""; // outsourced to wbhash.m // Wb,Feb14,19
 #endif
 
 #define LOAD_CGC_QSPACE
+#define QS_SKIP_MPFR
+
 #include "wblib.h"
 
 #include <limits>

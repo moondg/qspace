@@ -39,24 +39,37 @@ function varargout=subsref(HAM,S)
      varargout={x};
 
   elseif numel(S)==1 && ...
-     isequal(S.type,'.') && ~isempty(regexpi(S.subs,'^ops$'))
+     isequal(S.type,'.') && ~isempty(regexpi(S.subs,'^(ops|oez)$'))
 
      vflag=sum(S.subs<'a');
-     S.subs='ops';
+     S.subs=lower(S.subs);
 
      x=builtin('subsref',HAM,S);
      if nargout, varargout={x}; return; end
 
-     sx=size(x);
+     dd=[]; for i=1:numel(x), dd(i)=length(x(i).info); end
+     fmt=sprintf('%%-%ds',max(26,max(dd)));
+
+     sx=size(x); mops=sx(2)>1; ds={};
+     sh={'info'};
+     if mops, fmt=[fmt ' %8s']; sh{2}='dims'; end
+
      if sx(2)>1, fprintf(1,'\n   got %g different site types\n',sx(2)); end
      for j=1:sx(2)
-        if sx(2)>1, fprintf(1,'   site type %g/%g\n',j,sx(2)); end
-        fprintf(1,'\n%5s %-23s dop   q-irop  flags\n','','info');
+        if sx(2)>1, fprintf(1,'   site type %d\n',j); end
+        fprintf(1,['\n%5s ' fmt ' dop  q-irop  flags\n'],'',sh{:});
+
         for i=1:sx(1), q=x(i,j);
+           if mops
+              E=q.op; if numel(E.Q)==3, E.info.otype='operator'; end
+              dd=getDimQS(getIdentity(E));
+              ds=sprintf('x%d',dd(2,:)); ds={ds(2:end)};
+           end
+
            s={ num2str(q.dop), ['(' vec2str(q.qop,'-f') ')'] };
            if q.fermionic, s{end+1}='fermionic';    end
            if q.hconj,     s{end+1}='include H.c.'; end
-           fprintf(1,'%4g. %-24s %2s %8s  %s\n',i,q.info,s{1:2},...
+           fprintf(1,['%4g. ' fmt ' %2s %8s  %s\n'],i,q.info,ds{:},s{1:2},...
            strjoin(s(3:end),', '));
         end
         fprintf(1,'\n');

@@ -27,20 +27,26 @@
 
   if ($tag eq '--cgc') {
      $pat='LOAD_CGC_QSPACE'; # looking for "#define LOAD_CGC_QSPACE"
+     my $q=0;
 
      if (@dd || @opts) { die "\n  ERR $me: invalid usage with $tag\n"; }
      foreach (@ff) { $f=$_;
         if (!/[^\.]*\.[chm].*$/) { die "\n  ERR invalid C-file $_\n\n"; }
 
-        open(FID,"<$f"); @ll=grep(/$pat/,<FID>);
-        close(FID);
-
-        @ll=grep(/^\s*#define\s*$pat\s*$/,@ll);
-        if (@ll) { exit 0; }
+        open(FH,'<',$f); 
+        foreach (<FH>) {
+           if (/^\s*#(define|undef)\s+(LOAD_CGC_QSPACE|QS_SKIP_MPFR)/) {
+              my $a=$1; my $b=$2; $b=($b=~/LOAD/ ? 1 : 2);
+              if ($a eq 'define')
+                   { $q |=  $b; }  # set bit
+              else { $q &= ~$b; }  # unset bit
+           }
+        }; close(FH);
+        if ($q==1) { exit 0; } # MPFR libs required
      }
 
-   # printf(STDERR "found no occurances\n");
-     exit -1;
+   # printf STDERR "no CGC/MPFR occurances found\n";
+     exit 1;
   }
   elsif ($tag eq '--loc') {
      if (!@dd) {

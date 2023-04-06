@@ -24,12 +24,15 @@ function display(HAM,varargin)
   fprintf(1,'\n   %s\n',s);
   L=numel(HAM.mpo);
 
+  er=[char(27) '[31m'];
+  em=[char(27) '[0m'];
+
   if e, e=100+e; else
     AK=load_dmrg_data(HAM,1,'AK','-t'); vac=2;
     if ~isempty(AK), d=getDimQS(AK);
        if any(d(:,1)>1), vac=vac-1;
           if vac==1, fprintf(1,'\n'); end
-          printfc('  \e[31m NB! got non-vacuum at left boundary \e[0m');
+          fprintf(1,['   ' er 'NB! got non-vacuum at left boundary' em]);
           if d(1,1)>1
              E=QSpace(getIdentityQS(AK,1));
              fprintf(1,'\n'); display(E); fprintf(1,'\n');
@@ -38,7 +41,7 @@ function display(HAM,varargin)
           end
        end
     else
-       printfc('  \e[31m NB! got AK(1) not yet initialized !? \e[0m\n\n');
+       fprintf(1,['   ' er 'NB! AK data not yet initialized' em '\n']);
        e=1;
     end
   end
@@ -48,7 +51,7 @@ function display(HAM,varargin)
     if ~isempty(AK), d=getDimQS(AK);
        if any(d(:,2)>1), vac=vac-1;
           if vac==1, fprintf(1,'\n'); end
-          printfc('  \e[31m NB! got non-vacuum at right boundary \e[0m');
+          fprintf(1,['   ' er 'NB! got non-vacuum at right boundary' em]);
           if d(1,2)>1
              E=QSpace(getIdentityQS(AK,2));
              fprintf(1,'\n'); display(E); fprintf(1,'\n');
@@ -57,7 +60,7 @@ function display(HAM,varargin)
           end
        end
     else
-       printfc('  \e[31m NB! got AK(L) not yet initialized !? \e[0m\n\n');
+       fprintf(1,['   ' er 'NB! got AK(L) not yet initialized !?' em '\n\n']);
        e=2;
     end
   end
@@ -85,8 +88,7 @@ function display(HAM,varargin)
                 s2=sprintf('got 1 long-ranged bond (L-%g)',L-dx(i));
            else s2=sprintf('got %g long-ranged bonds',numel(i));
            end
-           s=sprintf('%-19s %s\n',s,[' \e[31m ' s2 '\e[0m']);
-           printfc(s);
+           fprintf(1,'%-19s %s\n',s,['  ' er s2 em]);
         end
      end
   end
@@ -122,7 +124,7 @@ function display(HAM,varargin)
 
   full_mpo=usingFullMPO(HAM);
   if full_mpo
-       printfc('\e[34;1m full MPO\e[0m\n');
+       printf('\e[34;1m full MPO\e[0m\n');
   else fprintf(1,' pseudo MPO\n'); end
 
   s={ ['D=' dSs], sprintf('d=%s', vec2str(dloc(:,1),'-f')), '' };
@@ -142,7 +144,9 @@ function display(HAM,varargin)
 
      if ntype>1
         i=find(stype==j); m=numel(i);
-        s3=['at sites ' ind2str(i)];
+        if m==1
+             s3=sprintf('at site %d',i);
+        else s3=['at sites ' ind2str(i)]; end
 
         s1=sprintf('%g.',j);
         fprintf(1,'\n  %4s %-27s %3g %-13s ... %s\n',...
@@ -177,10 +181,10 @@ function display(HAM,varargin)
      fprintf(1,'\n   Data is stored in %s\n',s);
      getCurrentSite(HAM,'-v');
   else
-     if e<100
-       printfc('\n  \e[31m [data store in %s''\n   not yet initialized?] \e[0m \n',s);
+     if e<100, s={s,'not yet initialized'};
+       fprintf(1,['\n    ' er 'data stored in %s''\n    %s' em '\n'],s{:});
      else
-       printfc('\n  \e[38;5;235m [%s]  \e[0m \n',s);
+       printf('\n  \e[38;5;235m [%s]  \e[0m \n',s);
      end
   end
   fprintf(1,'\n');

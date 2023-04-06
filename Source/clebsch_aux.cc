@@ -3147,7 +3147,7 @@ int X3Map<TQ,TD>::contractCGR( const char *F, int L,
    if (mc>(Mc=Cm.cgb->getOM()) || mc<=0) wblog(FL,
       "ERR %s() invalid mc=%d/%d (%s)",FCT,mc,Mc,SSTR(Cm.x3));
 
-   if (C.cgb) {
+   if (C.cgb) { 
       if (C.cgb!=Cm.cgb) wblog(FL,
          "WRN %s() got change in Cr.cgb\n   %s\n-> %s",FCT,
          STR_(C.cgb), STR_(Cm.cgb));

@@ -81,9 +81,9 @@ function display(A,varargin)
 
   if nA==1
      if ~isempty(nm)
-        if any(nm~=' ')
+        if any(nm~=' ') && vflag
              s={sprintf('%s = ',nm)};
-        else s={' '}; end
+        else s={''}; end
      else
         s={''};
      end
@@ -173,8 +173,14 @@ function display_1(A,m,Eflag,vflag,varargin)
   if cgflag
      ns=length(find(A.info.qtype==','))+1;
      if ~isempty(A.Q) && ~isequal(size(A.info.cgr),[dlen, ns])
-     error('Wb:ERR','CG size mismatch'); end
+        wbdie('CG size mismatch');
+     end
      nq=size(A.info.cgr,2);
+     rsym=getsym(A,'-r');
+     if numel(rsym)~=nq
+        wbdie('invalid number of symmetries (%d/d)',nq,rsym); end
+     isym=find(rsym);
+
      sfmt=sprintf('%%-%ds', max(10,3*length(A.Q)));
   else
      sfmt=sprintf('%%-%ds', 5+4*length(A.Q));
@@ -240,17 +246,15 @@ function display_1(A,m,Eflag,vflag,varargin)
       s1=dim_to_str(sa,r);
 
       if cgflag, sc=cell(1,nq);
-         for j=1:nq, sc{j}=cgr_size(A,i,j); end
-         sc=cat2(1,sc{:},{1}); sc(:,end+1:r)=1; sa(end+1:r)=1;
+         for j=isym, sc{j}=cgr_size(A,i,j); end
+         sc=cat2(1,sc{isym},{1}); sc(:,end+1:r)=1; sa(end+1:r)=1;
 
          if ~vflag
             sc=prod(sc,1);
             s2=sprintf(sfmt,dim_to_str(sc,r));
          else
             n=size(sc,1); s2=cell(1,n);
-            for j=1:n
-               s2{j}=vec2str(sc(j,:),'fmt','%g',ov2s{:},'x');
-            end
+            for j=1:n, s2{j}=vec2str(sc(j,:),'fmt','%g',ov2s{:},'x'); end
             s2=sprintf(' %6s',s2{:}); s2=s2(2:end);
          end
 

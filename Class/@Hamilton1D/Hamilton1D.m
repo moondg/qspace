@@ -62,6 +62,7 @@ function [HAM,IS]=Hamilton1D(varargin)
     case 'HBL_BaIrO',    [HAM]=setup_Heisenberg_BaIrO(varargin{2}{:});
     case 'SLH_chiral',   [HAM]=setup_HeisenbergSL_chiral(varargin{2}{:});
     case 'Kitaev',       [HAM]=setup_Kitaev(varargin{2}{:});
+    case 'QZD',          [HAM]=setup_QZD(varargin{2}{:});
     case 'tightbinding', [HAM]=setup_tightbinding(varargin{2}{:});
     case 'tb_ladder',    [HAM]=setup_tb_ladder(varargin{2}{:});
     case 'tb_testferm',  [HAM]=setup_tb_testferm(varargin{2}{:});

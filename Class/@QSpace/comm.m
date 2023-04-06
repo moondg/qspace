@@ -3,14 +3,16 @@ function C=comm(A,varargin)
 %
 %    Compute commutator (or anticommutator, if '+' is specified).
 %    if B is ommitted, this assumes B=A && 'conj'.
-%    'conj' if set, is interpreted as conjA, i.e. C = {A',B}
+%    Here 'conj' is interpreted as conjA, i.e. C = {A',B}
 %    For anticommutator, use comm(A [, B, cflag], '+');
 %
-%    The operators and B must be rank-2 or rank-3, where the latter
+%    The operators A (and B) must be rank-2 or rank-3, where the latter
 %    case assumes operator index order (ss',o), i.e. the irop (=spinor)
 %    index comes last.
 %
-% Ex. comm(F,'+') computes {F',F}
+% Examples
+%
+%    comm(F,'+') computes {F',F} // same as acomm(F)
 %
 % Wb,Feb06,16
 
@@ -19,7 +21,7 @@ function C=comm(A,varargin)
   else B=A; conjA=1; end
 
   getopt('init',varargin);
-     if ~conjA, conjA=getopt('conj'); end
+     if getopt('conj'); conjA=1; end
   wc=getopt('get_last',-1);
 
   if ischar(wc)

@@ -412,7 +412,7 @@ std::string getName(const std::type_info &type_id, char vflag=1);
 
    #define QS_VERSION 4.0
    #define QS_VERSION_SUB   0
-   #define QS_VERSION_SUB_ "pre"
+   #define QS_VERSION_SUB_ ""     
 
    #ifdef MEX_MLVER
       #define MEX_MLVER_STR PP_STRFY(MEX_MLVER)

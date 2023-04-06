@@ -80,6 +80,8 @@ double contractDATA_group(const char *F, int L,
    wbvector<unsigned> iOM(nsym), iom(nsym); 
    wbarray<unsigned> Ma(nsym,2), Mb(nsym,2);
 
+   CRef<TQ> Cr_;
+
    wbperm P, pfin; 
    tensorRef_ R;
 
@@ -94,10 +96,10 @@ double contractDATA_group(const char *F, int L,
       }            
    }
 
-#ifdef DBG_CONTRACT
-   PRINTF("%s\n",STRREP("─",80));
-   wblog(FL,"TST %s() ic=%d / %d",FCT,ic+1,Ia.len);
-#endif
+   #ifdef DBG_CONTRACT
+      PRINTF("%s\n",STRREP("─",80));
+      wblog(FL,"TST %s() ic=%d / %d",FCT,ic+1,Ia.len);
+   #endif
 
    for (i_=0; i_<Ia.len; ++i_) { ia=Ia[i_]; ib=Ib[i_];
       wbarray<TA> Ai(*A.DATA.el(ia),'r'); 
@@ -107,6 +109,9 @@ double contractDATA_group(const char *F, int L,
          for (cfac=1., nx=m=0, j=0; j<nsym; ++j) {
             const CRef<TQ> &Ar=A.CGR(ia,j), &Br=B.CGR(ib,j);
             CRef<TQ> &Cr=C.CGR(ic,j); 
+
+            if (Cr .cgb) { Cr_=Cr; } else
+            if (Cr_.cgb) { Cr_.init(); }
 
             #ifndef WB_SKIP_ASSERT
                Q.init(F_L,Ar,ica,Br,icb);
@@ -160,6 +165,8 @@ double contractDATA_group(const char *F, int L,
             }
             else if (Cr.rtype==CGR_CTR_ZERO) {
                cfac=0; 
+               if (!Cr.cgw && Cr_.cgb && Cr_.cgw) { Cr_.save2(Cr); }
+               break;                              
             }
             else if (l==1 || Cr.wscalar()) {
                cfac*=Cr.cgw[0];
@@ -310,10 +317,13 @@ double contractDATA_group(const char *F, int L,
                  { d=Ck.SIZE.el(rc+iOM[j]-1); }
             else { d=1; }
          }
-         m*=C.CGR(ic,j).Reduce_w3Id(d,l); 
+         m*=C.CGR(ic,j).Reduce_w3Id(d,l);
       }
       if (m) { Ck.FuseOM(FL,rc,m); } else
-      if (!l) wblog(FL,"ERR %s() got m=%d for %s DATA",FCT,m,SSTR(Ck));
+      if (!l) { wblog(FL,
+         "ERR %s() got m=%d\nfor %s DATA w/norm %.3g (d=%d, l=%d)",
+         FCT,m,SSTR(Ck),Ck.norm(),d,l);
+      }
    }
 
    if (preview) {
@@ -354,7 +364,7 @@ void contractDATA_plain(const char *F, int L,
    if (!C.DATA[ic]) wblog(FL,
       "ERR %s() got null DATA (ic=%d/%d) !?", FCT,ic,C.DATA.len);
 
-   if (!C.CGR.isEmpty()) {
+   if (C.CGR) {
       wblog(FL,"WRN %s() "
          "got non-empty CGR for qtype=%s",FCT,STR(C.qtype));
       if (C.CGR.dim1!=C.DATA.len || C.CGR.dim2!=C.qtype.len) wblog(F_L,
@@ -413,7 +423,7 @@ void getQall(const wbvector< QSpace<TQ,TD> > &F, wbMatrix<TQ> &QA){
 
    wbvector < wbMatrix<TQ>* > pQ(F.len);
 
-   for (i=0; i<F.len; ++i) if (!F[i].isEmpty()) break;
+   for (i=0; i<F.len; ++i) if (F[i]) { break; }
    if (i>=F.len) { QA.init(); return; }
 
    pQ[k++]=&(F[i].QIDX); QDIM=F[i].QDIM; dim2=F[i].QIDX.dim2;
@@ -421,7 +431,7 @@ void getQall(const wbvector< QSpace<TQ,TD> > &F, wbMatrix<TQ> &QA){
    if (QDIM==0 || dim2==0 || dim2 % QDIM) wblog(FL,
    "ERR invalid operator (empty; %d/%d)",dim2,QDIM);
 
-   for (i0=i, i=i0+1; i<F.len; ++i) { if (F[i].isEmpty()) continue;
+   for (i0=i, i=i0+1; i<F.len; ++i) { if (!F[i]) continue;
 
       if (F[i].qtype!=F[i0].qtype) wblog(FL,
          "ERR qtype inconsistency %d,%d/%d: %s <> %s",i0+1,i+1,F.len,
@@ -992,7 +1002,7 @@ void mxInitQSpaceVec(
    for (k=0; k<n; ++k) {
       FF[k].init(F,L,S,ref,k);
       if (l) FF[k].checkQ(F,L,FF[l-1]); else
-      if (!FF[k].isEmpty()) { l=k+1; }
+      if (FF[k]) { l=k+1; }
    }
 };
 

@@ -53,14 +53,21 @@ else
   ah=smaxis(m,n,'tag',mfilename,'landscape');
 end
 
-  s=HAM.ops; s={s.info};
-  for i=1:numel(s), s{i}=sprintf('%g) %s',i,s{i}); end
-  if numel(s)>8
-       s=sprintf('\n%s','with operator setup',s{1:4},'...',s{end-1:end});
-  else s=sprintf('\n%s','with operator setup',s{:});
+  s=HAM.ops; [n,m]=size(s); s=reshape({s.info},[n m]); nm=n*m;
+  if m==1
+     for i=1:n, s{i}=sprintf('%g) %s',i,s{i}); end
+  else
+     for i=1:n
+     for j=1:m, s{i,j}=sprintf('%g.%g) %s',j,i,s{i,j}); end, end
+     s(end+1,:)={''};
   end
 
-  header('%M :: %s %s',HAM.info.istr,s); addt2fig Wb
+  if nm>8
+       s=sprintf('\n%s',s{1:4},'...',s{end-1:end});
+  else s=sprintf('\n%s',s{:});
+  end
+
+  header('%M :: %s with operator setup %s',HAM.info.istr,s); addt2fig Wb
   header({'SW',[0 0]},param2str(HAM.info.param));
 
 setax(ah(1,1))

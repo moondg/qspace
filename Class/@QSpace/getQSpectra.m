@@ -52,10 +52,10 @@ function [q,EE,qq,dz,DZ]=getQSpectra(H,ws)
     %  % may have several different spin sectors! // Wb,Apr20,16
     %  % keyboard
     % end
-      dz{i}=mean(dz{i});
+      dz{i}=mean(dz{i},1);
    end
 
-   dz=[dz{:}]';
+   dz=cat(1,dz{:});
 
    i=find(abs(dz-round(dz))<1E-12); dz(i)=round(dz(i));
 

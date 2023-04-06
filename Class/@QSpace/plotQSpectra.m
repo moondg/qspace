@@ -203,7 +203,7 @@ function Iq=plotQSpectra(H,varargin)
      if ~isempty(x2 ), odeg(end+1:end+2)={'x2', x2 }; end
   end
 
-  for k=1:ns, setax(ah(k)); fs=[];
+  for k=1:ns, setax(ah(k)); fs=[]; xq=[];
      [q,EE,qq,dz,DZ]=getQSpectra(H,ws(k)); nq=size(q,1);
      if nargout
         Iq.q{k}=q; Iq.EE{k}=EE; Iq.qq{k}=qq; Iq.dz{k}=dz;

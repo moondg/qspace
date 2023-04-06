@@ -1,4 +1,4 @@
-function HAM=setup_mpo(HAM,HH,stype)
+function HAM=setup_mpo(HAM,HH,stype,heps)
 % function HAM=setup_mpo(HAM,HH [,stype])
 %
 %    Automated routine to generate pseudo MPO (HAM.mpo) for the
@@ -21,9 +21,13 @@ function HAM=setup_mpo(HAM,HH,stype)
       wberr('invalid usage (HH requires 5 columns)');
    end
 
-   i=find(abs(HH(:,end))<1E-15);
-   if ~isempty(i), wblog(' * ',['eliminating %g ' ...
-     'zero-terms in Hamiltonian (@ %.3g)'],numel(i),norm(HH(i,end)));
+   if nargin<4, heps=1e-15; end
+   i=find(abs(HH(:,end))<heps);
+   if ~isempty(i), e=norm(HH(i,end));
+      if e, wblog(' * ',...
+        'eliminating %g near-zero terms in Hamiltonian (@ %.3g)',numel(i),e);
+      else wblog(' * ','eliminating %g zero-terms in Hamiltonian',numel(i));
+      end
       HH(i,:)=[];
    end
 

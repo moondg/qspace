@@ -2677,7 +2677,7 @@ template <class TQ, class TD>
 int CData<TQ,TD>::checkNormSign(
    const char *F, int L, char xflag) const {
 
-   if (isRefInit() || isAbelian()) return 0;
+   if (isRefInit() || isAbelian()) { return 0; }
 
    unsigned r=rank(), l=cgd.SIZE.len, m=getOM(F_L);
 
@@ -2710,9 +2710,10 @@ int CData<TQ,TD>::checkNormSign(
 
    if (xflag>3 || xflag<0) { 
       if (xflag=='X') { xflag=2; } else {
-      if (xflag!='x') wblog(FL,
-         "WRN %s() unexpected xflag=%s -> 1",FCT,cSTR(xflag));
-      xflag=1; }
+         if (xflag!='x' && xflag!='!') wblog(FL,
+            "WRN %s() unexpected xflag=%s -> 1",FCT,cSTR(xflag));
+         xflag=1;
+      }
    }
 
    if (m<2 || !xflag) {

@@ -308,15 +308,16 @@ void FDM_NRG(
             }
             catch (...) {
                wblog(FL,"ERR reading %s operator (arg #%d)",
-               i==1 ? "1st":"2nd", k+1);
+               i==1? "1st":"2nd", k+1);
             }
          }
          else { try {
             wbvector< QSpace<TQ,TD> > &X=(i==1 ? B0 : C0);
             mxInitQSpaceVec(FL,argin[k],X,0,&r1,&r2);
-          } catch (...) {
-            wblog(FL,"ERR reading 1st operator (arg #%d)",k+1);
-          }}
+         } catch (...) {
+            wblog(FL,"ERR reading %d operator (arg #%d)",
+            i==1? "1st":"2nd", k+1);
+         }}
       }
       Z0.init(FL,argin[k++]);
 
@@ -566,7 +567,7 @@ void FDM_NRG(
    if (C0.isEmpty()) gotops=0;
 
    if (B0.len && B0.len!=C0.len) wblog(FL,
-      "ERR Length mismatch of 1st with 2nd operator (%d,%d).",
+      "ERR length mismatch of 1st with 2nd operator (%d,%d).",
        B0.len, C0.len);
    if (B0.len && B0[0].QDIM!=C0[0].QDIM) wblog(FL,
       "ERR QDIM mismatch of 1st with 2nd operator (%d,%d).",

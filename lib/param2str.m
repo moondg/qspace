@@ -8,10 +8,10 @@ function s=param2str(param,varargin)
 %
 % Options
 %
-%   '-tex'   escale some Greek letters and underscore
-%   '-x',..  exclude fields matching grep pattern
-%   'sep',.. field separator (', ')
-%   'fmt',.. format for numbers and vectors
+%   '--tex'   escale some Greek letters and underscore
+%   '-x',..   exclude fields matching grep pattern
+%   'sep',..  field separator (', ')
+%   'fmt',..  format for numbers and vectors
 %
 % See also struct2str.m
 % Wb Jan 2007

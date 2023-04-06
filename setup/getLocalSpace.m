@@ -965,9 +965,9 @@ function [F,Z,Iout]=getLocalSpace_SpinlessFermions(Sym_,varargin)
           ic=[0, cumsum(NCx)];
 
           if zflag<0, zflag=any(mod(NCx,2)); end
-          if zflag==1
+          if zflag==1 && vflag
              if NCsplit, s=' groups with'; else s=''; end
-             wblog('NB!','\Ngot odd number of flavors [n=%s]',NCxs);
+             wblog('NB!','got odd number of flavors [n=%s]',NCxs);
              wblog(' * ',[
                'using 2*n-1 as charge labels for' s, 10 ...
                'odd number of flavors to ensure symmetric' 10 ...
