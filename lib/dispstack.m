@@ -42,7 +42,7 @@ function dispstack(S,k)
          fprintf(1,'%4d  %-40s %s\n', n-i+1,s,S(i).name);
      end
   else
-     for i=1:n
+     for i=n:-1:1
          f=S(i).file; s={' ','',''};
          if ~isempty(find(f=='@',1))
             s{2}=regexprep(f,'.*/(@[^/]*/).*','$1');

@@ -186,7 +186,7 @@ void MEX_FUNCTION(
 
    if (!Mx::IsDblScalar(FL,argin[k])) wblog(FL,
       "invalid Lambda (arg#%d)",k+1);
-   if (mxGetNumber(argin[k++],Lambda)) wberror(FL,str);
+   if (mxGetNumber(argin[k++],Lambda)) wbdie(FL,str);
 
    ac=argin[k++]; c=(ac && mxIsCell(ac) ? 1 : 0);
    if (c)

@@ -81,8 +81,8 @@ setax(ah(1,1))
   end
 
   if full_mpo
-       ah(1)=mergex(ah(1:2,:));
-  else ah(1)=mergex(ah(1,:));
+       ah(1)=mergeax(ah(1:2,:));
+  else ah(1)=mergeax(ah(1,:));
   end
 
   x=[min(xy(:,1)),max(xy(:,1))]; mflag=10;

@@ -151,7 +151,7 @@ void mexFunction(
 
     if (qiflag) {
         int fid=mxAddField(plhs[0], "iQA");
-        if (fid<0) wberror(FLINE,"Could not add field to structure.");
+        if (fid<0) wbdie(FLINE,"Could not add field to structure.");
         QI2Cell(QAB, AQ, plhs[0], fid, P);
     }
 

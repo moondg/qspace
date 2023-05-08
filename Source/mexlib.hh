@@ -315,7 +315,7 @@ class MXPut {
     void put(const char *ws=0, const char *vn=0) {
        if (S) {
           if (!vname) wblog(F_L,
-             "ERR %s() got empty variable name !?",FCT,vname);
+             "ERR %s() got empty variable name",FCT,vname);
           const char s0[]="ans", *s=((vn && vn[0]) ? vn : vname);
           if (!s || !s[0]) s=s0;
 
@@ -358,7 +358,7 @@ class MXPut {
     template<class T>
     MXPut& add(const T&x, const char *fn) {
        if (!S) wblog(F_L,"ERR MXPut::%s() S not initialized yet",FCT);
-       else mxAddField2Scalar(F_L,S,fn,x.toMx());
+       mxAddField2Scalar(F_L,S,fn,x.toMx());
        return *this;
     };
 
@@ -386,10 +386,9 @@ class MXPut {
 
 template<>
 MXPut& MXPut::addP(const mxArray* a, const char *fn) {
-   if (!S) wblog(F_L,"ERR MXPut::%s() S not set yet",FCT); else
-   if (!vname) wblog(F_L,
-      "ERR %s() got empty variable name !?",FCT,vname);
-   else mxAddField2Scalar(F_L,S, fn, (mxArray*)a);
+   if (!S    ) wblog(F_L,"ERR MXPut::%s() S not set yet",FCT);
+   if (!vname) wblog(F_L,"ERR %s() got empty variable name",FCT,vname);
+   mxAddField2Scalar(F_L,S, fn, (mxArray*)a);
    return *this;  
 };
 

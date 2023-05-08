@@ -1463,12 +1463,14 @@ CRef<TQ>& CRef<TQ>::init(
 
      #ifndef QS_SKIP_MPFR 
       if (mxIsDouble(ax) && mxGetNumberOfElements(ax)) { 
+         static unsigned nlog=0; 
+
          wbvector<double> dd(F_L,ax);
          unsigned i=0, n=MIN(dd.len,Cb.cgd.D.len); double e,e2=0;
          for (; i<n; ++i) {
             e=dd[i]-double(Cb.cgd.D[i]); e2+=e*e;
          }
-         if (!i || e2>1E-24) {
+         if (e2>1e-24) { 
             MXPut X(FL,"Idbg"); X.add(i,"i").add(n,"n")
               .add(dd,"dd").add(Cb.cgd,"cgD").add(Q,"Q").add(Cb,"Cb");
                X.put("tmpfile"); 
@@ -1478,13 +1480,17 @@ CRef<TQ>& CRef<TQ>::init(
             PRINTF("  %2d: %9.5g %9.5g\n",i+1,dd[i],double(Cb.cgd.D[i])); }
 
             wblog(FL,"ERR %s() cgt[%d/%d] inconsisteny @ "
-            "%.3g\nQ: %s\nC: %s",FCT,i,n,SQRT(e2),STR(Q),STR(Cb));
+            "e2=%.3g\nQ: %s\nC: %s",FCT,i,n,SQRT(e2),STR(Q),STR(Cb));
          }
 
          if (dd.len>Cb.cgd.D.len) {
             wbvector<RTD> cgt(dd.len);
             for (i=0; i<n; ++i) { cgt[i]=Cb.cgd.D[i]; }
-            for (; i<n; ++i) { cgt[i].init_d(FL,dd[i]); }
+            for (; i<dd.len; ++i) {
+               if (++nlog<8)
+                    { cgt[i].init_d(FL, dd[i]); }
+               else { cgt[i].init_d(0,0,dd[i]); }
+            }
             Cb.RefInit_auxtr(FL,S,cgt);
          }
       } else

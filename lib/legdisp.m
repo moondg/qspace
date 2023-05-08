@@ -17,6 +17,7 @@ function [lg,ll,l2,t2]=legdisp(varargin)
 %
 %     '-detach'  detach legend from axis (allows to create another legend)
 %     '-erase'   white background but no border
+%                in case grid lines are still through legend, use -detach
 %     '-eraset'  white background for text labels only
 %     '-rm'      remove old legdisp axes sets
 %

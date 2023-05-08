@@ -642,9 +642,9 @@ double mxGetNumber(
    mxArray *a;
    wbcomplex z;
 
-   if (!mxIsStruct(S)) wberror(F_L,
+   if (!mxIsStruct(S)) wbdie(F_L,
       "need scalar structure on input");
-   if (mxGetNumberOfElements(S)>1) wberror(F_L,
+   if (mxGetNumberOfElements(S)>1) wbdie(F_L,
       "need SINGLE structure on input");
 
    a=mxGetField(S,0,vn);
@@ -652,7 +652,7 @@ double mxGetNumber(
    if (!a) wblog(F_L,
       "ERR field %s does not exist in structure", vn);
 
-   if (mxGetNumber(a,z,qflag)) wberror(FL,str);
+   if (mxGetNumber(a,z,qflag)) wbdie(FL,str);
    if (z.i!=0.) wblog(FL,"WRN Input number is complex! (%g)", z.i);
 
    return z.r;

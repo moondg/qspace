@@ -8,7 +8,7 @@ function s=structdisp(varargin)
 %
 %   '-x',..   GREP pattern of lines to skip
 %   '-h'      horizontal display
-%   '-dn',..   number of columns to indent whole display
+%   '-dn',..  number of columns to indent whole display
 %             (vertical mode only)
 %
 % Wb,Dec20,07

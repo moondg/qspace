@@ -28,7 +28,7 @@ void mexFunction(
 
    if (nargout<2) usage(FL,"invalid number of I/O arguments");
 
-   if (!Mx::IsDblVector(FL,argin[0])) wberror(FL,
+   if (!Mx::IsDblVector(FL,argin[0])) wbdie(FL,
 	  "invalid input arg#1 (real om data required)");
 
    if (Mx::IsDblMat(0,0,argin[1])) {
@@ -36,7 +36,7 @@ void mexFunction(
 	  GET_SMOOTH_SPEC(nargout, argout, nargin, argin,ASpec);
    }
    else {
-	  if (!Mx::IsDblMat(FL,argin[1],'C')) wberror(FL,
+	  if (!Mx::IsDblMat(FL,argin[1],'C')) wbdie(FL,
 		 "invalid input arg#2 (double or complex required)");
 	  Spectral<wbcomplex> ASpec;
 	  GET_SMOOTH_SPEC(nargout, argout, nargin, argin,ASpec);

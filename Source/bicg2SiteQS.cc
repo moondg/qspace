@@ -399,9 +399,9 @@ void mexFunction(
       }
    }
 
-   if (nargin <9) wberror(FL,"Too few input arguments."  ); else
-   if (nargout<2) wberror(FL,"Too few output arguments." ); else
-   if (nargout>3) wberror(FL,"Too many output arguments.");
+   if (nargin <9) wbdie(FL,"Too few input arguments."  ); else
+   if (nargout<2) wbdie(FL,"Too few output arguments." ); else
+   if (nargout>3) wbdie(FL,"Too many output arguments.");
 
    for (k=i=0; i<4; i++) {
       try { mxIsQSpace(FL,argin[i],r,cflag); }
@@ -462,7 +462,7 @@ void mexFunction(
    wblog(FL,"ERR CPAT required as argument #9."); }
 
    for (; i<nargin; i++) if (mxIsCell(argin[i]))
-   wberror(FL, 
+   wbdie(FL, 
    "there should be no further cells after contraction patterns!");
 
    opts.init(argin+m,nargin-m);

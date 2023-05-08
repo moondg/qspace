@@ -1762,7 +1762,7 @@ wbMatrix<T>& wbMatrix<T>::add(
     }
 
     if (dim1!=M.dim1 || dim2!=M.dim2)
-    wberror(FL,"Dimension mismatch.");
+    wbdie(FL,"Dimension mismatch.");
 
     if (isdiag) if (!M.isdiag) isdiag=0;
 
@@ -1789,7 +1789,7 @@ wbMatrix<T>& wbMatrix<T>::minus(
     }
 
     if (dim1!=M.dim1 || dim2!=M.dim2)
-    wberror(FL,"Dimension mismatch.");
+    wbdie(FL,"Dimension mismatch.");
 
     if (isdiag) if (!M.isdiag) isdiag=0;
 
@@ -2107,7 +2107,7 @@ void wbMatrix<T>::split(
 
     for (k=0; k<len; ++k) {
        if (M[k]==this)
-       wberror(FL, "This matrix itself is included in split list!");
+       wbdie(FL, "This matrix itself is included in split list!");
     }
 
     if (dim==1) {
@@ -2116,7 +2116,7 @@ void wbMatrix<T>::split(
        for (D1=k=0; k<len; ++k) D1+=(*(M[k])).dim1;
 
        if (D1!=dim1)
-       wberror(FL, "Dimension mismatch.");
+       wbdie(FL, "Dimension mismatch.");
 
        for (k=0; k<len; ++k) {
           if (M[k]->dim2!=dim2) M[k]->init(M[k]->dim1, dim2);

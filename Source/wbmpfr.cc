@@ -58,9 +58,11 @@ mpfr__<P>& mpfr__<P>::init_d(
       double x=getval_d(), e=std::fabs((x-val)/val);
       if (e>1e-14) { 
          fprintf(stderr,"\n  %30.20g\n  %30.20g\n\n",val,x);
-         wblog(FL,"ERR %s() got conversion error @ %.3g (1E-14)",FCT,e);
+         wblog(F_L,"ERR %s(%g) conversion error @ %.3g /1E-14",FCT,val,e);
       }
-      else wblog(FL,"TST %s() init_d() @ %.3g",FCT,e);
+      else if (F && (e || std::fabs(x-int(x)))) {
+         wblog(F,L,"TST %s(%g) conversion error @ %.3g",FCT,val,e);
+      }
    }
    return *this;
 };

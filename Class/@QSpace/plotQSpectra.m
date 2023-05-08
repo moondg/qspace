@@ -33,7 +33,8 @@ function Iq=plotQSpectra(H,varargin)
      if     getopt('-x'), vflag=1;
      elseif getopt('-v'), vflag=2;
      elseif getopt('-V'), vflag=3;
-     else vflag=0; end
+     elseif getopt('-q'), vflag=0;
+     else vflag=-1; end
 
      yl = getopt('yl',[]);
      y2 = getopt('y2',[]);
@@ -233,6 +234,8 @@ function Iq=plotQSpectra(H,varargin)
         xx=repmat([x-r2;x+r2;nan],1,numel(ee)); xx(3,:)=nan;
         yy=repmat(ee,3,1);
         plot(xx(:),yy(:),lo{:}); hold on
+
+        if ~vflag, continue; end
 
         if vflag==1, osd={'dz',DZ{i}};
         elseif vflag==2, osd={'dz',DZ{i},'-v'};

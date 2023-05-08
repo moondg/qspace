@@ -1097,6 +1097,8 @@ class QVec : public wbvector<QType> {
      };
 
      wbstring toStr(const char vflag=0) const;
+     int print_qset(
+        const char *F, int L, const gTQ *qs, char *s, unsigned n) const;
 
 };
 
@@ -3031,6 +3033,9 @@ class CRef {
     double wget0() const;
     double wget1() const;
 
+    bool wSame( 
+       const wbarray<double> &cgw_, char lenient=0, double eps=1e-14) const;
+
     template <class T>
     wbvector<T>& getSize(wbvector<T> &S, char bare=0) const;
 
@@ -3053,6 +3058,7 @@ class CRef {
 
     double NormSignW(
        const char *F=NULL, int L=0,
+       char useExt=1, 
        double eps =CG_SKIP_DEPS1,  
        double eps2=CG_SKIP_DEPS2   
     );

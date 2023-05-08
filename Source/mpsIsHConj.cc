@@ -31,11 +31,11 @@ void mexFunction(
           if (mxIsChar(argin[i])) {
              wbstring s(argin[i]);
              if (s=="-v") vflag='v';
-             else wberror(FL,str);
+             else wbdie(FL,str);
           }
           else if (Mx::IsNumber(0,0,argin[i])) {
              if ((++mark[i])>1 || mxGetNumber(argin[1], eps))
-             wberror(FL,str);
+             wbdie(FL,str);
           }
        }
     }

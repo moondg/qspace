@@ -132,7 +132,7 @@ void mexFunction(
 
    if (!Mx::IsDblScalar(FL,argin[k])) wblog(FL,
    "Invalid argument %d (Lambda).",k+1);
-   if (mxGetNumber(argin[k++], Lambda)) wberror(FL,str);
+   if (mxGetNumber(argin[k++], Lambda)) wbdie(FL,str);
 
    gotC2 = nargin>int(k+2) &&
      (mxIsStruct(argin[k+1]) || mxIsCell(argin[k+1]));

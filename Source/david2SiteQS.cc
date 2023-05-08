@@ -137,9 +137,9 @@ void mexFunction(
 
    if (nargin) if (checkHelpVersion(argin[0])) { return; }
 
-   if (nargin <6) wberror(FL,"Too few input arguments."  ); else
-   if (nargout<2) wberror(FL,"Too few output arguments." ); else
-   if (nargout>3) wberror(FL,"Too many output arguments.");
+   if (nargin <6) wbdie(FL,"Too few input arguments."  ); else
+   if (nargout<2) wbdie(FL,"Too few output arguments." ); else
+   if (nargout>3) wbdie(FL,"Too many output arguments.");
 
    for (k=0; k<2; k++) { r=-1;
       try { mxIsQSpace(FL,argin[k],r,isC); }

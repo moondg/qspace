@@ -283,6 +283,21 @@ char wbarray<T>::sameUptoFac(
 };
 
 template<class T> inline
+bool wbarray<T>::sameAs(const wbarray &B, double eps) const {
+   if (this!=&B) {
+      if (SIZE!=B.SIZE) { return 0; }
+      if (data!=B.data) {
+         if (eps) {
+            for (size_t i=0, n=numel(); i<n; ++i) {
+            if (ABS(data[i]-B.data[i])>eps) { return 0; }}
+         }
+         else { return (!memcmp(data, B.data, numel()*sizeof(T))); }
+      }
+   }
+   return 1;
+};
+
+template<class T> inline
 wbvector<T>& wbarray<T>::getCol(size_t k, wbvector<T> &v) const {
    const T* x=col(k); 
    return v.init(SIZE[0],x); 
@@ -493,23 +508,22 @@ bool wbarray<T>::sameSize1(const size_t *s2, unsigned n2) const {
 };
 
 template<class T> inline
-bool wbarray<T>::equal (const wbarray<T> &B, const T& eps) const {
-    size_t i,s=numel(); if (SIZE!=B.SIZE) return 0;
-
-    if (eps==0) { if (memcmp(data,B.data,s*sizeof(T))) return 0; }
-    else { for (i=0; i<s; i++) if (fabs(data[i]-B.data[i])>eps) return 0; }
-
+bool wbarray<T>::equal (const wbarray<T> &B, T eps) const {
+    size_t i,s=numel(); if (SIZE!=B.SIZE) { return 0; }
+    if (eps)
+         { for (i=0; i<s; ++i) { if (fabs(data[i]-B.data[i])>eps) return 0; }}
+    else { if (memcmp(data,B.data,s*sizeof(T))) { return 0; }}
     return 1;
-}
+};
 
 template<class T> inline
-bool wbarray<T>::unequal (const wbarray<T> &B, const T& eps) const {
+bool wbarray<T>::unequal (const wbarray<T> &B, T eps) const {
     return !equal(B,eps);
-}
+};
 
 template<class T> inline
 bool wbarray<T>::equal (
-    const wbarray<T> &B, const double& eps, double &maxdiff) const {
+    const wbarray<T> &B, double eps, double &maxdiff) const {
 
     if (SIZE!=B.SIZE) return 0;
 
@@ -521,13 +535,13 @@ bool wbarray<T>::equal (
     }
 
     return (maxdiff<eps);
-}
+};
 
 template<class T> inline
 bool wbarray<T>::unequal (
-    const wbarray<T> &B, const double& eps, double &maxdiff) const {
+    const wbarray<T> &B, double eps, double &maxdiff) const {
     return !(*this).equal(B,eps,maxdiff);
-}
+};
 
 template<class T>
 bool wbarray<T>::isDiag_aux(const T eps, const char* task) const {

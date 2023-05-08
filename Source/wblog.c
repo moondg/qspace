@@ -47,7 +47,7 @@ void usage(const char *F, int L, const char* estr) {
        }
     }
 
-    if (estr && estr[0]) { wberror(F,L,estr); }
+    if (estr && estr[0]) { wbdie(F,L,estr); }
 };
 
 #endif
@@ -380,7 +380,7 @@ void banner(unsigned n, const char *s, const char *istr, const char *fstr){
    printf("\n");
 };
 
-void wberror(const char *F, int L, const char* istr) {
+void wbdie(const char *F, int L, const char* istr) {
 
    PRINTF("\n%s ERR\n\n%s\n\n", shortFL(F,L), istr);
 
@@ -391,7 +391,7 @@ void wberror(const char *F, int L, const char* istr) {
   #endif
 };
 
-void wberror(
+void wbdie(
    const char *F, int L,
    const char *istr1,
    const char *istr2

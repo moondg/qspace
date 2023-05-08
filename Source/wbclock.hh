@@ -67,7 +67,7 @@ class ClockSet {
 
     int erase(Wb::Clock* clk); 
 
-    int add2Mx(MXPut &Iout) const; 
+    mxArray* toMx() const;
 
     map<std::string, Wb::Clock*> buf; 
 

@@ -20,9 +20,32 @@ function save2(varargin)
 % All remaining arguments are handed over to MatLab's save()
 % Wb,Aug11,06 / Wb,May20,07 / Wb,Jan02,17
 
+  persistent EXCL
+  iflag=0;
+
   getopt('INIT',varargin);
      dstr =getopt('-d','');
      excl =getopt('-x',{});
+
+     q=getopt('--exclude','');
+     if ~isempty(q), iflag=iflag+1;
+        if isempty(EXCL), EXCL={q};
+        else 
+           for i=1:numel(EXCL)
+              if isequal(EXCL{i},q), q=''; break; end
+           end
+           if ~isempty(q), EXCL{end+1}=q; end
+        end
+     end
+
+     if getopt('--status'), iflag=iflag+1;
+        if isempty(EXCL)
+           fprintf(1,'\n   (EXCL is empty)\n\n');
+        else
+           q=sprintf(', %s',EXCL{:});
+           fprintf(1,'\n   EXCL = %s\n\n',q(3:end));
+        end
+     end
 
          if getopt('-v'), vflag=2;
      elseif getopt('-q'), vflag=0; else vflag=1; end
@@ -30,14 +53,17 @@ function save2(varargin)
      force=getopt('-f');
      kflag=getopt('-k');
 
-  varargin=getopt('get_remaining');
+  args=getopt('get_remaining');
 
-  if length(varargin)<1
-     eval(['help ' mfilename]);
-     if nargin, wberr('invalid usage'); else return; end
+  if isempty(args);
+     if ~iflag
+        eval(['help ' mfilename]);
+        if nargin, wberr('invalid usage'); end
+     end
+     return
   end
 
-  fname=varargin{1}; varargin(1)=[];
+  fname=args{1}; args(1)=[];
 
   if ~isempty(dstr)
      ldir=cd;
@@ -82,6 +108,7 @@ function save2(varargin)
      vars=getuser(groot,'whos','-rm'); ix=[];
 
      if ~iscell(excl), excl={excl}; end
+     if ~isempty(EXCL), excl=[excl EXCL]; end
 
      for i=1:length(vars)
      for q=1:length(excl)
@@ -104,11 +131,11 @@ function save2(varargin)
      end
   end
 
-  sv=sprintf(' %s', varargin{:});
+  sv=sprintf(' %s', args{:});
   cmd=sprintf('save %s%s%s',ftmp,s,sv);
 
   if vflag>1, fprintf('\n');
-     if ~isempty(varargin) || ~isempty(s)
+     if ~isempty(args) || ~isempty(s)
         if length(s)>50, s=sprintf(' <%d VARS>',m); end
         fprintf(1,'   save: %s%s%s\n', f,s,sv);
      end
@@ -158,12 +185,12 @@ function save2(varargin)
         if isempty(findstr(sv,'-struct'))
            evalin('caller', ['whos ' v]);
         else
-           evalin('caller', ['whos2(''' varargin{2} ''')']);
+           evalin('caller', ['whos2(''' args{2} ''')']);
         end; fprintf(1,'\n');
 
         evalin('caller', [cmd ' -v7.3']); 
      catch l
-        wblog('ERR','check save2 ...'); cmd, sv, varargin
+        wblog('ERR','check save2 ...'); cmd, sv, args
         disp(l.message); dispstack(l);
      end
   end

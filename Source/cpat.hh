@@ -178,13 +178,13 @@ void CPAT<TQ,TD>::init(
 
       n=isCPAT(aa[k], twoSite);
 
-      if (!n) wberror(FL,str);
+      if (!n) wbdie(FL,str);
 
       CP[p].initDef(n);
 
       if (n==1) { 
          e=CP[p][0].init(aa[k],ic1,r1,ic2,r2,twoSite,ldir);
-         if (e) wberror(FL,str);
+         if (e) wbdie(FL,str);
          m=CP[p][0].A.len;
       }
       else {
@@ -473,7 +473,7 @@ int CPAT_Set<TQ,TD>::getCtrIndex(
    CQ0.QIDX=CQi.QIDX;
 
    e=A[i].contract_getIdxSet(ica, PSI, ic+1, CQi.QIDX, CIi);
-   if (e<0) wberror(FL,str); 
+   if (e<0) wbdie(FL,str); 
 
    CQi.PermuteQ(P);
 

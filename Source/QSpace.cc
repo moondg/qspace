@@ -115,7 +115,7 @@ void QSpace<TQ,TD>::PrependSingletons(unsigned R) {
 
     unsigned r=-1;
 
-    if (!isConsistent(r)) { wberror(FL,str); }
+    if (!isConsistent(r)) { wbdie(FL,str); }
     if (r<R) {
        unsigned i,s=QIDX.dim2*sizeof(TQ);
        wbMatrix<TQ> Q0(QIDX);
@@ -166,7 +166,7 @@ void QSpace<TQ,TD>::initIdentity(const QSpace<TQ,TD> &A, char dflag) {
    clearQSpace();
 
    if (A.isEmpty()) { return; }
-   if (!A.isConsistent_r(2)) { wberror(FL,str); }
+   if (!A.isConsistent_r(2)) { wbdie(FL,str); }
 
    if (!A.isQSym(0,0,dflag)) {
       if (dflag)
@@ -1271,7 +1271,7 @@ bool QSpace<TQ,TD>::findDimQ(const TQ* q0, unsigned &d) const {
    unsigned i,j,n, r=-1, s=QDIM*sizeof(TQ);
    const TQ *q=QIDX.data;
 
-   if (!isConsistent(r)) wberror(FL,str);
+   if (!isConsistent(r)) wbdie(FL,str);
    if (QIDX.isEmpty()) return 0;
 
    r=rank(); 
@@ -1295,7 +1295,7 @@ bool QSpace<TQ,TD>::findDimQ(const TQ* q, unsigned k, unsigned &d) const {
    unsigned i, n=QIDX.dim1, r=-1, s=QDIM*sizeof(TQ);
    TQ *q0=QIDX.data+k*QDIM;
 
-   if (!isConsistent(r)) wberror(FL,str);
+   if (!isConsistent(r)) wbdie(FL,str);
    if (QIDX.isEmpty()) return 0;
 
    for (i=0; i<n; ++i, q0+=QIDX.dim2) {
@@ -1491,7 +1491,7 @@ bool QSpace<TQ,TD>::isDiagBlock(unsigned k) const {
     unsigned s=QDIM*sizeof(TQ);
     const TQ *q=QIDX.rec(k);
 
-    if (!isConsistent_r(2)) wberror(FL,str);
+    if (!isConsistent_r(2)) wbdie(FL,str);
     if (k>=QIDX.dim1) wblog(FL,
        "ERR index out of bounds (%d/%d)",k,QIDX.dim1);
 
@@ -1947,8 +1947,8 @@ bool QSpace<TQ,TD>::hasSameQ(const QSpace<TQ,T2> &B) const {
     if (isEmpty() || B.isEmpty()) return 1;
     if (QIDX.dim2!=B.QIDX.dim2 || QDIM!=B.QDIM) return 0;
 
-    if (!A.isConsistent(r)) { A.info("A"); wberror(FL,str); }
-    if (!B.isConsistent(r)) { B.info("B"); wberror(FL,str); }
+    if (!A.isConsistent(r)) { A.info("A"); wbdie(FL,str); }
+    if (!B.isConsistent(r)) { B.info("B"); wbdie(FL,str); }
 
     for (k=0; (int)k<r; ++k) {
        A.getQsub(k, QAk); QAk.groupRecs(pA,dA);
@@ -2811,49 +2811,61 @@ int QSpace<TQ,TD>::ExpandOM_(const char *F, int L,
 ) {
    unsigned r=rank(FL);
 
-   if (ia>=   DATA.len) wblog(F_L,"ERR %s() "
-      "index out of bounds (A: %d/%d)",FCT,ia+1,  DATA.len);
-   if (ib>=B.DATA.len) wblog(F_L,"ERR %s() "
-      "index out of bounds (B: %d/%d)",FCT,ib+1,B.DATA.len);
+   if (ia>=   DATA.len) wblog(F_L,
+      "ERR %s() index out of bounds (A: %d/%d)",FCT,ia+1,  DATA.len);
+   if (ib>=B.DATA.len) wblog(F_L,
+      "ERR %s() index out of bounds (B: %d/%d)",FCT,ib+1,B.DATA.len);
    if (!CGR) { return -1; }
 
    if (this!=&B) { 
-      if (QIDX.dim2!=B.QIDX.dim2 || CGR.dim2!=B.CGR.dim2)
-      wblog(FL,"ERR %s() QSpace mismatch (r=%d/%d)",FCT,r,B.rank(FL));
+      if (QIDX.dim2!=B.QIDX.dim2 || CGR.dim2!=B.CGR.dim2) wblog(FL,
+      "ERR %s() QSpace mismatch (r=%d/%d)",FCT,r,B.rank(FL));
    }
 
    wbarray<TD> &Ai=(*DATA[ia]), &Bi=(*B.DATA[ib]);
-   unsigned ma=Ai.numOM(r), mb=Bi.numOM(r), nsym=CGR.dim2;
+   unsigned j,n1,n2, ma=Ai.numOM(r), mb=Bi.numOM(r), nsym=CGR.dim2;
 
    if (ma<=1 && mb<=1) {
-      if (!Ai.sameSize(Bi)) wblog(FL,
-         "ERR %s() got size difference (%d,%d): %s / %s",
-         FCT,ia+1,ib+1,SSTR(Ai),SSTR(Bi));
-      return 0;
+      if (!Ai.sameSize(Bi)) wblog(FL,"ERR %s() got size difference "
+         "(%d,%d): %s / %s", FCT,ia+1,ib+1,SSTR(Ai),SSTR(Bi));
+
+      for (j=0; j<nsym; ++j) {
+         const CRef<TQ> &a=CGR(ia,j), &b=B.CGR(ib,j);
+         n1=a.wnumel(); n2=b.wnumel(); if (n1>1 || n2>1) { break; }
+         if (n1 && n2) { 
+            if (fabs(a.cgw[0]-b.cgw[0])>1e-12) { wblog(FL, 
+               "ERR %s() cgw normalization mismatch %.5g / %.5g @ %.3g",
+               FCT,a.cgw[0],b.cgw[0],fabs(a.cgw[0]-b.cgw[0]));
+            }
+         }
+      }
+      if (j>=nsym) { return 0; }
    }
 
    wbvector<unsigned> Sx(nsym), jOM(nsym); 
    wbMatrix<unsigned> Sa(2,nsym), Sb(2,nsym);
 
    unsigned *sa=Sa.data, *sa_=Sa.data+nsym, *sb=Sb.data, *sb_=Sb.data+nsym;
-   unsigned i,j, n1, n2, j1=-1, j2=-1, m=0, Ma=-1, Mb=-1;
-   double wa=1, wb=1;
+   unsigned i, m=0, Ma=-1, Mb=-1;
 
    for (j=0; j<nsym; ++j) {
-      CRef<TQ> &a=CGR(ia,j), &b=B.CGR(ib,j);
-      if ((n1=a.wnumel())==1) { wa*=a.cgw[0]; a.cgw[0]=1; }
-      if ((n2=b.wnumel())==1) { wb*=b.cgw[0]; b.cgw[0]=1; }
+      const CRef<TQ> &a=CGR(ia,j), &b=B.CGR(ib,j);
+      n1=a.wnumel(); n2=b.wnumel();
       if (n1>1 || n2>1) {
-         if (!a.cgb || a.cgb!=b.cgb) { wblog(FL,
+         if (!a.cgb || a.cgb!=b.cgb || !n1 || !n2) { wblog(FL,
             "ERR %s() cgb mismatch or null %p / %p\n   %s\n<> %s",
             FCT,a.cgb,b.cgb, STR(a),STR(b));
          }
+         if (!a.wSame(b.cgw,'l')) { 
+            wblog(FL,"ERR %s() cgw normalization mismatch %.5g / %.5g @ %.3g",
+            FCT,a.cgw[0],b.cgw[0],fabs(a.cgw[0]-b.cgw[0]));
+         }
 
-         sa_[m] = ma = a.wdim12(FL,sa[m]); 
-         sb_[m] = mb = b.wdim12(FL,sb[m]); 
+         sa_[m] = ma = a.wdim12(FL,sa[m]);   
+         sb_[m] = mb = b.wdim12(FL,sb[m]);   
 
-         if (ma>1 && Ma>ma) { Ma=ma; j1=j; } 
-         if (mb>1 && Mb>mb) { Mb=mb; j2=j; }
+         if (ma>1 && Ma>ma) { Ma=ma; } 
+         if (mb>1 && Mb>mb) { Mb=mb; }
 
          Sx[m]=MAX(ma,mb);
          jOM[m]=j; ++m;
@@ -2863,12 +2875,8 @@ int QSpace<TQ,TD>::ExpandOM_(const char *F, int L,
    if (!m) wblog(FL,"ERR %s() got m=%d",FCT,m);
    Sx.Shorten2(m);
 
-   if (int(Ma)< 0) { Ma=0;
-        if (wa!=1) { Ai*=wa; }} 
-   else if (wa!=1) {   CGR(ia,j1).cgw*=wa; } 
-   if (int(Mb)< 0) { Mb=0;
-        if (wb!=1) { Bi*=wb; }} 
-   else if (wb!=1) { B.CGR(ib,j2).cgw*=wb; } 
+   if (int(Ma)<0) { Ma=0; }
+   if (int(Mb)<0) { Mb=0; }
 
    if (Sa==Sb) {
       #ifndef WB_SKIP_ASSERT
@@ -2923,8 +2931,8 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::Append(
 
    unsigned r=-1;
 
-   if (!  isConsistent(r)) wberror(F,L,str);
-   if (!B.isConsistent(r)) wberror(F,L,str);
+   if (!  isConsistent(r)) wbdie(F,L,str);
+   if (!B.isConsistent(r)) wbdie(F,L,str);
 
    if (QDIM!=B.QDIM || QIDX.dim2!=B.QIDX.dim2) wblog(F,L,
       "ERR %s() rank mismatch (%d,%d; %d,%d)",
@@ -2994,8 +3002,8 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::Cat(
    }
 
    unsigned r=-1;
-   if (!A.isConsistent(r)) wberror(F,L,str);
-   if (!B.isConsistent(r)) wberror(F,L,str);
+   if (!A.isConsistent(r)) { wbdie(F,L,str); }
+   if (!B.isConsistent(r)) { wbdie(F,L,str); }
 
    if (A.QDIM!=B.QDIM || A.QIDX.dim2!=B.QIDX.dim2) wblog(F,L,
       "ERR %s() rank mismatch (%d,%d; %d,%d)",
@@ -3043,7 +3051,7 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::Cat(
    if (afac!=one) { for (i=0; i<na; ++i) (*DATA[i])*=afac; }
    if (bfac!=one) { for (i=na; i<n; ++i) (*DATA[i])*=bfac; }
 
-   if (uflag) MakeUnique();
+   if (uflag) { MakeUnique(); }
 
    return *this;
 };
@@ -3059,8 +3067,8 @@ int QSpace<TQ,TD>::Append2AndDestroy(
 
    if (A.isEmpty()) { save2(A); return e; }
 
-   if (!  isConsistent(r,3)) { wberror(F,L,str); }
-   if (!A.isConsistent(r,2)) { wberror(F,L,str); }
+   if (!  isConsistent(r,3)) { wbdie(F,L,str); }
+   if (!A.isConsistent(r,2)) { wbdie(F,L,str); }
 
    if (QDIM!=A.QDIM || QIDX.dim2!=A.QIDX.dim2) wblog(F,L,
       "ERR %s() rank mismatch (%d,%d; %d,%d)",
@@ -3597,8 +3605,10 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::plus_plain(
 };
 
 template <class TQ, class TD>
-int QSpace<TQ,TD>::NormCGW(char full, char skipzeros,
-    char rcpy 
+int QSpace<TQ,TD>::NormCGW(
+    char full,
+    char skipzeros, 
+    char rcpy   
 ) {
 
    int rval=0; if (!CGR) { return rval; }
@@ -3614,7 +3624,7 @@ int QSpace<TQ,TD>::NormCGW(char full, char skipzeros,
 
       for (i=0; i<CGR.dim1; ++i) { cfac=1;
          for (j=0; j<CGR.dim2; ++j) {
-            cfac *= CGR(i,j).NormSignW();
+            cfac *= CGR(i,j).NormSignW(0,0, full? 0:1);
          }
 
          if (cfac!=TD(1)) {
@@ -4426,7 +4436,7 @@ void QSpace<TQ,TD>::EigenSymmetric(
 
    QBlock<TQ,TD,double> x;
 
-   if (!isConsistent(r)) wberror(FL,str);
+   if (!isConsistent(r)) wbdie(FL,str);
    if (r%2) wblog(FL,"ERR %s() requires even-rank (%d)",FCT,r);
    r2=unsigned(r)/2; Ib.Index(r2);
 

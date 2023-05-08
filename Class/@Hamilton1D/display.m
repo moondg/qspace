@@ -65,8 +65,10 @@ function display(HAM,varargin)
     end
   end
 
-  fprintf(1,'\n       %-27s %s\n','symmetry',get_sym_info(HAM));
-  fprintf(1,  '       %-27s %g\n','system length L',L);
+  fmt={'       %-27s ', '%-22s'};
+
+  fprintf(1,['\n' fmt{1} '%s\n'],'symmetry',get_sym_info(HAM));
+  fprintf(1,[  '' fmt{1} '%g\n'],'system length L',L);
 
   if isfield(HAM.info,'mpo'), IH=HAM.info.mpo;
 
@@ -77,7 +79,7 @@ function display(HAM,varargin)
         else s=sprintf('[ %g..%g ]',min(dx),max(dx)); end
      else s=' !?'; end
 
-     fprintf(1,'       %-27s ','coupling range in H');
+     fprintf(1,fmt{1},'coupling range in H');
      if l<=max(2,L/2)
         fprintf(1,'%s\n',s);
      else
@@ -120,7 +122,7 @@ function display(HAM,varargin)
   end
 
   s=sprintf('D=%s, d=%s',dMs{:});
-  fprintf(1,'       %-27s %-22s','mpo dimension',s);
+  fprintf(1,[fmt{1:2}],'mpo dimension',s);
 
   full_mpo=usingFullMPO(HAM);
   if full_mpo
@@ -132,12 +134,13 @@ function display(HAM,varargin)
      s{2}=[ s{2}, sprintf(' (%s)', vec2str(dloc(:,2),'-f')) ];
   end
   if ntype==1, s{3}='uniform sites'; end
-  fprintf(1,'       %-27s %-22s %s\n','MPS dimension',[s{1} ', ' s{2}], s{3});
+  fprintf(1,[fmt{1:2} ' %s\n'],'MPS dimension',[s{1} ', ' s{2}], s{3});
 
   if ntype>1, stype=[HAM.mpo.stype]; end
 
-  for j=1:ntype
-     fmt='       %-27s [ %s ]\n'; s1=''; s2='';
+  fma=[fmt{1} '[ %s ]\n']; 
+
+  for j=1:ntype, s1=''; s2='';
 
      d=getDimQS(HAM.oez(1,j).op);
      if d(1,1)~=d(end,1), s2=sprintf('(=%g)',d(end,1)); end
@@ -153,12 +156,12 @@ function display(HAM,varargin)
         s1,'local state space dim (d)',d(1,1),s2,s3);
      end
 
-     fprintf(1,fmt,'nops (irop dim)',ivec2str([HAM.ops(:,j).dop]));
-     fprintf(1,fmt,'hconj',ivec2str([HAM.ops(:,j).hconj]));
+     fprintf(1,fma,'nops (irop dim)',ivec2str([HAM.ops(:,j).dop]));
+     fprintf(1,fma,'hconj',ivec2str([HAM.ops(:,j).hconj]));
 
-     ff=[HAM.ops(:,j).fermionic]; fmt='       %-27s [ %s ]\n';
+     ff=[HAM.ops(:,j).fermionic]; 
      if any(ff) 
-          fprintf(1,fmt,'fermionic operators',ivec2str(ff));
+          fprintf(1,fma,'fermionic operators',ivec2str(ff));
      end
   end
 
@@ -170,6 +173,10 @@ function display(HAM,varargin)
         '\n   NB! got %g user specified site(s) through HAM.mpo([%s]).user\n',...
         numel(kk),vec2str(kk,'sep',','));
      end
+  end
+
+  if got_gauge(HAM) && (1 || vflag<2)
+     fprintf(1,['\n' fmt{1} 'type %s\n'],'gauge fields',HAM.info.param.gauge.gtype);
   end
 
   if ~isempty(HAM.store)
@@ -190,8 +197,16 @@ function display(HAM,varargin)
   fprintf(1,'\n');
 
   if vflag
-     disp(HAM.info.param); if vflag>1
-     subsref(HAM,struct('type','.','subs','ops')), end
+     fprintf(1,'   [HAM.info.] param\n');
+     structdisp(HAM.info.param,'-x','gauge','-dn',12);
+  end
+  if vflag>1
+     if isfield(HAM.info.param,'gauge')
+        fprintf(1,'   [HAM.info.] param.gauge\n');
+        structdisp(HAM.info.param.gauge,'-x','gauge','-dn',12);
+     end
+     fprintf(1,'   HAM.ops\n');
+     subsref(HAM,struct('type','.','subs','ops')),
   end
 
 end

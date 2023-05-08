@@ -708,6 +708,12 @@ class itag_ {
       return *this;
    };
 
+   bool GotFlag(unsigned k) const { 
+      if (k>=ITAG_LEN) wblog(FL,
+         "ERR %s() index out of bounds (%d/%d)",FCT,k,ITAG_LEN);
+      return ((char*)(&t))[k] & char(128); 
+   };
+
    itag_& UnsetFlag(unsigned k) { 
       if (k>=ITAG_LEN) wblog(FL,
          "ERR %s() index out of bounds (%d/%d)",FCT,k,ITAG_LEN);

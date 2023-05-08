@@ -135,8 +135,7 @@ function [ss,Is]=calc_SdotS(HAM,varargin)
         end
         if NPsi
            if ~isempty(X.data)
-              if numel(X.data)~=1, X
-                 error('Wb:ERR','unexpected X.data'); end
+              if numel(X.data)~=1, X, wbdie('unexpected X.data'); end
               ss{k,i}=X.data{1};
            end
         else

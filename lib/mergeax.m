@@ -1,6 +1,6 @@
-function ah = mergex (varargin)
-% mergex - merge axis
-% Usage: ahnew = mergex (ah1,ah2,...)
+function ah = mergeax (varargin)
+% mergeax - merge axis
+% Usage: ahnew = mergeax (ah1,ah2,...)
 %
 %    extends axes ah1 to range covered by all input axes sets
 %    all axes sets other than the first one in the list will

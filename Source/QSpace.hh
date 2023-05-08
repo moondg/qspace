@@ -1261,7 +1261,7 @@ class QSpace {
     ) const;
 
     void print() const { print("",3); }; 
-    void print(const char *vname, char vflag=3) const; 
+    void print(const char *vname, char vflag=3) const;
 
     void print_tst_( 
        const char *F, int L, const char *istr, unsigned k=0) const {
@@ -1629,7 +1629,7 @@ template <class TQ, class TD> inline
 void QSpace<TQ,TD>::GroupIndizes(unsigned K) {
    unsigned i, r=-1;
 
-   if (!isConsistent(r)) wberror(FL,str);
+   if (!isConsistent(r)) wbdie(FL,str);
 
    if (!K || unsigned(r)%K) wblog(FL,
    "ERR %s() cannot block QSpace (%d/%d)",FCT,r,K);
@@ -1767,7 +1767,7 @@ template <class TQ, class TD> inline
 void QSpace<TQ,TD>::getDRange(TD &dmin, TD &dmax) const {
     unsigned i,n=DATA.len;
 
-    if (!isConsistent()) { info("this"); wberror(FL,str); }
+    if (!isConsistent()) { info("this"); wbdie(FL,str); }
 
     for (i=0; i<n; ++i) if (DATA[i] && !DATA[i]->isEmpty()) {
        dmin=dmax=DATA[i]->data[0];
@@ -2948,6 +2948,8 @@ void QSpace<TQ,TD>::info(const char *vname,
    unsigned r=(QDIM!=0 ? QIDX.dim2/QDIM : 0);
    size_t l=0, n=64; char s[n], sp_[nind+1];
 
+   unsigned lsz=2*r+2; if (lsz<8) { lsz=8; }
+
    if (QDIM && QIDX.dim2 && QIDX.dim2%QDIM) wblog(FL,
       "ERR %s() %d/%d = ?",FCT, QIDX.dim2, QDIM);
    if (nind) { memset(sp_,' ',nind); }; sp_[nind]=0;
@@ -2960,14 +2962,18 @@ void QSpace<TQ,TD>::info(const char *vname,
    if (l>=n) wblog(FL,"WRN %s() string out of bounds (%d/%d)",FCT,l,n);
 
    for (l=0; l<nlt; ++l) { printf("\n"); }
-   if (vname && vname[0]) { printf("%s%-4s",sp_,vname); }
+   if (vname && vname[0]) {
+      if (sp_[0] || strlen(vname)>3)
+		   { printf("%s%-3s",sp_,vname); }
+	  else { printf(" %-2s",vname); }
+   }
    else if (sp_[0]) { printf("%s",sp_); }
-   printf(" %-34s {%3ldx%d}x%d",s,QIDX.dim1,r,QDIM);
+   printf(" %-34s %3ld x (%d x%d)",s,QIDX.dim1,r,QDIM);
 
    getDim(D,&DX);
 
-   printf("  %10s",SSTR(D));   if (cgflag>0) {
-   printf(" |%12s", SSTR(DX)); }
+   printf("  %-*s",lsz,SSTR(D )); if (cgflag>0) {
+   printf("  %-*s",lsz,SSTR(DX)); }
    printf("%s\n", isref? "  *REF*":"");
 
    for (l=0; l<nlb; ++l) { printf("\n"); }
@@ -2976,45 +2982,58 @@ void QSpace<TQ,TD>::info(const char *vname,
 template <class TQ, class TD> 
 void QSpace<TQ,TD>::print(const char *vname, char vflag) const {
 
-   unsigned i=0,j,s, n=QIDX.dim1, m=(n<12? n:4);
-   char cgflag=gotCGS(FL), fmt[]="%2g";
+   unsigned i=0,j,l,n, N=QIDX.dim1, r=rank(FL), m=(N<12? N:4), nstr=256;
+   char cgflag=gotCGS(FL), qstr[nstr];
+   const TQ *qs=QIDX.data;
 
-   if (typeid(TQ)!=typeid(double)) fmt[2]='d';
+   unsigned lsz=2*r+2;   
+   if (lsz<8) { lsz=8; } 
 
    if (vflag & 'D') { vflag |=3; } 
    if (vflag&1) { PRINTF("\n"); }  
 
    info(vname,0,0,0); PRINTF("\n");
 
-   for (; i<n; ++i) {
+   for (; i<N; ++i) {
       if (i>=m) {
-         if (n>2*m) { i=n-m; PRINTF(" ...\n"); }
-         m=n;
+         if (N>2*m) { i=N-m; qs=QIDX.rec(i);
+            PRINTF("    :   ...\n");
+         }
+         m=N; 
       }
 
-      PRINTF("%3d. { %s } %8s ", i+1,
-      i<QIDX.dim1? QIDX.rec2Str(i,fmt," ",QDIM," ;").data : "!?",
-      i<DATA.len ? DATA[i]->sizeStr().data : "!?");
+      if (i>=N) { sprintf(qstr,"!?"); }
+      else {
+         for (l=j=0; j<r; ++j, qs+=QDIM) {
+            if (j && l<nstr) { l+=snprintf(qstr+l,nstr-l," ; "); }
+            if (l<nstr) { l+=qtype.print_qset(FL,qs,qstr+l,nstr-l); }
+            else { break; }
+         }
+      }
+
+      PRINTF("%5d. [ %s ]  %-*s ", i+1, qstr, lsz,
+         i<DATA.len ? DATA[i]->sizeStr(r," @").data : "!?");
 
       if (i>=DATA.len) { PRINTF("   !?\n"); continue; }
       if (vflag & 64) { 
          if (!(DATA[i]->printdata(vname))) { PRINTF("\n"); }
       }
       else {
-         if (cgflag>0) { PRINTF("|");
-            for (j=0; j<CGR.dim2; ++j) { PRINTF("%8s",SSTR(CGR(i,j))); }
-            PRINTF(" |");
+         if (cgflag>0) { 
+            for (j=0; j<CGR.dim2; ++j) { if (!CGR(i,j).isAbelian()) {
+               PRINTF(" %-*s",lsz,SSTR(CGR(i,j))); }
+            }
          }
 
-         s=DATA[i]->numel();
+         n=DATA[i]->numel();
 
-         if (s==0) { PRINTF("   []\n"); } else
-         if (s==1) { PRINTF("   %s", Wb::num2Str(DATA[i]->data[0]).data); }
+         if (n==0) { PRINTF("   []\n"); } else
+         if (n==1) { PRINTF(" %9s", Wb::num2Str(DATA[i]->data[0]).data); }
          else {
-            s *= sizeof(TD);
-            if (s<(1<<10)) { PRINTF("   %5d B", s); } else
-            if (s<(1<<20)) { PRINTF("   %5.2f kB", s/double(1<<10)); }
-            else           { PRINTF("   %5.2f MB", s/double(1<<20)); }
+            n *= sizeof(TD);
+            if (n<(1<<10)) { PRINTF("   %5d B", n); } else
+            if (n<(1<<20)) { PRINTF("   %5.2f kB", n/double(1<<10)); }
+            else           { PRINTF("   %5.2f MB", n/double(1<<20)); }
          }
          PRINTF("%s\n",DATA[i]->isRef() ? "   ref*":"");
       }

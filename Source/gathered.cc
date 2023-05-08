@@ -623,8 +623,9 @@ void Wb::print_backtrace(const char *F, int L, const char *istr) {
    printf("# hint: use addr2line to decode this\n\n");
 
    if (ss) {
-      char fmt[16]; snprintf(fmt,16,"  [%%%dd]  %%s\n", n>10? 2:1);
-      for (i=0; i<n; ++i) { printf(fmt,i,ss[i]); }; printf("\n");
+      for (i=0; i<n; ++i) {
+         printf("  [%*d]  %s\n", n>10? 2:1, i,ss[i]);
+      }; printf("\n");
       free(ss); 
    }
 };

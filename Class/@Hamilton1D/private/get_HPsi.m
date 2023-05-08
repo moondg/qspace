@@ -1,9 +1,10 @@
-function [HPsi,E]=get_HPsi(Psi,X1,X2,varargin)
-% function [HPsi,E]=get_HPsi(Psi,X1,X2 [,J,hconj])
+function [HPsi,E]=get_HPsi(HAM,Psi,X1,X2,varargin)
+% function [HPsi,E]=get_HPsi(HAM,Psi,X1,X2 [,J,hconj])
 % compute H|psi> within the bond update setting
 % Wb,Jan20,16
 
 % outsourced from sweepPsi.m // Wb,Jan20,16
+% added HAM as first argument to check for gauage contribution // Wb,Apr30,23
 
   persistent init_DMRG_mpo_fix
 
@@ -13,12 +14,12 @@ function [HPsi,E]=get_HPsi(Psi,X1,X2,varargin)
 
   if     isequal(qdir,'++' ), NPsi=0; p132=[];
   elseif isequal(qdir,'++-'), NPsi=1; p132=[1 3 2];
-  else wberr('unexpected rank-%g Psi (%s)',r,qdir); end
+  else wbdie('unexpected rank-%g Psi (%s)',r,qdir); end
 
   k=get_kidx(Psi);
   if diff(k(1:2)) || (r==3 && ...
     ~isnan(k(3)) && isempty(regexpi(Psi.info.itags{3},'^(dav|Psi)')))
-     Psi, wberr('unexpected Psi for bond-update');
+     Psi, wbdie('unexpected Psi for bond-update');
   end
 
   if nargin==4 && ischar(varargin{1}) && ...
@@ -26,15 +27,15 @@ function [HPsi,E]=get_HPsi(Psi,X1,X2,varargin)
 
      q={ X1.info.hconj, X2.info.hconj };
         if isequal(q{:}), q=q{1};
-        else disp(q), wberr('inconsistent hconj'); end
-        if numel(q)~=1 || q<0, disp(q), wberr('invalid hconj'); end
+        else disp(q), wbdie('inconsistent hconj'); end
+        if numel(q)~=1 || q<0, disp(q), wbdie('invalid hconj'); end
      hconj=q;
 
      k1=get_kidx(X1.HK);
      k2=get_kidx(X2.HK); X2_HK=X2.HK;
 
      if ~isequal(k1(1:2),k2(1:2)) || sum(k1(1:2)) || sum(k2(1:2))
-        wberr('invalid MPO setting');
+        wbdie('invalid MPO setting');
      elseif k1(3)+k2(3)
         if regexp(varargin{1},'INIT')
            if isempty(init_DMRG_mpo_fix), init_DMRG_mpo_fix=1; 
@@ -79,7 +80,12 @@ function [HPsi,E]=get_HPsi(Psi,X1,X2,varargin)
            end
         end
      end
-  else disp(varargin), wberr('invalid usage'); end
+  else disp(varargin), wbdie('invalid usage'); end
+
+  if got_gauge(HAM)
+     L=length(HAM.mpo); Eloc=HAM.oez(1).op;
+     HPsi = HPsi + get_HPsi_gauge(Psi,HAM.info.param.gauge,L,Eloc);
+  end
 
   if nargout>1
      E=getscalar(QSpace(contractQS(Psi,'*',HPsi)));

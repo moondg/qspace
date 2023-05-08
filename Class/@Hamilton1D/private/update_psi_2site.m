@@ -28,9 +28,9 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
      if getopt('-q'), vflag=0;
      elseif getopt('-v'), vflag=2; end
 
-     npass = getopt('npass',    1);
-     ndav  = getopt('ndav',     4);
-     rtol  = getopt('rtol',  rtol);
+     npass = getopt('npass', 1);
+     ndav  = getopt('ndav',  4);
+     rtol  = getopt('rtol', rtol);
      iflag = getopt('-i');
      bupd  = getopt('-b');
 
@@ -152,18 +152,18 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
   stol=sqrt(rtol);
 
   if e>reps
-     s=sprintf('Psi(%g:%g) not normalized  @ %.3g/%.3g',k1,k2,e,reps);
+     s=sprintf('Psi(%g:%g) not normalized @ %.3g / %.3g',k1,k2,e,reps);
 
-     if e>1E-6, nrm2=normQS(Psi)^2;
-        banner(['ERR ',s]);
-        m=sprintf('./tmp_%s_%g_%g_%s_checkNorm.mat',...
-          mfilename,k1,k2,iff(kdir>0,'lr','rl'));
-        save2(m,'-f');
-
+     if e>1E-6
+        nrm2=normQS(Psi)^2 / NPsi2;
+        s={ s, sprintf('|Psi|^2 = %.3g @ NPsi=%d',nrm2,NPsi2) };
         if e>0.01
-           wberr('got |Psi|^2 = %.3g !?',nrm2);
-        elseif e>1E-6
-           warning('Wb:WRN','\n   WRN got |Psi|^2 = %.3g !?',nrm2);
+           banner(['ERR ',s{1}]);
+           m=sprintf('./tmp_%s_%g_%g_%s_checkNorm.mat',...
+             mfilename,k1,k2,iff(kdir>0,'lr','rl'));
+           save2(m,'-f');
+           wberr('%s !?',s{2});
+        elseif e>1E-6, wbwrn('%s\n%s !?',s{:});
         end
 
      else wblog('WRN',s); end
@@ -195,7 +195,7 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
   if ndav<1 || ndav>10, wblog('WRN','got ndav=%g !?',ndav ); end
 
   if npass<1
-     [HPsi,E0]=get_HPsi(Psi,X1,X2,oH{:});
+     [HPsi,E0]=get_HPsi(HAM,Psi,X1,X2,oH{:});
      E0=[E0,E0];
   end
 
@@ -220,7 +220,7 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
       % See also $MLAB/david.m // Wb,Aug10,16
 
       % ---------------------------------------- %
-        HPsi=get_HPsi(Psi,X1,X2,oH{:});
+        HPsi=get_HPsi(HAM,Psi,X1,X2,oH{:});
         E=contract(Psi,oc,HPsi);
 
         q=blkdiag(E); e=norm(q-q')/max(1,norm(q));
@@ -312,7 +312,7 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
         end
         l=idav+1; Ak(l)=Q;
 
-        HPsi=get_HPsi(Ak(l),X1,X2,oH{:});
+        HPsi=get_HPsi(HAM,Ak(l),X1,X2,oH{:});
 
         for j=1:l
            h=contract(Ak(j),oc,HPsi);
@@ -424,11 +424,11 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
 
   e=sum(r1); e(2)=1-e; e(3)=abs(e(2));
   if e(3)>1E-8, save2('./tmp.mat');
-     s=sprintf('got invalid normalization %.8g @ %.3g !?',e(1),e(2));
+     s=sprintf('%.8g @ %.3g',e(1),e(2));
      q=getfield2(HAM.info,'sweep','isw',{0});
-     if e(3)<1E-5 || q==1 && e(3)<1
-          wblog('WRN','%s',s);
-     else wberr('%s !?',s); end
+     if e(3)<1E-3 || q==1 && e(3)<1
+          wblog('WRN','wave function normalized @ %s',s);
+     else wberr('%s wave function not normalized (%s) !?',s); end
   end
 
   Iout.rr=r1; i=find(r1>0);
@@ -481,6 +481,12 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
      sprintf('./tmp_%02g_%02g_%s1_Qmatch',k1,k2,iff(kdir>0,'lr','rl')));
   end
 
+  sc={'!1','!2','!3'}; Rfac=0;
+  if numel(Psi.Q)>3
+     q=getDimQS(Psi); q=q(:,end);
+     if q(1,end)>1, sc={'23','13','12'}; Rfac=1/q(end); end
+  end
+
 % add reduced density matrix 'rho' for local state space
 % which also allows to double check whether local state space
 % has dropped out along the simulation! // Wb,Mar26,15
@@ -490,10 +496,10 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
      DX=getDimQS(Psi); Psi=X2.AK;
      Dk=getDimQS(Psi); Dk=Dk(:,1);
 
-     rho=QSpace(contractQS(Psi,Psi,'!3*'));
+     rho=reduce_rho_q0(Psi,sc{3},Eg);
 
-     Rho=QSpace(contractQS(Psi,Psi,'!1*'));
-     [~,IR]=eigQS(Rho); Rho=QSpace(IR.EK);
+     Rho=reduce_rho_q0(Psi,sc{1},Eg);
+     if Rfac, Rho=Rfac*Rho; end
 
      I2=X2.info;
         if k2<L, l=2*max([0, isw-1])+1; else l=max([1, isw]); end
@@ -510,10 +516,9 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
      DX=getDimQS(Psi); Psi=X1.AK;
      Dk=getDimQS(Psi); Dk=Dk(:,2);
 
-     rho=QSpace(contractQS(Psi,Psi,'!3*'));
-
-     Rho=QSpace(contractQS(Psi,Psi,'!2*'));
-     [~,IR]=eigQS(Rho); Rho=QSpace(IR.EK);
+     rho=reduce_rho_q0(Psi,sc{3},Eg);
+     Rho=reduce_rho_q0(Psi,sc{2},Eg);
+     if Rfac, Rho=Rfac*Rho; end
 
      I1=X1.info;
         if k1>1, l=2*max([0, isw-1])+2; else l=max([1, isw])+1; end

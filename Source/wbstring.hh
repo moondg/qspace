@@ -183,15 +183,15 @@ class wbstring : public wbvector<char> {
     };
 
     wbstring& Upper() {
-        for (unsigned n=strlen(data), i=0; i<n; i++)
-        data[i]=std::toupper(data[i]);
-        return *this;
+       for (unsigned n=strlen(data), i=0; i<n; i++)
+       data[i]=std::toupper(data[i]);
+       return *this;
     };
 
     wbstring& Lower() {
-        for (unsigned n=strlen(data), i=0; i<n; i++)
-        data[i]=std::tolower(data[i]);
-        return *this;
+       for (unsigned n=strlen(data), i=0; i<n; i++)
+       data[i]=std::tolower(data[i]);
+       return *this;
     };
 
     wbstring toupper() const {
@@ -211,27 +211,28 @@ class wbstring : public wbvector<char> {
     };
 
     char getopt(char c) {
-        for (unsigned i=0; data[i]; i++) {
-           if (data[i]==c) {
-              data[i]=-1; 
-              return 1;
-           }
-        }
-        return 0;
-    }
+       for (unsigned i=0; data[i]; i++) {
+          if (data[i]==c) {
+             data[i]=-1; 
+             return 1;
+          }
+       }; return 0;
+    };
+
     char getopt() {
-        for (unsigned i=0; data[i]; i++) {
-           if (data[i]>0) { return data[i]; } 
-        }
-        return 0;
+       for (unsigned i=0; data[i]; i++) {
+          if (data[i]>0) { return data[i]; } 
+       }; return 0;
     }
 
     const char* basename(const char c='/') const {
-        if (!data) return data;
-        return Wb::basename(data,c);
+       if (!data) return data;
+       return Wb::basename(data,c);
     };
 
-    mxArray* toMx() const { return mxCreateString(data); };
+    mxArray* toMx() const {
+       return mxCreateString(data ? data : "(null)");
+    };
 
     size_t toHash(unsigned offset=0) const;
 
@@ -250,12 +251,12 @@ class wbstring : public wbvector<char> {
 
     wbstring operator+ (const wbstring &s) const { return (*this)+s.data; };
     wbstring operator+ (const char *s) const {
-        wbstring sout; 
-        unsigned n1=data? strlen(data):0, n2=s && s[0]? strlen(s):0;
-        sout.init(n1+n2);
-        if (n1) { strcpy(sout.data, data); }
-        if (n2) { strcpy(sout.data+n1, s); }
-        return sout;
+       wbstring sout; 
+       unsigned n1=data? strlen(data):0, n2=s && s[0]? strlen(s):0;
+       sout.init(n1+n2);
+       if (n1) { strcpy(sout.data, data); }
+       if (n2) { strcpy(sout.data+n1, s); }
+       return sout;
     };
 
     wbstring& operator+=(const char *s) {
@@ -296,10 +297,10 @@ class wbstring : public wbvector<char> {
     explicit operator bool() const { return (data && data[0] ? 1 : 0); };
 
     unsigned isName(int L=-1) const {
-        unsigned i, n=strlen(data);
-        if (L>=0 && L<(int)n) return 0;
-        for (i=0; i<n; i++) if (!isalnum(data[i])) return 0;
-        return n;
+       unsigned i, n=strlen(data);
+       if (L>=0 && L<(int)n) return 0;
+       for (i=0; i<n; i++) if (!isalnum(data[i])) return 0;
+       return n;
     };
 
     int operator== (const char *s) const {

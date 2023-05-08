@@ -25,7 +25,7 @@ void mexFunction(
    xd.init(FL,argin[0],"zflags");
    yd.init(FL,argin[1],"zflags");
 
-   if (mxGetNumber(argin[2],fac)) wberror(FL,str);
+   if (mxGetNumber(argin[2],fac)) wbdie(FL,str);
 
    n=xd.len;
 

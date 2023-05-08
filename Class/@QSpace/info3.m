@@ -40,7 +40,7 @@ end
 
 if isequal(s,[1 1 2])
   ah=smaxis(3,1,'tag',mfilename,'fpos',[1095 350 500 770]);
-  ah=[ splitax(ah(1),[2,1]); mergex(ah(2:3))];
+  ah=[ splitax(ah(1),[2,1]); mergeax(ah(2:3))];
   mvaxis(ah(2),[0 -0.02]);
   mvaxis(ah(3),[0 -0.02]);
   y1fac=0.15;

@@ -277,7 +277,7 @@ void NRG_Wilson(
           A0.init(FL,argin[i]); 
        }
 
-       if (mxGetNumber(argin[2], Lambda)) wberror(FL,str);
+       if (mxGetNumber(argin[2], Lambda)) wbdie(FL,str);
        ff.init(FL,argin[3]);
 
        mxInitQSpaceVec(FL,argin[4], FC);
@@ -1021,14 +1021,15 @@ void NRG_Wilson(
     wbstring ver(str);
 
     MXPut Iout(0,0,"Inrg"); clt_.done();
-    MXPut Iusg(0,0); {
-       Iusg.add(wbstring().time_sys(tstart),"started")
-           .add(wbstring().time_sys(),"finished");
-       nrgClocks.add2Mx(Iusg);
-    }
     Iout.add(ver,"istr")
       .add(Wb::TimeStamp(),"stamp")
-      .addP(Iusg.toMx(),"usage");
+      .addP(
+         MXPut(0,0)
+           .add(wbstring().time_sys(tstart),"started")
+           .add(wbstring().time_sys(),"finished")
+           .addP(nrgClocks.toMx(),"clocks")
+        .toMx(),"usage"
+      );
 
 #ifdef __WB_MEM_CHECK__
     Iout.addP(Wb::gML.totStr('l'),"MEM");

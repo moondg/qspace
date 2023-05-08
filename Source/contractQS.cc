@@ -192,7 +192,7 @@ void icFlags::apply(QSpace<TQ,TD> &X) {
          k-='0'; 
          if (!k || k>r) wblog(FL,"ERR %s() index in cc-string "
             "out of bounds (%d: '%s'; %d/%d)",FCT,i,ktags.data,k,r);
-         X.SetFlag(FL,k,1);
+         X.SetFlag(FL,k,1); 
       }}
    }
 };
@@ -513,8 +513,8 @@ unsigned contractQS_itags(
    unsigned i, l=-1, len=0; char mark[nargin];
    icFlags q;
 
-   for (i=0; i<(unsigned)nargin; ++i) { mark[i]=q.check_arg(argin[i]);
-      if (mark[i]>1) ++len; else
+   for (i=0; i<unsigned(nargin); ++i) { mark[i]=q.check_arg(argin[i]);
+      if (mark[i]>1) { ++len; } else
       if (!mark[i] || (mark[i]==1 && !i)) wblog(FL,
          "ERR %s() invalid QSpace cell-structure (%d,%d)\n"
          "hint usage: ({QSpace} [,string opts])", FCT,level,i
@@ -526,7 +526,9 @@ unsigned contractQS_itags(
 
    for (i=0; i<(unsigned)nargin; ++i) {
       if (mark[i]>1) {
-         icFlags &q=Q[++l]; q.init(argin[i]);
+         icFlags &q=Q[++l];
+         q.init(argin[i]); 
+
          if (mark[i]==2) { X[l].init(FL,argin[i],'r'); }
          else {
             if (!mxIsCell(q.a)) wblog(FL,"ERR %s() got non-cell !?",FCT);
@@ -537,9 +539,7 @@ unsigned contractQS_itags(
          }
       }
       else if (mark[i]==1) { Q[l].set(argin[i]); }
-      else if (mark[i]) {
-         wblog(FL,"ERR %s() mark[%d]=%d !?",FCT,i,mark[i]);
-      }
+      else if (mark[i]) { wblog(FL,"ERR %s() mark[%d]=%d",FCT,i,mark[i]); }
    }
 
    if (len<2) wblog(FL,"ERR %s() invalid usage #2: at least\n"
@@ -551,13 +551,15 @@ unsigned contractQS_itags(
    QSpace<gTQ,TD> &B=X[k];
 
    if (k) match_regex_itag(Q[k].otags,X[k-1].itags,"opB","A");
-   Q[k].apply(B); if (Q[k].conj) icb.conj=1;
+   Q[k].apply(B); 
+   if (Q[k].conj) { icb.conj=1; }
 
    for (--k; k<len; --k) {
       QSpace<gTQ,TD> &A=X[k];
 
       match_regex_itag(Q[k].otags,B.itags,"opA","B");
-      Q[k].apply(A); if (Q[k].conj) ica.conj=1;
+      Q[k].apply(A); 
+      if (Q[k].conj) { ica.conj=1; }
 
       if (A.isEmpty() || B.isEmpty()) {
          if (vflag) {

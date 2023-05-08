@@ -51,11 +51,11 @@ void mexFunction(
        k--; 
     }
     else {
-       if (!mxIsChar(argin[1])) wberror(FL,str);
+       if (!mxIsChar(argin[1])) wbdie(FL,str);
        if (mxGetString(argin[1],str,12))
        wblog(FL,"ERR failed to read string (arg #2) ???");
 
-       if (strcmp(str,"op")) wberror(FL,"invalid 2nd argument");
+       if (strcmp(str,"op")) wbdie(FL,"invalid 2nd argument");
        isop=1;
     }
 

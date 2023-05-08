@@ -24,10 +24,15 @@ function isf=isFermOp(HAM,varargin)
      E2=getIdentity(Z,Z); E2=setitags(E2,{'a','b','ab'});
      Z2=contract(E2,'!3*',{Z,'-op:b',{Z,'-op:a',E2}});
 
-     dd=Z2.data; for i=1:numel(dd), dd{i}=dd{i}(1); end
-     [e,I,D]=uniquerows(cat(1,dd{:}));
-     if ~isequal(size(e),[2 1]) || norm(e-[-1;1])>1E-14, e
-        wberr('unexpected parity operator'); end
+     dd=Z2.data;
+     for i=1:numel(dd), 
+        z=dd{i}; dd{i}=[ z(1), norm(z-z(1)*eye(size(z))) ];
+     end
+     dd=cat(1,dd{:}); e=[ norm(dd(:,2)), norm(abs(dd(:,1))-1) ];
+     if any(e>1E-12), wberr('unexpected parity operator'); end
+
+     [e,I,D]=uniquerows(round(dd(:,1)));
+     if ~isequal(e,[-1;1]), wberr('unexpected parity operator'); end
      Q2=Z2.Q{1};
 
      fop=zeros(size(Q2,1),1); fop(I{1})=1;

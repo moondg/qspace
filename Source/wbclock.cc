@@ -198,28 +198,32 @@ int Wb::ClockSet::reset(const char *istr, char use_tag) {
    return q;
 };
 
-int Wb::ClockSet::add2Mx(MXPut &Iout) const {
-   for (auto i=buf.begin(); i!=buf.end(); ++i) {
-      const Wb::Clock &clk=*(i->second);
-      const char *s=i->second->name.data;
-      if (!s || !s[0]) wblog(FL,"ERR %s() got empty name",FCT);
-      Iout.addP(clk.toMx(),s); 
+mxArray* Wb::ClockSet::toMx() const {
+   unsigned i=0, n=buf.size();
+   mxArray* C=mxCreateCellMatrix(n,3);
+
+   for (auto it=buf.begin(); it!=buf.end(); ++it, ++i) {
+      const Wb::Clock &ci=*(it->second);   
+      mxSetCell(C,     i, ci.name.toMx()); 
+      mxSetCell(C,   n+i, numtoMx(ci.gettime('c')));
+      mxSetCell(C, 2*n+i, numtoMx(ci.gettime(   )));
    }
-   return buf.size();
+   return C;
 };
 
 mxArray* Wb::Clock::toMxS(const char *F, int L) const {
-   return MXPut(F,L).add(name,"istr")
-     .add(sec2Str(gettime('c')),"cpu")
-     .add(sec2Str(gettime(  )),"wall")
+   return MXPut(F,L)
+      .add(name,"istr")
+      .add(sec2Str(gettime('c')),"cpu")
+      .add(sec2Str(gettime(  )),"wall")
    .toMx();
 };
 
 mxArray* Wb::Clock::toMx(const char *F, int L) const {
    return MXPut(F,L).add(name,"istr")
-     .addP(numtoMx(gettime('c')),"cpu")
-     .addP(numtoMx(gettime(  )),"wall")
-   .toMx();
+     .addP(numtoMx(gettime('c')),"cpu" )
+     .addP(numtoMx(gettime(   )),"wall")
+  .toMx();
 };
 
 void Wb::save_and_clear_Profiling() {

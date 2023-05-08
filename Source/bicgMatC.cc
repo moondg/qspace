@@ -91,7 +91,7 @@ void getCtrPattern(
    }
 
    if (!mxIsCell(P) || mxGetM(P)!=1)
-   wberror(FL,"Contraction patterns must be grouped into cell vectors.");
+   wbdie(FL,"Contraction patterns must be grouped into cell vectors.");
 
    if (N==2) {
        M = new wbCMat[1]; M->init(mxGetCell(P,0));

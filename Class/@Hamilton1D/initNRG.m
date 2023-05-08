@@ -1,4 +1,4 @@
-function [H0,Iout]=initNRG(HAM,varargin)
+function [H0,Iout,HH]=initNRG(HAM,varargin)
 % function [H0,Iout]=initNRG(HAM [,opts])
 %
 %    Initialize A-tensors in DMRG matrix product state by NRG like
@@ -177,6 +177,7 @@ function [H0,Iout]=initNRG(HAM,varargin)
         HKt=getBlockHK(Xk,'--fix'); % HK `t'uned
 
         if k>1, D=Nkeep; else D=-1; Iout.H0=HKt; end
+        if nargout>2, HH(k)=HKt; end
 
         if tuneH && k>1
            if tuneH==1

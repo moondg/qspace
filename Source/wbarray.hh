@@ -727,9 +727,9 @@ class wbarray {
        return M;
     };
 
-    wbstring sizeStr() const { 
+    wbstring sizeStr(unsigned stride=0, const char *sep2="") const {
        if (SIZE.len)
-            { return SIZE.toStrf("","x"); }
+            { return SIZE.toStrf("","x",stride,sep2); }
        else { return wbstring("[]"); }
     };
 
@@ -1119,19 +1119,13 @@ class wbarray {
     };
 
     char sameUptoFac(
-      const wbarray &B, T *fac=NULL, double eps=1E-12
+      const wbarray &B, T *fac=NULL, double eps=1e-12
     ) const;
 
-    bool operator== (const wbarray &B) const {
-        if (this==&B) return 1;
-        if (SIZE!=B.SIZE) return 0;
-        if (data==B.data) return 1;
-        return (!memcmp(data, B.data, numel()*sizeof(T)));
-    };
+    bool sameAs(const wbarray &B, double eps=1e-12) const;
 
-    bool operator!= (const wbarray &B) const {
-       return !(*this==B);
-    };
+    bool operator== (const wbarray &B) const { return  sameAs(B); };
+    bool operator!= (const wbarray &B) const { return !sameAs(B); };
 
     T normDiff2(const wbarray &B, char sflag=0) const;
     T normDiff (const wbarray &B, char sflag=0) const {
@@ -1257,10 +1251,10 @@ class wbarray {
        const wbarray<TB> &B, TB bfac=TB(1),
        char iflag=0, T afac=T(1));
 
-    bool equal  (const wbarray&, const T& eps) const;
-    bool unequal(const wbarray&, const T& eps) const;
-    bool equal  (const wbarray&, const double& eps, double& maxdiff) const;
-    bool unequal(const wbarray&, const double& eps, double& maxdiff) const;
+    bool equal  (const wbarray&, T eps) const;
+    bool unequal(const wbarray&, T eps) const;
+    bool equal  (const wbarray&, double eps, double& maxdiff) const;
+    bool unequal(const wbarray&, double eps, double& maxdiff) const;
 
     bool allEqual(const T &x) {
        for (size_t n=numel(), i=0; i<n; ++i) { if (data[i]!=x) return 0; }

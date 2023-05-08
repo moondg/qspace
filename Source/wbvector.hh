@@ -1046,7 +1046,7 @@ class wbvector {
 
     void get(size_t i1, size_t i2, wbvector &v) const {
 
-        if (i1>=len || i2>=len) wberror(FL,"index out of range.");
+        if (i1>=len || i2>=len) wbdie(FL,"index out of range.");
         if (i2<i1)
              v.init();
         else v.init(i2-i1, data+i1);
@@ -1242,7 +1242,7 @@ class wbvector {
     wbstring toStrf(
        const char *fmt0="",
        const char *sep=" ",
-       const char stride=0, 
+       unsigned stride=0,  
        const char *sep2=""
     ) const;
 
@@ -1951,7 +1951,7 @@ inline void getIPerm(const WBPERM &P, WBPERM &iP) {
   #ifdef __WBDEBUG__
 
     if (!validPerm(P))
-    wberror(FLINE,"Invalid permutation.");
+    wbdie(FLINE,"Invalid permutation.");
 
   #endif
 

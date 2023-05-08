@@ -137,7 +137,7 @@ void getPerm(
     P-=1; 
 
     if (!validPerm(P)) {
-       P.print("P"); wberror(FLINE,"invalid permuation");
+       P.print("P"); wbdie(FLINE,"invalid permuation");
     }
 };
 
@@ -199,7 +199,7 @@ void getQsub(
     Qc.init(ma,m);
 
     for (k=ib=0; ib<I.len; ib++) {
-        if (I[ib]>=nC) wberror(FLINE,"index out of bounds");
+        if (I[ib]>=nC) wbdie(FLINE,"index out of bounds");
 
         Mx::Array<double> A(FL,mxGetCell(C,I[ib]));
         nq=dQ[I[ib]]; 
@@ -252,7 +252,7 @@ void getQall(
     D=dq.sum(); Q.init(ma,D);
 
     if (dq.len!=(unsigned)mxGetNumberOfElements(C))
-    wberror(FLINE,"Dimension mismatch.");
+    wbdie(FLINE,"Dimension mismatch.");
 
     for (k=ib=0; ib<dq.len; ++ib) {
         Mx::Array<double> A(FL,mxGetCell(C,ib));
@@ -304,16 +304,16 @@ void cell2mat(
     for (i=0; i<I.dim1; i++)
     for (j=0; j<I.dim2; j++) {
         k=I(i,j);
-        if (k>=N) wberror(FLINE, "Index out of bounds.");
+        if (k>=N) wbdie(FLINE, "Index out of bounds.");
         a=mxGetCell(C,k);
 
         if (i==0) D2[j]=(unsigned)mxGetN(a);
         else if (D2[j]!=(unsigned)mxGetN(a))
-        wberror(FLINE, "Dimension mismatch.");
+        wbdie(FLINE, "Dimension mismatch.");
 
         if (j==0) D1[i]=(unsigned)mxGetM(a);
         else if (D1[i]!=(unsigned)mxGetM(a))
-        wberror(FLINE, "Dimension mismatch.");
+        wbdie(FLINE, "Dimension mismatch.");
 
         dd(i,j)=Mx::Array<double>(FL,a).data;
     }
@@ -406,7 +406,7 @@ int matchSortedIdx_old(
     char c;
 
     if (QA.dim2!=QB.dim2)
-    wberror(FLINE, "Dimension mismatch");
+    wbdie(FLINE, "Dimension mismatch");
 
     wbvector<unsigned> gra(2*na), grb(2*nb);
 
@@ -456,11 +456,11 @@ int matchUSortedIdx(
     unsigned n,ia,ib; char c;
 
     if (QA.dim2!=QB.dim2)
-    wberror(FLINE, "Dimension mismatch");
+    wbdie(FLINE, "Dimension mismatch");
 
  #ifdef __WBDEBUG__
     if (!QA.isUniqueSorted('A') || !QB.isUniqueSorted('A'))
-    wberror(FL,"ERR Input must be unique increasing set of records.");
+    wbdie(FL,"ERR Input must be unique increasing set of records.");
  #endif
 
     n=MIN(QA.dim1,QB.dim1); Ia.init(n); Ib.init(n);
@@ -504,7 +504,7 @@ void Sab2Cell(
         ia=Ia[l]; ib=Ib[l]; l+=Id[k];
 
         if (ia>=SA.dim1 || ib>=SB.dim1)
-        wberror(FLINE,"Index out of bounds.");
+        wbdie(FLINE,"Index out of bounds.");
 
         ss.init(SA.dim2, SA.rec(ia)); ss.get(ika, sk.data);
         ss.init(SB.dim2, SB.rec(ib)); ss.get(ikb, sk.data+ika.len);
@@ -547,8 +547,8 @@ void QtoCell(
 
     D2[0]=0; for (j=1; j<n; j++) D2[j]=D2[j-1]+dab[j-1];
 
-    if (D2[j-1]+dab[j-1]!=Q.dim2) wberror(FLINE, "Dimension mismatch.");
-    if (P.len && P.len!=n)        wberror(FLINE, "Invalid permutation.");
+    if (D2[j-1]+dab[j-1]!=Q.dim2) wbdie(FLINE, "Dimension mismatch.");
+    if (P.len && P.len!=n)        wbdie(FLINE, "Invalid permutation.");
 
     for (k=0; k<n; k++) {
         d2=dab[k];
@@ -642,7 +642,7 @@ void DtoCell(
         l=IG(k,1); ia=Ia[l]; ib=Ib[l]; 
 
         if (ia>=SA.dim1 || ib>=SB.dim1)
-        wberror(FLINE,"Index out of bounds.");
+        wbdie(FLINE,"Index out of bounds.");
 
         uu.initT(SA.dim2, SA.rec(ia)); uu.get(ika, sk.data);
         uu.initT(SB.dim2, SB.rec(ib)); uu.get(ikb, sk.data+ika.len);
@@ -677,7 +677,7 @@ void Sab2Site2Cell(
         l=IG(k,1); ia=Ia[l]; ib=Ib[l]; 
 
         if (ia>=SA.dim1 || ib>=SB.dim1)
-        wberror(FLINE,"Index out of bounds.");
+        wbdie(FLINE,"Index out of bounds.");
 
         s1=sd.rec(k); s2=s1+ika.len;
 

@@ -1224,9 +1224,8 @@ wbstring wbvector<Wb::quad>::toStr(int n, const char *sep) const {
 
 template<class T> inline
 wbstring wbvector<T>::toStrf (
-    const char *fmt_,  const char *sep,
-    const char stride, const char *sep2
-) const {
+    const char *fmt_,  const char *sep, unsigned stride, const char *sep2
+  ) const {
 
     wbstring s(MAX(32U, unsigned(len)*16)), fmt;  
     unsigned i_,isep=0;
@@ -1245,17 +1244,16 @@ wbstring wbvector<T>::toStrf (
 };
 
 template<> inline
-wbstring wbvector<wbcomplex>::toStrf (const char *fmt_,
-   const char *sep, const char stride, const char *sep2
+wbstring wbvector<wbcomplex>::toStrf(
+   const char *fmt_, const char *sep, unsigned stride, const char *sep2
  ) const {
 
    wbstring s; 
-   unsigned i=0; char fmt[16], zfmt[8], s1[32], flag=1;
+   unsigned w,i=0; char fmt[16], s1[32], flag=1;
 
    snprintf(fmt,16,"%s",fmt_ && fmt_[0] ? fmt_ : "%.4g");
-
-   i = sprintf(str,fmt,sqrt(2.)) + sprintf(str,fmt,-sqrt(2.)*1E-20);
-   snprintf(zfmt,8,"%%%ds ",2+i);
+   w=2 + sprintf(str,fmt, sqrt(2.))
+       + sprintf(str,fmt,-sqrt(2.)*1e-20);
 
    s.init(32+(4+i)*len); 
 
@@ -1263,7 +1261,7 @@ wbstring wbvector<wbcomplex>::toStrf (const char *fmt_,
       if (i>0) { if (flag) { s.push(FL,sep); } else { flag=1; }}
 
       snprintf(s1,32,"%s",data[i].toStr(fmt).data);
-      s.pushf(FL,zfmt,s1);
+      s.pushf(FL,"%*s",w,s1);
       if (stride && ((i+1)%stride)==0 && i+1<len) {
          s.push(FL,sep2); flag=0;
       }
@@ -1275,8 +1273,8 @@ wbstring wbvector<wbcomplex>::toStrf (const char *fmt_,
 #ifdef QS_USING_MPFR
 
 template<> inline
-wbstring wbvector<Wb::quad>::toStrf (const char *fmt_,
-   const char *sep, const char stride, const char *sep2
+wbstring wbvector<Wb::quad>::toStrf(
+   const char *fmt_, const char *sep, unsigned stride, const char *sep2
  ) const {
 
    wbvector<double> x; x.init(*this);

@@ -34,7 +34,7 @@ void mexFunction(
     MX_CHECK_HELPER_NARGS(1,-1,-1); 
 
     if (!Mx::IsDblVector(FL,argin[0]))
-    wberror(FL,"invalid first argument (real data required).");
+    wbdie(FL,"invalid first argument (real data required).");
     tt.init(FL,argin[0]);
     if (!tt.len) wblog(FL,"ERR No time data specified.");
 
@@ -55,7 +55,7 @@ void mexFunction(
            !Mx::IsDblVector(0,__LINE__,argin[1]) ||
             Mx::IsNumArray(0,__LINE__,argin[2],-1)<=0 ||
            (r=mxGetNumberOfDimensions(argin[2]))>3 || r<2)
-       wberror(FL,"invalid input arguments (%s)",str);
+       wbdie(FL,"invalid input arguments (%s)",str);
 
        om.init(FL,argin[1]);
        AR.init((mxArray*)argin[2]);

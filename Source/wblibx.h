@@ -9,7 +9,7 @@
    int isHelpIndicator(const mxArray *a0);
    int checkHelpVersion( const mxArray *a0, mxArray **argout=NULL);
 
-   void wberror(const char *file, int line, const char* istr);
+   void wbdie(const char *file, int line, const char* istr);
 
    void dbstop(const char* file, int line);
 

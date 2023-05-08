@@ -26,7 +26,7 @@ void mexFunction(
     "first argument requires valid QSpace");
 
     if (nargin>1)
-    if (mxGetNumber(argin[1], eps)) wberror(FL,str);
+    if (mxGetNumber(argin[1], eps)) wbdie(FL,str);
 
     if (mxIsQSpace(argin[0])>0) { 
        const QSpace<gTQ,double> A(argin[0],'r');

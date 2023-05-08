@@ -1006,17 +1006,20 @@ int iTags::getCtr(
    unsigned i,j, it=0, l=0, cflag=(ia.conj ^ ib.conj);
    int q, w=0;
 
+   for (i=0; i<  len; ++i) { if (  data[i].GotFlag(1)) { ma[i]=-1; }}
+   for (i=0; i<B.len; ++i) { if (B.data[i].GotFlag(1)) { mb[i]=-1; }}
+
    for (; it<2; ++it) {
       q=(cflag ? SGN(+1) : SGN(-1));
 
-      for (i=0; i<  len; ++i)
-      for (j=0; j<B.len; ++j) {
+      for (i=0; i<  len; ++i) { if (ma[i]>=0) {
+      for (j=0; j<B.len; ++j) { if (mb[j]>=0) {
          if (SGN(data[i].sameAs(B.data[j]))==q) {
-            if (!ma[i] && !mb[j]) 
-                 { ma[i]=j+1; mb[j]=i+1; ++nc; }
+            if (!ma[i] && !mb[j])  
+                 { ma[i]=j+1; mb[j]=i+1; ++nc; } 
             else { ++w; } 
          }
-      }
+      }}}}
       if (nc) { break; } else { cflag=!cflag; } 
    }
 
@@ -1024,7 +1027,7 @@ int iTags::getCtr(
    ib.wbvector<unsigned>::init(nc);
 
    if (nc) {
-      for (i=0; i<len; ++i) { if (ma[i]) {
+      for (i=0; i<len; ++i) { if (ma[i]>0) {
          ia[l]=i;
          ib[l]=ma[i]-1; ++l;
       }}
@@ -1049,17 +1052,23 @@ int iTags::getCtr(
    if (C) { C->init( len + B.len - 2*nc );
    if (C->len) { l=0; itag_ *c=C->data;
 
-      for (i=0; i<len; ++i) { if (!ma[i]) {
+      for (i=0; i<len; ++i) { if (ma[i]<=0) {
          c[l]=  data[i]; if (ia.conj) { c[l].Conj(); }; ++l;
       }}
-      for (i=0; i<B.len; ++i) { if (!mb[i]) {
+      for (i=0; i<B.len; ++i) { if (mb[i]<=0) {
          c[l]=B.data[i]; if (ib.conj) { c[l].Conj(); }; ++l;
       }}
       if (l!=C->len) wblog(FL,"ERR %s() %d/%d",FCT,l,C->len);
    }}
 
-   if (ma_) { ma.save2(*ma_); }
-   if (mb_) { mb.save2(*mb_); }
+   if (ma_) { 
+      for (i=0; i<ma.len; ++i) { if (ma[i]<0) { ma[i]=0; }}
+      ma.save2(*ma_);
+   }
+   if (mb_) { 
+      for (i=0; i<mb.len; ++i) { if (mb[i]<0) { mb[i]=0; }}
+      mb.save2(*mb_);
+   }
 
    return nc;
 };

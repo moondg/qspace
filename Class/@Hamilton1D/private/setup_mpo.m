@@ -1,5 +1,5 @@
 function HAM=setup_mpo(HAM,HH,stype,heps)
-% function HAM=setup_mpo(HAM,HH [,stype])
+% function HAM=setup_mpo(HAM,HH [,stype,heps])
 %
 %    Automated routine to generate pseudo MPO (HAM.mpo) for the
 %    Hamiltonian described by HH together with HAM.ops and stype.
@@ -134,7 +134,10 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
 
    HAM.info.HH=HH; 
 
-   H=sparse(HH(:,1),HH(:,3),HH(:,end),L,L); H=H+H';
+   q=HH(:,[1 3 end]);
+     i=find(q(:,1)==q(:,2)); if ~isempty(i), q(i,3)=q(i,3)/2; end
+   H=sparse(q(:,1),q(:,2),q(:,3),L,L); H=H+H';
+
    IH.H0=H0;
    IH.H=H;
 

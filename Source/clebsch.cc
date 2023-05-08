@@ -694,7 +694,7 @@ void Weights<TQ>::print(
 
    if (n) { n=3*W.begin()->first.len; 
       sprintf(fmt,"\n  level  %%-%ds %%-%ds     m    # weights",n+3,n+3);
-      printf(fmt,"dcoeffs","pcoeffs");
+      printf(fmt,"dcoeffs","pcoeffs"); 
       sprintf(fmt,"\n  %%5d%%1s (%%%ds ) [%%%ds ] %%5d",n,n);
    }
    else fmt[0]=0;
@@ -925,6 +925,54 @@ wbstring QVec::toStr(const char vflag) const {
       s.cat(k, data[i].toStr(tflag).data);
    }
    return s;
+};
+
+int QVec::print_qset(
+   const char *F, int L, const gTQ *qs, char *s, unsigned n) const {
+
+   unsigned l=0; 
+   unsigned k=0, m=0, i;
+
+   if (!qs) { wblog(F_L,"ERR %s() got null qs",FCT); }
+   if (! s) { wblog(F_L,"ERR %s() got null string buffer (n=%d)",FCT,n); }
+   if (int(n)<=0 || n<2*len) { wblog(F_L,
+      "ERR %s() buffer size too small (n=%d @ nsym=%d)",FCT,n,len); }
+   if (!len) { s[l]=0; return l; }
+
+   if (!WbUtil<gTQ>::isInt()) {
+      wblog(F_L,"ERR %s() got non-integer type for qset  '%s'",
+      FCT, TSTR(gTQ));
+   }
+
+   for (; k<len && l<n; ++k, qs+=m) { if (k) { s[l++]=' '; }
+      if (data[k].isAbelian()) { m=1;
+         if (l<n) { l+=snprintf(s+l,n-l,"%2d",qs[0]); }
+      }
+      else {
+         m=data[k].qlen();
+         if (l+m<n) {
+            if (CG::gotQAlpha(qs,m)) {
+               if (CG::qset2cstr(qs,s+l,m)) wblog(F_L, 
+                  "ERR %s() failed to obtain compact qset string",FCT);
+               l+=m;
+            }
+            else {
+               for (i=0; i<m && l<n; ++i) {
+               l+=snprintf(s+l,n-l," %d",qs[i]); }
+            }
+         }
+         else {
+            if (l<n) { snprintf(s+l,n-l,".."); }
+            l+=m;
+         }
+      }
+   }
+
+   if (l<n) { s[l]=0; }
+   else if (F) { s[n-1]=0; wblog(F,L,
+      "ERR %s() string out of bounds (%s, l=%d/%d",FCT,s,l,n); }
+
+   return l;
 };
 
 QDir& QDir::init(const iTags& it) {
@@ -1614,9 +1662,10 @@ QSet<TQ>& QSet<TQ>::Sort(wbperm *cgp, char *conj, char iflag) {
       "ERR %s() got invalid QSet %s",FCT,STR_(this));
 
    if (r<2) {
-      if (r==1) { 
-         if (cgp) { cgp->init(); };
-         if (conj) { (*conj)=(qdir[0]>0 ? 0 : 1); }
+      if (r==1) {
+         if (d[0]<=0) { cflag=1; d[0]=(-d[0]); } 
+         if (conj) { (*conj)=cflag; }
+         if (cgp ) { cgp->init();   };
          return *this;
       }
       wblog(FL,"ERR %s() got rank-%d QSet",FCT,r);
@@ -1677,7 +1726,7 @@ QSet<TQ>& QSet<TQ>::Sort(wbperm *cgp, char *conj, char iflag) {
 template <class TQ>
 bool QSet<TQ>::isSorted() const {
 
-   if (isEmpty() || !qdir.isSorted()) return 0;
+   if (isEmpty() || !qdir.isSorted()) { return 0; }
    if (!qdir.len) {
       if (qs.len) wblog(FL,
          "ERR %s() got invalid empty QSet\n%s",FCT,STR_(this));
@@ -3771,7 +3820,7 @@ wbstring CData<TQ,TD>::sizeStr(char xflag) const {
       else {
          wbvector<SPIDX_T> S(cgd.SIZE); --S.len;
          l+=snprintf(s+l,n-l,"%s",SSTR(S)); if (l<n) {
-         l+=snprintf(s+l,n-l," @ %ld", cgd.SIZE[r]); }
+         l+=snprintf(s+l,n-l," @%ld", cgd.SIZE[r]); }
       }
    }
    if (l>=n) wblog(FL,
@@ -4515,6 +4564,35 @@ int CRef<TQ>::cgw_check_std3(
 };
 
 template <class TQ>
+bool CRef<TQ>::wSame(
+   const wbarray<double> &cwB, char lenient, double eps) const {
+
+   unsigned na=cgw.numel();
+   unsigned nb=cwB.numel();
+
+   if (na<=1 && nb<=1) {
+      if (!na || !nb)
+           { return (na==nb); }
+      else { return fabs(cgw[0]-cwB[0])<=eps; }
+   }
+
+   if (cgw.sameAs(cwB,eps)) { return 1; }
+   if (!lenient || cgw.rank()!=2 || cwB.rank()!=2) { return 0; }
+   else { 
+      unsigned i,j=0,
+      d1a=cgw.SIZE[0], d1b=cwB.SIZE[0], d1=MIN(d1a,d1b),
+      d2a=cgw.SIZE[1], d2b=cwB.SIZE[1], d2=MIN(d2a,d2b);
+      const double *a=cgw.data, *b=cwB.data;
+
+      for (   ; j<d2; ++j) {
+      for (i=0; i<d1; ++i) { 
+         if (fabs(a[i+j*d1a] - b[i+j*d1b])>eps) { return 0; }
+      }}
+   }
+   return 1;
+};
+
+template <class TQ>
 bool CRef<TQ>::isDiagCSC(RTD eps) const {
 
    if (isScalar()) return 1; 
@@ -4866,7 +4944,9 @@ CRef<TQ>& CRef<TQ>::Permute(
 
 template <class TQ>
 double CRef<TQ>::NormSignW(
-   const char *F, int L, double eps, double eps2
+   const char *F, int L,
+   char useExt, 
+   double eps, double eps2
 ){
    double wnrm=1; 
    if (!cgb || cgb->isAbelian()) { checkAbelian(F_L); return wnrm; }
@@ -4874,25 +4954,27 @@ double CRef<TQ>::NormSignW(
    unsigned n=wdim1(), m=cgb->getOM(F_L);
 
    if (n==1 && m==1) { 
-      if (fabs(cgw[0])<1) wblog(FL,"ERR %s() "
+      if (fabs(cgw[0])<1-eps) wblog(F_L,"ERR %s() "
          "got cgw=%.3g without OM\nhaving %s",FCT,cgw[0],STR_(this));
-      wnrm=cgw[0]/normExt(F_L); 
-      cgw[0]/=wnrm;
+      if (useExt) 
+           { wnrm=cgw[0]/normExt(F_L); cgw[0]/=wnrm; }
+      else { wnrm=cgw[0]; cgw[0]=1; }
 
       return wnrm;
    }
-   if (n>m) wblog(FL,
+   if (n>m) wblog(F_L,
       "ERR %s() cgw out of bounds (%d/%d)",FCT,SSTR(cgw),m);
 
    unsigned i;
    double a, w2=0;
 
-   if (!cgw.isOrthoCols(&w2,'t',CG_SKIP_DEPS1) || w2<1E-8) wblog(FL,
+   if (!cgw.isOrthoCols(&w2,'t',CG_SKIP_DEPS1) || w2<1E-8) wblog(F_L,
       "ERR %s() got non-orthogonal cgw (w2=%.3g)",FCT,w2);
 
-   wnrm=sqrt(w2)/normExt(F_L); 
+   wnrm=sqrt(w2);
+   if (useExt) { wnrm/=normExt(F_L); } 
 
-   if (wnrm<=eps) wblog(FL,
+   if (wnrm<=eps) wblog(F_L,
       "ERR %s() got small wnrm %.3g (%s)",FCT,wnrm,STR_(this));
 
    for (n=wnumel(), i=0; i<n; ++i) { if (fabs(cgw[i])>eps) {
@@ -4901,7 +4983,7 @@ double CRef<TQ>::NormSignW(
    }}
 
    for (i=0; i<n; ++i) { if ((a=fabs(cgw[i]))<eps) {
-      if (a>eps2) wblog(FL,
+      if (a>eps2) wblog(F_L,
          "WRN %s() cgw noise %.3g (%g, %g; i=%d %s)",
          FCT,cgw[i],eps,eps2,i,SSTR(cgw));
       cgw[i]=0;

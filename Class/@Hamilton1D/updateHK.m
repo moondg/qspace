@@ -48,13 +48,13 @@ function [Xk,e0]=updateHK(HAM,kc,kdir,varargin)
    kdir=check_dir(kdir);
 
    if usingFullMPO(HAM)
-        [Xk,e0]=updateHK_full_mpo  (HAM,kc,kdir,varargin{:});
-   else [Xk,e0]=updateHK_pseudo_mpo(HAM,kc,kdir,varargin{:});
+        [Xk,e0]=updateHK_mpo_full  (HAM,kc,kdir,varargin{:});
+   else [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,varargin{:});
    end
 end
 
 % -------------------------------------------------------------------- %
-function [Xk,e0]=updateHK_full_mpo(HAM,k,kdir,Xk,Xn)
+function [Xk,e0]=updateHK_mpo_full(HAM,k,kdir,Xk,Xn)
 
    global gHSS
 
@@ -154,6 +154,11 @@ function [Xk,e0]=updateHK_full_mpo(HAM,k,kdir,Xk,Xn)
 
    Xk.HK=contract(Ak,ic,{Q,HAM.mpo(k)});
 
+   if got_gauge(HAM.info.param) % isfield(param,'gauge') // Wb,Apr30,23
+      HG=get_HK_gauge(Ak,kdir,HAM.info.param.gauge,L,HAM.oez(1).op);
+      Xk.HK = Xk.HK + contract(Ak,ic,{HG,Ak});
+   end
+
    r=numel(Xk.HK.Q);
    if r>3, wberr('unexpected rank-%g HK',r);
    elseif ~r, wberr('Hamiltonian MPO contracted to empty',r);
@@ -193,7 +198,7 @@ function [Xk,e0]=updateHK_full_mpo(HAM,k,kdir,Xk,Xn)
 end
 
 % -------------------------------------------------------------------- %
-function [Xk,e0]=updateHK_pseudo_mpo(HAM,kc,kdir,Xk,Xn)
+function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
 
    global gHSS
 
@@ -272,6 +277,11 @@ function [Xk,e0]=updateHK_pseudo_mpo(HAM,kc,kdir,Xk,Xn)
    if ~isempty(Q)
         H=QSpace(contractQS(Ak,'*',{Ak,Q},'!1'));
    else H=QSpace; end
+
+   if got_gauge(HAM) % isfield(param,'gauge') // Wb,Apr30,23
+      HG=get_HK_gauge(Ak,kdir,HAM.info.param.gauge,L,HAM.oez(1).op);
+      H=H+contract(Ak,'*',{Ak,HG},'!1');
+   end
 
  % add local term(s)
  % --------------------------------------------------------------------

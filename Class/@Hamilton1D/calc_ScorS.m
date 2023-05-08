@@ -96,21 +96,28 @@ function [ss,Iout]=calc_ScorS(HAM,varargin)
 
      Ik=load_dmrg_data(HAM,k,'info');
      if isfield(Ik,'Eg'), Eg=Ik.Eg(end); 
+        if isnumeric(Eg)
+           if nPsi~=1, wbdie('unexpected Eg for nPsi=%d',nPsi); end
+        else
+           e=max(abs(diag(Eg,'-d'))); e=1E-12*max(1,e);
+           nd=numel(Eg.data); j=0;
+           for i=1:nd
+               n=length(Eg.data{i}); j=j+1:j+n;
+               Eg.data{i}=double(single(Eg.data{i})) + e*j; j=j+n;
+           end
+        end
      else
         wblog('WRN','missing field HAM(%d).info.Eg',kc);
         Eg=getIdentity(Ak,4);
      end
-     e=max(abs(diag(Eg,'-d'))); e=1E-12*max(1,e);
-
-     nd=numel(Eg.data); j=0;
-     for i=1:nd
-         n=length(Eg.data{i}); j=j+1:j+n;
-         Eg.data{i}=double(single(Eg.data{i})) + e*j; j=j+n;
-     end
   end
 
 for iPsi=IPsi
-  if iPsi>=0
+
+  if iPsi>0 && isnumeric(Eg)
+     Rc=1/sqrt(NPsi); Ak=Rc*Akc;
+     AA(k)=Ak;
+  elseif iPsi>=0
      if iPsi>0
         wblog(' * ','computing correlations based on state %d/%d',iPsi,nPsi);
 
@@ -132,8 +139,8 @@ for iPsi=IPsi
   SL=QSpace(1,nops);
   SR=QSpace(1,nops);
 
- if kc<k0, XL=QSpace(1,L); XL(k)=contract(Ak,'!2*',Ak); end
- if kc>k0, XR=QSpace(1,L); XR(k)=contract(Ak,'!1*',Ak); end
+  if kc<k0, XL=QSpace(1,L); XL(k)=contract(Ak,'!2*',Ak); end
+  if kc>k0, XR=QSpace(1,L); XR(k)=contract(Ak,'!1*',Ak); end
 
   if vflag, fprintf(1,'\n'); end
   for k=kc+1:k0-1

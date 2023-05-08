@@ -253,7 +253,7 @@ function [E,e0]=getEnergy(HAM,k,dir)
    end
 
    [J,hconj]=get_bondH(HAM,k1);
-   [HPsi,E]=get_HPsi(Psi,X1,X2,J,hconj);
+   [HPsi,E]=get_HPsi(HAM,Psi,X1,X2,J,hconj);
 
 end
 
