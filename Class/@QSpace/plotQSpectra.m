@@ -133,27 +133,34 @@ function Iq=plotQSpectra(H,varargin)
      setax(ah(1));
   end
 
-  if hflag || vflag
-     s={};
+  if hflag || vflag, s={};
      if e0~=0
-        s{end+1}=sprintf('E_0=%.5g @ {\\Delta}E=%.5g',e0,max(ee)-min(ee));
+        s{end+1}=sprintf('E_0=%.5g with range {\\Delta}E=%.5g',e0,max(ee)-min(ee));
      elseif ~isempty(ee)
         s{end+1}=sprintf('E=[%.5g,%.5g]',min(ee),max(ee));
-     end
-     if isfield(H.info,'qtype')
-        s{end+1}=sprintf('sym=''%s''',getsym(H));
-     end
-     if isfield(H.info,'itags') && ~isempty(H.info.itags)
-        t=H.info.itags; if isequal(t{2},[t{1},'*'])
-             s{end+1}=[ 'itag=''' H.info.itags{1} ''''];
-        else s{end+1}=[ 'itags={' itags2str(H.info.itags) '}']; end
      end
      s=strhcat(s,'-s',', ');
 
      if hflag
+        s={'','',', ','',10,s};
         if Rflag
-             s=['entanglement spectrum' sprintf(' S_{^{_E}}=%.4g',se) 10 s];
-        else s=['eigenspectrum' 10 s]; end
+             s{1}=['entanglement spectrum' sprintf(' S_{^{_E}}=%.4g',se)];
+        else s{1}='eig()'; end
+        if isfield(H.info,'itags') && ~isempty(H.info.itags)
+           t=H.info.itags; if isequal(t{2},[t{1},'*'])
+                s{2}=[ ' on ''' t{1} ''''];
+           else s{2}=[ ' having itags={' itags2str(t) '}']; end
+        end
+        q=getDimQS(H);
+        if size(q,1)>1
+             s{4}=sprintf('D^\\ast=%d (%d)',max(q,[],2));
+        else s{4}=sprintf('D=%d',max(q));
+        end
+        if isfield(H.info,'qtype')
+           s{4}=[s{4}, sprintf(', sym=''%s''',getsym(H))];
+        end
+
+        s=[s{:}];
      end
 
      if isequal(istr,-1)
@@ -204,7 +211,7 @@ function Iq=plotQSpectra(H,varargin)
      if ~isempty(x2 ), odeg(end+1:end+2)={'x2', x2 }; end
   end
 
-  for k=1:ns, setax(ah(k)); fs=[]; xq=[];
+  for k=1:ns, setax(ah(k)); xq=[];
      [q,EE,qq,dz,DZ]=getQSpectra(H,ws(k)); nq=size(q,1);
      if nargout
         Iq.q{k}=q; Iq.EE{k}=EE; Iq.qq{k}=qq; Iq.dz{k}=dz;
@@ -258,7 +265,6 @@ function Iq=plotQSpectra(H,varargin)
         end
         [xq,is]=sort(xq);
         set(gca,'XTick',xq,'XTickLabel',s(is));
-        fs=8;
      end
 
      tflag=isempty(tstr);
@@ -290,25 +296,23 @@ function Iq=plotQSpectra(H,varargin)
         end
      else
         s=ws(k).sym;
-        if isequal(s,'A')
-           s='abelian';
-           if tflag, title(s); else xlabel(s); end
-        elseif isequal(s,'SU2')
-           if tflag, title('SU(2)'); end
-           xlabel('2S');
-        elseif ~isempty(regexp(s,'SU\d'))
+        if isequal(s,'A') % s='abelian';
+           if tflag, title('U(1)'); end
+           xlabel('abelian');
+        elseif ~isempty(regexp(s,'^SU(\d+)$'))
            n=str2num(s(3:end));
            if tflag, title(sprintf('SU(%g)',n)); end
-           xlabel('multiplet label (sorted by dimension)');
+           if n==2
+                xlabel('2S');
+           else xlabel(['multiplet label' 10 'sorted by dimension']); end
         end
      end
 
      if k==1, ylabel(ylb); end
-     if isset('fs'), set(gca,'FontSize',fs); end
   end
 
   if ~isempty(x2), xlim([-0.5 x2]); end
-  title(tstr)
+  if ~tflag, title(tstr); end
 
   if ~isempty(dE) && scale
      for k=1:ns, setax(ah(k));

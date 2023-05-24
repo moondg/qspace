@@ -149,11 +149,11 @@ char icFlags::set(const mxArray *a, const char *istr) {
             if (istr) wblog(FL,
                "ERR %s() %s\ninvalid cell-contraction option\n"
                "(expecting '[!##][*]': got %s)",FCT,istr,S.data);
-            else return 1; 
+            else { return 1; } 
          }
       }
       ktags=s; 
-      if (conj) ktags.data[l]=0; 
+      if (conj) { ktags.data[l]=0; } 
    }
 
    return 0;
@@ -180,7 +180,7 @@ void icFlags::apply(QSpace<TQ,TD> &X) {
    }
    else { r=X.rank(FL); }
 
-   if (ktags.len) {
+   if (ktags) {
       unsigned i=0, k;
       if (r!=X.itags.len) wblog(FL,
          "ERR %s() valid set of info.itags required (%s; %d)",
@@ -192,7 +192,7 @@ void icFlags::apply(QSpace<TQ,TD> &X) {
          k-='0'; 
          if (!k || k>r) wblog(FL,"ERR %s() index in cc-string "
             "out of bounds (%d: '%s'; %d/%d)",FCT,i,ktags.data,k,r);
-         X.SetFlag(FL,k,1); 
+         X.SetFlags(FL,k); 
       }}
    }
 };
@@ -271,6 +271,8 @@ void mexFunction(
     if (nargout>1) wblog(FL,"ERR invalid number of output arguments");
 
     mxArray *a=NULL;
+
+    itag_::Reset(2); 
 
     if (nargin>1 && isCtrIdx(argin[1])) {
        a=contract_plain(nargin,argin);
@@ -389,7 +391,7 @@ mxArray* contract_plain(int nargin, const mxArray *argin[]) {
 char isra=1, isrb=1, cg_preview=0;
 unsigned i=0, l=4, k=2;
 
-ctrIdx ica, icb;
+   ctrIdx ica, icb;
    mxArray *a=NULL;
 
    OPTS opts;

@@ -283,10 +283,8 @@ void mexFunction(
    if (vflag<0) { vflag=0; }
    vflag_ = (vflag ? vflag-1 : 0);
 
-   if (zflag>1) wblog(FL,
-      "WRN %s() got multiplet definition of options '-0'",myname);
-   if (vflag>2) wblog(FL,
-      "WRN %s() got multiplet definition of options '-v'",myname);
+   if (zflag>1) wblog(FL,"WRN %s() got multiplet options '-0'",myname);
+   if (vflag>2) wblog(FL,"WRN %s() got multiplet options '-v'",myname);
    if (vflag>=2) vflag='V';
 
    if (isra) {

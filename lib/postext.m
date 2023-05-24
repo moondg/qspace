@@ -1,16 +1,17 @@
 function h=postext(varargin)
-% Function h=postext(nx,ny, <fmt, vars, ... forwarded to printf> [,{topts}])
+% function h=postext(xn,yn,fmt,.. [,{topts}]))
+% function h=postext({pos},fmt,.. [,{topts}]))
 %
-%    puts 'text' in the current axis at position (nx,ny)
-%    in normalized units with (0,0) the lower left corner
+%    Add sprintf formatted text in the current axis
+%    at position (xn,yn) in normalized units
+%    with (0,0) the lower left corner.
+%    where fmt, .. is forwarded to sprintf()
 %
-%    Instead of nx,ny also a position similaro to the legend's
-%    location flag can be specified: 'North','NorthEast',...
+%    Instead of xn and yn, the position may also be specified
+%    similar as in legdisp() using postrans().
 %
-%    <fmt, vars, ...> is forwarded to printf
-%
-%    the last argument, if it is a cell, is interpreted as
-%    text options applied to the text handle.
+%    The last argument, if it is a cell, is assumed
+%    to contain text options applied to the text handle h.
 %
 % Wb 2000, Wb,Mar31,07
 
@@ -27,7 +28,7 @@ function h=postext(varargin)
   if isnumeric(varargin{1})
      if isnumeric(varargin{2})
           x=varargin{1};    y=varargin{2};    varargin(1:2)=[];
-     else x=varargin{1}(1); y=varargin{1}(2); varargin(1)=[];
+     else x=varargin{1}(1); y=varargin{1}(2); varargin(1  )=[];
      end
   else
      [pos,o]=postrans(varargin{1}); varargin(1)=[];
@@ -72,7 +73,8 @@ function h=postext(varargin)
   s=regexprep(s,'\\+n\>',char(10));
   s=regexprep(s,'\\+t\>',char(9));
 
-  h=text(x,y,s,'Units','normalized','tag',tag,o{:},topts{:});
+  h=text(x,y,s,'Units','normalized','tag',tag,o{:});
+  if ~isempty(topts), set(h,topts{:}); end
 
   if totop
      set(h,'Units','Data'); p=get(h,'Pos');

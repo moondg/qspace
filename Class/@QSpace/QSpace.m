@@ -38,30 +38,62 @@ function [A,varargout] = QSpace(varargin)
 %  for testing purposes
 %  8: A = QSpace(CData);  % generate a QSpace based on a particular CData
 
+  if nargin==1, A=varargin{1};
+     if isa(A,'QSpace')
+        return
+     elseif isstruct(A) && isfield(A,'data')
+        A=struct_to_QSpace(A); return
+     elseif isempty(A)
+        A=class(get_struct(),'QSpace'); return
+     elseif isequal(A,'--dummy');
+        A=class(get_struct({1,1},{1},{'','*'}),'QSpace'); return
+     elseif iscell(A)
+        na=numel(varargin{1});
+        if na && ischar(A{1})
+           A=class(get_struct(),'QSpace');
+           A.info.itags=varargin{1}; return
+        else
+           clear A
+           for k=na:-1:1, A(k)=varargin{1}{k}; end
+           A=reshape(A,size(varargin{1}));
+           if ~isa(A,'QSpace')
+               A=struct_to_QSpace(A); 
+               check_QSpace(A);
+           end
+           return
+        end
+     end
+  elseif ~nargin, A=class(get_struct(),'QSpace'); return
+  end
+
+  if isnumeric(varargin{1})
+     q=zeros(nargin,2);
+     for i=1:nargin
+        q(i,:)=[isnumeric(varargin{i}), numel(varargin{i})];
+        if ~q(i), i=-1; break; end
+     end
+     if i==nargin && (i==1 || all(q(:,2)==1))
+        d=[varargin{:}];
+        A=repmat(class(get_struct(),'QSpace'),d);
+        return
+     else wbdie('invalid usage'); end
+  end
+
   done=0;
 
-% return right away if single QSpace (array) was given as argument
   if nargin==1 || nargin==2 && isequal(varargin{2},'check')
-     if isa(varargin{1},'QSpace'), A=varargin{1}; done=1;
+     if isa(A,'QSpace'), done=1;
      elseif isstruct(varargin{1}), A=varargin{1};
         if isfield(A,'data')
            A=struct_to_QSpace(varargin{1}); done=1;
         elseif isfield(A,'cgd') && isfield(A,'qset')
            A=initQSpaceCD(A,varargin{2:end}); done=1;
-        else error('Wb:ERR','\n   ERR invalid usage'); end
+        else wbdie('invalid usage'); end
      end
      if done
         if nargin>1, check_QSpace(varargin{1}); end
         return
      end
-  end
-
-  if ~nargin || nargin==1 && isempty(varargin{1})
-     A=QSpace({},{}); return
-  elseif nargin==1 && isequal(varargin{1},'--dummy');
-     A=QSpace({1,1},{1});
-     A.info=struct('qtype',{'A'},'otype',{''},'itags',{{'','*'}},'cgr',[]);
-     return
   end
 
   varargout=cell(1,nargout-1);
@@ -84,39 +116,16 @@ function [A,varargout] = QSpace(varargin)
 
   if iscell(varargin{1}) || isstruct(varargin{1}), A=varargin{1};
 
-     if nargin==1
-        if ~iscell(A), error('Wb:ERR','\n   ERR invalid usage'); end
+     if nargin==2
+          A=get_struct(varargin{1}, varargin{2}(:), []);
+     else A=get_struct(varargin{1}, varargin{2}(:), varargin{3});
+     end
 
-        na=numel(varargin{1});
-        if na && ischar(A{1})
-           A=QSpace; A.info.itags=varargin{1};
-           return
-        else
-           for k=na:-1:1, A(k)=varargin{1}{k}; end
-           A=reshape(A,size(varargin{1}));
-        end
-     else
-        if nargin==2
-             A=get_struct(varargin{1}, varargin{2}(:), []);
-        else A=get_struct(varargin{1}, varargin{2}(:), varargin{3});
-        end
-
-        if ~isempty(A.Q) && size(A.Q{1},1)~=length(A.data)
-        error('Wb:ERR','QSpace init size inconsistency'); end
+     if ~isempty(A.Q) && size(A.Q{1},1)~=length(A.data)
+        wbdie('QSpace init size inconsistency');
      end
 
   elseif isnumeric(varargin{1})
-     q=zeros(nargin,2);
-     for i=1:nargin
-        q(i,:)=[isnumeric(varargin{i}), numel(varargin{i})];
-     end
-     if nargin==1 && q(2)>1 || all(q(:,1)) && all(q(:,2)==1)
-        d=[varargin{:}]; d(end+1:2)=1;
-        A=repmat(QSpace({},{}),d);
-        return
-     end
-     if all(q(:,1)), error('Wb:ERR','\n   ERR invalid usage'); end
-
      if isequal(varargin{end},'identity')
         [A,varargout{:}]=initQSpaceA0(varargin{1:end-1});
      elseif isequal(varargin{end},'operator')
@@ -124,7 +133,7 @@ function [A,varargout] = QSpace(varargin)
      elseif isequal(varargin{end},'map')
         [A,varargout{:}]=initQMap(varargin{1:end-1});
      elseif isequal(varargin{end},'nosym')
-        if nargin~=4, error('Wb:ERR','invalid usage #8'); end
+        if nargin~=4, wbdie('invalid usage #8'); end
         if ~isempty(varargin{3})
              A=get_struct(...
                repmat(varargin(1),1,varargin{2}), varargin(3), []);
@@ -140,10 +149,10 @@ function [A,varargout] = QSpace(varargin)
      if isequal(varargin{end},'unity')
         A=initQSpaceUnity(varargin{1:end-1});
      else
-        error('Wb:ERR','\n%s ERR invalid QSpace constructor set',lineno);
+        wbdie('invalid QSpace constructor set');
      end
   else
-     error('Wb:ERR','\n%s ERR invalid QSpace constructor set',lineno);
+     wbdie('invalid QSpace constructor set');
   end
 
   A=struct_to_QSpace(A);
@@ -155,7 +164,7 @@ end
 function A=struct_to_QSpace(A)
 
   if ~isfield(A,'Q') || ~isfield(A,'data')
-     error('Wb:ERR','\n   ERR invalid QSpace input structure !?');
+     wbdie('invalid QSpace input structure !?');
   end
 
   if ~isfield(A,'info') && numel(A), A(1).info=[]; end
@@ -193,17 +202,17 @@ function A = initQSpace(varargin)
 
   if nargin<2 || mod(nargin,2)~=0
      eval(['help ' mfilename]);
-     error('Wb:ERR', 'Invalid number of arguments (usage #2)');
+     wbdie('invalid number of arguments (usage #2)');
   end
 
   for i=1:2:nargin
      if ~isequal(size(varargin(i)), size(varargin(1)))
         eval(['help ' mfilename]);
-        error('Wb:ERR','Size mismatch in Q data (usage #2)');
+        wbdie('size mismatch in Q data (usage #2)');
      end
      if ~isnumeric(varargin{i}) || ~isnumeric(varargin{i+1})
         eval(['help ' mfilename]);
-        error('Wb:ERR','Invalid data (must be numeric, usage #2)');
+        wbdie('invalid data (must be numeric, usage #2)');
      end
   end
 
@@ -233,7 +242,7 @@ function A = initQSpaceMD(varargin)
 
   if nargin~=3
      eval(['help ' mfilename]);
-     error('Wb:ERR', 'Invalid number of arguments (usage #3)');
+     wbdie('invalid number of arguments (usage #3)');
   end
 
   Q=varargin{1};
@@ -242,7 +251,7 @@ function A = initQSpaceMD(varargin)
 
   if size(Q,1)~=n || any(size(M)~=sum(D))
      eval(['help ' mfilename]);
-     error('Wb:ERR', 'Dimension mismatch of arguments (usage #3)');
+     wbdie('dimension mismatch of arguments (usage #3)');
   end
 
   M = mat2cell(M, D, D);
@@ -282,10 +291,10 @@ function [A,K] = initQSpaceH0(varargin)
   end
 
   if length(varargin)~=2
-     error('Wb:ERR', 'invalid operator initialization');
+     wbdie('invalid operator initialization');
   elseif size(varargin{1},1)~=size(varargin{2},1)
      eval(['help ' mfilename]);
-     error('Wb:ERR', 'Dimension mismatch of arguments (usage #4)');
+     wbdie('dimension mismatch of arguments (usage #4)');
   end
 
   [Q,K,D]=uniquerows(varargin{1}); n=length(K);
@@ -340,8 +349,8 @@ function varargout = initQMap(varargin)
      end
   end
   if e
-     eval(['help ' mfilename]); error('Wb:ERR', ...
-    'dimension mismatch of arguments (initQMap [e=%g])',e);
+     eval(['help ' mfilename]);
+     wbdie('dimension mismatch of arguments (initQMap [e=%g])',e);
   end
 
   n=n-1; s=zeros(1,n);
@@ -381,14 +390,12 @@ end
 % -------------------------------------------------------------------- %
 function E = initQSpaceUnity(A)
 
-  if nargin~=1 || ~isa(A,'QSpace') && (~isstruct(A) || ~isfield(A,'Q'))
-     error('Wb:ERR','\ninvalid usage of %s\n%s', ...
-     lineno('%S'), lineno('all'));
-  end
-  if numel(A)~=1, e=numel(A);
-  elseif numel(A.Q)~=2, e=numel(A.Q); else e=0; end
-  if e, error('Wb:ERR',...
-  '\ninvalid usage: single rank-2 object expected (%d)',e); end
+  if ~nargin || ~isa(A,'QSpace') && (~isstruct(A) || ~isfield(A,'Q'))
+     wbdie('invalid usage'); end
+  q=numel(A); if q~=1
+     wbdie('invalid usage (single rank-2 object expected; n=%d)',q); end
+  q=numel(A.Q); if q~=2
+     wbdie('invalid usage (rank-2 object expected; r=%d)',q); end
 
   [q1,d1]=getQDimQS(A,1);
   [q2,d2]=getQDimQS(A,2);
@@ -399,11 +406,12 @@ function E = initQSpaceUnity(A)
   Q=qd; D=zeros(n,1);
 
   for i=1:n, di=QD(I{i},end); 
-     if d(i)>1 && any(diff(di)), di, error('Wb:ERR',...
-     'invalid rank-2 object: severe QSpace inconsistency'); end
+     if d(i)>1 && any(diff(di)), di
+        wbdie('invalid rank-2 object / severe QSpace inconsistency'); end
      D(i)=di(1);
   end
 
+  E=get_struct();
   E.Q={Q,Q};
   E.data=cell(1,n); for i=1:n, E.data{i}=eye(D(i)); end
 
@@ -424,10 +432,7 @@ function [A,Aloc,I1,I2] = initQSpaceA0(varargin)
 %
 % Wb,Sep10,06
 
-  if nargin<2
-     error('Wb:ERR','\ninvalid usage of %s\n%s', ...
-     lineno('%S'), lineno('all'));
-  end
+  if nargin<2, wbdie('invalid usage'); end
 
   getopt('init',varargin);
      Rlast=getopt('-Rlast');
@@ -437,15 +442,13 @@ function [A,Aloc,I1,I2] = initQSpaceA0(varargin)
   nqin=length(varargin);
   for i=1:nqin
      if ~isnumeric(varargin{i})
-     error('Wb:ERR','\nremaining non Q-matrix type of argument !?? %s\n%s', ...
-     lineno('%S'), lineno('all')); end
+     wbdie('remaining non Q-matrix type of argument !?'); end
   end
 
   QDIM=size(varargin{1},2);
   for i=2:nqin
      if size(varargin{i},2)~=QDIM
-        error('Wb:ERR','\nQDIM mismatch (%d,%d)\n%s', ...
-        QDIM, size(varargin{i},2), lineno('all'));
+        wbdie('QDIM mismatch (%d,%d)',QDIM,size(varargin{i},2));
      end
   end
 
@@ -485,9 +488,9 @@ function [A,Aloc,I1,I2] = initQSpaceA0(varargin)
   M=cell(m,n); mark=zeros(m,n);
 
   for i=1:m
-     if D1(i)~=prod(DD(i,:)) error('Wb:ERR', ...
-        '\nFailed to determine Q dimensions [%d; %s]\n%s', ...
-         D1(i), vec2str(DD(i,:)), lineno('all'));
+     if D1(i)~=prod(DD(i,:))
+        wbdie('failed to determine dimensions of Q [%d; %s]', ...
+        D1(i), vec2str(DD(i,:)));
      end
 
      for j=1:n

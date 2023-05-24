@@ -40,7 +40,7 @@ double contractDATA_group(const char *F, int L,
    if (A.qtype!=B.qtype || A.qtype!=C.qtype) wblog(FL,
       "ERR %s() qtype mismatch '%s' / '%s' / '%s'",
       FCT,STR(A.qtype),STR(B.qtype),STR(C.qtype));
-   if (ica.len!=icb.len || ica.len>ra || icb.len>rb) wblog(F_L,
+   if (!ica.len || ica.len!=icb.len || ica.len>ra || icb.len>rb) wblog(F_L,
       "ERR %s() invalid contraction indices (%s /%d; %s /%d)",
       FCT,STR(ica),ra,STR(icb),rb);
 

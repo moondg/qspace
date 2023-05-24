@@ -4571,9 +4571,9 @@ bool CRef<TQ>::wSame(
    unsigned nb=cwB.numel();
 
    if (na<=1 && nb<=1) {
-      if (!na || !nb)
-           { return (na==nb); }
-      else { return fabs(cgw[0]-cwB[0])<=eps; }
+      if (na && nb)
+           { return fabs(cgw[0]-cwB[0])<=eps; }
+      else { return (na==nb); }
    }
 
    if (cgw.sameAs(cwB,eps)) { return 1; }

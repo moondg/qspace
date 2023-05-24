@@ -62,6 +62,9 @@ function [EE,hh,iQ,Iout]=getEEdata(HK,varargin)
      ldisp=getopt('-ldisp');   if ~ldisp
      ldisp=getopt('ldisp',{}); end
 
+     if getopt('-v'), vflag=2;
+     elseif getopt('-q'), vflag=0; else vflag=1; end
+
      if getopt('-1')
         nax=1; dk=1;
      elseif getopt('-eo1')
@@ -80,27 +83,25 @@ function [EE,hh,iQ,Iout]=getEEdata(HK,varargin)
 
   if numel(yl)==1
      if ESflag && yl>0, yl=[-yl/20, yl];
-     else error('Wb:ERR',...
-       '\n   ERR invalid usage (yl requires two values)');
+     else wbdie('invalid usage (yl requires two values)');
      end
   end
 
-  if ~isempty(HK(1).data)
-     isd=isdiag(QSpace(HK(1)),'-d');
-     if isd>2
-        wblog('NB!','using H''');
-        HK=HK';
-     end
-  else isd=-1; end
+  L =numel(HK); if L<3
+     wbdie('invalid HK (got only QSpace vector of length %g)',L); 
+  end
 
-  HK=struct(HK);
-  L=numel(HK); if L<3, error('Wb:ERR',...
-    '\n   ERR invalid HK (got only QSpace vector of length %g)',L); 
+  isd=zeros(size(HK));
+  if ~isa(HK,'QSpace'), HK=QSpace(HK); end
+  for k=1:L
+     if ~isempty(HK(k).data)
+          isd(k)=isdiag(HK(k),'-d');
+     else isd(k)=-1; end
   end
 
   if ~isempty(k2x)
      if ~iscell(k2x) || numel(k2x)<2 || ~ischar(k2x{2})
-        error('Wb:ERR','\n   ERR invalid usage (k2x)');
+        wbdie('invalid usage (k2x)');
      end
 
      s=k2x{2}; if numel(k2x)>2, k1L=k2x{3}; else k1L=[1 L]; end
@@ -108,7 +109,7 @@ function [EE,hh,iQ,Iout]=getEEdata(HK,varargin)
   end
 
   if ~isempty(Qmap)
-     if ~iscell(Qmap), Qmap, error('Wb:ERR','\n   ERR invalid Qmap'); end
+     if ~iscell(Qmap), Qmap, wbdie('invalid Qmap'); end
      qdim=size(HK(1).Q{1},2);
      for k=1:numel(Qmap), 
         [qm,qms]=test_qm_string(Qmap{k}); s=size(qm);
@@ -127,14 +128,38 @@ function [EE,hh,iQ,Iout]=getEEdata(HK,varargin)
               for j=1:m, Q{j}=Q{j} + repmat(qm,size(Q{j},1),1); end
               HK(i).Q=Q;
            end
-        else Qmap, error('Wb:ERR','\n   ERR invalid Qmap'); end
+        else Qmap, wbdie('invalid Qmap'); end
      end
   end
 
-  if isd==0 || isd==1
-     wblog('NB!','diagonalizing H0');
-     [ex,I]=eigQS(QSpace(HK(1)));
-     HK(1)=QSpace(I.EK) - min(ex(:,1));
+  i=find(isd<0);
+  if ~isempty(i) && ~isequal(i,1)
+     wblog('WRN','got %d/%d empty QSpace entries',numel(i),L);
+  end
+
+  i=find(isd==0 | isd==1);
+  if ~isempty(i)
+     if vflag
+        if isequal(i,1)
+             wblog('NB!','diagonalizing H0');
+        else wblog('==>','diagonalizing HK data (%g/%g)',numel(i),L); end
+     end
+     q=0; if vflag, q=numel(i); if q<L/4, q=0; end, end
+     for k=i
+        if q, fprintf(1,'\r  %3d/%d ... \r',k,L); end
+        [ex,I]=eigQS(HK(k)); HK(k)=QSpace(I.EK) - min(ex(:,1));
+     end
+     if q, fprintf(1,'\r%20s\r',''); end
+  end
+
+  i=find(isd>2);
+  if ~isempty(i)
+     if vflag
+        if isequal(i,1)
+             wblog('NB!','using H0''');
+        else wblog('NB!','using HK'' (%d/%d)',numel(i),L); end
+     end
+     for k=i, HK(k)=HK(k)'; end
   end
 
   if ESflag
@@ -191,12 +216,12 @@ function [EE,hh,iQ,Iout]=getEEdata(HK,varargin)
 
   if ~isempty(qsel)
      if size(qsel,2)~=size(Q,2)
-        error('Wb:ERR','\n   ERR invalid qsel (size mismatch)'); 
+        wbdie('\n   ERR invalid qsel (size mismatch)'); 
      end
      qsel=uniquerows(qsel);
      [ia,ib,Im]=matchIndex(Q,qsel);
      if isempty(ia), Q, qsel
-        error('Wb:ERR','\n   ERR invalid qsel (non-matching Q)');
+        wbdie('\n   ERR invalid qsel (non-matching Q)');
      end
      wblog(' * ','using qsel (%g)',size(qsel,1));
      EE=EE(ia); Q=Q(ia,:); nQ=size(Q,1);
@@ -244,7 +269,7 @@ function [EE,hh,iQ,Iout]=getEEdata(HK,varargin)
         ah=smaxis(nax,1,'tag',mfilename);
         header('%M'); addt2fig wb
      elseif ~all(isaxis(ah)) || numel(ah)<nax
-        error('Wb:ERR','\n   ERR getEEdata: got invalid axes handles');
+        wbdie('\n   ERR getEEdata: got invalid axes handles');
      end
   end
 

@@ -20,6 +20,8 @@ function c=getcolor(varargin)
      if ischar(q) && numel(q)==1
         if ~isempty(find('brmcyk'==q)), c=q; return; end
         if isequal(q,'g'), c=[0 0.5 0]; return; end
+     elseif all(ishandle(q) & ~isnumeric(q))
+        c=get(q,'Color'); return
      end
   end
 

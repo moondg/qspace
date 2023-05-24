@@ -37,7 +37,7 @@
 %     Conversely, getIdentityQS(A,2,'-A:~',E)
 %     generates itags {K02,s02,K01~*}, e.g. used for R->L sweep.
 %
-%  Finaly, the output index order may be changed by specifying
+%  Finally, the output index order may be changed by specifying
 %  a permutation perm to be applied on the final object.
 %  If itag is not specified, perm must be in numerical format,
 %  otherwise a (compact) string format is also accepted.

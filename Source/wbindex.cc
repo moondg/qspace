@@ -507,6 +507,46 @@ itag_& itag_::init(const char *F, int L,
    return *this;
 };
 
+itag_& itag_::SetFlag(unsigned l) { 
+   if (l>=ITAG_LEN) wblog(FL,
+      "ERR %s() index out of bounds (%d/%d)",FCT,l,ITAG_LEN);
+   ((char*)(&t))[l] |= 128;
+   return *this;
+};
+
+itag_& itag_::SetFlags(unsigned l, char check) { 
+
+   char *s = (char*)(&t);
+
+   if (int(l)<0) { unsigned q=(int(l)==-1);
+      l=( itag_::flag_id & ~((unsigned char)3) ); 
+      if (q) { itag_::iter_flag_id(); }
+   }
+
+   if (l==1) { s[0] |= 128; return *this; }
+   if (int(l)<=0) { wblog(FL,"ERR %s() invalid usage (l=%d)",FCT,l); }
+
+   unsigned i=0, n=ITAG_LEN;
+
+   if (l>=(1U<<n)) wblog(FL,
+      "ERR %s() index out of bounds (%d/%d)",FCT,l,1<<n);
+   if (l&1) wblog(FL,"WRN %s() got flags %d",FCT,l);
+
+   for (; i<n; ++i) {
+      if (l & (1<<i)) {
+         if (check && (s[i] & 128)) wblog(FL,
+            "WRN %s() flag %d already set (%s)",FCT,i,STR_(this));
+         s[i] |= 128;
+      }
+      else if (i) { 
+         if (check && (s[i] & 128)) wblog(FL,
+            "WRN %s() unsetting flag %d (%s)",FCT,i,STR_(this));
+         s[i] &= 127;
+      }
+   }
+   return *this;
+};
+
 itag_& itag_::SetSI(const char *F, int L,
    const char *tag, unsigned k, char conj, char nfmt) {
 
@@ -567,44 +607,41 @@ char itag_::sameAs(const itag_ &B, char lflag) const {
    return q;
 };
 
-unsigned itag_::to_str(char *s, unsigned len,
+unsigned itag_::to_str(char *sout, unsigned len, 
    char cflag 
  ) const {
 
-   unsigned e=0, l=0, i=0, m=0, n=ITAG_LEN, nx=2;
+   unsigned e=0, l=0, i=0, m=0, n=ITAG_LEN;
    const char *st=(const char *)(&t), c128=char(128);
 
-   if (int(len)<int(n)) wblog(FL,
-      "ERR %s() string out of bounds (%d/%d)",FCT,len,ITAG_LEN);
+   if (int(len)<=int(n)) wblog(FL,
+      "ERR %s() string out of bounds (%d/%d)",FCT,len,n);
 
-   for (; i<n && st[i]; ++i) { s[i]=st[i];
-      if (s[i]<0) { s[i]+=c128;
-         if (i) { ++m; }; if (i>=nx) { ++e; }
-         if (!s[i]) { break; }
-      }
-      if (!IS_CHAR_ITAG(s[i])) { e+=10; }
-   }; s[i]=0;
-
-   for (l=i; i<n; ++i) {
-      if (st[i]) {
-         if (st[i]==c128)
-              { if (i>=nx) { e+=100; } else if (i) { ++m; }}
-         else { e+=100; }
-      }
+   for (; i<n && st[i]; ++i) { sout[i]=st[i];
+      if (sout[i]<0) { sout[i]+=c128; m|=(1<<i); }
+      if (sout[i])
+           { if (!IS_CHAR_ITAG(sout[i])) { e+=10; }}
+      else { break; }
    }
 
-   if (e) wblog(FL,
-      "WRN %s() got non-char itag (%s; e=%d) !?",FCT,s,e);
+   for (l=i, ++i; i<n; ++i) { if (st[i]) {
+      if (st[i]==c128) { m|=(1<<i); } else { e+=100; }
+   }}
 
-   if (l+m+3>=len) wblog(FL,"ERR %s() "
-      "string out of bounds (%d+%d+3=%d/%d; %s)",FCT,l+m,l+m+3,len,s);
+   if (e) { sout[l]=0; wblog(FL,
+      "WRN %s() got non-char itag (%s; e=%d) !?",FCT,sout,e); }
+   if ((m&1) && !cflag) { m-=1; }
 
-   if (m) { s[l++]='\''; 
-      for (i=1; i<n; ++i) { if (st[i]<0) { s[l++]='0'+i; }}
+   if (m>1 && l<len) {
+      if (!(m&2)) 
+           { l+=snprintf(sout+l,len-l,"⏐%d",m>>2); } 
+      else { l+=snprintf(sout+l,len-l,"?%d",m>>1); } 
    }
-   if (st[0]<0 && cflag) { s[l++]=CC_ITAG; }
+   if (m&1 && l<len) { sout[l++]=CC_ITAG; }
 
-   s[l]=0;
+   if (l>=len) { sout[len-1]=0; wblog(FL,
+      "ERR %s() string out of bounds (%s / %d)",FCT,sout,l); }
+   sout[l]=0;
 
    return l;
 };
@@ -663,58 +700,76 @@ itag_& itag_::AppendChar(char q, const char *qs) {
    unsigned i=0, n=ITAG_LEN;
    char *s=(char*)(&t);
 
-   if (!IS_CHAR_ITAG(q)) wblog(FL,
-      "ERR %s() invalid char %c<%d>",FCT,q,q);
+   if (!IS_CHAR_ITAG(q)) wblog(FL,"ERR %s() invalid char %s",FCT,cSTR(q));
 
    for (; i<n; ++i) {
-      if (!( s[i] & ~char(128) )) break; 
+      if (!( s[i] & char(127) )) { break; }
    }
 
    if (!i) { s[i]+=q; } 
    else {
-      char x=(s[i-1] & ~char(128));
+      char x=(s[i-1] & char(127));
       if (qs && strchr(qs,x)) { --i; } 
-      else if (i==n) 
-      wblog(FL,"ERR %s() itag out of bounds (%s)",FCT,STR(*this));
+      else if (i==n) wblog(FL,
+         "ERR %s() itag out of bounds (%s)",FCT,STR(*this));
 
-      s[i] = (s[i] & char(128)) + q;
+      s[i] = q + (s[i] & char(128));
    }
 
+   return *this;
+};
+
+itag_& itag_::MarkDual(char q) {
+
+   unsigned i=0, n=ITAG_LEN;
+   char *s=(char*)(&t);
+
+   if (!IS_CHAR_ITAG(q)) wblog(FL,"ERR %s() invalid char %s",FCT,cSTR(q));
+
+   for (; i<n; ++i) { if (!( s[i] & 127 )) { break; }}
+
+   if (i) {
+      if (( s[i-1] & 127 )==q) {
+         s[i-1] &= 128; 
+      }
+      else if (i<n) {
+         s[i] = q + (s[i] & 128); 
+      }
+      else { wblog(FL,
+        "ERR %s() itag string out of bounds (%s)\n(length "
+        "must not exceed %d chars for %s)",FCT,STR(*this),n-1,myname);
+      }
+   }
    return *this;
 };
 
 itag_& itag_::PrependChar(char q, const char *qs) {
 
    unsigned i=0, n=ITAG_LEN;
-   char *s=(char*)(&t), x=(s[0] & ~char(128));
+   char *s=(char*)(&t), x=(s[0] & 127);
 
    if (!IS_CHAR_ITAG(q)) wblog(FL,
-      "ERR %s() invalid char %c<%d>",FCT,q,q);
+      "ERR %s() invalid char %s",FCT,cSTR(q));
 
-   if (!qs || !strchr(qs,x)) { 
-      for (; i<n; ++i) {
-         if (!( s[i] & ~char(128) )) break; 
+   if (!qs || !strchr(qs,x)) {
+      for (; i<n; ++i) { if (!( s[i] & char(127) )) { break; }}
+      if (i==n) wblog(FL,"ERR %s() itag out of bounds (%s)",FCT,STR_(this));
+      for (; i; --i) {
+         s[i] = (s[i-1] & 127) + (s[i] & 128);
       }
-      if (i==n) wblog(FL,
-         "ERR %s() itag out of bounds (%s)",FCT,toStr().data);
-      for (--i; i>0; --i) { s[i+1]=s[i]; }
-      s[1] = (s[0] & ~char(128));
    }
-
-   s[0] = (s[0] & char(128)) + q;
+   s[i] = q + (s[i] & 128);
 
    return *this;
 };
 
 int itag_::CheckFirstChar(char q, const char *qs) {
 
-   char *s=(char*)(&t), x=(s[0] & ~char(128));
-
-   if (!IS_CHAR_ITAG(q)) wblog(FL,
-      "ERR %s() invalid char %c<%d>",FCT,q,q);
+   char *s=(char*)(&t), x=(s[0] & 127);
+   if (!IS_CHAR_ITAG(q)) wblog(FL,"ERR %s() invalid char %s",FCT,cSTR(q));
 
    if (qs && strchr(qs,x)) {
-      s[0] = (s[0] & char(128)) + q;
+      s[0] = q + (s[0] & 128);
       return 1;
    }
 
@@ -978,18 +1033,22 @@ unsigned iTags::Set(const char* F, int L,
 wbstring iTags::toStr(char vflag) const {
 
    unsigned k, n=ITAG_LEN;
-   size_t l=0, N=(n+2)*len + (vflag ? 16 : 0); char s[N+1];
+   size_t l=0, N=(n*len>28 ? 2*n*len+8 : 64); 
+   char s[N];
 
-   for (k=0; k<len; ++k) { if (k) s[l++]=';';
-      l+=data[k].to_str(s+l,N);
-      if (l>=N) wblog(FL,"ERR %s() string out of bounds (%s)",FCT,s);
-   }
+   if (vflag) { s[0]='{'; s[1]=' '; l=2; }
+   s[N-1]=0;
 
-   if (vflag) {
-      l+=snprintf(s+l,N-l," (rank-%ld)",len);
-      if (l>=N) wblog(FL,"ERR %s() string out of bounds (%s)",FCT,s);
+   for (k=0; k<len; ++k) {
+      if (l+4>=N) wblog(FL,"ERR %s() "
+         "string out of bounds (%s; %d*%d @ %d/%d)",FCT,s,len,n,l,N);
+      if (k) { s[l++]=','; if (vflag) { s[l++]=' '; }}
+      l+=data[k].to_str(s+l,N-l);
    }
-   else s[l]=0;
+   if (l>=N || (vflag && l+6>N)) wblog(FL,"ERR %s() "
+      "string out of bounds (%s; %d*%d @ %d/%d)",FCT,s,len,n,l,N);
+   if (vflag) { s[l]=' '; s[l+1]='}'; l+=2; }
+   s[l]=0;
 
    return s;
 };
@@ -1004,22 +1063,38 @@ int iTags::getCtr(
    int nc=0; 
    wbvector<char> ma(len), mb(B.len); 
    unsigned i,j, it=0, l=0, cflag=(ia.conj ^ ib.conj);
-   int q, w=0;
+   int q, e=0;
 
-   for (i=0; i<  len; ++i) { if (  data[i].GotFlag(1)) { ma[i]=-1; }}
-   for (i=0; i<B.len; ++i) { if (B.data[i].GotFlag(1)) { mb[i]=-1; }}
+   for (i=  0; i<  len; ++i) {
+   for (j=i+1; j<  len; ++j) { if (  data[i]==  data[j]) { e+=1;   }}}
+   for (i=  0; i<B.len; ++i) {
+   for (j=i+1; j<B.len; ++j) { if (B.data[i]==B.data[j]) { e+=256; }}}
 
-   for (; it<2; ++it) {
+   if (e) { i=(e&255); j=(e>>8);
+      if (i) {
+         if (i==1)
+              { l=sprintf(str,"got non-unique itag in A"); }
+         else { l=sprintf(str,"got %d non-unique itags in A",i); }
+         if (j) l+=sprintf(str+l," and %d in B",j);
+      }
+      else if (j==1)
+           { sprintf(str,"got non-unique itag in B"); }
+      else { sprintf(str,"got %d non-unique itags in B",j); }
+
+      wblog(F_L,"ERR %s() %s\n  A: %s\n  B: %s", FCT,str,STR_(this),STR(B));
+   }
+
+   for (i=0; it<2; ++it) {
       q=(cflag ? SGN(+1) : SGN(-1));
 
-      for (i=0; i<  len; ++i) { if (ma[i]>=0) {
-      for (j=0; j<B.len; ++j) { if (mb[j]>=0) {
+      for (i=0; i<  len; ++i) {
+      for (j=0; j<B.len; ++j) {
          if (SGN(data[i].sameAs(B.data[j]))==q) {
-            if (!ma[i] && !mb[j])  
+            if (!ma[i] && !mb[j])
                  { ma[i]=j+1; mb[j]=i+1; ++nc; } 
-            else { ++w; } 
+            else { ++e; } 
          }
-      }}}}
+      }}
       if (nc) { break; } else { cflag=!cflag; } 
    }
 
@@ -1027,21 +1102,17 @@ int iTags::getCtr(
    ib.wbvector<unsigned>::init(nc);
 
    if (nc) {
-      for (i=0; i<len; ++i) { if (ma[i]>0) {
+      for (i=0; i<len; ++i) { if (ma[i]) {
          ia[l]=i;
          ib[l]=ma[i]-1; ++l;
       }}
 
-      if (it) { wblog(F_L,"WRN contract::match() "
-         "check missing conj flag\nA: %-15s -> %s\nB: %-15s -> %s",
-          STR_(this), STR(ia), STR(B), STR(ib));
+      if (it) {
+         wblog(F_L,"WRN contract::match() check missing conj flag\n"
+          "A: %-15s -> %s\n"
+          "B: %-15s -> %s", STR_(this), STR(ia), STR(B), STR(ib));
          mexIssueWRN("applying conj(A) flag");
          ia.Conj(); 
-      }
-      if (w) { wblog(F_L,
-         "WRN %s() non-unique itags `%s'/`%s'",FCT,STR(B),STR_(this));
-         sprintf(str,"using %s / %s",STR(ia),STR(ib));
-         mexIssueWRN(str);
       }
    }
    else if (F || !L) wblog(FL, 
@@ -1052,23 +1123,17 @@ int iTags::getCtr(
    if (C) { C->init( len + B.len - 2*nc );
    if (C->len) { l=0; itag_ *c=C->data;
 
-      for (i=0; i<len; ++i) { if (ma[i]<=0) {
+      for (i=0; i<len; ++i) { if (!ma[i]) {
          c[l]=  data[i]; if (ia.conj) { c[l].Conj(); }; ++l;
       }}
-      for (i=0; i<B.len; ++i) { if (mb[i]<=0) {
+      for (i=0; i<B.len; ++i) { if (!mb[i]) {
          c[l]=B.data[i]; if (ib.conj) { c[l].Conj(); }; ++l;
       }}
       if (l!=C->len) wblog(FL,"ERR %s() %d/%d",FCT,l,C->len);
    }}
 
-   if (ma_) { 
-      for (i=0; i<ma.len; ++i) { if (ma[i]<0) { ma[i]=0; }}
-      ma.save2(*ma_);
-   }
-   if (mb_) { 
-      for (i=0; i<mb.len; ++i) { if (mb[i]<0) { mb[i]=0; }}
-      mb.save2(*mb_);
-   }
+   if (ma_) { ma.save2(*ma_); }
+   if (mb_) { mb.save2(*mb_); }
 
    return nc;
 };
@@ -1151,39 +1216,102 @@ int iTags::FlagItagsCtr(
    const ctrIdx &ib,
    char all, 
    char sgn  
-) const {    
+) { 
 
    int rval=0;
-   unsigned i,j;
+   unsigned i,j,l, id=0;
    wbvector<char> ma(len), mb(B.len);
+
+   if (!ia.len || !ib.len) {
+      if (!len && !B.len && !ia.len && !ib.len) { return rval; }
+   }
 
    if (sgn)
         { sgn=SGN(sgn); } 
    else { sgn=((!ia.conj) ^ (!ib.conj) ? SGN(+1) : SGN(-1)); }
 
+   for (i=0; i<ma.len; ++i) {
+      if (!data[i].isEmpty()) { ma[i]|=1; }
+      for (j=i+1; j<ma.len; ++j) {
+         if (data[i]==data[j]) {
+            if (!(ma[i]&2)) { ma[i]|=2; id+=1; }
+            if (!(ma[j]&2)) { ma[j]|=2; id+=1; }
+         }
+      }
+   }
+   for (i=0; i<mb.len; ++i) {
+      if (!B.data[i].isEmpty()) { mb[i]|=1; }
+      for (j=i+1; j<mb.len; ++j) {
+         if (B.data[i]==B.data[j]) {
+            if (!(mb[i]&2)) { mb[i]|=2; id+=256; }
+            if (!(mb[j]&2)) { mb[j]|=2; id+=256; }
+         }
+      }
+   }
+
+   if (ia.len!=ib.len) wblog(FL, 
+      "ERR %s() invalid pair of ctr-indices %s / %s",FCT,STR(ia),STR(ib));
    for (i=0; i<ia.len; ++i) {
-      if (ia[i]>=ma.len || ++ma[ia[i]]!=1) wblog(F_L,
-      "ERR %s() invalid ctr-index A: %s /%d",FCT,STR(ia),ma.len);
+      if (ia[i]>=ma.len || ma[ia[i]]>3) wblog(F_L,
+         "ERR %s() invalid ctr-index ica = %s (r=%d)",FCT,STR(ia),ma.len);
+      ma[ia[i]]+=((1+ib[i])<<2); 
    }
    for (i=0; i<ib.len; ++i) {
-      if (ib[i]>=mb.len || ++mb[ib[i]]!=1) wblog(F_L,
-      "ERR %s() non-unique ctr-index B: %s /%d",FCT,STR(ib),mb.len);
+      if (ib[i]>=mb.len || mb[ib[i]]>3) wblog(F_L,
+         "ERR %s() invalid ctr-index icb = %s (r=%d)",FCT,STR(ib),mb.len);
+      mb[ib[i]]+=((1+ia[i])<<2); 
    }
 
-   if (!all) { 
-      for (i=0; i<ma.len; ++i) {
-         if (!ma[i] &&   data[i].isEmpty()) { ma[i]=-9; }}
-      for (i=0; i<mb.len; ++i) {
-         if (!mb[i] && B.data[i].isEmpty()) { mb[i]=-9; }}
-   }
-
-   for (j=0; j<B.len; ++j) { if (!mb[j]) {
-   for (i=0; i<  len; ++i) { if (!ma[i] &&
+   for (j=0; j<B.len; ++j) { if (mb[j]<4 && ((mb[j]&1) || all)) {
+   for (i=0; i<  len; ++i) { if (ma[i]<4 && ((ma[i]&1) || all) &&
        SGN(data[i].sameAs(B.data[j]))==sgn) {
-          B.data[j].SetFlag(1); ++rval; break;
+          B.data[j].SetFlags(-1);
+          if (mb[j]&2) { mb[j]-=2; id-=256; }
+          ++rval; break;
        }}
    }}
 
+   if (int(id)<=0) {
+      if (id) wblog(FL,"ERR %s() got id=%d !?",FCT,id);
+      return rval;
+   }
+
+   for (i=0; i<ia.len; ++i) { j=ia[i]; l=ib[i]; 
+      if (l>=B.len) wblog(FL,
+         "ERR %s() index out of bounds (%d/%d)",FCT,l,B.len);
+      if (ma[j]&2 || mb[l]&2) {
+         if (SGN(data[j].sameAs(B.data[l]))!=sgn) wblog(FL, 
+            "ERR %s() invalid ctr-indices %s / %s (sgn=%d)",
+            FCT,STR_(this),STR(B),sgn);
+
+           data[j].SetFlags(-2); if (ma[j]&2) { ma[j]-=2; id-=  1; }
+         B.data[l].SetFlags(-1); if (mb[l]&2) { mb[l]-=2; id-=256; }
+         rval+=2;
+      }
+   }
+
+   if (int(id)<=0) {
+      if (id) wblog(FL,"ERR %s() got id=%d !?",FCT,id);
+      return rval;
+   }
+
+   for (i=0; i<len; ++i) {
+      for (j=i+1; j<len; ++j) { if (data[i]==data[j]) {
+         if (ma[i]>=4 || ma[j]>=4) { 
+            wblog(FL,"ERR %s() A: (%d,%d) %d/%d",FCT, i,ma[i],ma[j]); }
+         if ((ma[j]&1) || all) { data[j].SetFlags(-1); }
+      }}
+   }
+
+   for (i=0; i<B.len; ++i) { 
+      for (j=i+1; j<B.len; ++j) { if (B.data[i]==B.data[j]) {
+         if (mb[i]>=4 || mb[j]>=4) { 
+            wblog(FL,"ERR %s() B: (%d,%d) %d/%d",FCT, i,mb[i],mb[j]); }
+         if ((mb[j]&1) || all) { B.data[j].SetFlags(-1); }
+      }}
+   }
+
+  #ifndef WB_SKIP_ASSERT
    if (all) { ctrIdx ia_,ib_; 
       this->getCtr(F,L,B,ia_,ib_);
       if (ia_.len!=ib.len) { wblog(F_L,"ERR %s() ctr-index mismatch\n"
@@ -1192,6 +1320,8 @@ int iTags::FlagItagsCtr(
          STR_(this),STR(ia),STR(ia_), STR(B),STR(ib),STR(ib_));
       }
    }
+  #endif
+
    return rval;
 };
 

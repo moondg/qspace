@@ -490,17 +490,25 @@ class QSpace {
        itags.SetConj(F,L,k-1); return *this;
     };
 
-    QSpace& SetFlag(const char *F, int L, unsigned k, unsigned l) { 
+    QSpace& SetFlag(const char *F, int L, unsigned k, unsigned l) {
        if (!k) wblog(F_L,"ERR %s(%d) expects 1-based index",FCT,k);
-       itags.SetFlag(F_L,k-1,l); return *this;
+       itags.SetFlag(F_L,k-1,l);
+       return *this;
     };
-
-    QSpace& UnsetFlag(const char *F, int L, unsigned k, unsigned l) { 
+    QSpace& UnsetFlag(const char *F, int L, unsigned k, unsigned l) {
        if (!k) wblog(F_L,"ERR %s(%d) expects 1-based index",FCT,k);
-       itags.UnsetFlag(F_L,k-1,l); return *this;
+       itags.UnsetFlag(F_L,k-1,l);
+       return *this;
     };
-
-    QSpace& UnsetFlags() { itags.UnsetFlags(); return *this; };
+    QSpace& UnsetFlags() { 
+       itags.UnsetFlags();
+       return *this;
+    };
+    QSpace& SetFlags(const char *F, int L, unsigned k, unsigned l=-1) {
+       if (!k) wblog(F_L,"ERR %s(%d) expects 1-based index",FCT,k);
+       itags.SetFlags(F_L,k-1,l);
+       return *this;
+    };
 
     QSpace& init_tags() { itags.init_tags(); return *this; };
 

@@ -41,10 +41,10 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
   if ~iflag
      q=[ itags2odir(X1.AK), itags2odir(X2.AK) ];
      if isempty(matchIndex(q,[2 0; 0 1])), save2tmp -5
-        X1.info.itags, X2.info.itags, q, wberr(...
-       'ERR got invalid orthonormalization !? [ %g, %g ]', q(1),q(2));
+        X1.info.itags, X2.info.itags, q, wbdie(...
+       'ERR got invalid orthonormalization [ %g, %g ]', q(1),q(2));
      end
-     if k2~=k1+1, wberr(['invalid usage ' ... 
+     if k2~=k1+1, wbdie(['invalid usage ' ... 
        '(expecting two consecutive sites [%g,%g])'],k1,k2);
      end
   end
@@ -86,7 +86,7 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
 
   d1=itags2odir(X1.AK);
   d2=itags2odir(X2.AK);
-  if d1 && d2, wberr('got current site other than A1 and A2 !?'); end
+  if d1 && d2, wbdie('got current site other than A1 and A2 !?'); end
 
   Ek1=get_local_id(HAM,k1,X1.AK,3);
   Ek2=get_local_id(HAM,k2,X2.AK,3);
@@ -109,7 +109,7 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
      r1=numel(A1.Q); r2=numel(A2.Q);
      NPsi=(r1>2 || r2>2);
      if r1<2 || r2<2 || NPsi && r1+r2~=5
-        wberr('invalid usage (got [%g,%g]-rank A-tensors !?)',r1,r2); 
+        wbdie('invalid usage (got [%g,%g]-rank A-tensors)',r1,r2); 
      end
      p=[]; if r1==3, p=[1 3 2]; end
 
@@ -162,8 +162,8 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
            m=sprintf('./tmp_%s_%g_%g_%s_checkNorm.mat',...
              mfilename,k1,k2,iff(kdir>0,'lr','rl'));
            save2(m,'-f');
-           wberr('%s !?',s{2});
-        elseif e>1E-6, wbwrn('%s\n%s !?',s{:});
+           wbdie('%s !?',s{2});
+        elseif e>1E-6, wblog('WRN %s\n%s',s{:});
         end
 
      else wblog('WRN',s); end
@@ -226,7 +226,7 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
         q=blkdiag(E); e=norm(q-q')/max(1,norm(q));
         if e
            if e>1E-12
-              wberr('got non-Hermitian H (e=%.3g) !?',e); end
+              wbdie('got non-Hermitian H (e=%.3g) !?',e); end
            if NPsi, E=0.5*(E+E'); else E=real(getscalar(E)); end
         else
            if ~NPsi, E=getscalar(E); end
@@ -325,7 +325,7 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
            if isnumeric(H), Hk=H;
            else
               if numel(H.data)~=1 || ~isequal(size(H.data{1}),[l l])
-                 wberr('unexpected H object !?'); end
+                 wbdie('unexpected H object !?'); end
               Hk=H.data{1};
            end
            H1=min(diag(Hk));
@@ -366,7 +366,7 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
   end
 
   if NPsi, d=getDimQS(Psi);
-     if size(d,2)~=3, Psi, d, wberr('invalid NPsi !?'); end
+     if size(d,2)~=3, Psi, d, wbdie('invalid NPsi !?'); end
      if d(end)~=NPsi2
         wblog('NB!',...
           'low-energy symmetry multiplets changed (%d->%d, %d->%d)',...
@@ -423,12 +423,14 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
   end
 
   e=sum(r1); e(2)=1-e; e(3)=abs(e(2));
-  if e(3)>1E-8, save2('./tmp.mat');
+  if e(3)>1E-8
+     if e(3)>=1E-3, save2('./tmp.mat'); end
      s=sprintf('%.8g @ %.3g',e(1),e(2));
      q=getfield2(HAM.info,'sweep','isw',{0});
      if e(3)<1E-3 || q==1 && e(3)<1
           wblog('WRN','wave function normalized @ %s',s);
-     else wberr('%s wave function not normalized (%s) !?',s); end
+     else wbdie('%s wave function not normalized (%s)',s);
+     end
   end
 
   Iout.rr=r1; i=find(r1>0);

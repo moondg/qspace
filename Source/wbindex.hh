@@ -597,7 +597,7 @@ class groupIndex {
 
 #define IS_ITAGS_SEP(c) ((c)==',' || (c)==';' || (c)=='|')
 #define IS_CHAR_ITAGS(c) ((c)>32 && (c)<127)
-#define IS_CHAR_ITAG(c) (((c)>32 && (c)<127) && !((c)==CC_ITAG || IS_ITAGS_SEP(c)))
+#define IS_CHAR_ITAG(c) (((c)>32 && (c)<127) && (c)!=CC_ITAG && !IS_ITAGS_SEP(c))
 
 #define IT2STR(a) (a).itags.toStr().data
 #define IT2STR__      itags.toStr().data
@@ -638,8 +638,8 @@ class itag_ {
    itag_& operator=(unsigned n) { t=n; return *this; }
    itag_& operator=(const char *s) { return init(FL,s); }
 
-   bool operator==(const itag_ &x) const { return  sameAs(x); };
-   bool operator!=(const itag_ &x) const { return !sameAs(x); };
+   bool operator==(const itag_ &x) const { return t==x.t; };
+   bool operator!=(const itag_ &x) const { return t!=x.t; };
 
    char sameAs(const itag_ &x, char lflag=0) const; 
 
@@ -679,7 +679,7 @@ class itag_ {
       return *this;
    };
 
-   itag_& Conj() { 
+   itag_& Conj() {
       ((char&)t) ^= char(128); 
       return *this;
    };
@@ -694,42 +694,43 @@ class itag_ {
    };
 
    itag_& deConj() { 
-      char &c=((char&)t); if (c<0) c+=char(128);
+      char &c=((char&)t); if (c<0) { c+=char(128); } 
       return *this;
    };
 
    itag_ conj()   const { itag_ x(*this); return x.Conj();   } 
    itag_ deconj() const { itag_ x(*this); return x.deConj(); } 
 
-   itag_& SetFlag(unsigned k) { 
-      if (k>=ITAG_LEN) wblog(FL,
-         "ERR %s() index out of bounds (%d/%d)",FCT,k,ITAG_LEN);
-      ((char*)(&t))[k] ^= char(128); 
-      return *this;
-   };
+   itag_& SetFlag (unsigned l); 
 
-   bool GotFlag(unsigned k) const { 
-      if (k>=ITAG_LEN) wblog(FL,
-         "ERR %s() index out of bounds (%d/%d)",FCT,k,ITAG_LEN);
-      return ((char*)(&t))[k] & char(128); 
-   };
+   itag_& SetFlags(unsigned l=-1, char check=1); 
 
-   itag_& UnsetFlag(unsigned k) { 
-      if (k>=ITAG_LEN) wblog(FL,
-         "ERR %s() index out of bounds (%d/%d)",FCT,k,ITAG_LEN);
-      ((char*)(&t))[k] &= ~char(128);
+   itag_& UnsetFlag(unsigned l) { 
+      if (l>=ITAG_LEN) wblog(FL,
+         "ERR %s() index out of bounds (%d/%d)",FCT,l,ITAG_LEN);
+      ((char*)(&t))[l] &= 127; 
       return *this;
    };
 
    itag_& UnsetFlags() {
-      unsigned k=1, n=ITAG_LEN;
-      char *q = (char*)(&t), c128=char(128);
-      for (; k<n; ++k) { if (q[k]<0) {
-         if (k>1) wblog(FL,
-            "WRN %s() got itag_ flag at %d/%d",FCT,k,n);
-         q[k]+=c128;
+      char *s = (char*)(&t);
+      for (unsigned l=1; l<ITAG_LEN; ++l) { if (s[l]<0) {
+         s[l]+=char(128);  
       }}
       return *this;
+   };
+
+   bool GotFlag(unsigned l) const { 
+      if (l>=ITAG_LEN) wblog(FL,
+         "ERR %s() index out of bounds (%d/%d)",FCT,l,ITAG_LEN);
+      return ( ((char*)(&t))[l] < 0 ); 
+   };
+
+   unsigned GotFlags(unsigned l=1) const {
+      unsigned q=0; 
+      const char *s = (char*)(&t);
+      for (; l<ITAG_LEN; ++l) { if (s[l]<0) { q|=(1<<l); }}
+      return q;
    };
 
    itag_& SetSI( const char *F, int L, 
@@ -738,6 +739,8 @@ class itag_ {
    itag_& AppendChar(char q, const char *qs=NULL);
    itag_& PrependChar(char q, const char *qs=NULL);
    int CheckFirstChar(char q, const char *qs=NULL);
+
+   itag_& MarkDual(char q='\'');
 
    itag_& SetK() {
       if (CheckFirstChar('K',"AEX")>0) return *this;
@@ -763,10 +766,28 @@ class itag_ {
 
    IDT t;
 
+   static void Reset(unsigned char q=-1) {
+      if (char(q)<0) {
+         if (itag_::flag_id & 2) { return; }
+         else { q=4; }
+      }
+      if (q&1) wblog(FL,"ERR %s() invalid q=%d",FCT,q);
+      if (q<4) { q+=4; } 
+      itag_::flag_id=q;
+   };
+
+   static void iter_flag_id() {
+      if (!(itag_::flag_id+=4)) { itag_::flag_id+=4; }
+   };
+
  protected: 
  private:
 
+   static unsigned char flag_id;
+
 };
+
+   unsigned char itag_::flag_id = 4;
 
 class iTags : public wbvector<itag_> { 
 
@@ -866,6 +887,15 @@ class iTags : public wbvector<itag_> {
       }; return *this;
    };
 
+   iTags& SetFlags( 
+      const char* F, int L, unsigned k, unsigned l=-1, char check=1) {
+      if (len) {
+         if (k>=len) wblog(F_L,
+            "ERR %s() index out of bounds (%d/%d)",FCT,k,len);
+         data[k].SetFlags(l,check);
+      }; return *this;
+   };
+
    iTags& UnsetFlag(const char* F, int L, unsigned k, unsigned l) {
       if (len)  {
          if (k>=len) wblog(F_L,
@@ -875,8 +905,9 @@ class iTags : public wbvector<itag_> {
    };
 
    iTags& UnsetFlags() {
-      for (unsigned k=0; k<len; ++k) data[k].UnsetFlags();
-      return *this;
+      for (unsigned k=0; k<len; ++k) {
+         data[k].UnsetFlags(); 
+      }; return *this;
    };
 
    iTags& init_tags() {  
@@ -914,7 +945,7 @@ class iTags : public wbvector<itag_> {
       iTags &B, const ctrIdx &ib,
       char all=1, 
       char sgn=0  
-   ) const;
+   );
 
    bool sameConj(const iTags &b) const { 
       if (len!=b.len) { return 0; }
@@ -986,7 +1017,7 @@ class iTags : public wbvector<itag_> {
       return len;
    };
 
-   wbstring toStr(char vflag=0) const;
+   wbstring toStr(char vflag=1) const;
 
    const char* toStrk( 
       char *sout, unsigned l, unsigned k,
@@ -1040,7 +1071,7 @@ class iTags : public wbvector<itag_> {
          for (i=0; i<len; ++i)
          for (j=i+1; j<len; ++j) if (data[i].t==data[j].t) {
             if (F) wblog(F,L,
-               "WRN got non-unique itags! (%s)",STR_(this));
+               "WRN got non-unique itags (%s)",STR_(this));
             return 0;
          }
       }

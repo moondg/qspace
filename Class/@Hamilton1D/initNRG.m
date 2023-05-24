@@ -157,6 +157,14 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
            if xor(q(1),q(2)), wberr('inconsistent hconj setting (%/%g)',q);
            elseif any(q<0), wberr('invalid hconj setting (%/%g)',q); end
         end
+
+        qfmt=getqfmt(QSpace(E(1)));
+        Dfmt={'%3g','%4g','%5g'};
+
+        q=getDimQS(E(1));
+        if size(q,1)>1
+             Dstr='  DK*/  DX*   (DK)';
+        else Dstr='  DK /  DX'; end
      end
 
      Xk.AK=setitags(Xk.AK,'-A',k);
@@ -202,8 +210,8 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
 
         nd=numel(EKt.data);
            q0=zeros(1,nd);
-           for i=1:nd, q0=min(EKt.data{i}); end
-        q0=EKt.Q{1}(find(q0<=min(q0)+1E-12),:);
+           for i=1:nd, q0(i)=min(EKt.data{i}); end
+        q0=EKt.Q{1}(find(q0==min(q0),1),:);
 
         qk=EKt.Q{1}; qk=mat2cell(qk,size(qk,1),rs);
         qd=zeros(1,ns);
@@ -215,15 +223,12 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
 
         if vflag || any(qd<=1), d=getDimQS(Ie.AK);
 
-           if vflag>1, f={'%3g','%4g'}; else f={'%2g','%3g'}; end
-           s=sprintf([f{1} '/' f{1}],d(1,[2 1]));
-           if size(d,1)>1
-              s=[s ' ' sprintf(f{2},d(end,1))];
-           end
+           s=sprintf([Dfmt{1} '/' Dfmt{2}],d(1,[2 1])); if size(d,1)>1
+           s=[s '  ' sprintf(Dfmt{3},d(end,1))];      end
 
            s=sprintf('%5g  %+-10.6g  %12s %9s   %s', k, ee(1)/(L-k+1), ...
-            ['(' mat2str2(q0,'fmt','%g','rowsep','; ','-f') ')'],...
-            ['{' vec2str(qd,'-f','sep',',') '}'], s);
+            ['(' sprintf(qfmt,q0) ')'],...
+            ['{' vec2str(qd,'fmt','%2g','-f','sep',',') '}'], s);
 
            if gotsym && any(qd<=1)
               s=[s '  ']; if D>2, s=[s 'WRN ']; end
@@ -242,7 +247,7 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
               wblog('%s',s); % if k<=1, fprintf(1,'\n'); end
            else
               if k==L-1, fprintf(1,...
-                '\n  nrg_k  energy_e0     qset_q0 w/num-qsectors DK/DX (DK*)\n\n');
+                '\n  nrg_k  energy_e0        qset_q0 #qsectors %s\n\n',Dstr);
               end
               fprintf(1,'  %s\n',s);
            end

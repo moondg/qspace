@@ -23,8 +23,7 @@ function qfmt=get_q_fmt(qtype,r,m)
             case 'Sp', q{2,i}=repmat('%X',1,n/2);
             case 'SO', q{2,i}=repmat('%X',1,floor(n/2));
             case {'Z','P'}, q{2,i}='%2g';
-            otherwise
-            error('Wb:ERR','\n   ERR unexpected symmetry %s',q{1,i});
+            otherwise wbdie('unexpected symmetry %s',q{1,i});
          end
       end
    end

@@ -2116,7 +2116,7 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::initIdentityCG(
    ctime=Wb::getTimeNow(); 
    if (!zflag) return *this;
 
-   itags[1].Conj(); 
+   itags[1].Conj().MarkDual(); 
 
    for (i=0; i<DATA.len; ++i) {
       for (qij=QIDX.rec(i), j=0; j<qtype.len; ++j) {
@@ -2829,17 +2829,19 @@ int QSpace<TQ,TD>::ExpandOM_(const char *F, int L,
       if (!Ai.sameSize(Bi)) wblog(FL,"ERR %s() got size difference "
          "(%d,%d): %s / %s", FCT,ia+1,ib+1,SSTR(Ai),SSTR(Bi));
 
-      for (j=0; j<nsym; ++j) {
+      for (j=0; j<nsym; ++j) { 
          const CRef<TQ> &a=CGR(ia,j), &b=B.CGR(ib,j);
-         n1=a.wnumel(); n2=b.wnumel(); if (n1>1 || n2>1) { break; }
+         n1=a.wnumel(); n2=b.wnumel();
+         if (n1>1 || n2>1) { break; } 
          if (n1 && n2) { 
-            if (fabs(a.cgw[0]-b.cgw[0])>1e-12) { wblog(FL, 
+            if (fabs(a.cgw[0]-b.cgw[0])>1e-12) { wblog(FL,
                "ERR %s() cgw normalization mismatch %.5g / %.5g @ %.3g",
                FCT,a.cgw[0],b.cgw[0],fabs(a.cgw[0]-b.cgw[0]));
             }
          }
       }
-      if (j>=nsym) { return 0; }
+      if (j>=nsym)
+           { return 0; } 
    }
 
    wbvector<unsigned> Sx(nsym), jOM(nsym); 
@@ -4095,6 +4097,8 @@ double QSpace<TQ,TD>::contract(const char *F, int L,
       wblog(FL,"CTR [A @ %s]*[B @ %s] %ld entries (avg. %.1f per QC block)",
       STR(ica),STR(icb),Dsum,Dsum/double(D.len));
    }
+
+   itag_::Reset();
 
    #pragma omp parallel for num_threads(np)
     for (ic=0; ic<nc; ++ic) { if (!ex) {
