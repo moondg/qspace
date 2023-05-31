@@ -137,5 +137,6 @@ void mexFunction(
       printf("\n   Issuing ..."); doflush();
       mexErrMsgIdAndTxt("Wb:MEX:printfc","");
    }
+   aclu.Check();
 };
 

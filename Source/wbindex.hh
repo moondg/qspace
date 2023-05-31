@@ -777,7 +777,8 @@ class itag_ {
    };
 
    static void iter_flag_id() {
-      if (!(itag_::flag_id+=4)) { itag_::flag_id+=4; }
+      #pragma omp critical (iter_flag_id__)
+      if ((itag_::flag_id+=4)<4) { itag_::flag_id+=4; }
    };
 
  protected: 

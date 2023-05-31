@@ -1968,8 +1968,8 @@ class QSet {
     bool isEmpty(char lflag=0) const {
        if (qs.len || qdir.len) {
           if ((t==QTYPE_UNKNOWN && !lflag) || qs.len!=qdir.len*t.qlen())
-             wblog(FL,"ERR %s() got invalid QSet: %s (%d/%d*%d)",
-             FCT,STR_(this), qs.len, qdir.len, t.qlen());
+             wblog(FL,"ERR %s() mismatch itag / QSet %s (%d*%d / %d)",
+             FCT,STR_(this), qdir.len, t.qlen(), qs.len);
           return 0;
        }
        return (t==QTYPE_UNKNOWN || lflag ? 1 : 0);

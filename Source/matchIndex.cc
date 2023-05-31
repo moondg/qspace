@@ -112,5 +112,6 @@ void mexFunction(
 
 }  catch (Wb::LogException &e) { ExitMsg(e.istr); }
    catch (...) { ExitMsg("caught exception in matchIndex"); }
+   aclu.Check();
 };
 

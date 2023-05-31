@@ -704,6 +704,10 @@ class CleanUp {
        gpara.init();
     };
 
+   void Check() {
+      wblog::check_ERR_pending();
+   };
+
    ~CleanUp() {
        wblog::myIO.clear();
        if (gwb_Profs.size()) { Wb::save_and_clear_Profiling(); }

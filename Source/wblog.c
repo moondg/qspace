@@ -949,7 +949,7 @@ int wblogs(
     if (!Hflag && (eflag || wflag)) { LKF.flush(); }
    #endif
 
-   if (eflag && !Hflag) {
+   if (eflag) { if (Hflag) { ++wblog::ERR_pending; } else {
       #ifdef DBSTOP
       {  unsigned n=wblog::myIO.size(); 
          if (n) {
@@ -963,8 +963,7 @@ int wblogs(
       }
       #endif
       throw Wb::LogException(ERR); 
-   }
-
+   }}
 #ifdef DBSTOP
    else if (wflag) {
       Sb.print(FL,"DBSTOP");
@@ -972,7 +971,17 @@ int wblogs(
    }
 #endif
 
+   if (!Hflag) { wblog::check_ERR_pending(); } 
+
    return rval;
+};
+
+void wblog::check_ERR_pending() {
+   if (wblog::ERR_pending) { char s[32];
+      int q=wblog::ERR_pending; wblog::ERR_pending=0;
+      snprintf(s,32,"pending error%s (e=%d)",q>1? "s":"",q);
+      ExitMsg(s); 
+   }
 };
 
 unsigned wblog_checktag(const char *fmt, const char *t0, char *tag) {

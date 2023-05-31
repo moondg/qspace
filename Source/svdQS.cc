@@ -87,6 +87,7 @@ void mexFunction(
 
 }  catch (Wb::LogException &e) { ExitMsg(e.istr); }
    catch (...) { ExitMsg("caught exception in svdQS"); }
+   aclu.Check();
 };
 
 template<class T1, class T2, class T3>

@@ -93,5 +93,6 @@ void mexFunction(
 
 }  catch (Wb::LogException &e) { ExitMsg(e.istr); }
    catch (...) { ExitMsg("caught exception in setupRCStore"); }
+   aclu.Check();
 };
 

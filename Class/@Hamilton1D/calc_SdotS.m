@@ -69,7 +69,7 @@ function [ss,Is]=calc_SdotS(HAM,varargin)
      end
      if NPsi<=1, wberr('got NPsi=%g !?',NPsi); end
 
-     EPsi=getIdentity3(Ak,4,'PSI','--rho');
+     EPsi=getIdentity3(Ak,4,'PSI','--rho'); % tag 'PSI', '--rho' => normalize
 
      ss=cell(L,nops);
   else

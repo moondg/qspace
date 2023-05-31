@@ -11,13 +11,15 @@ function displ(varargin)
      if nargin || nargout, wberr('invalid usage'), end, return
   end
 
-  format long
+  format longg
 
-  for i=1:nargin
-     if ischar(varargin{i})
-        evalin('caller',sprintf('disp(%s)',varargin{i}))
+  for i=1:nargin, x=varargin{i};
+     if ischar(x)
+        evalin('caller',sprintf('disp(%s)',x))
+     elseif numel(x)==1 && isfloat(x)
+        disp(sprintf('\n   %.16g\n',x));
      else
-        disp(varargin{i})
+        disp(x)
      end
   end
 

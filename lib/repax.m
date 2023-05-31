@@ -7,6 +7,11 @@ function ah = repax(varargin)
 
   nflag=0; ah1=[]; ah2=[];
 
+  if nargin<2, helpthis
+     if nargin || nargout, wberr('invalid usage'), end
+     return
+  end
+
   if nargin==2
      ah1=varargin{1};
      ah2=varargin{2};

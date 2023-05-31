@@ -36,6 +36,7 @@ void mexFunction(
 
 }  catch (Wb::LogException &e) { ExitMsg(e.istr); }
    catch (...) { ExitMsg("caught exception in wbtrace"); }
+   aclu.Check();
 };
 
 template<class T>

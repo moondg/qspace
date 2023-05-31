@@ -526,10 +526,10 @@ int Wb::GetNumThreads(const char *F, int L, int &n, const char *name) {
           "ERR %s() invalid value for env %s (i=%d)",FCT,name,i);
        return q;
     }
-    if (q<0 || double(int(q))!=q) wblog1(F_L,
-       "ERR %s() invalid value for env %s (%g)",FCT,name,q);
-    if (q>ncpu) wblog1(F_L,"ERR %s() "
-       "env %s=%g exceeds number of cores (%d)",FCT,name,q,ncpu);
+    if (q<0 || double(int(q))!=q) wblog1(PF_L,
+       "ERR %s() invalid value %g\nfor env %s",FCT,q,name);
+    if (q>ncpu) wblog1(PF_L,"ERR %s() value exceeds number of cores\n"
+       "env %s = %g / %d",FCT,name,q,ncpu);
 
     if (n!=q) { i=0;
 

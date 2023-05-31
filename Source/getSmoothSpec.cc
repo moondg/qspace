@@ -44,6 +44,7 @@ void mexFunction(
 
 }  catch (Wb::LogException &e) { ExitMsg(e.istr); }
    catch (...) { ExitMsg("caught exception in getSmoothSpec"); }
+   aclu.Check();
 };
 
 template <class TS>

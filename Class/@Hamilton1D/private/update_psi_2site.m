@@ -484,9 +484,9 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
   end
 
   sc={'!1','!2','!3'}; Rfac=0;
-  if numel(Psi.Q)>3
+  if numel(Psi.Q)>2 && isempty(regexp(Psi.info.itags{end},'\d')) % `Psi'
      q=getDimQS(Psi); q=q(:,end);
-     if q(1,end)>1, sc={'23','13','12'}; Rfac=1/q(end); end
+     if q(end)>1, sc={'23','13','12'}; Rfac=1/q(end); end
   end
 
 % add reduced density matrix 'rho' for local state space

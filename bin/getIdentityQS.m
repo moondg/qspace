@@ -3,10 +3,12 @@
 %     get plain identity operator from given QSpace.
 %
 %   '-0'  this generates the 1J symbol, i.e. an identity operator
-%         with all indizes inward. This can be used to "revert
-%         arrows", and subsequently also to avoid dragging along
-%         a scalar singleton index if the total symmetry of a
-%         given wave function has q=0.
+%         with all indices inward. This can be used to "revert
+%         arrows", with the effect that the second index
+%         carries the dual state space with respect to the first
+%         index. For this reason, the itag, as inherited from A @ i1,
+%         if non-empty, is also changed by flagging with a
+%         trailing prime (').
 %
 %  Usage 2: A=getIdentityQS(A [,i1 [,at]], B [,i2 [,bt] itag, perm]);
 %

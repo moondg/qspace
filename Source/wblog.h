@@ -278,6 +278,9 @@ class stdio_buf {
 
    std::deque<stdio_buf> myIO;
 
+   void check_ERR_pending();
+   int ERR_pending=0; 
+
 }; 
 
    void wbSetLogLevel(unsigned l);

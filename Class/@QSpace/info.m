@@ -160,12 +160,17 @@ function info_1(A,s,cflag)
   elseif scalar, s{end+1}=[ class(A.data{1}), ' scalar'];
   end
 
-  if ~isempty(s), s(2,:)={',   '}; s=s([2 1],:); end
+  if ~isempty(s), s(2,:)={',  '}; s=s([2 1],:); s{1}(1)=[]; end
   s=cat(2,s{:});
 
-  if ~isfield(A.info,'qtype')
-       fprintf(1,'  (all abelian)%s\n',s);
-  else fprintf(1,'  having ''%s''%s\n',A.info.qtype,s); end
+  if ~isfield(A.info,'qtype') || isempty(A.info.qtype), s={'',s};
+     if ~isempty(A.Q) && size(A.Q{1},2)>1
+          s{1}='all abelian U(1)';
+     else s{1}='abelian U(1)'; end
+     fprintf(1,'  %s%s\n',s{:});
+  else
+     fprintf(1,'  having ''%s''%s\n',A.info.qtype,s);
+  end
 
   r=length(A.Q);
   s=A.data; s=whos('s'); s=num2str2(s.bytes,'-b');
