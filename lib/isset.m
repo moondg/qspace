@@ -3,12 +3,17 @@ function [i,x]=isset(vn,i0)
 %
 %    check whether variable with name 'vn' is defined in current workspace.
 %    if variable is not found, then check value of i0, instead, if specified.
-%
 %    if vn is numeric, this returns 1 if vn is non-empty and != 0.
 %
-% Wb,Feb03,10
+% Conditional usage where vn is epected to contain an expression
+%
+%    If i0 is set to '--eval' then for the case that vn is a string
+%    it is evaluated in the workspace, and the returned value is
+%    considered instead of vn.
+%
+% Wb,Feb03,10 ; Wb,Jun14,23
 
-% tags: gotq exists
+% tags: gotq exists istrue iscond
 
   if nargin==1 && isnumeric(vn)
      if ~isempty(vn) && (numel(vn)>1 || vn), i=1; else i=0; end
@@ -20,8 +25,9 @@ function [i,x]=isset(vn,i0)
      return
   end
 
-  if ~iscell(vn), vn={vn}; end; nv=numel(vn);
-  if nargin<2, i0=[]; end
+  if ~iscell(vn), vn={vn}; end; nv=numel(vn); xflag=0;
+  if nargin<2, i0=[];
+  elseif isequal(i0,'--eval'), xflag=1; i0=''; end
 
   qx=cell(nv,2);
   for i=1:nv, v=vn{i};
@@ -33,10 +39,19 @@ function [i,x]=isset(vn,i0)
         ''',''var''), setuser(groot,''' q{1} ''', ' v '); end']);
      x=getuser(groot,q{1},'-rm');
 
-     if isequal(x,q{2}), x=i0; end
+     if isequal(x,q{2}), x=i0;
+     elseif ischar(x) && xflag
+        try
+           evalin('caller',['setuser(groot,''' q{1} ''', eval(' v '));']);
+           x=getuser(groot,q{1},'-rm');
+        catch me
+           wblog('WRN','failed to evaluate expression %s = ''%s''',v,x); 
+        end
+     end
+
      if isempty(x) || isequal(x,0) || isequal(x,'0') && ischar(x)
-     qx{i,1}=0; else qx{i,1}=1; end
-     qx{i,2}=x;
+          qx{i,1}=0;
+     else qx{i,1}=1; end ; qx{i,2}=x;
   end
 
   if nv==1, x=qx{2}; i=qx{1}; 

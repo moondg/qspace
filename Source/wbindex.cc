@@ -518,13 +518,18 @@ itag_& itag_::SetFlags(unsigned l, char check) {
 
    char *s = (char*)(&t);
 
+   if (l==1) { s[0] |= 128; return *this; }
+
    if (int(l)<0) { unsigned q=(int(l)==-1);
       l=( itag_::flag_id & ~((unsigned char)3) ); 
       if (q) { itag_::iter_flag_id(); }
-   }
 
-   if (l==1) { s[0] |= 128; return *this; }
-   if (int(l)<=0) { wblog(FL,"ERR %s() invalid usage (l=%d)",FCT,l); }
+      if (int(l)<=0) wblog(FL,
+      "ERR %s() invalid usage (l=%d / %d; %d)",FCT,l,itag_::flag_id,q);
+   }
+   else if (int(l)<=0) {
+      wblog(FL,"ERR %s() invalid usage (l=%d)",FCT,l);
+   }
 
    unsigned i=0, n=ITAG_LEN;
 

@@ -26,40 +26,51 @@ function [A,nsp]=split_ops(A,varargin)
     elseif getopt('--vec'  ), vectr=1;
     elseif getopt('--cell' ), cflag=1; end
 
-  getopt('check_error');
+  idx=getopt('get_last',[]);
+
+  if ~isempty(idx) && (numel(idx)~=1 || idx<1)
+     wbdie('invalid usage (idx)');
+  end
 
   sA=size(A); A=reshape(A,[],1); nA=numel(A); dd=repmat(-1,1,nA);
   Ac=cell(1,nA); nsp=ones(1,nA);
 
   for k=1:nA
+     Ak=A(k,1); rk=numel(Ak.Q); l=0;
+
      if oflag && isempty(A(k,1).info.otype)
+        if rk>3, wbdie('invalid usage (got rank-%d tensor)',rk); end
         A(k,1).info.otype='operator';
      end
 
-     Ak=A(k,1); rk=numel(Ak.Q);
-     if rk==3
-        [q3,i3,d3]=uniquerows(Ak.Q{3}); n3=numel(d3); dd(k)=n3;
-        if n3>1, nsp(k)=n3;
-           for i=1:n3
-               A(k,i)=getsub(Ak,i3{i});
-               A(k,i).info.otype=Ak.info.otype;
-           end
-           if sflag
-              iz=find(sum(q3.^2,2)<1E-8);
-              if ~isempty(iz), i=1:n3; i(iz)=[];
-                 A(k,1:n3)=A(k,[iz,i]);
-              end
-           end
-           if cflag || vectr, Ac{k}=A(k,1:n3); end
-        end
+     if isempty(idx)
+        if rk==3, l=3;
+        elseif rk~=2, wbdie('invalid usage (got rank-%d tensor)',rk); end
+     elseif idx<=rk, l=idx;
+     else wbdie('invalid usage (idx=%d/%d out of bounds)',idx,rk); 
+     end
 
-     elseif rk~=2, wblog('WRN','got rank-%g QSpace(%g)',rk,k);
+     if ~l, continue; end
+
+     [q3,i3,d3]=uniquerows(Ak.Q{l}); n3=numel(d3); dd(k)=n3;
+     if n3>1, nsp(k)=n3;
+        for i=1:n3
+            A(k,i)=getsub(Ak,i3{i});
+            A(k,i).info.otype=Ak.info.otype;
+        end
+        if sflag
+           iz=find(sum(q3.^2,2)<1E-8);
+           if ~isempty(iz), i=1:n3; i(iz)=[];
+              A(k,1:n3)=A(k,[iz,i]);
+           end
+        end
+        if cflag || vectr, Ac{k}=A(k,1:n3); end
      end
   end
 
   e=norm(diff(dd));
   if e
-     wblog('WRN','got composite operators with different symmetry labels');
+    wblog('WRN','got composite operators with different symmetry labels');
   end
 
   if     trans, A=builtin('transpose',A);

@@ -432,8 +432,9 @@ void Wb::LogException::report(const char *F, int L, const char *func) {
       l=snprintf(s,n,
          "%s ERR %s() at nerr=%d",shortFL(F_L),func?func:FCT,count);
       if (l<n) {
-         l+=snprintf(s+l,n-l," (%s %d/%d)",
-         (ith<=1 && nth<=1) ? "serial":"parallel section", ith,nth);
+         if (ith<=1 && nth<=1)
+              l+=snprintf(s+l,n-l," (serial @ %d/%d)",ith,nth);
+         else l+=snprintf(s+l,n-l," (parallel section thread %d/%d)",ith,nth);
       }
 
       if (type)  { PRINTF("\n%s\n\n",s); throw(*this); } else
@@ -454,9 +455,8 @@ wbstring Wb::LogException::toStr() const {
       else { l+=snprintf(s+l,n-l,"type=%d !?",unsigned(type)); }
    }
    if (l<n) {
-     l+=snprintf(s+l,n-l,", %s (%d/%d; n=%d)",
-        ith<=1 && nth<=1 ? "serial":"parallel section",
-        ith,nth,count);
+     l+=snprintf(s+l,n-l,", %s (i=%d/%d; nerr=%d)",
+     ith<=1 && nth<=1 ? "serial":"parallel section", ith,nth,count);
    }
    if (l<n) {
       if (nrefs)

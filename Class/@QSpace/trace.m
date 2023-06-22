@@ -13,36 +13,49 @@ function x=trace(A,I,varargin)
 
    if ~nargin
       eval(['help ' mfilename]);
-      if nargin || nargout, error('Wb:ERR','invalid usage'), end, return
+      if nargin || nargout, wbdie('invalid usage'), end, return
    end
 
    getopt('init',varargin);
       Qflag=getopt('-Q');
    getopt('check_error');
 
+   q=numel(A);
+   if q~=1, wbdie('invalid usage (%d entries in A)',q); end
+
    if isscalar(A)
       if nargin>1 && ~isempty(I)
-      error('Wb:ERR','cannot contract scalar'); end
+      wbdie('cannot contract scalar'); end
       x=A.data{1}; return
    elseif isempty(A.Q)
       if Qflag, x=QSpace({},{0}); else x=0; end
       return
    end
 
-   r=rank(A); cgflag=gotCGS(A); isd=isdiag(A);
+   r=rank(A); cgflag=gotCGS(A); [isd,~]=isdiag(A);
 
    if nargin<2, x=0;
-      if mod(r,2), error('Wb:ERR',...
-      '%s requires even-rank object (%x).',mfilename,r); end
+      if mod(r,2)
+         wbdie('%s requires even-rank object (%d)',mfilename,r); end
 
-      Q1=cat(2,A.Q{1:r/2});
-      Q2=cat(2,A.Q{r/2+1:r});
+      if r>2
+         d=getDimQS(A); d=d(end,:);
+         if any(d(1:2)~=1) && all(d(3:end)==1), i1=1; i2=2;
+         else
+            i1=1:2:r; i2=2:2:r;
+            if ~isequal(d(i1),d(i2)), i1=1:r/2; i2=r/2+1:r; end
+         end
+      else i1=1; i2=2;
+      end
+
+      Q1=cat(2,A.Q{i1});
+      Q2=cat(2,A.Q{i2});
 
       for i=1:length(A.data)
          if isequal(Q1(i,:), Q2(i,:)), d=A.data{i}; s=size(d); q=numel(s);
             if q>2, if mod(q,2), s(end+1)=1; q=q+1; end
                 q=q/2; if ~isequal(s(1:q),s(q+1:end))
-                error('Wb:ERR','operator dimensions must be symmetric'); end
+                wbdie('operator dimensions must be symmetric'); end
                 d=reshape(d,prod(s(1:q)),[]);
             end
             if isd>1
@@ -56,7 +69,7 @@ function x=trace(A,I,varargin)
                      q=mpfr2dec(cg(j).cgw) .* mpfr2dec(cg(j).cgt);
                      d=d*sum(q(:));
                   elseif ~isempty(cg(j).type) || ~isempty(cg(j).qset)
-                     error('Wb:ERR','\n   ERR invalid CGR_ABELIAN');
+                     wbdie('invalid CGR_ABELIAN');
                   end
                end
             end
@@ -74,6 +87,6 @@ function x=trace(A,I,varargin)
  % see Archive/trace_141112.m for old m-script implementation
  % Wb,Nov12,14
 
-   error('Wb:ERR','\n   ERR invalid usage');
+   wbdie('invalid usage');
 end
 

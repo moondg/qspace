@@ -969,11 +969,13 @@ void QSpace<TQ,TD>::getQDim(unsigned k,
    wbindex Ig;
    wbperm P;
 
+   wbMatrix<TQ> QX;
+
    if (k>=r) wblog(FL,"ERR %s() dim out of bounds (%d/%d)",FCT,k+1,r);
    if (QIDX.dim1!=n) wblog(FL,
       "ERR %s() QSpace inconsistency (%d/%d)",FCT,QIDX.dim1,n);
 
-   getQsub(k,Q).groupRecs(P,D,-1,1,&Ig);
+   getQsub(k,Q).groupRecs(P,D,-1,1,&Ig,&QX);
    SD.init(D.len).set(-1);
 
    if (r>2 && permitsOM()) { ++r_; }

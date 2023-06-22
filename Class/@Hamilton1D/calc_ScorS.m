@@ -121,7 +121,7 @@ for iPsi=IPsi
      if iPsi>0
         wblog(' * ','computing correlations based on state %d/%d',iPsi,nPsi);
 
-        e0=diag(Eg,'-d'); e0=e0(iPsi);
+        e0=sort(diag(Eg,'-d')); e0=e0(iPsi);
         for i=1:nd, j=find(Eg.data{i}==e0,1);
            if ~isempty(j)
               Rc=getsub(Eg,i);

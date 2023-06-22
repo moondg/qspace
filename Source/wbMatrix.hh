@@ -1150,7 +1150,8 @@ class wbMatrix {
        wbperm &P, WBINDEX &d,
        size_t m=-1,
        char lex=1,
-       wbindex *Ig=NULL
+       wbindex *Ig=NULL,
+       wbMatrix<T> *X=NULL
     );
 
     void groupRecs(wbindex &Ig, widx_t m=-1, char lex=1) {

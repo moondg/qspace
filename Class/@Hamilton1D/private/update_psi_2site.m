@@ -483,10 +483,10 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
      sprintf('./tmp_%02g_%02g_%s1_Qmatch',k1,k2,iff(kdir>0,'lr','rl')));
   end
 
-  sc={'!1','!2','!3'}; Rfac=0;
+  sc={'!1','!2','!3'};
   if numel(Psi.Q)>2 && isempty(regexp(Psi.info.itags{end},'\d')) % `Psi'
      q=getDimQS(Psi); q=q(:,end);
-     if q(end)>1, sc={'23','13','12'}; Rfac=1/q(end); end
+     if q(end)>1, sc={'23','13','12'}; end
   end
 
 % add reduced density matrix 'rho' for local state space
@@ -501,7 +501,6 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
      rho=reduce_rho_q0(Psi,sc{3},Eg);
 
      Rho=reduce_rho_q0(Psi,sc{1},Eg);
-     if Rfac, Rho=Rfac*Rho; end
 
      I2=X2.info;
         if k2<L, l=2*max([0, isw-1])+1; else l=max([1, isw]); end
@@ -520,7 +519,6 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
 
      rho=reduce_rho_q0(Psi,sc{3},Eg);
      Rho=reduce_rho_q0(Psi,sc{2},Eg);
-     if Rfac, Rho=Rfac*Rho; end
 
      I1=X1.info;
         if k1>1, l=2*max([0, isw-1])+2; else l=max([1, isw])+1; end

@@ -620,7 +620,7 @@ void Wb::print_backtrace(const char *F, int L, const char *istr) {
    printf("\n# %s: stack backtrace",shortFL(F_L)); 
       if (istr && istr[0]) { printf(" %s",istr); }
       printf(" (%d frame%s)\n",n, n!=1? "s":"");
-   printf("# hint: use addr2line to decode this\n\n");
+   printf("# hint: may use addr2line to decode this\n\n");
 
    if (ss) {
       for (i=0; i<n; ++i) {

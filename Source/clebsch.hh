@@ -1965,14 +1965,22 @@ class QSet {
     explicit operator bool() const { return !isEmpty(); } 
     bool operator! () const { return isEmpty(); }
 
-    bool isEmpty(char lflag=0) const {
+    bool isEmpty(char check=3) const {
+       if (check>3) {
+          if (check=='c'              ) { check=2; } else
+          if (check=='C' || check=='!') { check=3; } else
+          wblog(FL,"ERR %s() invalid flag=%s",FCT,cSTR(check));
+       }
+
        if (qs.len || qdir.len) {
-          if ((t==QTYPE_UNKNOWN && !lflag) || qs.len!=qdir.len*t.qlen())
+          if ( ((check&1) && t==QTYPE_UNKNOWN) ||
+               ((check&2) && qs.len!=qdir.len*t.qlen()) ) {
              wblog(FL,"ERR %s() mismatch itag / QSet %s (%d*%d / %d)",
              FCT,STR_(this), qdir.len, t.qlen(), qs.len);
+          }
           return 0;
        }
-       return (t==QTYPE_UNKNOWN || lflag ? 1 : 0);
+       return (t==QTYPE_UNKNOWN ? 1 : 0);
     };
 
     bool gotRCData() const;
@@ -2480,8 +2488,8 @@ class CData : public QSet<TQ> {
     bool operator!=(const cgdStatus &b) const { return (cstat!=b); };
     bool operator==(const cgdStatus &b) const { return (cstat==b); };
 
-    bool isEmpty(char lflag=0) const {
-       return (QSet<TQ>::isEmpty(lflag) && cgd.isEmpty());
+    bool isEmpty(char check=3) const {
+       return (QSet<TQ>::isEmpty(check) && cgd.isEmpty());
     };
 
     bool isAbelian(const char *F=NULL, int L=0) const {

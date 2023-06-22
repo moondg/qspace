@@ -186,7 +186,7 @@ function display_1(A,m,Eflag,vflag,varargin)
      sfmt=sprintf('%%-%ds', 5+4*length(A.Q));
   end
 
-  fstr={ '%11.4g'
+  fstr={ '%11.6g'
          '  %-11s  %s%s\n'
          '  %s\n' }; % '  %8s\n'
 

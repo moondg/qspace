@@ -76,7 +76,7 @@ function [A,varargout] = QSpace(varargin)
         d=[varargin{:}];
         A=repmat(class(get_struct(),'QSpace'),d);
         return
-     else wbdie('invalid usage'); end
+     end
   end
 
   done=0;

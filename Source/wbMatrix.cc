@@ -1669,10 +1669,11 @@ void wbMatrix<T>::groupRecs(
    wbperm &P, WBINDEX &D,
    size_t m,
    char lex,
-   wbindex *Ig
+   wbindex *Ig,
+   wbMatrix<T> *X
 ){
-   if (dim1==0) { P.init(); D.init(); return; }
-   if (dim2==0) {
+   if (!dim1) { P.init(); D.init(); return; }
+   if (!dim2) {
       P.init(dim1); D.init(1); D[0]=dim1;
       if (Ig) { Ig->init(dim1).set(0); }
 
@@ -1686,20 +1687,25 @@ void wbMatrix<T>::groupRecs(
    Wb::Clock clk("mat:sort:recs",0);
  #endif
 
+   if (X) {
+     if (dim1>1) { X->init(*this); } else { X=NULL; }
+   }
+
    if (!isSorted(+1,lex)) 
-        SortRecs(P,+1,lex); 
-   else P.init(dim1);
+        { SortRecs(P,+1,lex); } 
+   else { P.init(dim1); }
 
  #ifdef WB_CLK_SPARSE
    clk.Switch("mat:group:recs"); 
  #endif
 
-   if (int(m)<0) { groupSortedRecs(D,0,-1,lex); }
-   else {
-      if (m==0) {
-         D.init(1); D[0]=dim1;
-      }
-      else groupSortedRecs(D,'k',m,lex);
+   if (int(m)<0) { groupSortedRecs(D, 0,-1,lex); }
+   else if (m) { groupSortedRecs(D,'k',m,lex); }
+   else { D.init(1); D[0]=dim1; }
+
+   if (X && (dim1==X->dim1)) { X->save2(*this);
+      P.init(dim1);
+      D.init2val(dim1,1);
    }
 
    if (Ig) {

@@ -1412,21 +1412,29 @@ CDATA_TQ& CStore<TQ>::getBUF(
    int q, gotnew=0;
    CDATA_TQ *Cb=NULL; 
 
-  #ifndef WB_SKIP_ASSERT
-   if (Q.isEmpty()) wblog(F_L, 
-      "ERR %s() got empty QSet",FCT);
+#ifndef WB_SKIP_ASSERT
+   if (Q.isEmpty()) wblog(F_L,"ERR %s() got empty QSet",FCT);
    if (!Q.isSorted()) wblog(F_L,
       "ERR %s() CStore requires sorted QSet\n%s",FCT,STR(Q));
-  #endif
+#endif
 
    {
 #ifdef QS_USING_OMP
       Wb::ompGuard gLK(CS_buf);
 #endif
       auto it=BUF.find(Q);
-      if (it!=BUF.end())
-           { Cb=&(it->second); if (Cb->isEmpty()) gotnew|=2; }
+      if (it!=BUF.end()) { Cb=&(it->second);
+         if (Cb->isEmpty(0)) { gotnew|=2; }
+      }
       else { Cb=&(BUF[Q]); gotnew|=1; }
+
+      if (Q.t.isAbelian()) { 
+         if (gotnew || Cb->isEmpty()) {
+            Cb->initAbelian(Q);
+            Cb->setuser_BUF();
+         }
+         return *Cb;
+      }
    }
 
 #ifdef QS_USING_OMP
@@ -1437,17 +1445,16 @@ CDATA_TQ& CStore<TQ>::getBUF(
    if (gotnew && !Cb->isEmpty()) { gotnew=0; }
 #endif
 
+   if (gotnew) { if (!(loadRC & LB_ANY) && !F) {
+      Cb->setuser_BUF();
+      return *Cb; 
+   }}
+   else { 
+      if (!(loadRC & LB_UPD) 
+      && (!(loadRC & LB_GET) || Cb->cstat.t!=CGD_REF_INIT)) { return *Cb; }
+   }
+
    Cb->setuser_BUF();
-
-   if (Q.t.isAbelian()) { 
-      if (gotnew) { Cb->initAbelian(Q); }
-      return *Cb;
-   }
-
-   if (gotnew && !(loadRC & LB_ANY) && !F) {
-      return *Cb;
-   }
-
    Cb->setuser_BUF_ref(); 
 
 #if defined(DBG_QSX_BUF) && (DBG_QSX_BUF & 1)
@@ -2509,7 +2516,7 @@ wbstring x3map<TQ,TD>::toStr(char vflag) const {
    wbstring s_; 
    char *s; unsigned n=0, l=0;
 
-   if (!pab.len && !cgb && c.isEmpty('l')) { 
+   if (!pab.len && !cgb && c.isEmpty('c')) { 
       s_.init(128); s=s_.data; n=s_.len;
       if (x3.isEmpty()) {
          if (rtype==CGR_CTR_ZERO)
