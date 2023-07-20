@@ -32,7 +32,7 @@ function rval=setNumThreads(varargin)
      return
   end
 
-  if numel(n)>2, n, wberr('invalid usage'); end
+  if numel(n)>2, n, wbdie('invalid usage'); end
 
   nc=I.nthreads.cores;
   n1=max(n);

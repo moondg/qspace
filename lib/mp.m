@@ -35,7 +35,7 @@ function Iout=mp(M,varargin)
 
   if nargin<1
      helpthis, if nargin || nargout
-     wberr('invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   [n1,n2,n3]=size(M); olg={};

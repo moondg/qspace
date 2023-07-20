@@ -15,7 +15,7 @@ function s=structdisp(varargin)
 
   if ~nargin
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   getopt('init',varargin);
@@ -28,7 +28,7 @@ function s=structdisp(varargin)
   narg=length(varargin); s=cell(1,narg); mark=zeros(1,narg);
   for i=1:narg
      if ~isstruct(varargin{i}) && ~isobject(varargin{i})
-        wberr('invalid usage (not of type struct)'); end
+        wbdie('invalid usage (not of type struct)'); end
 
      if ~isempty(varargin{i}) && ~isempty(fieldnames(varargin{i}))
         s{i}=sprintf('disp(varargin{%g}); ',i);

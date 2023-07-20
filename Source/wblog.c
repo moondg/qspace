@@ -183,15 +183,16 @@ Wb::VersionInfo& Wb::VersionInfo::init() {
       for (i=l; i<=n; ++i) { if (!(s[i-l]=s[l])) break; }
    }
 
-#if __linux__
-   str_cpy(os,sizeof(os),"linux");
-#elif __unix__
-   str_cpy(os,sizeof(os),"unix");
-#elif __APPLE__
-   str_cpy(os,sizeof(os),"macOS");
-#else
-   str_cpy(os,sizeof(os),"(unknown)");
-#endif
+   l=sizeof(os);
+   #if __linux__
+      snprintf(os,l,"linux / %s",  PP_STRFY(MEX_EXT));
+   #elif __unix__
+      snprintf(os,l,"unix / %s",   PP_STRFY(MEX_EXT));
+   #elif __APPLE__
+      snprintf(os,l,"macOS / %s",  PP_STRFY(MEX_EXT));
+   #else
+      snprintf(os,l,"unknown / %s",PP_STRFY(MEX_EXT));
+   #endif
 
 #ifdef QS_USING_MPFR
    str_cpy(mpfr,sizeof(mpfr),MPFR_VERSION_STRING);
@@ -472,16 +473,22 @@ void init_header(
    const char *time_stamp, const char *tag, int xcol,
    unsigned lenFL=21
 ){
-   unsigned i=0,k=0,n; 
+   unsigned i,k=0,n; 
 
-   if (xcol && hlen>8) {
-      i=sprintf(hstr,"\e[0m");
-      hstr+=i; hlen-=i; i=0; 
+   if (xcol && hlen>12) {
+      i=Wb::termcolor::ID("hdr");
+      if (int(i)>0) {
+         if (i<8)
+              { i=snprintf(hstr,hlen,"\e[3%dm",i); }
+         else { i=snprintf(hstr,hlen,"\e[38;5;%dm",i); } 
+      }
+      if (!i || i>=hlen) { i=sprintf(hstr,"\e[0m"); }
+      hstr+=i; hlen-=i;
    }
 
    if (F) {
       if (F[0]=='/' || (F[0]=='.' && F[1]=='/')) {
-         for (; F[i]; ++i) { if (F[i]=='/') k=i+1; }
+         for (i=0; F[i]; ++i) { if (F[i]=='/') k=i+1; }
       }
 
       if (L==WBL_GOT_SHORTFL) 
@@ -506,9 +513,12 @@ void init_header(
    hstr[i++]=' '; hstr[i]=0;
 
    if (xcol) {
-      if (xcol<8)
-           { i+=sprintf(hstr+i, "\e[3%dm",xcol); }
-      else { i+=sprintf(hstr+i, "\e[38;5;%dm",xcol); } 
+      if (xcol>0) {
+         if (xcol<8)
+              { i+=sprintf(hstr+i,"\e[3%dm",xcol); }
+         else { i+=sprintf(hstr+i,"\e[38;5;%dm",xcol); } 
+      }
+      else if (xcol<0) { i+=sprintf(hstr+i,"\e[0m"); }
    }
 
    if (tag && tag[0])
@@ -600,8 +610,11 @@ int wblog1(const char* file, int line, const char *fmt, ...) {
    va_list args; Wb::ARGV wd(&args); 
    va_start(args,fmt);
 
+   WBL_COLOR_SCHEME xcol=WLC_OFF;
+   if (Wb::useCol) { xcol=WLC_DARK; }
+
    wblog::SBUF S; int l; Wb::LogException e;
-   try { l=wblogs(S,WLC_DARK,file,line,fmt,args,1); } 
+   try { l=wblogs(S,xcol,file,line,fmt,args,1); } 
    catch (Wb::LogException &e_) { e=e_; l=-11; }
    catch (...) { l=-12; }
 
@@ -626,6 +639,7 @@ int wblogs(
     static int then=0;
 
     int rval=0, hlen=128, xcol=0;
+
     unsigned i,j,k,l,m, nesc=0;
     const unsigned nt=32;
 
@@ -643,7 +657,7 @@ int wblogs(
        }
     }
 
-    if (log_level<0) return 0;
+    if (log_level<0) { return 0; }
 
     if (!fmt) wblog(FL,"ERR wblog got null fmt");
 
@@ -651,9 +665,11 @@ int wblogs(
 
     for (; *fmt; ++fmt) { if (*fmt=='\n') Sb.cat("\n"); else break; }
 
-    eflag=wblog_checktag(fmt,"ERR",tag); if (!eflag) {
-    wflag=wblog_checktag(fmt,"WRN",tag); if (!wflag) {
-       if (fmt[0]=='\b') { fmt+=1; tag[0]=0; } 
+    tag[0]=0;
+
+    eflag=wblog_check_tag(fmt,"ERR",tag); if (!eflag) {
+    wflag=wblog_check_tag(fmt,"WRN",tag); if (!wflag) {
+       if (fmt[0]=='\b') { fmt+=1; } 
        else {
            unsigned i=0, k,l;
            for (; fmt[i]; ++i) { if (fmt[i]!='\n') break; }
@@ -661,13 +677,11 @@ int wblogs(
                if (fmt[i]=='%' || !isprint(fmt[i])) break; }
 
            if (i==l && fmt[i]==' ') {
-              iflag=i+1; memcpy(tag,fmt+k,3); tag[3]=0; }
-           if (!iflag) { tag[0]=0; }
+              memcpy(tag,fmt+k,3); tag[3]=0; iflag=i+1;
+           }
 
-           if (xcol_) { 
-              if (eflag) { xcol=1; } else 
-              if (wflag) { xcol=5; } else 
-              if (iflag) { xcol=Wb::termcolor::ID(tag); } 
+           if (xcol_ && iflag) {
+              xcol=Wb::termcolor::ID(tag);
            }
         }
     }
@@ -675,6 +689,10 @@ int wblogs(
 
     if ((log_level & 15)==0) { 
     if (!eflag && !iflag) return 0; }
+
+    if (xcol_ && !xcol) { 
+       xcol=Wb::termcolor::ID(tag); 
+    }
 
     if (eflag || iflag) fmt+=(eflag+iflag);
     if (eflag) Sb.cat("\n");
@@ -711,7 +729,8 @@ int wblogs(
        return 0;
    }
 
-   init_header(log_header,hlen,file,line,time_stamp,tag,xcol);
+   init_header(log_header,hlen,file,line,time_stamp,tag,
+     xcol ? xcol : (xcol_ ? -1 : 0));
 
    for (;;) {
       if (fmt[0]=='%' && fmt[1]=='N') { Sb.cat("\n"); fmt+=2; }
@@ -984,7 +1003,7 @@ void wblog::check_ERR_pending() {
    }
 };
 
-unsigned wblog_checktag(const char *fmt, const char *t0, char *tag) {
+unsigned wblog_check_tag(const char *fmt, const char *t0, char *tag) {
 
     const char *s;
     int i,k,l=strlen(t0); if (!l) { return 0; }
@@ -1249,35 +1268,44 @@ Wb::termcolor& Wb::termcolor::init(unsigned k) {
 
 int Wb::termcolor::ID(const char *tag) {
 
-   int i=0; if (!Wb::useCol) { return i; }
+   int i=0; 
 
-   if (!tag || !tag[0]) wblog(FL,
-      "ERR %s() got %s argument",FCT,tag? "empty":"null");
-
+   if (Wb::useCol && tag && tag[0]) {
    switch (tag[0]) {
+    case 'h':  
+       if (!strcmp(tag,"hdr")) { i=240; } 
+       break;
     case 'E':
-      if (!strcmp(tag,"ERR")) { i=  1; break; } 
-      if (!strcmp(tag,"ENV")) { i=240; break; } 
+       if (!strcmp(tag,"ERR")) { i=  1; } else 
+       if (!strcmp(tag,"ENV")) { i=240; } 
+       break;
     case 'W':
-      if (!strcmp(tag,"WRN")) { i=  5; break; } 
+       if (!strcmp(tag,"WRN")) { i=  9; } 
+       break;
     case ' ':
-      if (!strcmp(tag,"  *")) { i=243; break; } 
-      if (!strcmp(tag," * ")) { i=246; break; } 
+       if (!strcmp(tag,"  *")) { i=243; } else 
+       if (!strcmp(tag," * ")) { i=246; }      
+       break;
     case 'T':
-      if (!strcmp(tag,"TST")) { i=246; break; } 
+       if (!strcmp(tag,"TST")) { i=246; } 
+       break;
     case 'N':
-      if (!strcmp(tag,"NB!")) { i= 34; break; } 
+       if (!strcmp(tag,"NB!")) { i= 34; } 
+       break;
     case 'D':
-      if (!strcmp(tag,"DBG")) { i=130; break; } 
+        if (!strcmp(tag,"DBG")) { i=130; } 
+        break;
     case 'X':
-      if (tag[1]=='X') {
-         if (tag[2]=='E') { i=1; } else 
-         if (tag[2]=='W') { i=5; } else 
-         if (tag[2]=='G') { i=2; } else 
-         if (tag[2]=='Y') { i=3; } else 
-         if (tag[2]=='B') { i=4; }      
-      }
-   }
+       if (tag[1]=='X') {
+          if (tag[2]=='E') { i=1; } else 
+          if (tag[2]=='W') { i=9; } else 
+          if (tag[2]=='G') { i=2; } else 
+          if (tag[2]=='Y') { i=3; } else 
+          if (tag[2]=='B') { i=4; }      
+       }
+       break;
+   }}
+
    return i;
 };
 

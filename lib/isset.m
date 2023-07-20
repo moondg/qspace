@@ -21,7 +21,7 @@ function [i,x]=isset(vn,i0)
   end
 
   if nargin<1 || nargin>2
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 

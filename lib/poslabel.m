@@ -27,7 +27,7 @@ function h=poslabel(varargin)
 
   if numel(varargin)<1
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   getopt('init',varargin);
@@ -58,7 +58,7 @@ function h=poslabel(varargin)
   if ~nargs
      if fix
         if numel(h)
-           if numel(h)>1, wberr('got multiple labels !?'); end
+           if numel(h)>1, wbdie('got multiple labels !?'); end
            n=get(h,'string');
         else
            wblog('WRN','%s: no label to fix',mfilename);
@@ -66,7 +66,7 @@ function h=poslabel(varargin)
         end
      else
         if rmflag && ~nargout, clear h; return, end
-        wberr('invalid usage');
+        wbdie('invalid usage');
      end
   else
      n=args{1}; args(1)=[]; nargs=numel(args);
@@ -83,7 +83,7 @@ function h=poslabel(varargin)
   if  isempty(pos), pos='NW'; else pos_=pos; end
   pos=postrans(pos);
   if ~isempty(dx)
-     if numel(dx)~=2, wberr('invalid dx'); end
+     if numel(dx)~=2, wbdie('invalid dx'); end
      pos=pos+reshape(dx,1,[]);
   end
 
@@ -92,7 +92,7 @@ function h=poslabel(varargin)
          s=n; else s=sprintf('(%s)',n); end
      h=postext(pos,s);
   else
-     if ~isnumber(n), n, wberr('invalid usage'); end
+     if ~isnumber(n), n, wbdie('invalid usage'); end
      h=postext(pos,sprintf('(%s)',char('a'+n-1)));
   end
 

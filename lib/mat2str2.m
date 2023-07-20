@@ -21,7 +21,7 @@ function str = mat2str2(M, varargin)
 % Wb,Jul11,03
 
   if nargin<1
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
   str=[];
@@ -58,7 +58,7 @@ function str = mat2str2(M, varargin)
      end
   end
 
-  if r>2, wberr('invalid usage (got rank-%g object)',r); end
+  if r>2, wbdie('invalid usage (got rank-%g object)',r); end
   if ~fflag && n1==n2
      d=diag(M);
      if norm(M-diag(d))==0

@@ -5802,10 +5802,8 @@ double genRG_struct<TQ,TD>::checkCommRel(
    wbsparray<TD> C; double e2, r2=0;
    QType qt=(q==QTYPE_UNKNOWN ? R.q : q);
 
-   if (q!=R.q) {
-      char s[64]; snprintf(s,64,"got QType mismatch: %s <> %s",
-         q.toStr().data, STR(R.q));
-
+   if (q!=R.q) { char s[64];
+      snprintf(s,64,"got QType mismatch: %s <> %s",STR(q),STR(R.q));
       if (q!=QTYPE_UNKNOWN)
            wblog(F_L,"ERR %s() %s",FCT,s);
    }
@@ -5877,7 +5875,7 @@ double genRG_struct<TQ,TD>::checkCommRel(
 };
 
 template <class TQ, class TD>
-unsigned genRG_struct<TQ,TD>::getTensorProdReps(
+unsigned genRG_struct<TQ,TD>::genTensorProds(
     const qset<TQ> &J, unsigned flag) {
 
     unsigned i=0, l=0, m=0, n=0;
@@ -5898,7 +5896,7 @@ unsigned genRG_struct<TQ,TD>::getTensorProdReps(
 };
 
 template <class TQ, class TD>
-unsigned genRG_struct<TQ,TD>::getTensorProdReps(
+unsigned genRG_struct<TQ,TD>::genTensorProds(
     unsigned dmax, char sdig, char vflag) {
 
     unsigned i,j, l=0, n3=0; int e=0;
@@ -5925,9 +5923,9 @@ unsigned genRG_struct<TQ,TD>::getTensorProdReps(
     for (i=0; i<l; ++i)
     for (j=0; j<l; ++j) { if (dd[i]*dd[j]<=dmax2) {
        if ((e=SIG.check911('t'))) {
-          wblog(FL,"TST %s(%g,%s,%s) got interrupt at (%d,%d)/%d",
-             FCT, double(dmax), cSTR(sdig), cSTR(vflag), i+1,j+1,l);
-          if (e>1) SIG.check911();
+          wblog(FL,"TST %s(%g,%s,%s) interrupt %d at (%d,%d)/%d",
+             FCT,double(dmax),cSTR(sdig),cSTR(vflag),e,i+1,j+1,l);
+          if (e>1) { SIG.check911(); }
        }
        n3+=getTensorProdReps_gen(*qq[i],*qq[j],TP3_LDR);
     }}
@@ -6477,7 +6475,7 @@ int genRG_struct<TQ,TD>::getTensorProdReps_gen(
 
       try { r2+=(e2=checkCommRel(FL,R)); e2=sqrt(e2); }
       catch (...) {
-         MXPut(FL).add(J1,"J1").add(J2,"J2").add(J,"J")
+         MXPut(FL,"I_CR").add(J1,"J1").add(J2,"J2").add(J,"J")
          .add(G1,"G1").add(G2,"G2").add(G,"G");
          wblog(FL,"ERR %s() inconsistency",FCT);
       };
@@ -7224,7 +7222,7 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SUN(
    else { nrep=2; }
 
    try { for (i=0; i<nrep; ++i) {
-      if (int(l=getTensorProdReps(dmax,'i'))>0) m+=l; 
+      if (int(l=genTensorProds(dmax,'i'))>0) m+=l; 
    }}
    catch (...) { Wb::SigHandler::check911_(FL); } 
 
@@ -7325,7 +7323,7 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SpN(
    else { nrep=2; }
 
    try { for (i=0; i<nrep; ++i) {
-      l=getTensorProdReps(dmax,'i');
+      l=genTensorProds(dmax,'i');
       if (int(l)>0) { m+=l;
          if (CG_VERBOSE>2) wblog(PFL,"... %4d/%d -> %3d CGTs",i+1,nrep,l);
       }
@@ -7395,14 +7393,22 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SON(
    R0.istr=s_;
 
    int ioR=gStore.save_RSet(FL,R0,'q');
-   if (!ioR) { ++nrep; }
 
-   if (CG_VERBOSE>5 || (nrep && CG_VERBOSE>2)) {
-      wblog(FL,"TST %s() ioR=%d, nrep=%d",FCT,ioR,nrep);
-      wblog(PF_L,"%s defining irep for %s is (%s)",
+   if (!ioR) { ++nrep; }
+   i=(ioR ? 0 : 1);
+      if (nrep && CG_VERBOSE>2) { i|=2; } else
+      if (CG_VERBOSE>5) { i|=4; }
+
+   if (i) {
+      unsigned n=64; char s[n];
+      snprintf(s,n,"%s defining irep for %s is (%s)",
          ioR ? (ioR>1 ? "ok." : "[+]  W") : "[+]  w",
-         STR(R0.q), QSet<TQ>().init1(q,R0.J.data).QStr().data
-      ); doflush();
+         STR(R0.q), QSet<TQ>().init1(q,R0.J.data).QStr().data);
+
+      if (i&1) {
+         gStore.rclog(q,PF_L,CG_VERBOSE>5 || (nrep && CG_VERBOSE>2),s);
+      }  else { wblog(PF_L,s); }
+      doflush();
    }
 
    unsigned m=0; int l;
@@ -7418,7 +7424,7 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SON(
    else { nrep=2; }
 
    try { for (i=0; i<nrep; ++i) {
-      if (int(l=getTensorProdReps(dmax,'i'))>0) m+=l;
+      if (int(l=genTensorProds(dmax,'i'))>0) m+=l;
    }}
    catch (...) { Wb::SigHandler::check911_(FL); } 
 
@@ -7491,16 +7497,28 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SEN(
    R0.istr=s_;
 
    int ioR=gStore.save_RSet(FL,R0,'q');
-   if (!ioR) { ++nrep; }
 
-   if (CG_VERBOSE>5 || (nrep && CG_VERBOSE>2)) {
-      wblog(PF_L,"%s defining irep for %s is (%s)",
+   if (!ioR) { ++nrep; }
+   i=(ioR ? 0 : 1);
+      if (nrep && CG_VERBOSE>2) { i|=2; } else
+      if (CG_VERBOSE>5) { i|=4; }
+
+   if (i) {
+      unsigned n=64; char s[n];
+      snprintf(s,n,"%s defining irep for %s is (%s)",
          ioR ? (ioR>1 ? "ok." : "[+]  W") : "[+]  w",
          STR(R0.q), QSet<TQ>().init1(q,R0.J.data).QStr().data
-      ); doflush();
+      );
+
+      if (i&1) {
+         gStore.rclog(q,PF_L,CG_VERBOSE>5 || (nrep && CG_VERBOSE>2),s);
+      }  else { wblog(PF_L,s); }
+      doflush();
    }
 
-   MXPut(FL,"I0").add(R0,"R0").add(*this,"all");
+   if (CG_VERBOSE>5) {
+      MXPut(FL,"I0").add(R0,"R0").add(*this,"all");
+   }
 
    unsigned m=0; int l;
 
@@ -7515,17 +7533,17 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SEN(
    else { nrep=2; }
 
    try { for (i=0; i<nrep; ++i) {
-      if (int(l=getTensorProdReps(dmax,'i'))>0) m+=l;
+      if (int(l=genTensorProds(dmax,'i'))>0) m+=l;
    }}
    catch (...) { Wb::SigHandler::check911_(FL); } 
 
    if ((m && CG_VERBOSE>6) || (j && CG_VERBOSE>2)) wblog(PFL,
       " *  generated %d CGTs for %s [%d passes]",m,STR(q),nrep);
 
-   if (CG_VERBOSE && ioR<2) {
+   if (CG_VERBOSE>5 && ioR<2) {
       wblog(PF_L,"<i> CGC spaces for %s: J=[%s]",
          R0.q.toStr().data, STR(R0.J));
-      snprintf(s_,64,"ISE%d",D); put(F_L,s_);
+      snprintf(s_,64,"I_SO%d",D); put(F_L,s_);
    }
 
    return *this;

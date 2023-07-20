@@ -1,8 +1,8 @@
-function [D,sym]=get_dir(sym,varargin)
+function [D,sym,err]=get_dir(sym,varargin)
 % function [D,sym]=get_dir(sym [[,'-c',] subdir])
 % Options
 %
-%  '-c'  keep cell structure
+%    '-c'  keep cell structure
 %
 % Wb,Jan30,15
 
@@ -12,20 +12,30 @@ function [D,sym]=get_dir(sym,varargin)
   D=getenv('RC_STORE');
   D=strread(D,'%s','delimiter',':');
 
-  ix=[]; nD=numel(D);
+  ix=[]; nD=numel(D); DX={}; err=0;
   for i=1:nD
      D{i}=[ D{i} '/' sym ];
      if ~exist(D{i},'dir')
         if i==1
-           wblog('WRN','%s does not yet exist',repHome(D{i}));
+           DX{end+1}=D{i};
         end
         ix(end+1)=i;
      end
   end
 
   if ~isempty(ix), D(ix)=[];
-     if isempty(D), error('Wb:ERR',...
-    '\n   ERR invalid RC_STORE (all paths non-existing)'); end
+     if isempty(D)
+        if nargout>2
+           err=-1;
+        else
+           wbdie('invalid RC_STORE (symmetry %s not yet setup)',sym);
+        end
+     end
+  else
+     err=numel(DX);
+     for i=1:numel(DX)
+        wblog('WRN','non-existing %s',repHome(DX{i}));
+     end
   end
 
   if nargin>1 && isequal(varargin{1},'-c')
@@ -39,7 +49,7 @@ function [D,sym]=get_dir(sym,varargin)
   end
 
   for i=1:nargs, if ~ischar(varargin{i})
-     error('Wb:ERR','\n   ERR invalid usage'); end
+     wbdie('invalid usage'); end
   end
 
   Dx=sprintf('/%s',varargin{:}); ix=[];
@@ -52,8 +62,8 @@ function [D,sym]=get_dir(sym,varargin)
   end
 
   if ~isempty(ix)
-     if numel(ix)==numel(D), error('Wb:ERR',...
-       '\n   ERR invalid RC_STORE (no valid %s)',Dx(2:end)); end
+     if numel(ix)==numel(D)
+        wbdie('invalid RC_STORE (no valid %s)',Dx(2:end)); end
      D(ix)=[];
   end
 

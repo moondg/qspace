@@ -44,7 +44,7 @@ function [ll, name] = lineno(varargin)
 
   varargin=getopt('get_remaining');
 
-  if length(varargin)+aflag>1, wberr('invalid usage'); end
+  if length(varargin)+aflag>1, wbdie('invalid usage'); end
 
   if length(varargin), fmt=varargin{1}; else fmt=[]; end
 
@@ -82,7 +82,7 @@ function [ll, name] = lineno(varargin)
            case 'F', fmt(i2(l))='s'; args{end+1}=stack.file;
            case 'S', fmt(i2(l))='s'; args{end+1}=stack.name;
            case 'L', fmt(i2(l))='d'; args{end+1}=stack.line;
-           otherwise wberr('invalid fmt=`%s''',m{l});
+           otherwise wbdie('invalid fmt=`%s''',m{l});
         end
      end
      ll=sprintf(fmt,args{:});

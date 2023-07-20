@@ -87,10 +87,10 @@ function check_same_system(HAM,HM2)
 
    q=rmfield([HAM.info.IS, HM2.info.IS],'istr');
    if ~isequal(q(1),q(2))
-       wberr('got system mismatch (different HAM.IS)'); end
+       wbdie('got system mismatch (different HAM.IS)'); end
 
    if ~isequal(HAM.oez,HM2.oez)
-       wberr('got system mismatch (different HAM.oez)'); end
+       wbdie('got system mismatch (different HAM.oez)'); end
 
     q={ struct(HAM.ops), struct(HM2.ops) };
     for i=1:numel(q), for j=1:numel(q{i})
@@ -98,11 +98,11 @@ function check_same_system(HAM,HM2)
     end, end
 
    if ~isequal(q{1},q{2})
-       wberr('got system mismatch (different HAM.ops)'); end
+       wbdie('got system mismatch (different HAM.ops)'); end
 
    q=[length(HAM.mpo), length(HM2.mpo)];
    if diff(q) 
-       wberr('system length mismatch (L=%g/%g)',q);
+       wbdie('system length mismatch (L=%g/%g)',q);
    end
 end
 

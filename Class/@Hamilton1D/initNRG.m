@@ -76,7 +76,7 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
      dQtotN=getopt('dQtotN',[]);
      if ~isempty(dQtotN), [m,n]=size(dQtotN);
         if n~=nq+1 || size(uniquerows(dQtotN(:,1:end-1)),1)<m
-           wberr('invalid dQtotN=[%s]',...
+           wbdie('invalid dQtotN=[%s]',...
            mat2str2(dQtotN,'fmt','%g','rowsep','; ','-f'));
         end
         NPsi=sum(dQtotN(:,end)); Qtot=[];
@@ -115,7 +115,7 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
 
   if ~isempty(dQtotN)
      if ~isnumeric(dQtotN) || size(dQtotN,2)~=nq+1 || any(dQtotN(:,end)<=0)
-        dQtotN, wberr('got invalid dQtotN (%g/%g)',size(dQtotN,2),nq);
+        dQtotN, wbdie('got invalid dQtotN (%g/%g)',size(dQtotN,2),nq);
      end
      s=sprintf('dQtotN=[%s] @ n={%s}', ...
        mat2str2(dQtotN(:,1:end-1),'fmt','%g','rowsep','; ','-f'), ...
@@ -124,7 +124,7 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
   elseif ~isempty(Qtot)
      if isequal(Qtot,0), Qtot=zeros(1,size(E.Q{1},2));
      elseif ~isnumeric(Qtot) || ~isequal(size(Qtot),[1, nq]), Qtot
-        wberr('got invalid Qtot (%g/%g)',numel(Qtot),nq);
+        wbdie('got invalid Qtot (%g/%g)',numel(Qtot),nq);
      end
      s=[ 'Qtot=[' vec2str(Qtot,'-f') ']' ];
   else s='Qtot=[]';
@@ -154,8 +154,8 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
         Xk.AK=getAtensorLoc(E,[],'R');
         q=use_Hconj(HAM);
         if q, q(2)=Xk.info.hconj;
-           if xor(q(1),q(2)), wberr('inconsistent hconj setting (%/%g)',q);
-           elseif any(q<0), wberr('invalid hconj setting (%/%g)',q); end
+           if xor(q(1),q(2)), wbdie('inconsistent hconj setting (%/%g)',q);
+           elseif any(q<0), wbdie('invalid hconj setting (%/%g)',q); end
         end
 
         qfmt=getqfmt(QSpace(E(1)));
@@ -184,7 +184,7 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
 
         HKt=getBlockHK(Xk,'--fix'); % HK `t'uned
 
-        if k>1, D=Nkeep; else D=-1; Iout.H0=HKt; end
+        if k>1, D=Nkeep; else D=-1; [~,Iout.H0]=eig(HKt); end
         if nargout>2, HH(k)=HKt; end
 
         if tuneH && k>1
@@ -317,7 +317,7 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
               i1=matchIndex(HK.Q{1}(:,i),Qtot(i));
               HK=getsub(HK,i1);
            else s=vec2str(Qtot,'-f');
-              if n>1, wberr('Qtot=[%s] found %g times in H0 !?',s,n);
+              if n>1, wbdie('Qtot=[%s] found %g times in H0 !?',s,n);
               else Xk.AK, wblog(...
                 'ERR','Qtot=[%s] not found in H0 (L=%g)',s,L);
               end
@@ -346,15 +346,17 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
 
         d=getDimQS(EKt); d=d(:,2);
         if d(1)~=NPsi1
-           wberr('got %g/%g low-energy states !?',d(1),NPsi1); 
+           wbdie('got %g/%g low-energy states !?',d(1),NPsi1); 
         end
 
         if g>NPsi1, wblog('WRN',...
            'got %g-fold degenerate ground state space (@ %.3g)',...
            g, norm(diff(eN(1:g)))/max(1,norm(eN(1:g))));
         elseif d(1)>1
-           wblog(ltag,'keeping %g global multiplets %s (%g states)',...
-           d(1),mat2str(EKt.Q{1}),d(end));
+           wblog(ltag,'keeping %g global multiplets (%g states)',d(1),d(end));
+           [q,d]=getQDimQS(EKt,2);
+           fmt=getqfmt(QSpace(EKt)); fmt=[ '     ' fmt '   %2d\n'];
+           for i=1:size(q,1), fprintf(1,fmt,q(i,:),d(i)); end
         elseif d(end)>1
            wblog(' * ','got unique ground state multiplet [%s](%g)',...
            vec2str(EKt.Q{1},'-f'),d(end));
@@ -365,7 +367,7 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
 
         [i1,i2,Im]=matchIndex(Xk.AK.Q{1},EKt.Q{1});
         if isempty(i1), EKt, Xk.AK
-           wberr('got symmetry sector mismatch !?');
+           wbdie('got symmetry sector mismatch !?');
         end
 
         if g>1 && NPsi1<=1 && maxS
@@ -399,7 +401,7 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
 
         e=QSpace(contractQS(Xk.AK,'23*',Xk.AK,'23'));
         if ~isIdentityQS(e), e
-           wberr('got unnormalized A(1) tensor !?');
+           wbdie('got unnormalized A(1) tensor !?');
         end
      end
 
@@ -461,6 +463,7 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
 
   if nargout>1
      Iout=add2struct(Iout,HKt,EKt,Qtot,dQtotN,found,Nkeep,maxS,rtol,Xk,NPsi);
+     [~,Iout.HKt]=eig(HKt);
      if tuneH, Iout=add2struct(Iout,'Qop?','Qopl?',It); end
   end
 

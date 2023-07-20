@@ -3,7 +3,7 @@ function [HAM]=setup_Heisenberg(varargin)
 % Wb,Jan15,15
 
   if nargin<1
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -36,12 +36,12 @@ function [HAM]=setup_Heisenberg(varargin)
   getopt('check_error'); end
 
   if ~iscell(use_mpo)
-     wberr('invalid usage (--mpo requires cell)');
+     wbdie('invalid usage (--mpo requires cell)');
   end
 
 % -------------------------------------------------------------------- %
   if length(L)>1
-     if ~isempty(J), wberr(['invalid usage ' ... 
+     if ~isempty(J), wbdie(['invalid usage ' ... 
         '(J specified twice, once implicitely through L)']); end
      J=adapt_Jformat(L); L=[];
   elseif isempty(L)
@@ -52,11 +52,11 @@ function [HAM]=setup_Heisenberg(varargin)
   if isempty(L)
      if     size(J,1)>1, L=size(J,1)+1; if perBC, L=L-1; end
      elseif size(B,1)>1, L=size(B,1);
-     else wberr('missing length specification'); end
+     else wbdie('missing length specification'); end
      wblog(' * ','got implicit length specification (L=%g)',L);
   end
   if L<=1 || L~=round(L)
-     wberr('invalid usage (L=%g) !?',length(J),L);
+     wbdie('invalid usage (L=%g) !?',length(J),L);
   end
 
   gotB=norm(B); gotDz=0; gotBz=0; gotBx=0;
@@ -65,11 +65,11 @@ function [HAM]=setup_Heisenberg(varargin)
      if isequal(sym,'SU2'), sym='Spin'; end
      if size(B,1)==1 && size(B,2)>3, B=B.'; end
      if numel(B)>3 && size(B,1)~=L
-        wberr('invalid B (len=%g/%g) !?',numel(B),L);
+        wbdie('invalid B (len=%g/%g) !?',numel(B),L);
      end
      gotBz=norm(B(:,1)); m=size(B,2);
      if m>1
-        if m>3, wberr('invalid usage'); end
+        if m>3, wbdie('invalid usage'); end
         if m>1, gotDz=norm(B(:,2)); end
         if m>2, gotBx=norm(B(:,3)); end
      end
@@ -95,42 +95,42 @@ function [HAM]=setup_Heisenberg(varargin)
   elseif numel(J)~=1, s=size(J);
      if s(1)==1
         if s(2)>=L-1, J=J'; end
-     elseif s(1)<s(2), wberr('unexpected J !?');
+     elseif s(1)<s(2), wbdie('unexpected J !?');
      end
   end; s=size(J);
 
   if s(1)~=1 && s(1)~=L_
-     wberr('invalid usage (system length mismatch %g/%g)',s(1),L);
+     wbdie('invalid usage (system length mismatch %g/%g)',s(1),L);
   end
 
   ncpl=0;
   if ~Aflag || s(2)>2
      while norm(J(:,end))==0, J(:,end)=[]; end
      ncpl=size(J,2)-1;
-     if ncpl>8, wberr('unexpected ncpl=%g !?',ncpl); end
+     if ncpl>8, wbdie('unexpected ncpl=%g !?',ncpl); end
      if ncpl && gotJz
-        wberr('invalid usage (got Jz with size(J,2)>1)');
+        wbdie('invalid usage (got Jz with size(J,2)>1)');
      end
   end
 
   gotJ2=~isempty(J2);
   if gotJ2 && size(J2,1)~=1
-     if size(J2,1)~=L_, wberr('invalid size of J2'); end
+     if size(J2,1)~=L_, wbdie('invalid size of J2'); end
      q=uniquerows(J2); if size(q,1)==1, J2=q; end
   end
 
   gotJ3=~isempty(J3);
   if gotJ3 && size(J3,1)~=1
-     if size(J3,1)~=L_, wberr('invalid size of J3'); end
+     if size(J3,1)~=L_, wbdie('invalid size of J3'); end
      q=uniquerows(J3); if size(q,1)==1, J3=q; end
   end
 
   if Ising
-     if gotDz, wberr('invalid usage (got Dz with Ising)'); end
-     if gotBz && gotBx, wberr('invalid usage (got Bz and Bx with Ising)'); end
-     if gotJ2 && gotJ3, wberr('invalid usage (got J2 or J3 with Ising)'); end
-     if ncpl, wberr('invalid usage (got ncpl ith Ising)'); end
-     if ~isempty(qend), wberr('invalid usage (got ncpl ith Ising)'); end
+     if gotDz, wbdie('invalid usage (got Dz with Ising)'); end
+     if gotBz && gotBx, wbdie('invalid usage (got Bz and Bx with Ising)'); end
+     if gotJ2 && gotJ3, wbdie('invalid usage (got J2 or J3 with Ising)'); end
+     if ncpl, wbdie('invalid usage (got ncpl ith Ising)'); end
+     if ~isempty(qend), wbdie('invalid usage (got ncpl ith Ising)'); end
   end
 
 % -------------------------------------------------------------------- %
@@ -158,7 +158,7 @@ function [HAM]=setup_Heisenberg(varargin)
         elseif s1==1
            s=sprintf(',%.3g',J);
            jstr=sprintf('J=[%s]',s(2:end));
-        else wberr('invalid usage'); end
+        else wbdie('invalid usage'); end
      end
      HAM.info.mpo.J=J;
 
@@ -193,7 +193,7 @@ function [HAM]=setup_Heisenberg(varargin)
   HAM.info.mpo.J2=J2;
   if ~isempty(J2)
      if size(J2,2)>1
-        wberr('invalid J2 (biquadratic term not yet implemented)'); end
+        wbdie('invalid J2 (biquadratic term not yet implemented)'); end
      jstr=regexprep(jstr,'\<J\>','J_1');
      if numel(J2)>1
           jstr=[jstr, sprintf(', J_2=[%.4g .. %.4g]',J2(1),J2(end))];
@@ -204,7 +204,7 @@ function [HAM]=setup_Heisenberg(varargin)
   HAM.info.mpo.J3=J3;
   if ~isempty(J3)
      if size(J3,2)>1
-        wberr('invalid J3 (biquadratic term not yet implemented)'); end
+        wbdie('invalid J3 (biquadratic term not yet implemented)'); end
      jstr=regexprep(jstr,'\<J\>','J_1');
      if numel(J3)>1
           jstr=[jstr, sprintf(', J_3=[%.4g .. %.4g]',J3(1),J3(end))];
@@ -216,7 +216,7 @@ function [HAM]=setup_Heisenberg(varargin)
 
   if isequal(sym,'SU2')
      if isempty(qloc), qloc=[1];
-     elseif numel(qloc)~=1 || qloc<1, wberr('invalid spin S=%g',S); end
+     elseif numel(qloc)~=1 || qloc<1, wbdie('invalid spin S=%g',S); end
      [S,IS]=getLocalSpace('Spin',qloc/2,o{:});
      if S.data{1}<0, S.data{1}=-S.data{1}; end
 
@@ -229,12 +229,12 @@ function [HAM]=setup_Heisenberg(varargin)
 
   elseif isequal(sym,'Spin')
      if ncpl && (gotB || gotBx || gotDz || ~isempty(waklt))
-        wberr('invalid usage (got abelian U1 mode; no ncpl supported here)');
+        wbdie('invalid usage (got abelian U1 mode; no ncpl supported here)');
      end
 
      if isempty(qloc), qloc=[1];
      elseif numel(qloc)~=1 || qloc<1 || mod(qloc,1)
-        wberr('invalid spin S=%g',qloc/2);
+        wbdie('invalid spin S=%g',qloc/2);
      end
 
      if gotBx
@@ -263,7 +263,7 @@ function [HAM]=setup_Heisenberg(varargin)
         end
         if gotBx || gotJz
            if iz==1, ix=2;
-           else wberr('unexpected iz=%g',iz); end
+           else wbdie('unexpected iz=%g',iz); end
         end
      end
      end
@@ -288,12 +288,12 @@ function [HAM]=setup_Heisenberg(varargin)
      HAM.info.istr=[s ' having ' IS.istr];
 
   elseif ~isempty(regexp(sym,'^S[Op]\d'))
-     if gotB, wberr('magnetic field not yet implemented (B=%g)',gotB); end
+     if gotB, wbdie('magnetic field not yet implemented (B=%g)',gotB); end
 
      [S,IS]=getLocalSpace(sym,qloc,o{:});
      HAM.info.istr=sprintf('Heisenberg %s, %s',jstr,IS.istr);
   else
-     if gotB, wberr('magnetic field not yet implemented (B=%g)',gotB); end
+     if gotB, wbdie('magnetic field not yet implemented (B=%g)',gotB); end
 
      [S,IS]=getLocalSpace('Spin',sym,qloc,o{:});
      S=normalize_spin_operator(S,Sfac);
@@ -312,14 +312,14 @@ function [HAM]=setup_Heisenberg(varargin)
   if numel(S)==1
      HAM.ops=init_ops(S,'spin operator S','~hconj');
   else
-     if numel(S)~=3, wberr('invalid S-op'); end
+     if numel(S)~=3, wbdie('invalid S-op'); end
      if Ising
         HAM.ops=[
            init_ops(S(1),'spin-op (Ising Sz)','~hconj');
         ];
         if gotB>0 || gotJz
            m=size(B,3); if m>3 || m>1 && norm(B(:,1)), whos B
-             wberr('invalid usage (Ising @ L+%g)',L); end
+             wbdie('invalid usage (Ising @ L+%g)',L); end
           if gotBx || gotJz
              HAM.ops(end+1,1)=init_ops(...
              (1/sqrt(2))*(S(2)+S(2)'),'spin-op (Ising Sx)','~hconj');
@@ -343,8 +343,8 @@ function [HAM]=setup_Heisenberg(varargin)
 
   if isequal(qloc,qend), qend=[]; end
   if ~isempty(qend) , qend_=qend;
-     if gotB, wberr('magnetic field not yet implemented (B=%g)',gotB); end
-     if perBC, wberr('invalid usage (perBC xor qend!)'); end
+     if gotB, wbdie('magnetic field not yet implemented (B=%g)',gotB); end
+     if perBC, wbdie('invalid usage (perBC xor qend!)'); end
 
      m=size(qend,1);
      for i=1:m
@@ -367,7 +367,7 @@ function [HAM]=setup_Heisenberg(varargin)
   stype=[];
 
   if ~isempty(waklt)
-     if numel(S.Q)~=3, wberr('irop expected for S in case of waklt'); end
+     if numel(S.Q)~=3, wbdie('irop expected for S in case of waklt'); end
      if isequal(waklt,'Quella')
         q=getQuellaAKLT(waklt,qloc); n=numel(q);
         for i=1:n
@@ -375,18 +375,18 @@ function [HAM]=setup_Heisenberg(varargin)
            Sab(i)=init_ops(q(i),s,'~hconj');
         end
         if ncpl>0
-           if n~=2*ncpl, wberr(...
+           if n~=2*ncpl, wbdie(...
               'invalid usage (n_aklt = %g <> %g !?)',n,2*ncpl); end
            HAM.ops(2:n+1,1)=Sab;
         else
            HAM.ops(1:n,1)=Sab;
         end
-     else wberr('invalid waklt');
+     else wbdie('invalid waklt');
      end
   elseif ncpl
      if numel(S)~=1 || numel(S.Q)~=3
-        wberr('irop expected for S in case of (S.S)^k'); end
-     if size(HAM.ops,1)~=1, wberr('check setup'); end
+        wbdie('irop expected for S in case of (S.S)^k'); end
+     if size(HAM.ops,1)~=1, wbdie('check setup'); end
 
      if size(J,1)==1
         [HAM.ops(1:2,1),Ix]=get_poly_ops(S,J); % '--notr'
@@ -407,7 +407,7 @@ function [HAM]=setup_Heisenberg(varargin)
 
   HAM.info.lops=S;
 
-  if ncpl<0 && size(HAM.ops,1)~=2, wberr(...
+  if ncpl<0 && size(HAM.ops,1)~=2, wbdie(...
     'got %g ops with ncpl=%g !?',size(HAM.ops,1),ncpl); end
   acpl=abs(ncpl);
 
@@ -427,11 +427,11 @@ function [HAM]=setup_Heisenberg(varargin)
      XY=[ (1:L)', zeros(L,1) ]; XY(2:2:end,2)=1;
      HAM.info.XY=XY;
 
-     if gotJ2, wberr('J2 not yet implemented for perBC'); end
-     if gotJ3, wberr('J3 not yet implemented for perBC'); end
-     if ncpl<=0 && nops~=1, wberr(...
+     if gotJ2, wbdie('J2 not yet implemented for perBC'); end
+     if gotJ3, wbdie('J3 not yet implemented for perBC'); end
+     if ncpl<=0 && nops~=1, wbdie(...
        'got nops=%g with ncpl=%g and perBC !?',nops,ncpl); end
-     if qend, wberr( ...
+     if qend, wbdie( ...
        'end-spin (open right perBC) not yet implemented'); end
 
      for i=1:n
@@ -492,9 +492,9 @@ function [HAM]=setup_Heisenberg(varargin)
 
   if isequal(sym,'Spin')
      if Sflag
-        if size(HAM.ops,1)~=1, wberr('invalid usage'); end
+        if size(HAM.ops,1)~=1, wbdie('invalid usage'); end
      elseif ~Ising || gotJz
-        if size(HAM.ops,1)~=2, wberr('invalid usage'); end
+        if size(HAM.ops,1)~=2, wbdie('invalid usage'); end
         i=find(sum(HH(:,[2 4])-1,2)==0);
 
         H3=repmat(HH(i,:),1,1,2); HH(i,:)=[];
@@ -516,10 +516,10 @@ function [HAM]=setup_Heisenberg(varargin)
   if gotB, l=size(HH,1)+1;
      if gotBx
         if Ising
-           if HAM.ops(ix).hconj, wberr('invalid Sx'); end
+           if HAM.ops(ix).hconj, wbdie('invalid Sx'); end
         else
            B(:,3)=B(:,3)/sqrt(2);
-           if ~HAM.ops(ix).hconj, wberr('invalid Sx !?'); end
+           if ~HAM.ops(ix).hconj, wbdie('invalid Sx !?'); end
         end
      end
 
@@ -560,7 +560,7 @@ function J=adapt_Jformat(J)
    if s(1)==1
       if s(2)>3, J=J.'; end
    elseif s(1)<s(2)
-      wberr('got unexpected J of size %gx%g !?',s);
+      wbdie('got unexpected J of size %gx%g !?',s);
    end
 end
 
@@ -581,31 +581,31 @@ function S=normalize_spin_operator(S,Sfac)
 
         if isempty(Sfac) || Sfac==1, return; end
 
-        wberr('use standard normalization!');
+        wbdie('use standard normalization!');
 
         if norm(Sfac-sqrt(2))>1E-12
-           wberr('unexpected Sfac=%g !?',Sfac); end
+           wbdie('unexpected Sfac=%g !?',Sfac); end
 
         wblog(' * ','applying Sfac=sqrt(2) [Thomas Quella]');
         S=Sfac*S;
 
         S2=QSpace(contractQS(S,'13*',S,'13'))
         if isequal(S.Q{1},[0 2 0]) && ~isIdentityQS((1/12)*S2)
-           wberr('unexpected normalization of spin operator !?');
+           wbdie('unexpected normalization of spin operator !?');
         end
 
      case 'SU6'
         if isempty(Sfac) || Sfac==1, return; end
 
         if norm(Sfac-sqrt(2))>1E-12
-           wberr('unexpected Sfac=%g !?',Sfac); end
+           wbdie('unexpected Sfac=%g !?',Sfac); end
 
         wblog(' * ','applying Sfac=sqrt(2) [Thomas Quella]');
         S=Sfac*S;
 
         S2=QSpace(contractQS(S,'13*',S,'13'))
         if isequal(S.Q{1},[0 0 2 0 0]) && ~isIdentityQS((1/24)*S2)
-           wberr('unexpected normalization of spin operator !?');
+           wbdie('unexpected normalization of spin operator !?');
         end
 
      otherwise

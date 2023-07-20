@@ -74,7 +74,7 @@ function yl=ytight(varargin)
   else
      yl=getylim('-view'); if any(isnan(yl)), return; end
      e=diff(yl);
-       if e<0, wberr('getylim() returned [%s]',vec2str(yl)); end
+       if e<0, wbdie('getylim() returned [%s]',vec2str(yl)); end
        if e==0, yl=ylim; return; end
      ylim(yl)
   end

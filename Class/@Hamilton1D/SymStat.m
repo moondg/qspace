@@ -70,7 +70,7 @@ function [qq,nn,dd,dc]=SymStat(HAM,varargin)
 
   if ~isempty(fout)
     fid=fopen(fout,'w'); if fid<0, fout
-       wberr('failed to open file !?'); end
+       wbdie('failed to open file !?'); end
     fapp=['>>' fout]; fprintf(1,'\n');
 
     fprintf(fid,'# %s #\n',repmat('-',1,72));
@@ -221,7 +221,7 @@ end
 % -------------------------------------------------------------------- %
 function q=qmat2cellstr(q)
 
-    if ~isnumeric(q), wberr('invalid usage'); end
+    if ~isnumeric(q), wbdie('invalid usage'); end
 
     i=find(q>9); q(i)=q(i)+7; q=char(q+'0');
     q=cellstr(q)';

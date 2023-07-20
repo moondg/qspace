@@ -14,7 +14,7 @@ function [H,HC]=fuse_data(HC)
      for i=1:m
      for j=i+1:n, if isempty(C{i,j})
         C{i,j}=zeros([ size(C{i,i},1), size(C{j,j},2) ]);
-        if ~isempty(C{j,i}), wberr('invalid HC !?'); end
+        if ~isempty(C{j,i}), wbdie('invalid HC !?'); end
         C{j,i}=C{i,j}';
      end, end
      end
@@ -28,7 +28,7 @@ function [H,HC]=fuse_data(HC)
      if ~isreal(Hi), ee=diag(Hi);
          e = [ norm(imag(ee)), norm(real(ee)) ];
          if e(2)>1, e=e(1)/e(2); else e=e(1); end
-         if e>1E-12, wberr('got complex energy !?'); end
+         if e>1E-12, wbdie('got complex energy !?'); end
          if e, Hi=0.5*(Hi+Hi'); end
      end
      H.data{i}=Hi;

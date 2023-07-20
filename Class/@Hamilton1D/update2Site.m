@@ -7,7 +7,7 @@ function varargout=update2Site(HAM,k1,k2,dir,varargin)
 % Wb,Apr20,14
 
   if nargin<4
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -22,11 +22,11 @@ function varargout=update2Site(HAM,k1,k2,dir,varargin)
         elseif q>1 && q==round(q) && isempty(Nkeep), Nkeep=q; continue;
         end 
      end
-     wberr('invalid usage (i=%g: %g)',i,q);
+     wbdie('invalid usage (i=%g: %g)',i,q);
   end
 
   i=[ isstruct(k1), isstruct(k2) ];
-  if xor(i(1),i(2)), wberr('invalid usage'); end
+  if xor(i(1),i(2)), wbdie('invalid usage'); end
   gotX=i(1);
 
   if gotX
@@ -35,9 +35,9 @@ function varargout=update2Site(HAM,k1,k2,dir,varargin)
   end
 
   if ischar(dir), dir=check_dir(dir); end
-  if iflag, if k1>=k2, wberr(...
+  if iflag, if k1>=k2, wbdie(...
     'invalid usage (to unsorted k''s [%g %g]',k1,k2); end
-  elseif k1+1~=k2, wberr(...
+  elseif k1+1~=k2, wbdie(...
     'invalid usage (expecting two consecutive sites; got [%g %g]',k1,k2);
   end
 

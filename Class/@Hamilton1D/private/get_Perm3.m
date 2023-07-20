@@ -60,7 +60,7 @@ function [X3,Iout]=get_Perm3(E0,varargin)
 % outsourced from setup_HeisenbergSL_chiral.m
 
    if nargin<1
-      helpthis, if nargin || nargout, wberr('invalid usage'), end
+      helpthis, if nargin || nargout, wbdie('invalid usage'), end
       return
    end
 
@@ -99,7 +99,7 @@ function [X3,Iout]=get_Perm3(E0,varargin)
 
       [Sp,Sp_,Ix]=splitH4_SdotS(X2,'-v');
       e=norm(Sp-Sp_); if e>1E-12
-         wberr('unexpected Sp''.Sp structure (e=%g)',e); end
+         wbdie('unexpected Sp''.Sp structure (e=%g)',e); end
 
       if kflag || tflag, H2=QSpace(1,2);
          for k=1:2, if k==1, Q=Sp; else Q=EX; end
@@ -108,7 +108,7 @@ function [X3,Iout]=get_Perm3(E0,varargin)
          end
          q=[norm(H2(1)-H2(2)), norm(H2(1))];
 
-         e=q(1)/q(2); if e>1E-12, wberr(['unexpected ' ...
+         e=q(1)/q(2); if e>1E-12, wbdie(['unexpected ' ...
              'operator setting (EX inequivalent from Sp @ %.3g)'],e);
          else wblog('ok.','got proper swap operator @ %.3g',e); 
          end
@@ -157,7 +157,7 @@ function [X3,Iout]=get_Perm3(E0,varargin)
 
    n2=norm(chi)^2;
 
-   if n2<1E-6, wberr(...
+   if n2<1E-6, wbdie(...
      'failed to obtain chiral operator (|chi|^2=%.3g',n2); end
 
    n=dloc;
@@ -190,11 +190,11 @@ function [X3,Iout]=get_Perm3(E0,varargin)
             end
          end
       end
-      if ~done, wchi, wberr('invalid usage'); end
+      if ~done, wchi, wbdie('invalid usage'); end
 
       E1=getIdentity(Iout.chi,3);
       E2=getIdentity(Iout.chi,4);
-      if ~isequal(E1,E2), wberr('unexpected chiral operator'); end
+      if ~isequal(E1,E2), wbdie('unexpected chiral operator'); end
       q={getDimQS(Iout.EX), getDimQS(E1)}; q=[ q{1}(end,3), q{2}(end,1) ];
       wblog(' * ','reducing dimension of EX based on chi (%d->%d)',q);
 
@@ -213,13 +213,13 @@ function chi=get_sub_SU2spin(chi,sym)
    isym=findstrc(q,'SU2spin','-i');
 
    if numel(isym)~=1
-      wberr('unexpected symmetry (SU2spin required)'); end
+      wbdie('unexpected symmetry (SU2spin required)'); end
 
    q=zeros(1,size(chi.Q{1},2)); q(isym)=2;
    Q=chi.Q; i=matchIndex([Q{3:4}],[q q]);
 
    if isempty(i)
-        wberr('failed to match symmetries for chiral operator');
+        wbdie('failed to match symmetries for chiral operator');
    else chi=getsub(chi,i);
    end
 end

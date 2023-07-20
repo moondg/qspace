@@ -36,11 +36,11 @@ function rval=setdef(varargin)
 
   if narg<2 || mod(narg,2)
      eval(['help ' mfilename]); varargin
-     if nargin, wberr('invalid usage'); else return; end
+     if nargin, wbdie('invalid usage'); else return; end
   end
 
   if nargout && narg<=2
-     if narg~=2, wberr('invalid usage'); end
+     if narg~=2, wbdie('invalid usage'); end
      n=varargin{1}; rval=varargin{2}; sdflag__=0;
 
      evalin('caller',sprintf(...

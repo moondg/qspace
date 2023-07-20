@@ -33,8 +33,8 @@ function [A,ks]=squeeze_1(A,ks)
         for i=1:r,    if qnrm(i), ks=1:i-1; break; end; end
      elseif isequal(ks,'end')
         for i=r:-1:1, if qnrm(i), ks=i+1:r; break; end; end
-     else ks, wberr('invalid usage'); end
-     if any(ks<1 || ks>r), ks, wberr('index out of range (r=%g)',r); end
+     else ks, wbdie('invalid usage'); end
+     if any(ks<1 || ks>r), ks, wbdie('index out of range (r=%g)',r); end
   else
      ks=unique(ks);
   end
@@ -43,7 +43,7 @@ function [A,ks]=squeeze_1(A,ks)
 
   qdir=getqdir(A); qk=qdir(ks); nk=numel(ks);
   if any(qnrm(ks))
-     wberr('invalid usage (specifed non-scalar dimension)');
+     wbdie('invalid usage (specifed non-scalar dimension)');
   end
 
   if nk==1

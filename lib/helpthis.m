@@ -27,7 +27,7 @@ function helpthis
      n=[f '>' s{end}]; help(n);
   elseif n>1, help(f);
      if n>2, fprintf(1,'  NB! got recursive call at level=%g\n',n); end
-  else wberr('invalid usage (don''t know what to do with n=%g)',n); end
+  else wbdie('invalid usage (don''t know what to do with n=%g)',n); end
 
 end
 

@@ -23,7 +23,7 @@ function [HAM,IS]=Hamilton1D(varargin)
      elseif isstruct(H)
         H_=setup_empty(); [H,e,s]=addfields(H,H_);
         if e<0, wblog('WRN','%s() altered input structure:\n%s',mfilename,s);
-        elseif e>0, wberr('invalid input structure:\n%s',s); end
+        elseif e>0, wbdie('invalid input structure:\n%s',s); end
 
         if isfield(H.mpo,'idx') && ~isfield(H.mpo,'iop')
            for i=1:numel(H.mpo), H.mpo(i).iop=H.mpo(i).idx; end
@@ -34,16 +34,16 @@ function [HAM,IS]=Hamilton1D(varargin)
         HAM=class(H,'Hamilton1D');
         return
      end
-     helpthis; wberr('invalid usage');
+     helpthis; wbdie('invalid usage');
   end
 
   if nargin<2 || ~ischar(varargin{1}), helpthis
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   getopt('init',varargin(3:end));
      tflag=getopt('-t');
-     mflag=getopt('-mat'); store=''; fout=''; if ~mflag
+     use_mat=getopt('-mat'); store=''; fout=''; if ~use_mat
      store=getopt('store', store);  if isempty(store)
      fout=getopt('fout',[]); end; end
   getopt('check_error');
@@ -67,38 +67,37 @@ function [HAM,IS]=Hamilton1D(varargin)
     case 'tb_ladder',    [HAM]=setup_tb_ladder(varargin{2}{:});
     case 'tb_testferm',  [HAM]=setup_tb_testferm(varargin{2}{:});
     case 'empty',        [HAM]=setup_empty(varargin{2}{:});
-    otherwise wberr('invalid system ''%s''',varargin{1});
+    otherwise wbdie('invalid system ''%s''',varargin{1});
   end
   if isfield(HAM.info,'XY')
      [Q,I,D]=uniquerows(round(100*HAM.info.XY)); i=find(D>1);
      if ~isempty(i)
         HAM.info.XY([I{i}],:)
-        wberr('got overlapping XY data !?');
+        wbdie('got overlapping XY data !?');
      end
   end
 
-  if ~ischar(store), wberr('invalid store specification'); end
+  if ~ischar(store), wbdie('invalid store specification'); end
 
   HAM.mat=[];
 
-  if mflag
+  if use_mat
      if ~isfield(HAM,'store') || isempty(HAM.store) || ...
-        ~ischar(HAM.store), wberr(...
-        'model setup must specify default HAM.store (global)');
+        ~ischar(HAM.store)
+        wbdie('model setup must specify default HAM.store (global)');
      end
 
      HAM.mat=[getenv('LMA') '/DMRG/' HAM.store];
      HAM.store=[];
   elseif ~isempty(store)
      if ~isempty(findstr(store,'/')) 
-          HAM.mat=store;
+          HAM.mat  =store;
      else HAM.store=store; end
   elseif ~isempty(fout)
      HAM.mat=fout;
      HAM.store='';
-  else
-     if ~xor(isempty(HAM.store),isempty(HAM.mat))
-     wberr('invalid output setting'); end
+  elseif ~xor(isempty(HAM.store),isempty(HAM.mat))
+     wbdie('invalid output setting');
   end
 
   if nargout>1

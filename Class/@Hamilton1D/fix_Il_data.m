@@ -21,7 +21,7 @@ function [Il,RR,isw]=fix_Il_data(HAM,varargin)
 
    if e
       helpthis, if nargin || nargout
-      wberr('invalid usage (%g)',e), end, return
+      wbdie('invalid usage (%g)',e), end, return
    end
 
    varargin=varargin(k); aflag=0; is_=0;

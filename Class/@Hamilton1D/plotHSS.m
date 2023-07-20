@@ -32,7 +32,7 @@ function plotHSS(HAM,varargin)
   if isempty(varargin), varargin={'-pn'}; end
 
   if isempty(HAM) || ~isfield(HAM.info,'HSS')
-     wberr('invalid usage (missing field HAM.info.HSS)'); end
+     wbdie('invalid usage (missing field HAM.info.HSS)'); end
   L=numel(HAM.mpo);
 
   sym=HAM.info.IS.E.info.qtype;

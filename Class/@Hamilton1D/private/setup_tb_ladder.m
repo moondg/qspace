@@ -3,7 +3,7 @@ function [HAM]=setup_tb_ladder(varargin)
 % Wb,Aug27,15
 
   if nargin<1
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -19,7 +19,7 @@ function [HAM]=setup_tb_ladder(varargin)
        L=getopt('get_last',[]);
   else getopt('check_error'); end
 
-  if isempty(L), wberr('length L not specified'); end
+  if isempty(L), wbdie('length L not specified'); end
 
   if NC==1
        sym='Acharge';

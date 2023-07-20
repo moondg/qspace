@@ -25,7 +25,7 @@ function sms(varargin)
 
   if nargin<1 || narg && ~isnumeric(varargin{1}) && ~all(ishandle(varargin{1}(:)))
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'); end
+     if nargin || nargout, wbdie('invalid usage'); end
      return
   end
 
@@ -46,7 +46,7 @@ function sms(varargin)
 
   if narg && ~ischar(varargin{1}), {msize,dofix, varargin{:}}
      if nargin || nargout
-        wberr('invalid usage'); else helpthis; end
+        wbdie('invalid usage'); else helpthis; end
      return
   end
 

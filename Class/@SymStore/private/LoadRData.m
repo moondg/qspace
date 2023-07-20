@@ -32,7 +32,7 @@ function [R,dd]=LoadRData(sym,varargin)
      f=[ D0 '/(' q ').rep'];
      if exist(f,'file')
         I=load2(f,'-mat'); R=I.RSet;
-     else error('Wb:ERR','\n   ERR file not found "%s"',f); end
+     else wbdie('file not found "%s"',repHome(f)); end
 
      if vflag || rfix
         fprintf(1,'\n   %s (%s) d=%d\n',R.type,qmat2char(R.J),size(R.Z,1));

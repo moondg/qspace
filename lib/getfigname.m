@@ -9,7 +9,7 @@ function s=getfigname(varargin)
         f=v; varargin(1)=[];
      else
         helpthis, if nargin || nargout
-        wberr('invalid usage'), end, return
+        wbdie('invalid usage'), end, return
      end
   end
 

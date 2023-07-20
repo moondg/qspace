@@ -7,14 +7,14 @@ function yn=avgdata(y,n,lflag)
 % Wb,Nov17,99 ; Wb,Apr05,13
 
   if nargin<1
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
   if nargin<2, n=2; end
   if nargin<3, lflag=0;
     elseif isequal(lflag,'-l'), lflag=1;
-    else wberr('invalid usage'); 
+    else wbdie('invalid usage'); 
   end
 
   tflag=size(y,1)<size(y,2);
@@ -33,7 +33,7 @@ function yn=avgdata(y,n,lflag)
      w=0:(1/n):1; w=[ w(2:end) fliplr(w(2:end-1)) ];
      w=w/sum(w);
 
-     if size(y,1)<2*n, wberr(...
+     if size(y,1)<2*n, wbdie(...
        'invalid usage (too few data points for n=%g (%g)',n,size(y,1));
      end
 

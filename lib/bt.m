@@ -1,11 +1,33 @@
-function bt(n)
-% Function bt() - backtrace (when debugging)
-% Wb,Aug27,08
+function bt(varargin)
+% Function bt([n,opts])
+%    
+%    Show backtrace of current caller stack, e.g., when debugging
+%    skipping lowest n entries (default: 0).
+%
+% Options
+%
+%    -v|--show [m]  show source of last m stack entries (default: m=3)
+%
+% Wb,Aug27,08 ; Wb,Jul16,23
 
-  if ~nargin, n=0; end
+  persistent gStack iStack
 
-% NB! this does know about possible `dbup's in the caller
-% hence this always takes *this (=bt.m) as current stack line => i=1 (!)
+  n=0; iS=[]; nargs=0; df=[];
+  if nargin
+     if isnumber(varargin{1}), n=varargin{1}; varargin(1)=[]; end
+     nargs=numel(varargin);
+     if nargs
+        if ~isempty(regexp(varargin{1},'^(--show|-v$)'))
+             iS=varargin(2:end);
+        elseif ~isempty(regexp(varargin{1},'^--(up|down)(?@q=$1;)')) && nargs<=2
+           df=[varargin{2:end}];
+           if isempty(df), df=1; elseif ischar(df), df=str2num(df); end
+           if isequal(q,'down'), df=-df; end
+        else disp(varargin), wbdie('invalid usage'); end
+     end
+  end
+
+if isempty(gStack) || isempty(df)
   [S,i]=dbstack('-completenames');
 
   if 2+n>1
@@ -25,6 +47,73 @@ function bt(n)
 % -------------------------------------------------------------------- %
 
   dispstack(S)
+  gStack=S; iStack=1;
+end
+
+  if ~isempty(df)
+     N=numel(gStack); i=iStack+df;
+     if i<1
+        fprintf(1,'\n  already at lowest frame\n\n');
+        return
+     elseif i>N
+        fprintf(1,'\n  already at highest frame\n\n');
+        return
+     end
+   % WRN! not allowed by matlab:
+   % ---> ERR Debug commands only allowed when stopped in debug mode.
+   % if     df>0, evalin('caller',repmat('dbup; ',  1, df));
+   % elseif df<0, evalin('caller',repmat('dbdown; ',1,-df));
+   % end
+     iStack=i; iS=i;
+  else
+     N=numel(S);
+     if isempty(iS) && nargs
+        iS=[N-2:N];
+     end
+     if isempty(iS), return; end
+  end
+
+  if ~iscell(iS), iS={iS}; end
+  for i=1:numel(iS), k=iS{i};
+     if ischar(iS{i}), iS{i}=str2num(iS{i}); end
+  end
+  iS=flip(unique([iS{:}])); nS=numel(iS);
+  if nS>1, dl=1; else dl=3; end
+
+  for k=iS
+     if ischar(k), k=str2num(k); end
+     if i<1 || i>N
+        wblog('ERR','index out of bounds (%d/%d)',i,N); 
+        continue
+     end
+
+     e0=[char(27) '[38;5;8m' ];
+     e2=[char(27) '[38;5;12m'];
+     em=[char(27) '[0m'];
+
+     s={num2str(k), '', ''}; if nS==1, s{3}=char(10); end
+     s{2}=regexprep(S(k).file,'.*\/','');
+     s=sprintf('-- source at level %s (%s)%s ',s{:});
+     s(end+1:80)='-';
+     fprintf(1,[e0 '%s' em '\n'],s);
+
+     l=S(k).line; l=sprintf('%d:%d',max(1,l-dl),l+dl);
+     cmd=['dbtype(''' S(k).file ''',''' l ''')'];
+
+     if ~wblog('--hl-check'), eval(cmd);
+     else
+        s=textscan(evalc(cmd),'%s','whitespace','\n'); s=s{1};
+        lpat=['^' num2str(S(k).line) '\s'];
+        fmt=[e0 '%d:' em ' %s\n'];
+        for j=1:numel(s)
+           if ~isempty(regexp(s{j},lpat))
+              s{j}=[ e2 s{j} em];
+           end
+           fprintf(1,fmt,k,s{j});
+        end
+     end
+  end
+  fprintf(1,'\n');
 
 end
 

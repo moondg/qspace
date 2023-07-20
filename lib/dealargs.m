@@ -9,7 +9,7 @@ function varargout=dealargs(varargin)
 
 % if length(varargin)<1
 %    eval(['help ' mfilename]);
-%    if nargin || nargout, wberr('invalid usage'), end, return
+%    if nargin || nargout, wbdie('invalid usage'), end, return
 % end
 
   varargout=cell(1,nargout);

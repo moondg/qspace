@@ -12,7 +12,7 @@ function i=isdual_(varargin)
   i=0;
 
 % if ~nargin, return; end
-  if nargin~=2, wberr('invalid usage (got %g input arguments)',nargin); end
+  if nargin~=2, wbdie('invalid usage (got %g input arguments)',nargin); end
 
   Q1=varargin{1};
   Q2=varargin{2};

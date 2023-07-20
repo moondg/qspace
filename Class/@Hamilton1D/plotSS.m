@@ -18,7 +18,7 @@ function plotSS(HAM,varargin)
      if getopt('HBLX'),
           plot_HBLX(HAM,s1,s2,I,opts{:});
      else 
-        wberr('invalid usage (need to specify system)');
+        wbdie('invalid usage (need to specify system)');
      end
   getopt('check_error');
 
@@ -46,7 +46,7 @@ function plot_HBLX(HAM,sl,sr,I,varargin)
   if isempty(varargin), varargin={'-pn'}; end
 
   if isempty(HAM) || ~isfield(HAM.info,'HSS')
-     wberr('invalid usage (missing field HAM.info.HSS)'); end
+     wbdie('invalid usage (missing field HAM.info.HSS)'); end
   L=numel(HAM.mpo);
 
   ss={sl,sr,I.sx};
@@ -55,7 +55,7 @@ function plot_HBLX(HAM,sl,sr,I,varargin)
 
   if ~isempty(dk) || dk~=1
      if dk<1 || mod(dk,2)~=1, dk
-        wberr('invalid dk (odd value required)');
+        wbdie('invalid dk (odd value required)');
      end
      for i=1:ns, ss{i}=ss{i}(1:dk:end,:); end
      l=length(ss{2});

@@ -15,19 +15,19 @@ function s=cgr_size(A,i,j)
 
   if isfield(c,'size'), s=c.size;
   elseif isnumeric(c),  s=size(c);
-  else wberr('invalid cgr data'); end
+  else wbdie('invalid cgr data'); end
 
   l=numel(s);
   if l<r, s(end+1:r)=1;
   elseif l==r+1
      if isfield(c,'cgw'), w=size(c.cgw);
-        if numel(w)~=2 || diff(w)>0 || any(w>s(end)), wberr(...
+        if numel(w)~=2 || diff(w)>0 || any(w>s(end)), wbdie(...
             'unexpected OM dimensions of cgr(%d,%d).cgw @ OM=%d',i,j,s(end));
         else s(end)=min(s(end),w(2));
         end
      end
   elseif l>r+1
-     wberr('unexpected cgr rank %d/%d',l,r);
+     wbdie('unexpected cgr rank %d/%d',l,r);
   end
 
 end

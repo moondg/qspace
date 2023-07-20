@@ -34,7 +34,7 @@ function [r2,E0,Il,HAM,RR,EE]=sweepPsi(HAM,varargin)
 % TST clear; wsys='SU2_w2'; NPsi=8; Qtot=[]; dbwrn; rtol=1E-20; L=10; tst_Hamilton1D
 
   if nargin<1 || nargout>6
-    helpthis, if nargin || nargout, wberr('invalid usage'), end
+    helpthis, if nargin || nargout, wbdie('invalid usage'), end
     return
   end
 
@@ -57,7 +57,7 @@ function [r2,E0,Il,HAM,RR,EE]=sweepPsi(HAM,varargin)
      else
         kc=initPsi(HAM);
         k2=initHK(HAM,kc);
-        if k2~=kc, wberr('inconsistent kc setting (%g/%g)',kc,k2);
+        if k2~=kc, wbdie('inconsistent kc setting (%g/%g)',kc,k2);
         end
      end
 
@@ -68,7 +68,7 @@ function [r2,E0,Il,HAM,RR,EE]=sweepPsi(HAM,varargin)
   if tflag
      [E,e0,r2]=getEnergies(HAM,kc); E=E/L; ee=E(find(~isnan(E)));
      e=max(abs(diff(ee)));
-     if e>1E-12, wberr('got severe energy inconsistency (@ %.3g)',e); 
+     if e>1E-12, wbdie('got severe energy inconsistency (@ %.3g)',e); 
      else
         e=[mean(ee), std(ee)];
         wblog('ok.',['got consistent energy over MPS ' ...
@@ -93,7 +93,7 @@ function [r2,E0,Il,HAM,RR,EE]=sweepPsi(HAM,varargin)
 
   dloc=getDimQS(HAM.oez(1).op); dloc=dloc(1);
 
-  if isempty(isw) wberr('missing info isw !?');
+  if isempty(isw) wbdie('missing info isw !?');
   else
      if ~isempty(nsw)
           s{2}=sprintf(' %g/%g',isw,nsw);
@@ -135,7 +135,7 @@ function [r2,E0,Il,HAM,RR,EE]=sweepPsi(HAM,varargin)
            k1=1; k2=k+1; clear X3
            break;
         else
-           wberr('failed to determine direction to continue from kc=%g',k+1);
+           wbdie('failed to determine direction to continue from kc=%g',k+1);
         end
      end
 
@@ -219,7 +219,7 @@ function [E,e0]=getEnergy(HAM,k,dir)
 
    X=load_dmrg_data(HAM,k); odir=itags2odir(X.AK);
    if odir, X.AK.info.itags
-      wberr('got other than current site !? [k=%g: %g]',k,odir);
+      wbdie('got other than current site !? [k=%g: %g]',k,odir);
    end
 
    L=numel(HAM.mpo);
@@ -248,7 +248,7 @@ function [E,e0]=getEnergy(HAM,k,dir)
 
    q=norm(Psi); if abs(q-1)>1E-12
      s=sprintf('input state Psi not normalized !? (%.3g @ %.3g)',q,abs(q-1));
-     if abs(q-1)>1E-8, wberr('%s',s); 
+     if abs(q-1)>1E-8, wbdie('%s',s); 
      else wblog('WRN','%s',s); end
    end
 

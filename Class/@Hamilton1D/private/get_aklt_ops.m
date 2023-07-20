@@ -17,7 +17,7 @@ function Sab=get_aklt_ops(S,naklt,waklt,sstr)
 % outsourced from setup_Heisenberg.m // Wb,Sep25,15
 
   if nargin<2 || naklt<1 || nargout>1
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
   if nargin<3, sstr='S'; end
@@ -38,11 +38,11 @@ function Sab=get_aklt_ops(S,naklt,waklt,sstr)
      [u,s,v]=svdQS(X2,2,'stol',1E-12);
 
      e=getIdentityQS(s,1); if ~isequal(e.Q{1},s.Q{1})
-        wberr('got different Q sorting !?'); end
+        wbdie('got different Q sorting !?'); end
 
      for i=1:numel(s.data)
         si=s.data{i}; if any(si)<=0
-           wberr('got min(svd)=%.3g !?',min(si)); end
+           wbdie('got min(svd)=%.3g !?',min(si)); end
         s.data{i}=diag(sqrt(si));
         e.data{i}=s.data{i};
      end

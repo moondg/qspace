@@ -10,17 +10,17 @@ function s=str2tex(s,varargin)
 
   if nargin<2, return
   elseif nargin==2 && iscell(varargin{1}), pp=varargin{1};
-     if mod(numel(pp),2), wberr('invalid usage'); end
+     if mod(numel(pp),2), wbdie('invalid usage'); end
      if     size(pp,1)==1, pp=reshape(pp,2,[])';
-     elseif size(pp,2)~=2, wberr('invalid usage');
+     elseif size(pp,2)~=2, wbdie('invalid usage');
      end
-  elseif mod(nargin-1,2), wberr('invalid usage');
+  elseif mod(nargin-1,2), wbdie('invalid usage');
   else
      pp=reshape(varargin,2,[])';
   end
 
   if ~all(cellfun(@ischar,pp),'all');
-     wberr('invalid usage (pairs of string pattern expected)');
+     wbdie('invalid usage (pairs of string pattern expected)');
   end
   for i=1:size(pp,1)
      s=regexprep(s,pp{i,1},pp{i,2});

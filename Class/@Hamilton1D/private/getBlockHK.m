@@ -28,7 +28,7 @@ function HK=getBlockHK(Ik,varargin)
 
       i=itags2odir(Ik.AK); n=size(HK.data{1},3); 
       if i==1, ic=1; elseif i==2, ic='1*';
-      else wberr('invalid setting (odir=%g)',i); end
+      else wbdie('invalid setting (odir=%g)',i); end
 
       v=zeros(n,1); if i<=n, v(i)=1; end
 	  V=getvac(HK,'-1d'); V.data{1}=v;
@@ -40,7 +40,7 @@ function HK=getBlockHK(Ik,varargin)
       end
 
    elseif r~=2
-      wberr('invalid usage (got rank-%g tensor)',r);
+      wbdie('invalid usage (got rank-%g tensor)',r);
    end
 
    q=normQS(HK);

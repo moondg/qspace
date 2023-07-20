@@ -23,7 +23,6 @@ function setupStorage(HAM)
   I=repmat(I,1,L);
 
   if ~isempty(HAM.store), s=HAM.store;
-
      eval(sprintf('global %s; %s=I;',s,s));
 
   elseif ~isempty(HAM.mat), mat=HAM.mat; nfx=0;
@@ -46,7 +45,7 @@ function setupStorage(HAM)
      else wblog('I/O','setting up %g files',L); end
      wblog('mat','%s_*.mat',repHome(mat));
 
-  else wberr('invalid storage specification'); end
+  else wbdie('invalid storage specification'); end
 
 end 
 

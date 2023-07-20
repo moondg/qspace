@@ -13,13 +13,13 @@ function kdir=check_dir(kdir)
      switch kdir
         case {'>>'}, kdir=+1;
         case {'<<'}, kdir=-1;
-        otherwise wberr('invalid kdir=''%s''',kdir); 
+        otherwise wbdie('invalid kdir=''%s''',kdir); 
      end
   else
      if isnumeric(kdir) && numel(kdir)==1 && kdir
         if kdir>0, kdir=1; else kdir=-1; end
      else
-        kdir, wberr('invalid orthonormalization direction'); 
+        kdir, wbdie('invalid orthonormalization direction'); 
      end
   end
 

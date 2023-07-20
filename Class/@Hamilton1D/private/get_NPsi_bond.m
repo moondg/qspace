@@ -21,7 +21,7 @@ function [NPsi,NPsi2]=get_NPsi_bond(Psi)
      if isempty(regexpi(t,'Psi'))
         wblog('WRN','got itag ''%s'' for Psi !?',t);
      end
-  else wberr('invalid usage (got qdir=''%s'' !?)',qdir);
+  else wbdie('invalid usage (got qdir=''%s'' !?)',qdir);
   end
 
 end

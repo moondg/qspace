@@ -22,7 +22,7 @@ function Sout=add2struct(varargin)
 
   if nargin<2
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   Sout=varargin{1}; k=1; v1=inputname(1);
@@ -55,7 +55,7 @@ function Sout=add2struct(varargin)
             l=lasterror; inl(1), disp(l.message), inl(1)
          end
       else 
-      wberr('failed to assign data (arg #%d)',i+1); end
+      wbdie('failed to assign data (arg #%d)',i+1); end
   end
 
   clear global flag__ val__

@@ -25,7 +25,7 @@ function [im,nn,ii]=findstrc(ss,q,varargin)
 % i = find(cellfun(@numel,regexp(ss,pat))); // Wb,Jun09,19
 
   if nargin<2 || ~iscell(ss)
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -49,13 +49,13 @@ function [im,nn,ii]=findstrc(ss,q,varargin)
      try ii=my_regexp(ss,q,args{:});
      catch me
         [e,i]=lasterr; e=regexprep(e,char(10),'\\N');
-        wberr('invalid input (cellar array of strings required)\N\N%s',e);
+        wbdie('invalid input (cellar array of strings required)\N\N%s',e);
      end
-  else wberr('invalid usage (char cell array required)'); end
+  else wbdie('invalid usage (char cell array required)'); end
 
   nn=reshape(cellfun(@numel,ii),size(ss));
   if nflag
-     if nargout>1, wberr(...
+     if nargout>1, wbdie(...
        'invalid usage (one output argument only with option -c'); end
      im=nn; 
   else

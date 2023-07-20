@@ -13,7 +13,7 @@ function h=getfigh(tag,varargin)
 
   narg=length(varargin);
   if narg
-     if narg~=1 || ~ischar(varargin{1}), wberr('invalid usage'); end
+     if narg~=1 || ~ischar(varargin{1}), wbdie('invalid usage'); end
      figfile=varargin{1};
   else figfile=''; end
 
@@ -25,7 +25,7 @@ function h=getfigh(tag,varargin)
         f=open(figfile); set(f,'Visible','off','tag',ftag);
      end
 
-     if isempty(f), wberr('invalid usage (figure not found)'); 
+     if isempty(f), wbdie('invalid usage (figure not found)'); 
      elseif numel(f)>1
         wblog('WRN','more than one figure set found (%g)',numel(f))
         f=f(1);
@@ -39,7 +39,7 @@ function h=getfigh(tag,varargin)
   if isempty(h)
      s=sprintf('failed to find / open axes %s (%s)',tag,figfile);
      if ezflag, wblog('ERR',s);
-     else wberr(s); end
+     else wbdie(s); end
   end
 
 end

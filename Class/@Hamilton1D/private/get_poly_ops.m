@@ -29,7 +29,7 @@ function [Sab,Ix]=get_poly_ops(S,J,varargin)
 % -------------------------------------------------------------- %
 
   if nargin<2
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -46,7 +46,7 @@ function [Sab,Ix]=get_poly_ops(S,J,varargin)
   S2=contract(S,3,S,'3*','1423'); % (a a',b'b) -> (a b,a'b')
 
   if numel(J)==1 && J>=1 && J==round(J), n=J;
-     if n>9, wberr('check value for n=%g !?',n); end
+     if n>9, wbdie('check value for n=%g !?',n); end
      SK=S2; s1=sprintf('(%s,%s)',s1,s1);
      for k=2:n
         SK=contract(SK,'34',S2,'12');

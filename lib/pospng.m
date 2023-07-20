@@ -32,7 +32,7 @@ function h=pospng(fname,x,varargin)
 
   if nargin<2
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   if ~isempty(texs)

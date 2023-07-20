@@ -3280,7 +3280,7 @@ wbarray<TC>& wbarray<TA>::contract(
    Wb::Clock clk("arr:contract",0); 
 #endif
 
-   unsigned i,s; size_t s1=1;
+   unsigned i,s; size_t one=1;
    char aflag, bflag;
    wbvector<size_t> S1,S2;
    wbarray<TA> MA;
@@ -3316,9 +3316,8 @@ wbarray<TC>& wbarray<TA>::contract(
      toMatrixRef(FL,MA,i1,2,aflag);    SIZE.getI(i1,S1); 
    B.toMatrixRef(FL,MB,i2,1,bflag);  B.SIZE.getI(i2,S2);
 
-   if ((i=S1.len+S2.len)<2) { 
-      if (!i) { S2.init2val(2,s1); } else
-      if (!S2.len) { S2.init(1,&s1); } else S2.Append(s1);
+   if ((i=S1.len+S2.len)<2) {
+      if (!i)           { S2.init2val(2,one); } 
    }
 
    if (!afac) { 

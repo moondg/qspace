@@ -29,7 +29,7 @@ function v=getuser(varargin)
   end
 
   if narg~=1 || ~ischar(varargin{1})
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 

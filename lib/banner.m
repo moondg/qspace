@@ -18,7 +18,7 @@ function banner(varargin)
   else flag=1; end
 
   if isempty(varargin) || ~ischar(varargin{1}), helpthis
-     if nargin || nargout, wberr('invalid usage'), end
+     if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 

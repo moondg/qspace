@@ -25,7 +25,7 @@ function cl=clim(varargin)
 
   if narg>1 || narg && ~isnumeric(varargin{1})
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   if narg, cl=varargin{1}; else cl=get(ah,'CLim'); end

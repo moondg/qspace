@@ -149,7 +149,7 @@ function Iq=plotQSpectra(H,varargin)
         if isfield(H.info,'itags') && ~isempty(H.info.itags)
            t=H.info.itags; if isequal(t{2},[t{1},'*'])
                 s{2}=[ ' on ''' t{1} ''''];
-           else s{2}=[ ' having itags={' itags2str(t) '}']; end
+           else s{2}=[ ' having itags={' itags_to_str(t) '}']; end
         end
         q=getDimQS(H);
         if size(q,1)>1
@@ -270,7 +270,7 @@ function Iq=plotQSpectra(H,varargin)
      tflag=isempty(tstr);
 
      if ~isempty(SOP), ic=[];
-        if ~isstruct(SOP), SOP, wberr('invalid usage'); end
+        if ~isstruct(SOP), SOP, wbdie('invalid usage'); end
         if tflag
            if iscell(SOP)
                 s=SOP{ws(k).is};

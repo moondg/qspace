@@ -21,11 +21,11 @@ function varargout=subsref(HAM,S)
         switch k
            case {'end','last'}, k=numel(HAM.mpo);
            case {'kc'},         k=getCurrentSite(HAM);
-           otherwise wberr('invalid usage');
+           otherwise wbdie('invalid usage');
         end
      end
      if ~isnumeric(k) || numel(k)~=1, k
-        wberr('invalid data reference');
+        wbdie('invalid data reference');
      end
 
      if numel(S(1).subs)>1 && isequal(S(1).subs{2},'-Tr')

@@ -22,7 +22,7 @@ function [HAM]=setup_Hubbard(varargin)
 % Wb,Feb06,18
 
   if nargin<1
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -53,7 +53,7 @@ function [HAM]=setup_Hubbard(varargin)
      Lx=getopt('get_last',[]);
   else getopt('check_error'); end
 
-  if isempty(Lx), wberr('length L not specified'); end
+  if isempty(Lx), wbdie('length L not specified'); end
 
   sym={'Fermion',''}; if ~u1flag && mu, u1flag=1; end
 
@@ -165,7 +165,7 @@ function [HAM]=setup_Hubbard(varargin)
   tx=expand_param(tx,  Ly,Lx);
   ty=expand_param(ty,  Ly,Lx);
 
-  if perBCx && Lx<4, wberr('invalid Lx=%g !? (having perBC-x)',Lx); end
+  if perBCx && Lx<4, wbdie('invalid Lx=%g !? (having perBC-x)',Lx); end
 
   for j=1:Lx
   for i=1:Ly, k0=i+Ly*(j-1);
@@ -203,7 +203,7 @@ end
 function q=expand_param(q,Ly,Lx);
 
   if numel(q)==1, q=repmat(q,Ly,Lx);
-  elseif ~isequal(size(q),[Ly,Lx]), wberr(...
+  elseif ~isequal(size(q),[Ly,Lx]), wbdie(...
     'invalid usage (size mismatch in %s: %s having (Ly,Lx)=(%g,%g)',...
      inputname(1), vsprintf(size(q),'x'), Ly, Lx);
   end

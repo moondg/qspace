@@ -43,7 +43,7 @@ function h=postext(varargin)
 
   if isempty(args), eval(['help ' mfilename]); return; end
   if ~isempty(dx)
-     if length(dx)>2, wberr('invalid dx'); end
+     if length(dx)>2, wbdie('invalid dx'); end
      x=x+dx(1); if length(dx)>1, y=y+dx(2);
   end
 

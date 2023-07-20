@@ -1,7 +1,7 @@
 function s=num2text(n)
 
   if n<0 || n~=round(n)
-     wberr('%s requires uint number', mfilename); end
+     wbdie('%s requires uint number', mfilename); end
 
   switch n
      case  0, s='zero';

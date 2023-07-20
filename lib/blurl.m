@@ -25,7 +25,7 @@ function [lh,Ib]=blurl(varargin)
 
   if ~nargin
      helpthis, if nargin || nargout
-     wberr('invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   if isempty(varargin{1}), lh=varargin{1}; return; end

@@ -4,7 +4,7 @@ function save_dmrg_info(HAM,varargin)
 % Wb,Apr14,14
 
   if nargin<1
-     wberr('invalid usage'); end
+     wbdie('invalid usage'); end
 
   if ~isempty(HAM.store), s=HAM.store;
 
@@ -15,7 +15,7 @@ function save_dmrg_info(HAM,varargin)
 
      save(sprintf('%s_info.mat',mat),'HAM');
 
-  else wberr('invalid storage specification'); end
+  else wbdie('invalid storage specification'); end
 
   if nargin>1
      for i=1:numel(varargin)

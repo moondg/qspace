@@ -7,8 +7,8 @@ function HAM=save_trotter_data(HAM,S,k)
 
   L=numel(HAM.mpo);
 
-  if nargin>2 && ~isnumber(k), wberr('invalid usage'); end
-  if k<1 || k>L, wberr(...
+  if nargin>2 && ~isnumber(k), wbdie('invalid usage'); end
+  if k<1 || k>L, wbdie(...
     'invalid usage (k out of bounds: %g/%g',k,numel(HAM.mpo)); end
 
   mat=HAM.user.trotter.mat;

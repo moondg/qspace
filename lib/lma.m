@@ -101,7 +101,7 @@ function [Iout,mat_]=lma(varargin)
     end
 
     if i>0
-       if i>nf, wberr('file ID out of bounds (%d/%d)',i,nf); end
+       if i>nf, wbdie('file ID out of bounds (%d/%d)',i,nf); end
        l=nf-i+1;
     else
        l=max([1,nf-nk]):nf;

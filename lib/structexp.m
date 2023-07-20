@@ -19,8 +19,8 @@ function structexp(S,varargin)
   if ~isempty(varargin)
      ff=varargin;
      for i=1:numel(ff)
-        if ~ischar(ff{i}), ff{i}, wberr('invalid field');
-        elseif ~isfield(S,ff{i}), wberr('invalid field ''%s''',ff{i}); end
+        if ~ischar(ff{i}), ff{i}, wbdie('invalid field');
+        elseif ~isfield(S,ff{i}), wbdie('invalid field ''%s''',ff{i}); end
      end
   else ff=fieldnames(S); end
 

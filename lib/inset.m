@@ -31,12 +31,12 @@ function h=inset(varargin)
 
   if narg<1
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   pos=postrans(varargin{1});
   if ~isempty(dx)
-     if numel(dx)~=2, wberr('invalid dx'); end
+     if numel(dx)~=2, wbdie('invalid dx'); end
      pos=pos+reshape(dx,1,[]);
   end
 

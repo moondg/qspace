@@ -15,7 +15,7 @@ function lh=mv2back(varargin)
 
   if ~nargin
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   n=varargin{1};

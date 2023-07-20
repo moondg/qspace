@@ -1364,7 +1364,9 @@ function [S,Iout]=getLocalSpace_SpinSUN(sym,qloc,varargin)
    if numel(i)~=nS, wberr('failed to identify def irep or its dual'); end
    q=getsub(I.E,i);
 
-   X=contract(getIdentity(q,q),2,getIdentityQS(q,'-0'),'2*',[1 3 2]);
+   Z=getIdentityQS(q,'-0');
+   X=getIdentity(q,Z);
+   X=contract(X,2,Z,'2*',[1 3 2]);
    i=find(sum((X.Q{1}-X.Q{2}).^2,2)==0 & sum(X.Q{3}.^2,2));
    S0=getsub(X,i);
    qs=S0.Q{3}(1,:); % qlabels for `spin'
@@ -1574,11 +1576,11 @@ function [S,Iout]=getLocalSpace_SON(N,qloc,varargin)
   if mod(N,2)
      if N==5, qadj='02';
      elseif N>5, qadj=['01' repmat('0',1,(N-5)/2)];
-     wberr('invalid usage'); end
+     wberr('invalid usage [SO(%g) ?]',N); end
   else
      if N==6, qadj='011';
      elseif N>6, qadj=['01' repmat('0',1,(N-4)/2)];
-     wberr('invalid usage'); end
+     else wberr('invalid usage [SO(%g) ?]',N); end
   end
 
   sym=sprintf('SO%g',N);

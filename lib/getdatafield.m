@@ -24,7 +24,7 @@ function A = getdatafield(varargin)
 
   narg=length(varargin);
   if narg<2 || narg>3
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -36,13 +36,13 @@ function A = getdatafield(varargin)
   na=prod(sa); if isempty(S), return; end
 
   if ~isfield(S,field)
-     wberr('invalid scalar field name (%s)',field); end
+     wbdie('invalid scalar field name (%s)',field); end
 
   f=getfield(S(1),field); isn=isnumeric(f);
   if isempty(idx)
      for i=1:numel(S)
         if numel(getfield(S(i),field))>1
-        wberr('index expected for data array'); end
+        wbdie('index expected for data array'); end
      end
   end
 

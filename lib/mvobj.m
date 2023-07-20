@@ -5,7 +5,7 @@ function mvobj(hh,dxy)
 
   if nargin~=2
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   dxy=reshape(dxy,1,[]); n=length(dxy);

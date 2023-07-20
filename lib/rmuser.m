@@ -24,10 +24,10 @@ function rmuser(varargin)
   for i=1:n, h=ah(i);
 
      u=get(h,'UserData');
-     if ~isstruct(u), wberr('UserData not of type structure.'); end
+     if ~isstruct(u), wbdie('UserData not of type structure.'); end
 
      for i=1:narg, f=varargin{i};
-        if ~ischar(f), wberr('invalid usage'); end
+        if ~ischar(f), wbdie('invalid usage'); end
         if isfield(u,f), u=rmfield(u,f);
         else wblog('WRN','no field %s in UserData',f); end
      end

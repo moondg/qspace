@@ -19,7 +19,7 @@ function [HAM]=setup_TLHubbard(varargin)
 % wsys='TLHubbard'; L=6; W=6; U=9; tflag=2; tst_Hamilton1D
 
   if nargin<1
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -41,7 +41,7 @@ function [HAM]=setup_TLHubbard(varargin)
   else getopt('check_error'); end
 
   if useXC && mod(W,2)
-     wberr('invalid usage (XC requires even width)'); end
+     wbdie('invalid usage (XC requires even width)'); end
 
   sym={'FermionS','Acharge,SU2spin'};
 
@@ -145,7 +145,7 @@ function [HAM]=setup_TLHubbard(varargin)
              else J=(2:2:W)'; J2=[J J+1; J J-1];
              end
 
-          otherwise wberr('invalid switch'); 
+          otherwise wbdie('invalid switch'); 
         end
 
         kk=sub2ind_cylinder(I2,J2,L,W,oi{:}); nk=size(kk,1);

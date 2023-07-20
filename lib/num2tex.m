@@ -22,7 +22,7 @@ function s=num2tex(x,varargin)
   n=numel(x); 
 
   if xflag==1
-     if n~=1 || x<0, wberr('invalid usage'); end
+     if n~=1 || x<0, wbdie('invalid usage'); end
      if     x==1, s='st';
      elseif x==2, s='nd';
      elseif x==3, s='rd'; else s='th'; end

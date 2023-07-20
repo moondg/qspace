@@ -20,7 +20,7 @@ function sx=grep(s_,varargin)
   pat=getopt('get_last',[]);
 
   if isempty(pat)
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 

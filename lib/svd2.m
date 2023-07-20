@@ -76,7 +76,7 @@ function varargout=svd2(A,varargin)
      e=norm(A_-A,'fro')/nA;
   end
 
-  if e>1E-8, wberr('SVD also failed for transpose (e=%g !?)\n',e);
+  if e>1E-8, wbdie('SVD also failed for transpose (e=%g !?)\n',e);
   else fprintf(1,'> SVD now ok (@ e=%.3g)\n\n',e); end
 
 end

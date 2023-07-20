@@ -11,8 +11,9 @@ function wbwrn(varargin)
    s=regexprep([10 s],'\n','\n   WRN ');
    s=regexprep(s,'\\n','\n   WRN ');
 
-   if isdesktop>1, e=char(27);
-        wesc_={ [e '[35m'], [e '[0m'] };
+   use_col=wblog('--hl-check');
+   if use_col, e=char(27);
+        wesc_={ [e '[38;5;9m'], [e '[0m'] };
    else wesc_={ '','' }; end
 
    fprintf(1,[wesc_{1} s wesc_{2} '\n\n']);

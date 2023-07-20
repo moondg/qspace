@@ -376,5 +376,32 @@ inline wbstring& wbstring::cpy(const char *F, int L,
     return *this;
 };
 
+int wbstring::RegEx_replace(
+   const char *F, int L, const char *pat, const char *rep,
+   char icase, 
+   char gflag  
+) {
+
+   int rval=0; 
+   if (!data || !data[0]) { return rval; }
+
+   auto rflags =  std::regex_constants::ECMAScript;
+   if (icase) { rflags |= std::regex_constants::icase; }
+
+   try {
+      string sout=regex_replace(data,regex(pat,rflags),rep,
+        gflag ? std::regex_constants::match_default :
+                std::regex_constants::format_first_only);
+      const char *s=sout.data();
+      rval=strcmp(data,s);
+      if (rval) { init(s); }
+   }
+   catch (...) {
+      wblog(F_L,"ERR regex_replace() invalid regex_t = '%s'",pat);
+   }
+
+   return rval;
+};
+
 #endif
 

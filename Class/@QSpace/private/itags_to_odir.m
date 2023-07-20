@@ -28,20 +28,20 @@ function odir=itags_to_odir(t)
   if numel(t)==3
 
      if ~nout, odir=0;
-     elseif nout>1, t, error('Wb:ERR',['\n   ERR' ...
-        'got unexpected itags (got %g out-indizes !?)'],nout);
+     elseif nout>1, t
+        wbdie('got unexpected itags (got %g out-indizes !?)',nout);
      end
 
   elseif numel(t)==4
 
-     if ~nout || nout>2 || odir(end)~=4, t, error('Wb:ERR', ...
-        '\n   ERR got unexpected itags (got %g out-indizes !?)',nout);
+     if ~nout || nout>2 || odir(end)~=4, t
+        wbdie('got unexpected itags (got %g out-indizes !?)',nout);
      end
      if nout==1, odir=0;
      else odir=odir(1); end
 
-  else t, error('Wb:ERR',...
-    '\n   ERR got unexpected itags of rank %g !?',numel(t));
+  else t
+     wbdie('got unexpected itags of rank %g !?',numel(t));
   end
 
 end

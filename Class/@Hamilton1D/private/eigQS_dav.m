@@ -17,11 +17,11 @@ function [ee,Ig]=eigQS_dav(H,NPsi,G0);
    [i1,i2,Im]=matchIndex(H.Q{1},G0.Q{1},'-s');
 
    if ~isempty(Im.ix1) || ~isempty(Im.ix2), H, G0
-      wberr('got symmetry sector mismatch !?');
+      wbdie('got symmetry sector mismatch !?');
    end
    if ~isequal(H.Q{1},Ig.EK.Q{1}) || ~isequal(H.Q{1},Ig.AK.Q{1})
       H, EK=QSpace(Ig.EK), AK=QSpace(Ig.AK)
-      wberr('got reordered symmetry sectors !?');
+      wbdie('got reordered symmetry sectors !?');
    end
 
    if ~isequal(i1,i2), G0=getsub(G0,i2); end

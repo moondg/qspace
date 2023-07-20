@@ -2900,10 +2900,10 @@ void QSpace<TQ,TD>::init(
          QIDX.init(1,0); setupDATA();
          if (r<2) r=2; 
       }
-      else wblog(F,L,
+      else { wblog(F,L,
         "ERR QSpace() dimension mismatch (QIDX: %dx%d, data: %d)",
-         QIDX.dim1, QIDX.dim2, m
-      );
+         QIDX.dim1, QIDX.dim2, m);
+      }
    }
 
    for (n=i=0; i<m; ++i) {

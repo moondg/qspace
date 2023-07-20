@@ -7,7 +7,7 @@ function hh=leg_mvtext(l0,dy)
 % Wb,May07,07
 
   if nargin~=2 || numel(l0)~=1 || ~ishandle(l0)
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -16,7 +16,7 @@ function hh=leg_mvtext(l0,dy)
      hh=findall(l0,'type','text','tag','')';
   elseif isequal(t,'legend')
      hh=get(l0,'ItemText');
-  else l0, t, wberr('invalid handle'); end
+  else l0, t, wbdie('invalid handle'); end
 
   m=numel(hh);
 

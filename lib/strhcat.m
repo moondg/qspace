@@ -41,7 +41,7 @@ function ss=strhcat(varargin)
 
   if e
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   if iscell(ss)

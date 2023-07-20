@@ -29,17 +29,20 @@ function rval=wblog(varargin)
 
   persistent fid newfile llday
 
-  if nargin==0, eval(['help ' mfilename]); return; end
+  if ~nargin, eval(['help ' mfilename]); return; end
   if nargin==1
+     if isequal(varargin{1},'--hl-check')
+        rval=wblog_hl_check();
+        return 
 
-     if isequal(varargin{1},'-ping')
+     elseif isequal(varargin{1},'--ping')
         llday=check_nextday(llday,fid); return
      elseif ~isempty(regexp(varargin{1},'^--got-')), q=varargin{1}(7:end);
         u=getuser(0,'err_count'); rval=0;
         if     regexpi(q,'^ERR$'), if isfield(u,'err'), rval=u.err; end
         elseif regexpi(q,'^WRN$'), if isfield(u,'wrn'), rval=u.wrn; end
         elseif regexpi(q,'^TST$'), if isfield(u,'tst'), rval=u.tst; end
-        else wberr('invalid usage (%s)',q); end
+        else wbdie('invalid usage (%s)',q); end
         return
      elseif isequal(varargin{1},'unsetfid')
         fid=[]; return
@@ -135,9 +138,11 @@ function rval=wblog(varargin)
      end
   end
 
+  [use_col,iterm]=wblog_hl_check();
   wesc={0,'',''};
-  if isempty(fid) && isdesktop()>1
-     if     ~isempty(regexp (tag,'WRN')), wesc={1, 5};
+
+  if isempty(fid) && iterm
+     if     ~isempty(regexp (tag,'WRN')), wesc={1, 9};
      elseif ~isempty(regexp (tag,'ERR')), wesc={2, 1};
      elseif ~isempty(regexp (tag,'NB!')), wesc={4,34};
      elseif ~isempty(regexpi(tag,'ok!')), wesc={4, 2};
@@ -148,9 +153,8 @@ function rval=wblog(varargin)
 
   werr=bitand(wesc{1},3);
 
-  if wesc{1}
-     q=str2num(getenv('WB_LOG_COLOR'));
-     if ~isempty(q) && ~q, wesc={0,'',''}; end
+  if wesc{1} && ~use_col
+     wesc={0,'',''};
   end
 
   if wesc{1}
@@ -253,6 +257,21 @@ function line = lineno_aux(id)
        line = sprintf('%s>%s:%d', stack.file, stack.name, stack.line);
   else line = sprintf('%s:%d', stack.file, stack.line); end
 
+end
+
+% -------------------------------------------------------------------- %
+function [q,iterm]=wblog_hl_check()
+   q=0;
+
+   iterm=isdesktop()>1; if ~iterm, return; end
+
+   qs=getenv('QS_LOG_COLOR');
+   if isempty(qs), q=1;
+   else q=str2num(qs);
+      if isempty(q) || numel(q)~=1 || q<0
+         wbdie('invalid QS_LOG_COLOR = %s',qs); 
+      elseif q<0, q=0; end
+   end
 end
 
 % -------------------------------------------------------------------- %

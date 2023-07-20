@@ -67,13 +67,13 @@ function s=num2str2(val,varargin)
   elseif isequal(val,'-n0'), nset=2; else nset=0; end
 
   if nset
-     if mod(narg,2), wberr('invalid usage (%g)',narg); end
+     if mod(narg,2), wbdie('invalid usage (%g)',narg); end
      s={};
      for i=1:2:narg
         q=varargin{i}; t=varargin{i+1};
-        if numel(q)~=1 || ~isnumeric(q), wberr(...
+        if numel(q)~=1 || ~isnumeric(q), wbdie(...
            'invalid usage (alternating numbers expected)'); end
-        if ~ischar(t), wberr(...
+        if ~ischar(t), wbdie(...
            'invalid usage (alternating string expected)'); end
         if q~=0 || nset>1
            if q==0 s{end+1}=sprintf('no %ss',t);
@@ -180,11 +180,11 @@ function s=num2str2(val,varargin)
         if bflag>1, varargin(:,3)={' bytes',' kB',' MB',' GB',' TB'}; end
         varargin=reshape(varargin',1,[]);
         narg=numel(varargin);
-     else wberr('invalid usage'); end
+     else wbdie('invalid usage'); end
   end
 
   if narg<3 || mod(narg,3) || ~isscalar(val) || ~isnumeric(val)
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -192,7 +192,7 @@ function s=num2str2(val,varargin)
   for i=1:n
      if ~isscalar(varargin{1,i}) || ~isnumeric(varargin{1,i}) || ...
         ~isscalar(varargin{2,i}) || ~isnumeric(varargin{2,i}) || ...
-        ~ischar(varargin{3,i}), wberr('invalid usage');
+        ~ischar(varargin{3,i}), wbdie('invalid usage');
      end
   end
 

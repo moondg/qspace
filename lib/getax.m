@@ -8,7 +8,7 @@ function ah=getax(varargin)
 
   if length(varargin)~=1 || ~ischar(varargin{1})
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   atag=varargin{1};

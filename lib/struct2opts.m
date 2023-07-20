@@ -8,7 +8,7 @@ function f=struct2opts(S)
 
   if ~isstruct(S)
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'); end
+     if nargin || nargout, wbdie('invalid usage'); end
      return
   end
 

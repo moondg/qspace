@@ -7,7 +7,7 @@ function ss=catc(ic,varargin)
 % Wb,Jan28,10
 
   if ~nargin || ~isnumber(ic) || ic~=1 && ic~=2
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -16,7 +16,7 @@ function ss=catc(ic,varargin)
   else
      n=numel(varargin); fn=cell(n,1); fs={}; m=0;
      for i=1:n, if isempty(varargin{i}), continue; end
-        if ~isstruct(varargin{i}), wberr(...
+        if ~isstruct(varargin{i}), wbdie(...
            'invalid usage (set of structures expected)'); end
         fn{i}=fieldnames(varargin{i});
         if length(fn{i})>m, fs=fn{i}; m=length(fs); end

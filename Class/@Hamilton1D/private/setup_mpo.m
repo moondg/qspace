@@ -18,7 +18,7 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
    if size(HH,2)~=5
     % 5 columns required:
     % [ site1, iop1, site2, iop2, coupling strength ]
-      wberr('invalid usage (HH requires 5 columns)');
+      wbdie('invalid usage (HH requires 5 columns)');
    end
 
    if nargin<4, heps=1e-15; end
@@ -36,7 +36,7 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
    i=unique(reshape(HH(:,[1 3]),[],1));
    L=i(end);
    if ~isequal(i,(1:L)')
-      wberr('invalid usage [HH is not addressing all sites !?]');
+      wbdie('invalid usage [HH is not addressing all sites !?]');
    end
 
    i=find(HH(:,1)>HH(:,3));
@@ -45,13 +45,13 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
 
    HU=uniquerows(HH(:,1:4));
    if size(HU,1)~=size(HH,1)
-      wberr('invalid HH (got non-unique records !?)');
+      wbdie('invalid HH (got non-unique records !?)');
    end
 
    check_ortho_ops(HAM.oez,HAM.ops,HH);
 
    nops=size(HAM.ops,1); ntype=size(HAM.ops,2);
-   if size(HAM.oez,2)~=ntype, wberr(['invalid usage '...
+   if size(HAM.oez,2)~=ntype, wbdie(['invalid usage '...
      '(same number of sets for ops and oez required: %d/%d)'],...
      size(HAM.oez,2),ntype);
    end
@@ -62,11 +62,11 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
          'HAM.ops needs to be column vector (having stype=1 / %d)',ntype);
       end
    else
-      if numel(stype)~=L, wberr(...
+      if numel(stype)~=L, wbdie(...
         'length inconsistency (L=%g/%g) !?',L,numel(stype));
       end
       q=unique(stype(:));
-      if any(q<1 | q>ntype) wberr(['invalid usage '...
+      if any(q<1 | q>ntype) wbdie(['invalid usage '...
         '(stype out of bounds: %g..%g/%g)'],q([1 end]),ntype);
       end
       if ~isequal(q,(1:ntype)')
@@ -81,8 +81,8 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
       qops(i)=0; end
    end
 
-   if isempty(HAM.oez), wberr('invalid usage (HAM.oez not yet setup)');
-   elseif size(HAM.oez,1)>2, wberr(...
+   if isempty(HAM.oez), wbdie('invalid usage (HAM.oez not yet setup)');
+   elseif size(HAM.oez,1)>2, wbdie(...
      'invalid usage (HAM.oez got %d operators !?',size(HAM.oez,1));
    end
 
@@ -93,12 +93,12 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
    end
 
    if any(qoez(1,:)==0)
-      wberr('invalid usage (HAM.oez not yet setup !?)'); end
+      wbdie('invalid usage (HAM.oez not yet setup !?)'); end
    if size(qoez,1)==1, qoez(2,:)=0; end
 
    for j=1:size(HAM.oez,2)
       if ~isIdentityQS(HAM.oez(1,j).op)
-      wberr('invalid oez (expecting E as first operator)'); end
+      wbdie('invalid oez (expecting E as first operator)'); end
    end
 
    q=uniquerows([ HH(:,3)-HH(:,1), HH(:,[2 4 5])]);
@@ -117,7 +117,7 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
    HH(il,3:4)=HH(il,1:2);
 
    il=find(HH(:,1)==HH(:,3)); i=find(HH(il,2)-HH(il,4));
-   if ~isempty(i), HH(il(i),:), wberr(...
+   if ~isempty(i), HH(il(i),:), wbdie(...
       'got invalid local terms (inconsistent ops index)');
    end
 
@@ -126,9 +126,9 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
    for i=1:size(I,1)
       X=HAM.ops(I(i,1),I(i,2));
       r=numel(X.op.Q); if r~=2
-         wberr('got non-scalar local Hamiltonian term'); end
+         wbdie('got non-scalar local Hamiltonian term'); end
       e=normQS(X.op-X.op'); if e>1E-8 && ~X.hconj
-         wberr('got non-hermitian local Hamiltonian term');
+         wbdie('got non-hermitian local Hamiltonian term');
       end
    end
 
@@ -147,18 +147,18 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
 
    h2=uniquerows([HH(:,[1 2]); HH(:,[3 4])]);
    if any(h2(:,2)<1 | h2(:,2)>nops)
-      wberr('invalid usage (operator index out of bounds)'); end
+      wbdie('invalid usage (operator index out of bounds)'); end
 
    [k,I1,D1]=uniquerows(h2(:,1));
    for l=1:numel(I1);
       i=unique(h2(I1{l},2)); j=stype(k(l));
-      if any(qops(i,j)==0), wberr( ...
+      if any(qops(i,j)==0), wbdie( ...
         'invalid usage (addressing empty operator in HAM.ops !?)');
       end
 
       ff=[HAM.ops(i,j).fermionic];
       if any(ff)
-         if ~qoez(2,j), wberr(['invalid usage ' ...
+         if ~qoez(2,j), wbdie(['invalid usage ' ...
             '(missing or mixed up fermionic parity operator Z)']);
          end
       else qoez(2,j)=0; end
@@ -177,16 +177,16 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
       k2=HH(i,3); i2=HH(i,4); j2=stype(k2); o2=HAM.ops(i2,j2);
       if k1~=k2
          [i1,i2,I]=matchIndex(o1.qop,o2.qop);
-         if isempty(i1), wberr(...
+         if isempty(i1), wbdie(...
            'coupling term cannot be contracted to scalar !?'); end
-         if o1.fermionic~=o2.fermionic, wberr(...
+         if o1.fermionic~=o2.fermionic, wbdie(...
            'coupling term got fermionic mismatch !?'); 
          end
       else
          e=[norm(o1.qop), norm(o2.qop)];
-         if norm(e), wberr('got non-scalar local operator !?'); end
+         if norm(e), wbdie('got non-scalar local operator !?'); end
          if o1.fermionic || o2.fermionic
-            wberr('local fermionic terms !?'); 
+            wbdie('local fermionic terms !?'); 
          end
       end
    end
@@ -238,7 +238,7 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
 
    sfac=2^-10;
    if sfac*(size(HAM.oez,1)+size(HAM.ops,1))>=1
-      wberr('invalid usage (got %g+%g local operators !?)',...
+      wbdie('invalid usage (got %g+%g local operators !?)',...
       size(HAM.oez,1), size(HAM.ops,1))
    end
 
@@ -254,7 +254,7 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
    HH(ib,:)=[];
 
    ifac=2^-10; qfac=[1 ifac]'; qfac=blkdiag(qfac,qfac);
-   if ifac*ntype>=1, wberr(...
+   if ifac*ntype>=1, wbdie(...
      'invalid usage (too many operator sets %g/%g !?)',ntype,1/ifac);
    end
 
@@ -297,7 +297,7 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
          if HAM.ops(io1,is).fermionic, z=2; else z=1; end
 
          if diff(HH(ik,3))<0, HH(ik,:)
-            wberr('got sorting mismatch (%g..%g) !?',k1,k2); end
+            wbdie('got sorting mismatch (%g..%g) !?',k1,k2); end
 
          for j=1:nk, i=ik(j); k2=HH(i,3);
             io2=HH(i,4); i32=noez+io2; ko2=k2+io2*sfac;
@@ -310,7 +310,7 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
                       if j==1, M(1,s+1,i31)=1;
                       else     M(r,s+1,z)=1; end;                     iop(s+1,2,y)=k12;
                    else
-                            if M(r,2,i32), wberr('overwriting value in M !?'); end
+                            if M(r,2,i32), wbdie('overwriting value in M !?'); end
                             M(r,2,i32)=HH(i,end);
                    end
                elseif l<k2, M(r+1,s+1,z)=1;         iop(r+1,1,y)=k12; iop(s+1,2,y)=k12;
@@ -321,9 +321,9 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
 
             for l=k1:k2, M=mpo(l).M; iop=mpo(l).iop; y=1:2;
                if l>1 && size(mpo(l-1).M,2)~=size(mpo(l).M,1)
-               wberr('invalid mpo.M !?'); end
+               wbdie('invalid mpo.M !?'); end
                if l<length(mpo) && size(mpo(l).M,2)~=size(mpo(l+1).M,1)
-               wberr('invalid mpo.M !?'); end
+               wbdie('invalid mpo.M !?'); end
             end
 
             k1=k2;
@@ -337,7 +337,7 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
       HH(find(sum(HH.^2,2)==0),:)=[];
    end
 
-   if ~isempty(HH), HH, wberr('failed to include all H terms !?'); end
+   if ~isempty(HH), HH, wbdie('failed to include all H terms !?'); end
 
    stol=1E-12;
    [NK,SS,mpx]=check_ortho(mpo,stol);
@@ -390,7 +390,7 @@ function mpo=reduce_RL(mpo)
          Ik=sort([1 2, Ik+2]); M=M(Ik,:,:);
 
          x=contract(X,M,2,1); e=norm(reshape(x-M_,[],1));
-         if e>1E-12, wberr('got e=%.4g !?',e); end
+         if e>1E-12, wbdie('got e=%.4g !?',e); end
 
          mpo(k-1).M=contract(mpo(k-1).M,X,2,1,[1 3 2]);
          mpo(k).M=M;
@@ -441,7 +441,7 @@ function [M1,M2,I]=mpo_ortho(M1,M2,dir,stol)
       M1=reshape(U*S, s(1:3  ));
       M2=reshape(V',  s(3:end));
    else dir
-      wberr('invalid direction');
+      wbdie('invalid direction');
    end
 
    M1=permute(M1,[1 3 2]);

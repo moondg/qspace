@@ -16,7 +16,7 @@ function [ek,Iout]=ERange(HAM,varargin)
   getopt('check_error');
 
   if isempty(HAM) || ~isfield(HAM.info,'HH')
-     wberr('invalid usage (missing field HAM.info.HH)'); end
+     wbdie('invalid usage (missing field HAM.info.HH)'); end
 
   HH=HAM.info.HH;
   [dk,Ik,Dk]=uniquerows([diff(HH(:,[1 3]),[],2), HH(:,[2 4])]);

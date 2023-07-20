@@ -14,12 +14,12 @@ function opts=lineopts(varargin)
 
   if isempty(lh) || ~ishandle(lh)
      helpthis, if nargin || nargout
-     wberr('invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
   lh=reshape(lh,1,[]);
 
   if ~all(isline(lh)), get(lh,'Type')
-     wberr('got non-line handles');
+     wbdie('got non-line handles');
   end
 
   lo={ 'Color','MarkerEdgeColor','MarkerFaceColor',  ...

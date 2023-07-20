@@ -17,6 +17,18 @@
 
    void version_info_toMx(mxArray *&S); 
 
+#ifndef MEX_EXT
+#if __linux__
+   #define MEX_EXT mexa64
+#elif __unix__
+   #define MEX_EXT mexa64
+#elif __APPLE__
+   #define MEX_EXT mexmac*
+#else
+   #define MEX_EXT unknown
+#endif
+#endif
+
 namespace Wb {
 class VersionInfo { 
   public:
@@ -31,8 +43,7 @@ class VersionInfo {
 
    void print() const;
    mxArray* toMx() const;
-
-   char fctn[32], tag[8], matlab[16], mpfr[16], compiler[16], os[16];
+   char fctn[32], tag[8], matlab[16], mpfr[16], compiler[16], os[24];
    char qspace[16], git[16], flags[128], compiled[64];
 
   private:

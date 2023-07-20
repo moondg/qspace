@@ -40,8 +40,7 @@ class wbstring : public wbvector<char> {
     wbstring (unsigned n, const char c)
      : wbvector<char>(n+1) { set(c); data[len-1]=0; };
 
-    wbstring (const char* i,unsigned n)
-     : wbvector<char>(n+1,i) { data[len-1]=0; };
+    wbstring (const char* s,unsigned n) { init(s,n); }
 
     wbstring (const wbstring &s) : wbvector<char>() { init(s.data); };
     wbstring (const char* s1) : wbvector<char>() { init(s1); };
@@ -96,6 +95,12 @@ class wbstring : public wbvector<char> {
                { RENEW(strlen(s)+1, s); data[len-1]=0; }
           else { RENEW(1); data[0]=0; } 
        } else  { RENEW(0); } 
+       return *this;
+    };
+
+    wbstring& init(const char* s,unsigned n) {
+       unsigned l=(s? strlen(s) : -1);
+       RENEW(n+1,s,l); data[n]=0; 
        return *this;
     };
 
@@ -165,6 +170,9 @@ class wbstring : public wbvector<char> {
 
     wbstring& pushf(const char *F, int L, const char *fmt, ...);
     wbstring& cpy(const char *F, int L, const char *s); 
+
+    int RegEx_replace(const char *F, int L, const char *pat, const char *rep,
+       char icase=0, char gflag=1);
 
     int printf(const char *F, int L, const char *fmt, ...);
 
@@ -281,10 +289,14 @@ class wbstring : public wbvector<char> {
        data[k]=0; return k;
     };
 
-    wbstring toStr() const { 
-       if (data) { return *this; }
+    wbstring toStr(char level=0) const { 
+       if (data) {
+          if (isPrint()>level) 
+               { return *this; }
+          else { return wbvector<char>::toStr(); }
+       }
        else { return wbstring("(null)"); } 
-    }
+    };
 
     char& operator[] (unsigned i) const { return data[i]; };
 
@@ -292,6 +304,18 @@ class wbstring : public wbvector<char> {
        return (data && data[0] ? strlen(data) : 0); };
 
     bool isEmpty() const { return (data && data[0] ? 0 : 1); };
+
+    char isPrint() const {  
+        if (data) { unsigned i=0, n=0;
+           for (; i<len && data[i]; ++i) {
+              if (!isprint(data[i])) { return 0; }}
+           for (; i<len; ++i) { if (data[i]) {
+               if (isprint(data[i])) { ++n; } else { return 0; }
+           }}
+           return (n ? 2 : 1);
+        }
+        return 0;
+    };
 
     bool operator! () const { return (data && data[0] ? 0 : 1); }
     explicit operator bool() const { return (data && data[0] ? 1 : 0); };

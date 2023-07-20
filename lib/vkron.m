@@ -10,12 +10,12 @@ function dd=vkron(varargin)
 
   if length(varargin)<2
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   for i=1:nargin
      if ~isnumeric(varargin{i}) || ~isvector(varargin{i})
-         wberr('invalid usage (vector spaces required)'); end
+         wbdie('invalid usage (vector spaces required)'); end
      varargin{i}=varargin{i}(:);
   end
 

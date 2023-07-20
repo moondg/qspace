@@ -71,7 +71,7 @@ function  [th,ah] = header(varargin)
      if n
         tag=lower(varargin{1}{1});
         if n==2, dpos=varargin{1}{2};
-        else wberr('invalid usage (pos)'); end
+        else wbdie('invalid usage (pos)'); end
      end
   else
      tag=lower(varargin{1});
@@ -144,7 +144,7 @@ function  [th,ah] = header(varargin)
      s=regexprep(s,'\\+','\\\\');
      s=sprintf(s,varargin{:});
   elseif ~isempty(findstr(s,'%'))
-     wberr('invalid remaining format specifiers');
+     wbdie('invalid remaining format specifiers');
   end
   str=s;
 

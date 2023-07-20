@@ -9,15 +9,18 @@ function A=getId(A,qs,k)
 
 % adapated from QSpace/getvac.m // Wb,Oct02,15
 
-  if isempty(A),  wberr('got empty QSpace'); end
-  if numel(A)~=1, wberr('single QSpace required'); end
+  if isempty(A),  wbdie('got empty QSpace'); end
+  if numel(A)~=1, wbdie('single QSpace required'); end
 
   A=getsub(A,1); r0=numel(A.Q);
   A.data{1}=1;
 
   qs=reshape(qs,1,[]); nq=numel(qs); l0=0;
 
-  A.Q=A.Q(1:2);
+  if     r0>=2, A.Q=A.Q(1:2);
+  elseif r0==1, A.Q=A.Q([1 1]);
+  else wbdie('invalid usage'); end
+
   for i=1:2, A.Q{i}(:)=0; end
 
   for i=1:size(A.info.cgr,2), q=A.info.cgr(i);

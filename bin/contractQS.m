@@ -1,8 +1,8 @@
-% Usage: contractQS(A,..B,..)
+% function contractQS(A,..B,..)
 %
-%     performs pairwise contraction of tensors
-%     e.g. A and B in QSpace format while also taking care of the
-%     underlying Clebsch Gordan coefficient spaces (if present).
+%     performs pairwise contraction of QSpace tensors
+%     [see usage #1 and #2 below), while also properly taking care of
+%     the underlying Clebsch Gordan coefficient spaces (if present).
 %
 %     Each QSpace can be used as is, or as its 'conjugate' where the
 %     conjugate of a QSpace A, i.e. conj(A) is defined as the QSpace
@@ -47,13 +47,15 @@
 %       'conjA'  use complex conjugate of A for contraction
 %       'conjB'  use complex conjugate of B for contraction
 %
-%  Usage #2: S=contractQS({A,{B,C}},... [, perm, OPTS ]);
+%  Usage #2: S=contractQS({A,{B,{..,C}}},... [, perm, OPTS ]);
 %
 %     Generalized 'cell-contraction' of tensors: when encountering
 %     a cell, the content of that cell is contracted first, before
 %     using its results. This allows the specification of an entire
-%     patter of pairwise contractions based on nested structures
+%     patter of pairwise contractions based on a nested cell structure
 %     where the lowest-level contractions are performed first.
+%     If an optional permutation [perm] is specified as an explicit
+%     index array (non-string), it is applied to the final result only.
 %
 %     Cell contractions are furthermore based on QSpace 'itags'
 %     i.e. string labels for indices with up to 8chars, and which
@@ -83,9 +85,20 @@
 %                format) despite they share common matching itags.
 %       A,'*'    apply overall (complex) conjugation on given input
 %                tensor A (see early comments above)
-%       A,'!ij*' both of the above (with * always trailing).
+%       A,'!ij*' both of the above in a single instruction
+%                the conjugate flag '*' always trailing.
 %
-%       X,'-op:<tag>[:<opl=op>]' specify itags for given (e.g. local) operator.
+%       A,'ij'   
+%       A,'ij*'  explicitly specify indices to contract
+%                this is required only in the presence of degenerate itags
+%                i.e., the case when identical itags that appear on multiple
+%                legs including the same direction (conjugate flag).
+%
+%     Itags may be set or adapted on the fly (this is performed
+%     prior to the auto-contraction together wit the above directions)
+%
+%       X,'--op:<tag>[:<opl=op>]'
+%          specify itags for given (e.g. local) operator.
 %
 %          The last option considers X an operator, and hence assumes
 %          operator itags '<tag>;<tag>*[;opl*]' for QSpace X;
@@ -110,12 +123,25 @@
 %          An alternative operator itag may still be specified
 %          by adding a trailing ':opl' as indicated earlier.
 %
-%     An adaptation of usage #2 also be used for a plain sequential
-%     contractions where
-%         S=contractQS(A,B,C,... [, perm, OPTS ]); is equivalent to
-%         S=contractQS({A,{B, {C,...}}}, [,perm,OPTS ]),
-%     i.e. the sequential contractions are started from the end
-%     onwards to the beginning of the set.
+%       A,'--itag:s/pat/rep/[gi]
+%
+%          replace/modify existing itags on the fly for a particular
+%          recursive level of the cell contraction based on regular
+%          expressions (regex) using ECMAScript grammar (cf. C++/regex).
+%          The trailing flags enable case insensitive replacement [i]
+%          and global replacement [g] of all possible matches.
+%          The syntax is much analogous to perl regex.
+%
+%     An adaptation of usage #2 can also be used
+%     for plain sequential contractions
+%
+%         S=contractQS(A [,flagsA],B [,flagsB],C,... [, perm, OPTS ])
+%
+%     which is equivalent to
+%     S=contractQS({A [,flagsA],{B [,flagsB], {C,...}}}, [,perm,OPTS ]).
+%     That is, by grouping A*(B*(C*...)), sequential contractions start
+%     from the right end onwards to the beginning of the set.
+%     Non-contracted indices are collected in the order they appear.
 %
 %  The remaining trailing OPTS are
 %
@@ -124,16 +150,31 @@
 %           than the rank of the resulting QSpace; in this case
 %           it only affects the leading range of indices.
 %
-%     '-v'  verbose mode that shows level of cell contraction
+%     '-v'  debug mode that shows level of cell contraction
 %           together with actual contractions performed.
+%           Internally, degenerate itags are frequently flagged
+%           in order to make them unique and thus to differentiate them;
+%           when printed, the flagged bits are formatted as <itag>⏐#
+%           using the utf character `⏐' to indicate that the subsequent
+%           number # is not part of the bare itag string.
 %
 %  Mixed usage of #2 and #1 is not possible.
+%  Usage #2 is the typically recommended way because autocontraction
+%  makes it far easier to perform entire contractions networks
+%  without having to manually track and specify index locations.
 %
-%  Note that mex files do not allow to return class objects,
-%  hence S is returned as a QSpace structure. To get a class
-%  object, use QSpace(contractQS(...)), or equivalently,
-%  if contract() is properly defined as a wrapper routine
-%  within matlab's Class/@QSpace (see MPS Pack), having a QSpace
-%  input A, this may be shortended to contract(A,...).
+%  AW (C) May 2010-2023
+
+% -------------------------------------------------------------------- %
+% CHANGE LOG:
+% -------------------------------------------------------------------- %
+% [07/14/2023] cell-contraction now also permits
+%     explicit specification of index to contract for particular
+%     QSpace on compact notation such as '12' equivalent to [1 2]
+%     rather than just excluding indices that could be contracted
+%     based on matching itags.
 %
-%  AW (C) May 2010 ; Aug 2012 ; Dec 2014 ; Sep 2016
+% [07/17/2023] introduced '--itag:s/pat/rep/[gi]
+% [07/17/2023] replaced '-op: by '--op:'
+%     yet with '-op:' still permitted for backward compatibility
+

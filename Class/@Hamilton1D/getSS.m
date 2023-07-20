@@ -36,17 +36,17 @@ function varargout=getSS(HAM,varargin)
   for i=1:narg, q(i)=ischar(varargin{i}); end
   i=find(q); n=numel(i);
   if n==1, wsys=varargin{i}; varargin(i)=[]; narg=narg-1;
-  elseif n, wberr('invalid usage');
+  elseif n, wbdie('invalid usage');
   end
 
   if narg==1, k=varargin{1};
-  elseif narg, wberr('invalid usage (narg=%g)',narg); end
+  elseif narg, wbdie('invalid usage (narg=%g)',narg); end
 
   if ~isempty(regexp(wsys,'^-'))
-     wberr('invalid wsys (%s) !?',wsys); end
+     wbdie('invalid wsys (%s) !?',wsys); end
 
   if isempty(HAM) || ~isfield(HAM.info,'HSS')
-     wberr('invalid usage (missing field HAM.info.HSS)'); end
+     wbdie('invalid usage (missing field HAM.info.HSS)'); end
 
   [type,L,perBC]=lattice(HAM);
 
@@ -66,7 +66,7 @@ function varargout=getSS(HAM,varargin)
   if isnumeric(k)
      if isempty(k), k=nsw;
      else
-        if nsw_, { nsw_, k}, wberr('invalid usage'); end
+        if nsw_, { nsw_, k}, wbdie('invalid usage'); end
         if k<=0, k=nsw+k; end
      end
      if xflag
@@ -78,9 +78,9 @@ function varargout=getSS(HAM,varargin)
      IL=k; k=[];
      if ~xflag, xflag=1; end
      if size(IL,3)<nsw
-        wberr('invalid usage: size(IL,3) ~= numel(HSS) !?');
+        wbdie('invalid usage: size(IL,3) ~= numel(HSS) !?');
      end
-  else k, wberr('invalid usage'); end
+  else k, wbdie('invalid usage'); end
 
   if xflag
      if xflag<3
@@ -154,7 +154,7 @@ function varargout=getSS(HAM,varargin)
      end
   elseif isequal(wsys,'HBLX')
      if gotlad || perBC
-        wberr('unexpected wsys=%s (%g,%g)',wsys,gotlad,perBC); end
+        wbdie('unexpected wsys=%s (%g,%g)',wsys,gotlad,perBC); end
 
      [sl,sr,I.sx,I.lstr]=getSS_HBLX(SS);
      varargout={sl,sr,I};
@@ -192,7 +192,7 @@ function [SS,H]=get_SS(Ih,k,L)
 
   s=size(SS);
   if ~isequal(s(1:2),size(Hk))
-     wberr('got size mismatch L=%g/[%g %g] !?',L,s);
+     wbdie('got size mismatch L=%g/[%g %g] !?',L,s);
   end
 
   if ~isreal(SS)
@@ -258,7 +258,7 @@ end
 function [sl,sr,sx,lstr]=getSS_HBLX(SS)
 
    q=size(SS,3); if q~=3
-      wberr('unexpected size(SS,3)=%g/3 !?',q); end
+      wbdie('unexpected size(SS,3)=%g/3 !?',q); end
 
    lstr={ '{\langle}SS_{leg}{\rangle}', 'SS_{rung}', 'SS_{X}' };
 

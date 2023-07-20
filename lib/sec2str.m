@@ -4,7 +4,7 @@ function ss = sec2str(tt,varargin)
 
   if nargin<1 || ~isnumeric(tt)
      helpthis, if nargin || nargout
-     wberr('invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   getopt('init',varargin);

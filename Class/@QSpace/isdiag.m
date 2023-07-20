@@ -26,7 +26,7 @@ function [isd,estr]=isdiag(A,dflag)
         '%s requires rank-2 object (%d).',mfilename,r);
      elseif ~isequal(A.Q{:}), estr=sprintf(... 
         '%s requires block-diagonal operator.',mfilename); end
-     if nargout<2 && ~isempty(estr), wberr(estr); end
+     if nargout<2 && ~isempty(estr), wbdie(estr); end
   end
 
   for i=1:n, ai=A.data{i}; s=size(ai);

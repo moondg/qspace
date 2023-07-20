@@ -14,7 +14,7 @@ function [ia,ib,I]=matchvec(A,B,sflag)
 
   if nargin>2
      if nargin>3 || ~isequal(sflag,'-s')
-        wberr('invalid usage'); end
+        wbdie('invalid usage'); end
      sflag=1;
   else sflag=0;
   end

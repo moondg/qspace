@@ -14,14 +14,14 @@ function plot(HAM,varargin)
 
   getopt('check_error');
 
-  if numel(HAM)~=1, wberr('invalid usage'); end
+  if numel(HAM)~=1, wbdie('invalid usage'); end
   i3=[];
 
   if     isfield(HAM.info,'HH'), HH=HAM.info.HH;
   elseif isfield(HAM.info,'HS')
      HS=HAM.info.HS; [HH,m]=convert_HS(HS,3);
      i3=find(m==3);
-  else wberr('invalid usage (missing field HAM.info.HH)'); end
+  else wbdie('invalid usage (missing field HAM.info.HH)'); end
 
   N=numel(HAM.mpo);
   full_mpo=(isa(HAM.mpo,'QSpace') || isfield(HAM.mpo,'Q'));

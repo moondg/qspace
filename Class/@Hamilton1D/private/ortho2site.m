@@ -25,7 +25,7 @@ function [A1,A2,r2,I]=ortho2site(A1,A2,kdir,varargin)
 % for former version, see Archive/ortho2site_160728.m
 
   if nargin<3 || numel(A1)~=1 || numel(A2)~=1
-     helpthis, if nargin || nargout, wberr(['invalid usage ' ... 
+     helpthis, if nargin || nargout, wbdie(['invalid usage ' ... 
          '(input A1 and A2 must contain to consecutive A-tensors)']);
      end, return
   end
@@ -34,14 +34,14 @@ function [A1,A2,r2,I]=ortho2site(A1,A2,kdir,varargin)
   if ~isempty(varargin) && isnumber(varargin{1})
      rtol=varargin{1}; varargin(1)=[]; end
   if isempty(rtol) || rtol<0, rtol=1E-14;
-  elseif rtol>0.1, wberr('got likely invalid rtol=%g / 0.1',rtol); end
+  elseif rtol>0.1, wbdie('got likely invalid rtol=%g / 0.1',rtol); end
   os={'stol',sqrt(rtol)};
 
   Nkeep=[];
   if ~isempty(varargin) && isnumber(varargin{1})
      Nkeep=varargin{1}; varargin(1)=[]; end
   if ~isempty(Nkeep)
-     if ~Nkeep, wberr('invalid Nkeep=%g',Nkeep); end
+     if ~Nkeep, wbdie('invalid Nkeep=%g',Nkeep); end
      os={os{:},'Nkeep',Nkeep};
   end
 
@@ -61,13 +61,13 @@ function [A1,A2,r2,I]=ortho2site(A1,A2,kdir,varargin)
 
   if kdir>0
      if lflag, i=[1 3]; end
-     q=getqdir(A1); if numel(q)<3 || any(q(i)<1), A1, wberr('A1 %s',s); end
+     q=getqdir(A1); if numel(q)<3 || any(q(i)<1), A1, wbdie('A1 %s',s); end
      t=regexprep(getitags(A1,2),'^[A-Z]*','E');
      E=getIdentity(A1,1,A1,3, t);
      X=contract(E,'*',A1); % R'R;g // A_LRsg_ORDER
   else
      if lflag, i=[2 3]; end
-     q=getqdir(A2); if numel(q)<3 || any(q(i)<1), A2, wberr('A2 %s',s); end
+     q=getqdir(A2); if numel(q)<3 || any(q(i)<1), A2, wbdie('A2 %s',s); end
      t=regexprep(getitags(A2,1),'^[A-Z]*','E');
      E=getIdentity(A2,2,A2,3, t);
      X=contract(E,'*',A2); % L'L;g // A_LRsg_ORDER
@@ -89,7 +89,7 @@ function [A1,A2,r2,I]=ortho2site(A1,A2,kdir,varargin)
   Dk=getDimQS(U); I.Dk=Dk(:,2);
 
   rb=numel(B.Q);
-  if rb<2 || rb>3, wberr('got rank(B)=%g !?',rb); end
+  if rb<2 || rb>3, wbdie('got rank(B)=%g !?',rb); end
 
   if kdir>0
      p2=[]; if rb==3
@@ -102,7 +102,7 @@ function [A1,A2,r2,I]=ortho2site(A1,A2,kdir,varargin)
      p1=[]; if rb==3, r1=numel(A1.Q);
         p1=initperm(r1+1,'--2pos',{r1,2});
      elseif rb==2, p1=[1 3 2];
-     else wberr('got rank(B)=%g !?',rb); end
+     else wbdie('got rank(B)=%g !?',rb); end
 
      A1=contract(A1,B,p1);
      A2=contract(U,E);

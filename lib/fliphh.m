@@ -11,7 +11,7 @@ function fliphh(varargin)
 % tags: line handle order
 
   if ~nargin
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -31,7 +31,7 @@ function fliphh(varargin)
   ch=get(ah,'children'); lh=lh(:);
   [ih,ip,I]=matchvec(lh,ch,'-s');
 
-  if ~isempty(I.ix1), wberr(...
+  if ~isempty(I.ix1), wbdie(...
      'not all handles found in children of parent\n'); end
 
   if isempty(idx), idx=numel(ih):-1:1; end

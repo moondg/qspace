@@ -9,7 +9,7 @@ function xx=getylim(varargin)
 
   if nargin>1
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   if isempty(varargin), varargin{1}='-data'; end
@@ -19,7 +19,7 @@ function xx=getylim(varargin)
     case '-data', xx=getYLimData;
     otherwise
        eval(['help ' mfilename]);
-       wberr('invalid usage')
+       wbdie('invalid usage')
   end
 
 end

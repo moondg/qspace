@@ -1,14 +1,13 @@
 function A=itagrep(A,varargin)
 % function A=itagrep(A [,idx], <arguments to regepxrep>)
 %
-%    Apply given regexprep() pattern to specified itags
-%    idx specified a subset of itags to consider;
-%    (otherwise, by default, all itags are considered)
+%    Apply given regexprep() pattern to itags
+%    specified by idx (default: all).
 %
 % Wb,Jan14,15
 
   if nargin<3 || numel(A)~=1
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 

@@ -18,12 +18,12 @@ function [chi,Iout]=calc_Chiral(HAM,varargin)
 
   p=HAM.info.param;
   if ~isfield(p,'L') || ~isfield(p,'W')
-     wberr('invalid usage (got missing fields W or L in HAM.info.param'); 
+     wbdie('invalid usage (got missing fields W or L in HAM.info.param'); 
   end
 
   L=p.L; W=p.W; N=L*W;
   if W<2 || N~=numel(HAM.mpo),
-     wberr('invalid system size YC%g x %g = %g !?',W,L,N);
+     wbdie('invalid system size YC%g x %g = %g !?',W,L,N);
   end
 
   getopt('init',varargin);
@@ -47,7 +47,7 @@ function [chi,Iout]=calc_Chiral(HAM,varargin)
            if n>1, wbdie('invalid usage [got numel(IS)=%g]',n); end
            och={'wchi',{wchi, HAM.info.IS.sym}};
         case 'full'
-        otherwise wchi, wberr('invalid switch'); 
+        otherwise wchi, wbdie('invalid switch'); 
      end
   end
 
@@ -76,7 +76,7 @@ function [chi,Iout]=calc_Chiral(HAM,varargin)
      [chi,Ix]=calc_Chiral_ysys(HAM,Chi,k0,vflag,kflag);
   elseif isequal(k0,'--yxops')
      [chi,Ix]=calc_Chiral_yxops(HAM,vflag,kflag);
-  else wberr('invalid usage (not yet implemented)');
+  else wbdie('invalid usage (not yet implemented)');
   end
 
   if I3.real_chi && (~ischar(k0) || isempty(regexp(k0,'yxops')))
@@ -91,7 +91,7 @@ end
 function a=area_triangle(HAM,k3)
 
   n=size(k3,1); a=nan(n,2);
-  if size(k3,2)~=4, wberr('invalid usage'); end
+  if size(k3,2)~=4, wbdie('invalid usage'); end
 
   for i=find(all(k3,2))', xy=HAM.info.XY(floor(k3(i,:)),:);
      a(i,:)=[
@@ -331,9 +331,9 @@ function [chi,Ix]=calc_Chiral_2(HAM,Chi,k0,vflag,kflag)
   p=HAM.info.param;
   L=p.L; W=p.W; N=L*W;
 
-  if abs(diff(k0))<2*W, wberr(...
+  if abs(diff(k0))<2*W, wbdie(...
     'invalid usage (k0=[%g %g] values too close; W=%g)',k0,W); end
-  if any(k0<=1 | k0>=N), wberr(...
+  if any(k0<=1 | k0>=N), wbdie(...
     'invalid usage (k0=[%g %g] / %g out of bounds)',k0,L); end
   wblog('==>','chiral correlations for k=[%g %g]/%g (YC%gx%g)',k0,N,W,L);
 
@@ -558,7 +558,7 @@ function [chi,Ix]=calc_Chiral_ysys(HAM,Chi,k2m,vflag,kflag)
 
   if numel(k2m)~=2 || norm(k2m-round(k2m)) || ...
      any(k2m)>=W || diff(k2m)>=W-1 || diff(k2m)<2
-     wberr('invalid usage (invalid k2=[%g %g] / %g)',k2m,W);
+     wbdie('invalid usage (invalid k2=[%g %g] / %g)',k2m,W);
   end
   wblog('==>','chiral correlations for k=[%g %g] (YC%gx%g)',k2m,W,L);
 

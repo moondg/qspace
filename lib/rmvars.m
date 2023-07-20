@@ -21,7 +21,7 @@ function rmvars(fls,varargin)
 % tags: rm_variables, rm_vars, save2
 
   if nargin<2, helpthis
-     if nargin || nargout, wberr('invalid usage'), end
+     if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 

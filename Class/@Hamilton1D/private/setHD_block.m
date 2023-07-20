@@ -6,7 +6,7 @@ function H=setHD_block(H,k,l,h)
 % outsourced from update_psi_2site.m // Wb,Dec20,21
 
   if numel(H.Q)~=2, H
-     wberr('unexpected H struct !?'); 
+     wbdie('unexpected H struct !?'); 
   end
   if isempty(h.data)
      return
@@ -19,12 +19,12 @@ function H=setHD_block(H,k,l,h)
   end
 
   if numel(H.Q)~=2 || numel(h.Q)~=2, H, h
-     wberr('unexpected objects !?'); 
+     wbdie('unexpected objects !?'); 
   end
 
   [i1,i2,I]=matchIndex(H.Q{1},h.Q{1});
   if ~isempty(I.ix2) || numel(i2)~=size(h.Q{1},1), H, h
-     wberr('got new symmetry sectors in h !?'); end
+     wbdie('got new symmetry sectors in h !?'); end
 
   xflag=(min(k,l)==1);
 

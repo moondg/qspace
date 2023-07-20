@@ -1,7 +1,7 @@
 function wberr(varargin)
 % function wberr(varargin)
-% see also wbdie.m
-% Wb,May18,07 ; Wb,Jun01,19
+% deprecated; replaced by wbdie.m
+% Wb,May18,07 / Wb,Jun01,19
 
    if nargin, s=regexprep(varargin{1},'\\N',char(11));
       if nargin>1

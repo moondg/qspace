@@ -8,8 +8,8 @@ function dstr=get_dim_str(dd)
 % Wb,Feb14,21
 
    s=size(dd);
-   if numel(s)>2 || s(1)>2, wberr('invalid usage'); end
-   if any(diff(dd,[],1))<0, wberr('invalid usage'); end
+   if numel(s)>2 || s(1)>2, wbdie('invalid usage'); end
+   if any(diff(dd,[],1))<0, wbdie('invalid usage'); end
 
    if s(1)==1
         for i=s(2):-1:1, dstr{i}=sprintf('%g',dd(i)); end

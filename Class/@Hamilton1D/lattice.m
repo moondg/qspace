@@ -7,7 +7,7 @@ function [type,L,perBC,H]=lattice(HAM)
 % Wb,Jul31,17
 
   if isempty(HAM) || ~isfield(HAM.info,'HH')
-     wberr('invalid usage (missing field HAM.info.HH)'); end
+     wbdie('invalid usage (missing field HAM.info.HH)'); end
 
   L=numel(HAM.mpo);
   perBC=getfield2(HAM,'info','param','perBC','--def',0);

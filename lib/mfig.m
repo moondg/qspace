@@ -52,7 +52,7 @@ function mfig(varargin)
 
   if narg
      if narg~=1 || isempty(varargin{1}) || varargin{1}(1)=='-'
-        wberr('invalid usage'); end
+        wbdie('invalid usage'); end
      fname=varargin{1};
   else
      fname=getfigname(fh);
@@ -142,7 +142,7 @@ function mfig_1(fh,fname,ppi,fext,force,vflag,tflag)
     case  'ps', ffmt='epsc2';           eps=1;
     case 'pdf', ffmt=fext;
     case 'png', ffmt=fext;
-    otherwise fext, wberr('invalid fext');
+    otherwise fext, wbdie('invalid fext');
   end
 
   if isempty(regexpi(fname,['.' fext '$'])), fname = [ fname '.' fext ]; end

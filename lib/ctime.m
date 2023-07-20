@@ -14,7 +14,7 @@ function [tt,dtnow]=ctime(tt,sflag)
 
   if ~nargin
      helpthis, if nargin || nargout
-     wberr('invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   if isempty(tref)

@@ -26,13 +26,13 @@ function [i,istr]=isfunction(cmd)
 
   if nargin~=1
      helpthis, if nargin || nargout
-     wberr('invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   if ~ischar(cmd)
      if isa(cmd,'function_handle')
         i=9; return
-     else wberr('invalid usaage');
+     else wbdie('invalid usaage');
      end
   end
 

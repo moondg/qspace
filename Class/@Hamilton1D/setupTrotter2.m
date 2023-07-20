@@ -89,11 +89,11 @@ function [HAM,Iout]=setupTrotter2(HAM,dt,varargin)
   fop=0; ops_in=ops; Sx0=[];
 
   if ~nops, if force
-     wberr('got empty ops starting from ground state !?'); end
+     wbdie('got empty ops starting from ground state !?'); end
   else
-     if ~iscell(ops) || mod(nops,1), wberr('invalid ops'); end
+     if ~iscell(ops) || mod(nops,1), wbdie('invalid ops'); end
      if nops~=1
-        wberr('not yet implemented/tested for multiple ops');
+        wbdie('not yet implemented/tested for multiple ops');
      end
 
      for i=1:nops, j=2*i-1;
@@ -103,7 +103,7 @@ function [HAM,Iout]=setupTrotter2(HAM,dt,varargin)
         end
         q=isFermOp(HAM,ops{j}); if any(q(:)), fop=1;
            if nops~=1 || numel(q)~=1 || numel(ops{2*i})~=1
-           wberr('invalid fermionic operator set'); end
+           wbdie('invalid fermionic operator set'); end
         end
      end
      ops_=ops;
@@ -122,7 +122,7 @@ function [HAM,Iout]=setupTrotter2(HAM,dt,varargin)
   if isempty(HAM.user), HAM.user=struct; end
   if ~isfield(HAM.user,'trotter'), q=QSpace(1,L);
      if store
-        if isempty(HAM.mat), wberr(...
+        if isempty(HAM.mat), wbdie(...
           'invalid usage (Trotter requires DMRG file store)'); end
         x=[]; mat=[HAM.mat '-dt'];
      else x=q; mat=[]; end
@@ -140,7 +140,7 @@ function [HAM,Iout]=setupTrotter2(HAM,dt,varargin)
   wblog('TR2','setup 2nd order Trotter-Suzuki (dt=%g)',dt);
   HAM=setup_mpo_trotter2(HAM,dt);
   kloc=getCurrentSite(HAM);
-  if kloc>1, wberr('got current site at k=%g/%g !?',kloc,L); end
+  if kloc>1, wbdie('got current site at k=%g/%g !?',kloc,L); end
   kmax=max(kloc,kops);
 
   if fop, wblog('NB!','applying fermionic operator'); end
@@ -197,7 +197,7 @@ function [HAM,Iout]=setupTrotter2(HAM,dt,varargin)
         if r1>3, i=finditag(At,'^[^sK]'); % 'op'
            if i==r1 && r1==4
               At=setitags(At,'gop',4);
-           else wberr('unexpected itags for rank-% A-tensor at k=1',r1);
+           else wbdie('unexpected itags for rank-% A-tensor at k=1',r1);
            end
         end
      end

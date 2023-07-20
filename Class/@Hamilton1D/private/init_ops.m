@@ -13,7 +13,7 @@ function S=init_ops(x_,varargin)
 % Wb,Aug25,15
 
   nx=numel(x_);
-  if nx<1, wberr('got empty operator'); end
+  if nx<1, wbdie('got empty operator'); end
 
   getopt('init',varargin);
      qflag=getopt('-q');
@@ -38,7 +38,7 @@ function S=init_ops(x_,varargin)
      end
 
   istr=getopt('get_last','');
-  if ~ischar(istr), wberr('invalid usage (istr must be string)'); end
+  if ~ischar(istr), wbdie('invalid usage (istr must be string)'); end
 
   S=repmat(struct(...
      'info',istr, ...
@@ -92,16 +92,16 @@ function S=init_ops(x_,varargin)
         end
      elseif r==3, q=uniquerows(Q{3});
         if ~isequal(getqdir(xi),[1 -1 -1])
-           disp(xi); wberr('unexpected rank-%g operator',r);
+           disp(xi); wbdie('unexpected rank-%g operator',r);
         end
      elseif r==4
         if ~isequal(getqdir(xi),[1 -1 -1  1]) ...
         || ~isequal(getQDimQS(xi,3),getQDimQS(xi,4)), disp(xi)
-           wberr('unexpected rank-%g operator',r); end
+           wbdie('unexpected rank-%g operator',r); end
         z=contractQS(xi,'1234',xi,'2143');
         q=uniquerows(cat(1,Q{3:end}));
      else disp(xi)
-        wberr('invalid rank-%g operator',r);
+        wbdie('invalid rank-%g operator',r);
      end
 
      if size(q,1)~=1
@@ -122,7 +122,7 @@ function S=init_ops(x_,varargin)
         if numel(xi.Q)>2, xi=fixScalarOp(xi); end
         e=normQS(xi-xi');
         if S(i).fermionic
-           wberr('invalid usage (local operator cannot be ferminoic)');
+           wbdie('invalid usage (local operator cannot be ferminoic)');
         elseif e>1E-6
              wblog('NB!','using hconj=%g for local operator',  hconj);
         else wblog('WRN','got hconj=%g for scalar operator !?',hconj);

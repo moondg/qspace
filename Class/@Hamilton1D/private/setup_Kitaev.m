@@ -22,7 +22,7 @@ function [HAM]=setup_Kitaev(varargin)
   global param
 
   if nargin<1
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -51,7 +51,7 @@ function [HAM]=setup_Kitaev(varargin)
        wstr='zigzag';
   else wstr='armchair'; end
 
-  if mod(W,2), wberr(...
+  if mod(W,2), wbdie(...
     'invalid usage (%s requires even width; got W=%g)',wstr,W); end
   N=L*W; 
 
@@ -281,7 +281,7 @@ function [HAM]=setup_Kitaev(varargin)
              case 1, I2=[I, I];  J2=[J,J+1]; j=w+1;
              case 2,             J2=J2+1;    j=4-w;
              case 3, I2=[I-1,I]; J2=[J, J]+(2-w); j=1;
-             otherwise wberr('invalid switch'); 
+             otherwise wbdie('invalid switch'); 
            end
         else
            if i==1 && ~pBC && p>1, break; end
@@ -289,7 +289,7 @@ function [HAM]=setup_Kitaev(varargin)
               case 1, I2=[I, I];   J2=[J-1, J]+w; j=3;
               case 2, I2=[I-1, I]; J2=[J, J]; j=w;
               case 3,              J2=J2+1; j=3-w;
-              otherwise wberr('invalid switch'); 
+              otherwise wbdie('invalid switch'); 
            end
         end
 
@@ -309,7 +309,7 @@ function [HAM]=setup_Kitaev(varargin)
              case 1, I2=[I  , I]; J2=[J,J+2];
              case 2, I2=[I-1, I]; J2=[J,J-1];
              case 3, I2=[I-1, I]; J2=[J,J+1];
-             otherwise wberr('invalid switch'); 
+             otherwise wbdie('invalid switch'); 
            end
         else
            if i<=2 && ~pBC
@@ -319,7 +319,7 @@ function [HAM]=setup_Kitaev(varargin)
              case 1, I2=[I-1, I]; J2=[J,J-1];
              case 2, I2=[I-1, I]; J2=[J,J+1];
              case 3, I2=[I-2, I]; J2=[J,J  ];
-             otherwise wberr('invalid switch'); 
+             otherwise wbdie('invalid switch'); 
            end
         end
 

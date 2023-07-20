@@ -18,16 +18,16 @@ function [NPsi,NPsi2]=get_NPsi_site(Psi,cflag)
 
   if nargin<2, dbase='**+';
      if numel(qdir)>=2
-        if qdir(1)~='+' && qdir(2)~='+', wberr('invalid Psi'); end
+        if qdir(1)~='+' && qdir(2)~='+', wbdie('invalid Psi'); end
         dbase(1:2)=qdir(1:2);
      end
   elseif isequal(cflag,'-c'), dbase='+++';
   elseif isequal(cflag,'-A'), dbase='**+';
      if numel(qdir)>=3
-        if qdir(1)==qdir(2), wberr('invalid Psi'); end
+        if qdir(1)==qdir(2), wbdie('invalid Psi'); end
         dbase(1:2)=qdir(1:2);
      end
-  else wberr('invalid Psi'); end
+  else wbdie('invalid Psi'); end
 
   if isequal(qdir,dbase), NPsi=0; NPsi2=1;
   elseif isequal(qdir,[dbase '-'])
@@ -36,7 +36,7 @@ function [NPsi,NPsi2]=get_NPsi_site(Psi,cflag)
      if isempty(regexpi(t,'Psi'))
         wblog('WRN','got itag ''%s'' for Psi !?',t);
      end
-  else wberr('invalid usage (got qdir=''%s'' !?)',qdir); end
+  else wbdie('invalid usage (got qdir=''%s'' !?)',qdir); end
 
 end
 

@@ -11,7 +11,7 @@ function [i,bfac,e]=sameup2fac(A,B,varargin)
 % Wb,Jun29,10
 
   if nargin<2
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -20,7 +20,7 @@ function [i,bfac,e]=sameup2fac(A,B,varargin)
   eps=getopt('get_last',1E-10);
 
   if ~isnumeric(A) || ~isnumeric(B)
-     wberr('invalid input (numeric data expected)'); end
+     wbdie('invalid input (numeric data expected)'); end
 
   i=0; e=nan;
   if ~isequal(size(A),size(B)), return; end
@@ -35,7 +35,7 @@ function [i,bfac,e]=sameup2fac(A,B,varargin)
 
      b2=b'*b; bfac=full(real(b'*a)/b2);
      if b2==0
-        wberr('got B=0 !? (hint: reverse order of input arguments)'); 
+        wbdie('got B=0 !? (hint: reverse order of input arguments)'); 
      else
         a2=a'*a; q=b2/a2; if q<1E-12, wblog('WRN',...
           'got b2/a2 = %.3g !? (hint: reverse order of input arguments)',q);

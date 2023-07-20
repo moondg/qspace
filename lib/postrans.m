@@ -15,12 +15,12 @@ function [pos,opts]=postrans(varargin)
   pos=getopt('get_last',[]);
 
   if nargin<1 || isempty(pos), eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   if isnumeric(pos)
      if lflag || numel(pos)~=2
-        wberr('invalid position specs');
+        wbdie('invalid position specs');
      end
 
      if nargout>1
@@ -37,7 +37,7 @@ function [pos,opts]=postrans(varargin)
   else dx=[]; end
 
   if ~ischar(pos)
-     wberr('invalid position specs');
+     wbdie('invalid position specs');
   end
 
   switch lower(pos)
@@ -50,7 +50,7 @@ function [pos,opts]=postrans(varargin)
      case {'west',      'w'}, pos='West';      i=[1,2];
      case {'northwest','nw'}, pos='NorthWest'; i=[1,3];
      case {'center',   'cc'}, pos='Center';    i=[2,2];
-     otherwise wberr('invalid position `%s''',pos);
+     otherwise wbdie('invalid position `%s''',pos);
   end
 
   if nargout>1
@@ -74,7 +74,7 @@ if isempty(dx), return; else n=numel(dx); end
           pos(2)=pos(2)+dx;
      else pos(1)=pos(1)+dx; end
   else
-     wberr('invalid dx to position (%g)',n);
+     wbdie('invalid dx to position (%g)',n);
   end
 
 end

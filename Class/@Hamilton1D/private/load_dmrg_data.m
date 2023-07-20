@@ -7,9 +7,9 @@ function [S,t]=load_dmrg_data(HAM,k,varargin)
 % see also @Hamilton1D/private/setupStorage.m
 % Wb,Apr10,14
 
-  if nargin<2 && ~isnumber(k), wberr('invalid usage'); end
+  if nargin<2 && ~isnumber(k), wbdie('invalid usage'); end
   if k<0 || k>numel(HAM.mpo)
-     wberr('invalid usage (k out of bounds: %g/%g)',k,numel(HAM.mpo));
+     wbdie('invalid usage (k out of bounds: %g/%g)',k,numel(HAM.mpo));
   end
 
   tflag=0;
@@ -17,7 +17,7 @@ function [S,t]=load_dmrg_data(HAM,k,varargin)
      if isequal(varargin{i},'-t'), tflag=1; varargin(i)=[]; break; end
   end
 
-  if ~isempty(HAM.store), s=HAM.store;
+  if using_mem(HAM), s=HAM.store;
      S=struct; % initialize! // INIT_VARS_EVAL `i ml' 
 
      if k==0
@@ -34,7 +34,7 @@ function [S,t]=load_dmrg_data(HAM,k,varargin)
 
      if nargout>1, t=-1; end
 
-  elseif ~isempty(HAM.mat), mat=HAM.mat;
+  else mat=HAM.mat;
 
      if k==0
           f=sprintf('%s_info.mat',mat);
@@ -42,7 +42,7 @@ function [S,t]=load_dmrg_data(HAM,k,varargin)
 
      if ~exist(f,'file')
         if tflag, S=[]; return; end
-        wberr('asking for non-existing data file %s',f);
+        wbdie('asking for non-existing data file %s',f);
      end
 
      S=save_load(f,varargin{:});
@@ -55,7 +55,7 @@ function [S,t]=load_dmrg_data(HAM,k,varargin)
         S=getfield (S,varargin{:});
      end
 
-  else wberr('invalid storage specification'); end
+  end
 
 end
 

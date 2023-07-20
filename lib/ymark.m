@@ -41,7 +41,7 @@ function [h,th]=ymark(varargin)
   end
 
   if ~isempty(xl1)
-     if numel(xl1)~=2, wberr('invalid xl(im) values'); end
+     if numel(xl1)~=2, wbdie('invalid xl(im) values'); end
      if gotlog, xl=log(xl); end
      xl=xl(1)+xl1*diff(xl);
      if gotlog, xl=exp(xl); end

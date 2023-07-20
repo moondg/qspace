@@ -11,13 +11,13 @@ function isf=isFermOp(HAM,varargin)
 
   nargs=numel(varargin); isf=cell(1,nargs);
   for k=1:nargs, Ak=varargin{k};
-     if ~isQSpace(Ak), wberr('invalid usage'); end
+     if ~isQSpace(Ak), wbdie('invalid usage'); end
      isf{k}=zeros(size(Ak)); NK=numel(Ak);
   end
 
   if size(HAM.oez,1)>1
      Z=HAM.oez(2,:);
-     if numel(Z)>1, wberr(...
+     if numel(Z)>1, wbdie(...
        'not yet implemented for different site-types (stype)'); end
      Z=Z.op;
 
@@ -29,10 +29,10 @@ function isf=isFermOp(HAM,varargin)
         z=dd{i}; dd{i}=[ z(1), norm(z-z(1)*eye(size(z))) ];
      end
      dd=cat(1,dd{:}); e=[ norm(dd(:,2)), norm(abs(dd(:,1))-1) ];
-     if any(e>1E-12), wberr('unexpected parity operator'); end
+     if any(e>1E-12), wbdie('unexpected parity operator'); end
 
      [e,I,D]=uniquerows(round(dd(:,1)));
-     if ~isequal(e,[-1;1]), wberr('unexpected parity operator'); end
+     if ~isequal(e,[-1;1]), wbdie('unexpected parity operator'); end
      Q2=Z2.Q{1};
 
      fop=zeros(size(Q2,1),1); fop(I{1})=1;
@@ -50,14 +50,14 @@ function isf=isFermOp(HAM,varargin)
               qop=uniquerows(Aki.Q{1}-Aki.Q{2});
            elseif r==3
               qop=uniquerows(Aki.Q{3});
-           else wberr('invalid rank-%g operator (arg %g, %g)',r,k+1,i);
+           else wbdie('invalid rank-%g operator (arg %g, %g)',r,k+1,i);
            end
 
            [ia,ib,Im]=matchIndex(Q2,qop);
-           if ~isempty(Im.ix2), wberr(...
+           if ~isempty(Im.ix2), wbdie(...
                'invalid local operator (%g/%g) !?',k+1,i); end
            f=unique(fop(ia));
-           if numel(f)~=1, wberr(['invalid local operator ' ...
+           if numel(f)~=1, wbdie(['invalid local operator ' ...
                '(%g/%g: got mixed parity !?)'],k+1,i); end
            fk(i)=f;
         end; isf{k}=fk;

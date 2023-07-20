@@ -9,7 +9,7 @@ function dd=cat2(ic,varargin)
 % Wb,Jul23,09
 
   if ~nargin || numel(ic)~=1 || any(round(ic)~=ic) || ic<1 || ic>9
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 

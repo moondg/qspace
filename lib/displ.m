@@ -8,7 +8,7 @@ function displ(varargin)
 
   if nargin<1
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   format longg

@@ -175,7 +175,7 @@ end
 % -------------------------------------------------------------------- %
 function s=sprintf_1(z,fmt,vflag)
 
-  if numel(z)~=1, wberr('invalid usage'); end
+  if numel(z)~=1, wbdie('invalid usage'); end
   if isreal(z), s=sprintf(fmt,z); return; end
 
   r=real(z); i=imag(z);

@@ -24,7 +24,7 @@ function [Q,ns,nrm]=ortho_Psi3(Q,stol,NPsi)
   if ~NPsi
      if nrm>stol, Q=Q/nrm; ns=1; else Q=QSpace; ns=0; end
   elseif ~nrm, Q
-     wberr('invalid usage (got empty Q) !?');
+     wbdie('invalid usage (got empty Q) !?');
   else
 
    % X=contract(Q,'!3*',Q); % overlap matrix

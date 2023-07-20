@@ -87,8 +87,8 @@
      E0=IS.E;
 
      V=getIdentity(E0,'-0');
-     X=getIdentity(E0,V); X=getsub(X,matchIndex(X.Q{3},[1 1]));
-     Sop=contract(X,2,V,'1*',[1 3 2]) / sqrt(2);
+     X=getIdentity(E0,V,2); X=getsub(X,matchIndex(X.Q{3},[1 1]));
+     Sop=contract(X,2,V,'2*',[1 3 2]) / sqrt(2);
 
      [~,is]=sortrows(Sop.Q{1},'descend');
      Sop=getsub(Sop,is);

@@ -1,31 +1,49 @@
-function info(A,vstr,cflag)
-% function info(A [,istr,cflag])
+function info(A,varargin)
+% function info(A [,istr,cflag,rmax])
 %
-%    header routine used in display()
-%    Options: istr (info string) and cflag (compact info).
+%    short general info on QSpace
+%    e.g., used as QSpace header in display().
+%
+% Options
+%
+%    istr   info string
+%    cflag  whether to show info in compact form ('-c','-C')
+%    rmax   max. rank to consider (used to reserve space for itags
+%           so that entries line up over repeated callls e.g.
+%           for a QSpace array.
 %
 % Wb,Mar01,08
 
-  if ~nargin, helpthis, return; end
+  getopt('INIT',varargin);
+     if     getopt('-c'), cflag=2;
+     elseif getopt('-C'), cflag=4;
+     else   cflag=getopt('cflag',0); end
 
-  nA=numel(A);
-  nm=inputname(1); if isempty(nm) && nA>1
-    if nargin>1
-         nm=regexprep(vstr,'[= ]*$','');
-    else nm='ans'; end
+     if getopt('~oc'), ocflag=0; else ocflag=1; end
+
+  args=getopt('get_remaining'); nargs=numel(args);
+
+  if nargs && isnumeric(args{end})
+       rmax=args{end}; nargs=nargs-1;
+  else rmax=0; end
+
+  vstr='';
+  if nargs==1, vstr=args{1};
+     if ~ischar(vstr) || ~isempty(vstr) && vstr(1)=='-'
+        disp(vstr); wbdie('invalid istr');
+     end
+  elseif nargs
+     if nargin || nargout, wbdie('invalid usage'), end
+     return
   end
 
-  if nargin<2,
-     if ~isempty(nm) && nA>1, vstr=sprintf('%s = ',nm);
-     else vstr=''; end
-  elseif ~ischar(vstr)
-     helpthis, error('Wb:ERR','invalid usage (istr must be string)')
-  end
-
-  if nargin<3,                cflag=0;
-  elseif isequal(cflag,'-C'), cflag=4;
-  elseif isequal(cflag,'-c'), cflag=2;
-  else cflag=1;
+  nm=inputname(1); nA=numel(A);
+  if isempty(nm) && nA>1
+     if ~isempty(vstr)
+          nm=regexprep(vstr,'[= ]*$','');
+     else nm='ans'; end
+  elseif isempty(vstr) && nA>1
+     vstr=sprintf('%s = ',nm);
   end
 
   if cflag, nl=''; else nl=char(10); end
@@ -38,16 +56,16 @@ function info(A,vstr,cflag)
              fprintf(1,[nl '  %s (empty QSpace)\n'],vstr);
         else fprintf(1,[nl '  (empty QSpace)\n']); end
      elseif cflag>1
-          info_1line(A(k),vstr,cflag);
+          info_1line(A(k),vstr,cflag,ocflag,rmax);
      else info_1(A(k),vstr,cflag); end
   end
 
 end
 
 % -------------------------------------------------------------------- %
-function info_1line(A,vstr,cflag)
+function info_1line(A,vstr,cflag,ocflag,rmax)
 
-  r=length(A.Q); nd=numel(A.data); sx={};
+  rk=length(A.Q); nd=numel(A.data); sx={};
 
   if isempty(vstr), s0='';
   else s0=sprintf('%-6s ',vstr); end
@@ -56,12 +74,11 @@ function info_1line(A,vstr,cflag)
        sym='(U1)';
   else sym=['''' A.info.qtype '''']; end
 
-  stags=''; ocflag=0;
-  ftags=sprintf('%%-%gs',4+4*r);
+  stags='';
 
   if isfield(A.info,'itags') && ~isempty(A.info.itags)
-     q=getqdir(A); ocflag=all(q>0);
-     stags=itags2str(A.info.itags);
+     if ocflag, q=getqdir(A); ocflag=all(q>0); end
+     stags=itags_to_str(A.info.itags,'QS:info');
   end
 
   if isfield(A.info,'otype') && ~isempty(A.info.otype)
@@ -77,12 +94,12 @@ function info_1line(A,vstr,cflag)
   if ~nd
      sdc=class(A.data);
      if zflag && isequal(sdc,'double'), sdc='complex'; zflag=0; end
-     sdc=sprintf([Dfmt ' %s'],r,sdc);
+     sdc=sprintf([Dfmt ' %s'],rk,sdc);
      sdim='';
   else
      sdc=class(A.data{1});
      if zflag && isequal(sdc,'double'), sdc='complex'; zflag=0; end
-     sdc=sprintf([Dfmt ' %s'],r,sdc);
+     sdc=sprintf([Dfmt ' %s'],rk,sdc);
 
      if ~isempty(A.Q) && ~isempty(A.Q{1})
         dd=getDimQS(A);
@@ -117,13 +134,25 @@ function info_1line(A,vstr,cflag)
      end
   end
 
-  s=sprintf(['%s %-6s %-12s ' ftags ' %8s  %10s  %s'],...
-    s0,sym,sdc,stags,snrm,sbytes,sdim);
+  e1=''; em=''; 
+  if wblog('--hl-check')
+     if ocflag
+        e1=[char(27) '[38;5;12m'];
+        em=[char(27) '[0m'];
+     end
 
-  if ocflag && exist('printfc')==3
-       printfc(['\e[38;5;12m' s '\e[0m\n']);
-  else fprintf(1,'%s\n',s);
+     l=4+5*max(3,rmax);
+     q=regexprep(stags,'\x1B\[[\d;]+m','');
+     q=diff([length(q), l]);
+     if q>0, stags = [stags, repmat(' ',1,q)]; end
+  else
+     l=4+6*max(3,rmax);
+     q=diff([length(stags), l]);
+     if q>0, stags = [stags, repmat(' ',1,q)]; end
   end
+
+  fprintf(1,[ e1 '%s %-6s ' em stags  e1 ' %-12s %8s  %10s  %s' em '\n'],...
+  s0,sym,sdc,snrm,sbytes,sdim);
 
 end
 
@@ -152,7 +181,7 @@ function info_1(A,s,cflag)
      s{end+1}=A.info.otype;
   end
   if isfield(A.info,'itags') && ~isempty(A.info.itags)
-     s{end+1}=[ itags2str(A.info.itags) ];
+     s{end+1}=[ itags_to_str(A.info.itags,'QS:info') ];
   end
 
   if ~isreal(A), s{end+1}='complex'; 

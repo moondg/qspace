@@ -17,7 +17,7 @@ function [i,ee]=isdiag2(A,eps)
 
   if nargin<1
      helpthis, if nargin || nargout
-     wberr('invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   if iscell(A), is=zeros(size(A)); ee=zeros(size(A)); n=numel(A);

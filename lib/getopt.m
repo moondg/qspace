@@ -34,7 +34,7 @@ function rval = getopt(varargin)
    % info structures) // Wb,Feb22,17
      I=varargin{1}; n=numel(varargin)-1;
      for i=2:n, f=varargin{i};
-        if ~ischar(f) || isempty(f), varargin, wberr('invalid usage'); end
+        if ~ischar(f) || isempty(f), varargin, wbdie('invalid usage'); end
         if f(end)=='?', f=f(1:end-1);
            if isfield(I,f), I=getfield(I,f); end
         elseif isfield(I,varargin{i})
@@ -52,7 +52,7 @@ function rval = getopt(varargin)
 
   nargs=numel(varargin); o=varargin{1};
   if nargs>2
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -60,13 +60,13 @@ function rval = getopt(varargin)
      if isequal(o,'init')
         if ~isempty(args)
            wblog('WRN','overwriting current other getopt scan !?'); 
-           q=dbstack(); dispstack(q(2:end)); disp(args)
+           dispstack(); disp(args)
         end
         args=varargin{2}; errcount=0; chkcase=0;
         return
 
      elseif isequal(o,'INIT')
-        if numel(varargin)>2, wberr('invalid usage'); end
+        if numel(varargin)>2, wbdie('invalid usage'); end
         args=varargin{2}; errcount=0; chkcase=1;
         return
      end
@@ -81,7 +81,8 @@ function rval = getopt(varargin)
 
            fprintf(1,'Stack: '); s='-> ';
 
-           [stack, index] = dbstack; m=length(stack);
+           [stack,index]=dbstack(); % '-completenames'
+           m=length(stack);
            for i=m:-1:1
               if i==1, s=''; end
               fprintf(1,'%s::%d %s', stack(i).name, stack(i).line, s);
@@ -123,7 +124,7 @@ function rval = getopt(varargin)
               if ~fflag, s{1}=char(10); end
               fprintf(1,'%s   %s got %g %s still (e=%s, c=%s)',s{:});
               disp(args)
-              if fflag>1, dispstack(dbstack); end
+              if fflag>1, dispstack(); end
            else
               if fflag, s=''; else s=char(10); end
               fprintf(1,'%s   %s no current entries%s\n',s,S,s);
@@ -139,7 +140,7 @@ function rval = getopt(varargin)
         rval=args{1}; args={};
      elseif n, getopt('check_error');
      elseif nargs>1, rval=varargin{2};
-     else wberr('invalid usage (missing default value)');  end
+     else wbdie('invalid usage (missing default value)');  end
 
      return
 
@@ -167,11 +168,12 @@ function rval = getopt(varargin)
         if found, if lflag, wblog(1,' * ','%s',NAME{io}); end
              rval=found;
              args(i)=[];
-             if i<=length(args) && isnumeric(args{i}) && NAME{io}(1)~='-'
+             if i<=length(args) && ...
+                isnumeric(args{i}) && isempty(NAME{io}(1)=='-~:!')
                 if isscalar(args{i}), wblog('WRN',...
                   'asking for optional flag, yet value %g specified !?',args{i});
                    rval=(args{i}~=0); args(i)=[];
-                else wberr(...
+                else wbdie(...
                 'asking for optional flag, yet array specified !?'); end
              end
         else rval=0; end

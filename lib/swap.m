@@ -3,11 +3,11 @@ function [B,A]=swap(A,B)
 % Wb,Feb23,21
 
   if nargout>1, return; end
-  if nargout, wberr('invalid usage'); end
+  if nargout, wbdie('invalid usage'); end
 
   nm=cell(1,2);
   for i=1:2, nm{i}=inputname(i);
-     if isempty(nm{i}), wberr(...
+     if isempty(nm{i}), wbdie(...
        'invalid usage (failed to derive names for inputs)');
      end
   end

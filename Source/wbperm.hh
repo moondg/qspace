@@ -278,12 +278,38 @@ class wbperm : public wbvector<wperm_t> {
 };
 
 int isValidPerm(const char *s, wperm_t r=-1) {
-   wbperm P; int i;
-   if ((i=P.initStr(0,0,s))<0) {
-      return -1;
+   int q=0; wbperm P; int i;
+   if ((i=P.initStr(0,0,s))<0) { q=-1; } else
+   if (P.isValidPerm(r)) { q=P.len; } else { q=-2; }
+   return q;
+};
+
+int isValidPerm(const mxArray *a, wperm_t r=-1) {
+   int q=0; 
+
+   if (!a) { q=-11; } else
+   if (mxIsChar(a)) {
+      wbstring S(FL,a); if (S) {
+         q=isValidPerm(S.data,r); 
+      } 
    }
-   if (!P.isValidPerm(r)) return -2;
-   return P.len;
+   else if (!mxIsNumeric(a)) { q=-12; }
+   else if (!Mx::IsVector(a)) {
+      if (mxGetNumberOfElements(a)) q=-13; 
+   }
+   else {
+      wbvector<double> X(FL,a);
+      if (int(r)>=0 && X.len!=r) { q=-3; } else
+      if (X) {
+         unsigned i=0, j, n=X.len; double *x=X.data;
+         wbvector<char> m(n+1);
+         for (; i<n; ++i) { j=x[i];
+            if (x[i]!=j || j>n || ++m[j]!=1) { break; }
+         }
+         q=(i<n || (m[0] && m[n]) ? -4 : n);
+      }
+   }
+   return q;
 };
 
 wbperm& wbperm::flipIdx(wbperm &P) const {

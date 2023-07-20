@@ -28,12 +28,12 @@ function S=load2(varargin)
 
   if length(varargin)<1
      eval(['help ' mfilename]);
-     if nargin, wberr('invalid usage'); else return; end
+     if nargin, wbdie('invalid usage'); else return; end
   end
 
   fname=varargin{1}; varargin(1)=[];
 
-  if ~ischar(fname), wberr('invalid file name'); end
+  if ~ischar(fname), wbdie('invalid file name'); end
 
   if ~isempty(dstr), ldir=pwd;
      if exist(dstr,'dir'), cd(dstr);
@@ -46,7 +46,7 @@ function S=load2(varargin)
      if nq==1
         fname=q.name;
      elseif nq>1, disp({q.name}')
-        wberr('multiple files found'); 
+        wbdie('multiple files found'); 
      end
   end
 
@@ -54,7 +54,7 @@ function S=load2(varargin)
      f2=[fname '.mat'];
      if ~exist(f2,'file')
          wblog('ERR','file not found\N\N   file: %s\N   pwd : %s\N', fname, pwd);
-         wberr('file not found');
+         wbdie('file not found');
      end
      fname=f2;
   end

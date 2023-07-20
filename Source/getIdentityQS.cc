@@ -255,7 +255,8 @@ void mexFunction(
 
          if (!strcmp(s,"-v")) { ++vflag; } else 
          if (!strcmp(s,"-q")) { --vflag; } else
-         if (!strcmp(s,"-0")) { ++zflag; } else
+         if (!strcmp(s,"-0")) { zflag+= 1; } else
+         if (!strcmp(s,"-z")) { zflag+=16; } else 
          if (s[0] && !isalnum(s[0])) { 
             wblog(FL,"ERR %s() invalid option '%s'",FCT,s);
          }
@@ -280,12 +281,16 @@ void mexFunction(
       "ERR %s() invalid usage (unreocgnized trailing options)",myname);
    }
 
-   if (vflag<0) { vflag=0; }
-   vflag_ = (vflag ? vflag-1 : 0);
+   vflag_ = (vflag>0 ? vflag-1 : 0);
 
-   if (zflag>1) wblog(FL,"WRN %s() got multiplet options '-0'",myname);
-   if (vflag>2) wblog(FL,"WRN %s() got multiplet options '-v'",myname);
-   if (vflag>=2) vflag='V';
+   if (vflag< 0) { vflag= 0;  } else
+   if (vflag==2) { vflag='V'; } else
+   if (vflag> 2) { wblog(FL,
+      "WRN %s() got multiple options '-v' (%d)",myname,vflag); }
+
+   if ((l=( (zflag&15) + (zflag>>4) )) > 1) wblog(FL,
+      "WRN %s() got multiple options '-0' or '-z' (%d)",myname,l);
+   if (zflag>=16) { zflag=2; } 
 
    if (isra) {
       wbvector< QSpace<gTQ,double> > A;

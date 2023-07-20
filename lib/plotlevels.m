@@ -17,9 +17,9 @@ function plotlevels(X,Y,varargin)
 
   if nargin<2
      helpthis, if nargin || nargout
-     wberr('invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   elseif ~isvector(X) || ~isvector(Y)
-     wberr('invalid usage'),
+     wbdie('invalid usage'),
   end
 
   getopt('init',varargin);

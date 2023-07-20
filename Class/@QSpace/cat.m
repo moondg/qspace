@@ -1,18 +1,31 @@
 function X=cat(varargin)
-% function X=cat(A1,A2,...,k)
+% Usage #1: X=cat(A1,A2,...,k)
 %
 %    Concatenate data sectors of given QSpaces along dimension k
 %    (QSpace vectors are also included in the concatenation procedure).
 %    NB! k may be a cell, i.e. {k,qdir} to specify qdir of newly added
 %    dimensions.
 %
+% Usage #2: X=cat(dim,A1,A2,...)
+%
+%    This replicates the kefault matlab behavior of cat(dim,A,B,...).
+%    Consistently, therefore dim is also listed as first argument,
+%    vs. k ~ dim as last argument in usage #1.
+%
 % Wb,Sep17,18
 
-  X=QSpace; k=varargin{end}; varargin(end)=[];
-  for i=1:numel(varargin)
-  for j=1:numel(varargin{i})
-      X=cat_1(X,varargin{i}(j),k);
-  end
+  if isnumeric(varargin{1}) && numel(varargin{1})==1
+   % NB! in order for a @QSpace routine to be called
+   % the 1st argument does not have to be a QSpace,
+   % any argument being a QSpace suffices // Wb,Jul03,23
+     X=builtin('cat',varargin{:});
+  else
+     X=QSpace; k=varargin{end};
+     for i=1:nargin-1
+        for j=1:numel(varargin{i})
+            X=cat_1(X,varargin{i}(j),k);
+        end
+     end
   end
 
 end

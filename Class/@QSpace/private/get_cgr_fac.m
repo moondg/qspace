@@ -45,7 +45,7 @@ function [dfac,sw]=get_cgr_fac(A,i,sflag)
         else
            s=size(w); if numel(s)>2 || diff(s)>0
               s=sprintf('x%d',s);
-              wberr('unexpected cgw(%d,%d) data size %s',i,j,s); end
+              wbdie('unexpected cgw(%d,%d) data size %s',i,j,s); end
 
            w2=w'*w;
            e=norm(w2-w2(1)*eye(size(w2)));

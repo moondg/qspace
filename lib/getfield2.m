@@ -28,25 +28,25 @@ function A = getfield2(S,varargin)
 
   nf=numel(varargin);
   if ~nf
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
   for i=1:nf
-     if ~ischar(varargin{i}), wberr('invalid usage'); end
+     if ~ischar(varargin{i}), wbdie('invalid usage'); end
   end
 
   A=repmat({[]},size(S)); nA=numel(A); 
 
   if ~isfield(S,varargin{1})
      if qflag, qflag=qflag+1;
-     else wberr('invalid field ''%s'' !?',varargin{1}); end
+     else wbdie('invalid field ''%s'' !?',varargin{1}); end
   elseif nA==1
      q=getfield(S,varargin{1});
      fld=struct('type','.','subs',varargin);
      for i=2:nf
         if ~isfield(q,fld(i).subs)
            if qflag, qflag=qflag+1; q=[];
-           else wberr(...
+           else wbdie(...
              'invalid field ''%s'' !?',sprintf('.%s',fld(1:i).subs));
            end
            break
@@ -87,7 +87,7 @@ function A = getfield2(S,varargin)
      if ~isempty(iz)
         if i1
            if isempty(xdef), xdef=nan;
-           elseif numel(xdef)>1, whos xdef, wberr('invalid usage'); end
+           elseif numel(xdef)>1, whos xdef, wbdie('invalid usage'); end
         end
         A(iz)={xdef};
      end

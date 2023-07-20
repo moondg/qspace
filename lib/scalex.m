@@ -20,9 +20,9 @@ function lh=scalex(sc,varargin)
   getopt ('init', varargin);
      if pflag
         ulb = getopt('xstr',[]);
-        if numel(sc)<2, wberr('got invalid (constant) polynomial!'); end
+        if numel(sc)<2, wbdie('got invalid (constant) polynomial!'); end
      else
-        if numel(sc)~=1, wberr('got invalid scale factor!'); end
+        if numel(sc)~=1, wbdie('got invalid scale factor!'); end
         grl=getopt('glines',grl);
         ulb=getopt('ulabel',ulb);
         if isempty(ulb)
@@ -35,7 +35,7 @@ function lh=scalex(sc,varargin)
   if ~isempty(varargin)
      if isempty(ulb) && length(varargin)==1 && ischar(varargin{1})
           ulb=varargin{1};
-     else wberr('invalid usage'); end
+     else wbdie('invalid usage'); end
   end
 
   if iflag, sc=1/sc; end

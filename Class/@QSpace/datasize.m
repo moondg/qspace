@@ -8,7 +8,7 @@ function dd=datasize(A,sflag)
 % Wb,Apr24,08
 
   if ~nargin
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -18,7 +18,7 @@ function dd=datasize(A,sflag)
         dd(i,1:length(s))=s;
      end
   else
-     if ~isequal(sflag,'-s'), wberr('invalid usage (2nd arg)'); end
+     if ~isequal(sflag,'-s'), wbdie('invalid usage (2nd arg)'); end
      for i=numel(A):-1:1, q{i}=A(i).data; end
      s=whos('q'); dd=s.bytes;
   end

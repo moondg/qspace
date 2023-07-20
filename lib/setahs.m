@@ -6,7 +6,7 @@ function setahs(ahs)
 
    if isempty(s), s=struct('ah',ahs);
    elseif isstruct(s), s.ah=ahs;
-   else disp(s), wberr('invalid figure user data !??'); end
+   else disp(s), wbdie('invalid figure user data !??'); end
 
    set(gcf,'UserData',s);
 

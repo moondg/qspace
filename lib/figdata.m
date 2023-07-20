@@ -155,7 +155,7 @@ function sc=get_scale_auto(yflag,flag)
    ot={'tag','fig:autoscale'};
    h=findall(gca,'Type','Imag');
    if numel(h)~=1
-      wberr('failed to identify image data (e=%g)',numel(h)-1); end
+      wbdie('failed to identify image data (e=%g)',numel(h)-1); end
    A=get(h,'CData');
 
    A=A/max(abs(A(:)));
@@ -189,7 +189,7 @@ function sc=get_scale_auto(yflag,flag)
       jnd=find(dy(j)==min(dy(j))); ju=ny2+[jpd,jnd];
 
    if numel(il)~=2 || numel(ir)~=2 || numel(ju)~=2 || numel(jd)~=2
-      wberr('failed to identify axis boundaries');
+      wbdie('failed to identify axis boundaries');
    end
 
    xr=[mean(xd(il)), mean(xd(ir))];
@@ -230,7 +230,7 @@ function sc=get_scale_auto(yflag,flag)
          xm=mean([xd(ip); xd(in)],1)+0.5*dX;
          hm=plot3([xm;xm],yd(j([1 end])),[1 1],'m',ot{:});
       else
-         wberr('failed to determine x-ticks (try other top/bottom axis?)');
+         wbdie('failed to determine x-ticks (try other top/bottom axis?)');
       end
 
       for i=1:min(10,numel(xm))

@@ -16,7 +16,7 @@ function setprops(hh,varargin)
   varargin=getopt('get_remaining'); narg=length(varargin);
 
   if reset
-     if narg, helpthis, wberr('invalid usage'); end
+     if narg, helpthis, wbdie('invalid usage'); end
 
      for i=1:numel(hh), h=hh(i);
         v=getuser(h,'-rm','props'); if isempty(v), return; end
@@ -33,7 +33,7 @@ function setprops(hh,varargin)
   end
   if e
      helpthis, if nargin || nargout
-     wberr('invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   if isempty(hh), return; end

@@ -14,7 +14,7 @@ function HK=fix_scalar_op(HK,Xk,k,dir)
    if dir>0
       if any(dh~=da(2))
          if Xk.info.odir~=2
-            wberr('invalid A-tensor'); 
+            wbdie('invalid A-tensor'); 
          end
          wblog('WRN','adding 0-blocks to HK (k=%g: %g->%g)',k,dh(1),da(2));
          Q=SetCC(QSpace(contractQS(Xk.AK,[1 3],Xk.AK,[1 3])),[1]);
@@ -23,7 +23,7 @@ function HK=fix_scalar_op(HK,Xk,k,dir)
    else
       if any(dh~=da(1))
          if Xk.info.odir~=1
-            wberr('invalid A-tensor'); 
+            wbdie('invalid A-tensor'); 
          end
          wblog('WRN','adding 0-blocks to HK (k=%g: %g->%g)',k,dh(1),da(1));
          Q=SetCC(QSpace(contractQS(Xk.AK,[2 3],Xk.AK,[2 3])),[1]);

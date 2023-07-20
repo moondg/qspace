@@ -20,11 +20,11 @@ function [hh]=addplot(xd0,yd0,varargin)
   varargin=getopt('get_remaining');
 
   if ~isscalar(cfac) || ~isnumeric(cfac) || cfac<0 || cfac>1
-  wberr('invalid usage'); end
+  wbdie('invalid usage'); end
 
   n=length(xd0); s=size(yd0);
-  if find(size(xd0)>1)>1, wberr('invalid x-data'); end
-  if numel(s)>2 || all(s~=n), wberr('invalid y-data'); end
+  if find(size(xd0)>1)>1, wbdie('invalid x-data'); end
+  if numel(s)>2 || all(s~=n), wbdie('invalid y-data'); end
   if s(1)~=n, yd0=yd0.'; end
 
   xlin=isequal(get(gca,'XScale'),'linear');

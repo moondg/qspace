@@ -8,7 +8,7 @@ function S=loadData(HAM,k,varargin)
      S=load_dmrg_info(HAM,varargin{:});
   else
      if k<1 || k>L
-        wberr('index out of bounds (k=%g/%g)',k,L); 
+        wbdie('index out of bounds (k=%g/%g)',k,L); 
      end
      S=load_dmrg_data(HAM,k,varargin{:});
   end

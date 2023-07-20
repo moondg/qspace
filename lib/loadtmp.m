@@ -20,13 +20,13 @@ function S=loadtmp(varargin)
   if nargin, q=varargin{1};
      if ischar(q) && ~isempty(regexp(q,'^-[0-9]+$'))
         n=str2num(q(2:end));
-        if n>9 || n~=round(n), wberr('invalid tid (%s)',q);
+        if n>9 || n~=round(n), wbdie('invalid tid (%s)',q);
         else q=n; end
      elseif isnumeric(q)
         if numel(q)~=1 || q<1 || q>9 || q~=round(q), q
-           wberr('invalid usage');
+           wbdie('invalid usage');
         end
-     else wberr('invalid usage'); end
+     else wbdie('invalid usage'); end
 
      if ~isempty(q), varargin(1)=[]; 
         f=strrep(f,'tmp.mat',sprintf('tmp%g.mat',q));

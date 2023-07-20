@@ -6,17 +6,17 @@ function S=rmfields(S,varargin)
 % Wb,Dec16,07
 
   if nargin<2 || ~isstruct(S)
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
   f=fieldnames(S); nf=length(f);
 
   for i=1:numel(varargin), if ~ischar(varargin{i})
-     if iscell(varargin{i}), wberr([...
+     if iscell(varargin{i}), wbdie([...
        'invalid usage: got cell array' ... 
        'hint: use standard rmfield() instead.']);
-     else wberr('invalid usage: string (g)pattern(s) expected!'); end
+     else wbdie('invalid usage: string (g)pattern(s) expected!'); end
   end, end
 
   gpat=varargin; gpat(2,1:end-1)={'|'}; gpat=cat(2,gpat{:});

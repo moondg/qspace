@@ -11,7 +11,7 @@ function val=initdef(vname,val)
 
   if nargin~=2
      eval(['help ' mfilename]);
-     if nargin, wberr('invalid usage'); else return; end
+     if nargin, wbdie('invalid usage'); else return; end
   end
 
   if nargout

@@ -10,7 +10,7 @@ function HS=convert_HH(HH)
 % adapted from map_HH.m // Wb,Nov21,20
 % outsourced from setup_mpo_full.m // Wb,Mar08,22
 
-  if ~isnumeric(HH) || size(HH,2)~=5, wberr('invalid usage'); end
+  if ~isnumeric(HH) || size(HH,2)~=5, wbdie('invalid usage'); end
 
   nH=size(HH,1);
   wblog(' * ','converting HH -> HS (%g entries)',nH); 

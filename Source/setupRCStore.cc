@@ -66,30 +66,29 @@ void mexFunction(
       opts.checkAnyLeft();
    }
 
-   if (CG_VERBOSE>0) printf("\n   setup of (defining) "
+   if (CG_VERBOSE>0) PRINTF("\n   setup of (defining) "
       "symmetry multiplets for %s ...\n",t.toStr().data);
    Wb::SigHandler SIG(FL);
 
    qset<gTQ> q0;
-   gRS.getRSet(FL,t,&q0);
 
-   printf(
-   "   defining multiplet: t=[%s]\n\n", q0.toStr().data);
+   gRS.getRSet(FL,t,&q0);
+   PRINTF("\n   defining multiplet: t=[%s]\n\n", STR(q0));
 
    unsigned n3, ip=0;
    if (int(dmax)<=0) dmax=10*t.qlen();
 
    for (n=0; ip<npass; ++ip) { if (CG_VERBOSE>1) {
       wblog(FL,"=== pass %d/%d (dmax=%d) %30R",ip+1,npass,dmax,"=");  }
-      n3=gRS.buf[t].getTensorProdReps(dmax,sdig);
+      n3=gRS.buf[t].genTensorProds(dmax,sdig);
       wblog(FL,"%d multiplets generated or loaded (dmax=%d)",n3,dmax);
       SIG.check911();
    }
 
-   printf("\n"
-   "   number of CGCs: %d (%d)\n",gCS.map3[t].size(),gCS.BUF.size());
-   printf(
-   "   number of multiplets: %d\n",gRS.buf[t].RSet.size());
+   PRINTF("\n"
+   "   number of CGCs: %ld (%ld)\n",gCS.map3[t].size(),gCS.BUF.size());
+   PRINTF(
+   "   number of multiplets: %ld\n\n",gRS.buf[t].RSet.size());
 
 }  catch (Wb::LogException &e) { ExitMsg(e.istr); }
    catch (...) { ExitMsg("caught exception in setupRCStore"); }

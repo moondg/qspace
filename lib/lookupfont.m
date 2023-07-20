@@ -8,15 +8,15 @@ function lookupfont(font)
 
   if nargin~=1 || ~ischar(font)
      helpthis, if nargin || nargout
-     wberr('invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   lf=listfonts;
   q=regexpi(lf,font); n=numel(cat(1,q{:}));
   if ~n
-     wberr('invalid font ''%s''',font); 
+     wbdie('invalid font ''%s''',font); 
   elseif n>1
-     wberr('ambiguous font ''%s''',font); 
+     wbdie('ambiguous font ''%s''',font); 
   end
 
   for i=1:numel(q)

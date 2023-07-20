@@ -18,7 +18,7 @@ function q=check_stop()
   [e,s]=system('echo'); s=regexprep(s,'\s','');
   if ~isempty(regexpi(s,'stop'))
      if ~nargout
-         wberr('got interrupt string ''%s''',s);
+         wbdie('got interrupt string ''%s''',s);
      else q=1; end
   else q=0; end
 

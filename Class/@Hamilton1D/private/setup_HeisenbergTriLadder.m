@@ -18,7 +18,7 @@ function [HAM]=setup_HeisenbergTriLadder(varargin)
 % adapted from setup_HeisenbergLadder()
 
   if nargin<1
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -41,23 +41,23 @@ function [HAM]=setup_HeisenbergTriLadder(varargin)
 
   if isempty(L), L=size(J,1);
      if L>1, wblog(' * ','got implicit length specification (L=%g)',L);
-     else wberr('invalid usage (system length not specified)'); end
+     else wbdie('invalid usage (system length not specified)'); end
   elseif size(J,1)==1, J=repmat(J,L,1); end
 
   if ~isempty(Dz)
-     if numel(Dz)>2, Dz, wberr('invalid usage');
+     if numel(Dz)>2, Dz, wbdie('invalid usage');
      elseif all(Dz==1), Dz=[];
      elseif Dz(1)==Dz(end), Dz=Dz(1);
      end
   end
   if ~isempty(DzI)
-     if numel(DzI)~=1, DzI, wberr('invalid usage');
+     if numel(DzI)~=1, DzI, wbdie('invalid usage');
      elseif DzI==1 || (Ly<2 && ~pBCy), DzI=0;end
   end
 
   if ~perBC, J(end,1)=J(end-1,1); end
 
-  if size(J,1)~=L && size(J,2)~=3 && size(J,2)~=4, wberr(...
+  if size(J,1)~=L && size(J,2)~=3 && size(J,2)~=4, wbdie(...
      'invalid usage (L=%g; J: [%s]) !?',L,vec2str(size(J),'-f'));
   end
 
@@ -118,7 +118,7 @@ function [HAM]=setup_HeisenbergTriLadder(varargin)
   HAM.ops=init_ops(Hp1,['rung Heisenberg term (S.S)_p1' sD{end}],'~hconj');
 
   if isempty(J3), J3=J;
-     if numel(Sleg)~=1, wberr('invalid usage'); end
+     if numel(Sleg)~=1, wbdie('invalid usage'); end
      HAM.ops=[ HAM.ops
         init_ops(Sleg,['spin operator for (S.S)_legs' sD{1}],'~hconj')
         init_ops(Sp2, ['spin operator for (S.S)_p2' sD{end}],'~hconj')
@@ -146,7 +146,7 @@ function [HAM]=setup_HeisenbergTriLadder(varargin)
   if perBC 
      if Ly==1
         [HH,HAM.info.XY]=setup_HH_perBC(J3,L); stype=[];
-     else wberr('invalid usage (perBC only for Ly=1)'); end
+     else wbdie('invalid usage (perBC only for Ly=1)'); end
   else
      [HH,HAM.info.XY,stype]=setup_HH_openBC(J3,L,Ly,pBCy);
   end
@@ -222,7 +222,7 @@ function [S1,S2,Sleg,Hp1,Sp2,Sch,Slad,E2,I1]=get_ops_TriLadder(sym,qloc,J3,Dz,Dz
 
   Sl=[]; Sr=[];
   if Aflag
-     if norm(S1(1).Q{3}), S1, wberr('unexpected location of Sz-op'); end
+     if norm(S1(1).Q{3}), S1, wbdie('unexpected location of Sz-op'); end
      if ~isempty(Dz)
         if numel(Dz)>1, s='_leg  [=Dz2] '; else s=''; end
         if Dz(1)~=1
@@ -239,7 +239,7 @@ function [S1,S2,Sleg,Hp1,Sp2,Sch,Slad,E2,I1]=get_ops_TriLadder(sym,qloc,J3,Dz,Dz
      end
      S1=sum(S1); S1.info.otype='operator';
 
-  elseif numel(S1)~=1, wberr('unexpected S1'); 
+  elseif numel(S1)~=1, wbdie('unexpected S1'); 
   end
 
   A2=QSpace(permuteQS(getIdentityQS(S1,S1),[1 3 2]));
@@ -266,14 +266,14 @@ function [S1,S2,Sleg,Hp1,Sp2,Sch,Slad,E2,I1]=get_ops_TriLadder(sym,qloc,J3,Dz,Dz
      HH(4) = J3(1)*HH(1) + J3(2)*HH(2) + J3(3)*HH(3);
   elseif isempty(J3)
      HH(4) = sum(HH(1:3));
-  else J3, wberr('invalid J3'); end
+  else J3, wbdie('invalid J3'); end
 
   [Q2,X2]=splitH4_SdotS(HH,'-v');
 
      if isempty(Dz) || all(Dz>=0)
         Sleg=Q2(1);
         e=normQS(Q2(1)-X2(1))/normQS(X2(1));
-        if e>1E-12, wberr('unexpected (S.S)_legs (e=%.3g !?)',e); end
+        if e>1E-12, wbdie('unexpected (S.S)_legs (e=%.3g !?)',e); end
      else
         Sleg=[ Q2(1), X2(1) ];
      end
@@ -285,7 +285,7 @@ function [S1,S2,Sleg,Hp1,Sp2,Sch,Slad,E2,I1]=get_ops_TriLadder(sym,qloc,J3,Dz,Dz
   if ~isempty(DzI)
      Z=QSpace(getIdentityQS(S1,3));
      if ~isequal(Z.Q{1},[-2;0;2]) || ~isequal(Z.data,{1;1;1})
-        wberr('unexpected spin operator');
+        wbdie('unexpected spin operator');
      end
      Z.data{2}=DzI;
 
@@ -328,13 +328,13 @@ function [HH,XY,stype]=setup_HH_openBC(JJ,L,Ly,pBCy)
 
   i=1; l=1;
 
-  if size(JJ,2)<4 && (Ly>1 || pBCy), wberr( ... 
+  if size(JJ,2)<4 && (Ly>1 || pBCy), wbdie( ... 
     'invalid usage (J requires 4 elements having Ly=%g)',Ly); end
-  if L<2, L, wberr('invalid usage (L too short)'); end
+  if L<2, L, wbdie('invalid usage (L too short)'); end
 
   if size(JJ,1)==1, uniJs=1; Jx=JJ; ic=[4 5];
   else uniJs=0; ic=[7 8];
-     if size(JJ,1)~=L, wberr('size inconsistency L vs. J'); end
+     if size(JJ,1)~=L, wbdie('size inconsistency L vs. J'); end
   end
 
   if Ly>1 && mod(L,2)
@@ -398,17 +398,17 @@ end
 function [HH,XY]=setup_HH_perBC(JJ,L)
 
   [l,m]=size(JJ);
-  if m<3 || m>4, wberr('invalid usage (J requires 3 columns having Ly=1)');
+  if m<3 || m>4, wbdie('invalid usage (J requires 3 columns having Ly=1)');
   elseif m==4, wblog('WRN','ignoring J4 coupling (having Ly=1)'); end
 
   if nargin<2
        uniJs=0; L=size(JJ,1);
   else uniJs=1;
      if l==1, JJ=repmat(JJ,L,1);
-     elseif l~=L, wberr('invalid usage (L=%g/%g !?)',L,l); end
+     elseif l~=L, wbdie('invalid usage (L=%g/%g !?)',L,l); end
   end
 
-  if L<2, L, wberr('invalid usage (L too short)'); end
+  if L<2, L, wbdie('invalid usage (L too short)'); end
 
   wblog('NB!',['setting up triangular ladder (L=%g, Ly=1)\n' ...
     'using interleaved perBC'],L);

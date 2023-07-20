@@ -7,7 +7,7 @@ function i=finditag(A,pat,nx)
 % Wb,Jun03,19
 
   if nargin<2 || numel(A)~=1
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -16,12 +16,12 @@ function i=finditag(A,pat,nx)
   end
 
   if nargin>2
-     if nx<1, wberr('invalid usage (enforcing n=%d !?)',nx); end
+     if nx<1, wbdie('invalid usage (enforcing n=%d !?)',nx); end
      n=numel(i); if n~=nx
-        if ~n, wberr('failed to find match for ''%s''',pat);
+        if ~n, wbdie('failed to find match for ''%s''',pat);
         elseif nx==1
-             wberr('got multiple matches for ''%s'' (%d)',pat,n);
-        else wberr('unexpected number of matches for ''%s'' (%d/%d)',pat,n,nx);
+             wbdie('got multiple matches for ''%s'' (%d)',pat,n);
+        else wbdie('unexpected number of matches for ''%s'' (%d/%d)',pat,n,nx);
         end
      end
   end

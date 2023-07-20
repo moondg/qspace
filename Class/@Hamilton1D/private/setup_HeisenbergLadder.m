@@ -7,7 +7,7 @@ function [HAM]=setup_HeisenbergLadder(varargin)
 % state energy; no other effect expected otherwise so far)
 
   if nargin<1
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -32,7 +32,7 @@ function [HAM]=setup_HeisenbergLadder(varargin)
   if isempty(L)
      L=size(J,1);
      if L<=1
-        wberr('invalid usage (system length not specified)'); end
+        wbdie('invalid usage (system length not specified)'); end
      wblog(' * ','got implicit length specification (L=%g)',L);
   elseif numel(J)==1,  J=repmat(J,L,2);
   elseif size(J,1)==1, J=repmat(J,L,1);
@@ -43,10 +43,10 @@ function [HAM]=setup_HeisenbergLadder(varargin)
      elseif size(J,1)==L-1, J(end+1,1)=J(end,  1); end
   end
   if L~=size(J,1) || size(J,2)~=2
-     wberr('invalid usage (L=%g; J: [%s]) !?',L,vec2str(size(J),'-f'));
+     wbdie('invalid usage (L=%g; J: [%s]) !?',L,vec2str(size(J),'-f'));
   end
 
-  if B, wberr('finite B (%.3g) not yet implemented',B); end
+  if B, wbdie('finite B (%.3g) not yet implemented',B); end
 
   o={'-v'};
   if regexp(sym,'^SU\d+')
@@ -93,7 +93,7 @@ function [HAM]=setup_HeisenbergLadder(varargin)
   if isequal(sym,'SU2')
      if isempty(qloc), qloc=[1];
      elseif numel(qloc)~=1 || qloc<1
-        wberr('invalid spin S=%g',qloc);
+        wbdie('invalid spin S=%g',qloc);
      end
      [S,IS]=getLocalSpace('Spin',qloc/2,o{:});
      if S.data{1}<0, S.data{1}=-S.data{1}; end
@@ -130,7 +130,7 @@ function [HAM]=setup_HeisenbergLadder(varargin)
 
   if ~isempty(qend), s=size(qend);
      if s(1)>2 || s(2)~=length(qloc), qend
-        wberr('invalid usage (unexpected end-spin)');
+        wbdie('invalid usage (unexpected end-spin)');
      end
   end
 
@@ -138,7 +138,7 @@ function [HAM]=setup_HeisenbergLadder(varargin)
      A0=QSpace(getIdentityQS(S,1,S,1));
      [i1,i2,I]=matchIndex(A0.Q{3},qproj);
 
-     if size(qproj,1)~=1 || isempty(i1), wberr('invalid qproj'); end
+     if size(qproj,1)~=1 || isempty(i1), wbdie('invalid qproj'); end
      wblog('NB!','using rung-projection with q=(%s)',sprintf('%g',qproj)); 
 
      A1=getsub(A0,i1);
@@ -224,7 +224,7 @@ function [HAM]=setup_HeisenbergLadder(varargin)
               HH(i,3)=L;
            end
         else
-           if size(qend,1)~=1, wberr('invalid qend'); end
+           if size(qend,1)~=1, wbdie('invalid qend'); end
            wblog('NB!','using end-spin (open right boundary!)'); 
            if mod(L,2)
               i=size(HH,1)-(0:(nops-1));
@@ -244,7 +244,7 @@ function [HAM]=setup_HeisenbergLadder(varargin)
      end
 
      if naklt
-        if nops~=2, wberr('unexpected nops=%g !?',nops); end
+        if nops~=2, wbdie('unexpected nops=%g !?',nops); end
         i=find(HH(:,4)==2);
         HH(i,4)=3;
         HH(i,5)=J(HH(i,1),2);
@@ -307,7 +307,7 @@ function [HAM]=setup_HeisenbergLadder(varargin)
      HH(end+(-2:-1),3)=HH(end+(-2:-1),3)-2;
 
      if ~isempty(qend)
-        wberr('invalid usage (got end-spin with perBC !?)');
+        wbdie('invalid usage (got end-spin with perBC !?)');
      end
   else
      for k=1:L, i=2*k;

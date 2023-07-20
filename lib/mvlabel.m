@@ -21,7 +21,7 @@ function mvlabel(varargin)
   varargin=getopt('get_remaining');
 
   if ~isempty(POS)
-     if ~ischar(varargin{1}), wberr(...
+     if ~ischar(varargin{1}), wbdie(...
         'invalid usage (no axis handle with POS)'); end
      ah=findall(gcf,'type','axes'); n=numel(ah);
      for i=1:n
@@ -61,7 +61,7 @@ function mvlabel(varargin)
 
        h=lb; dx=[dx,0];
     else
-       helpthis, if nargin || nargout, wberr('invalid usage'), end
+       helpthis, if nargin || nargout, wbdie('invalid usage'), end
        return
     end
   end

@@ -12,16 +12,16 @@ function E=get_local_id(HAM,k,varargin)
 
   if nargin<3, return
   elseif nargin==3, t=varargin{1};
-  elseif nargin>4, wberr('invalid usage');
+  elseif nargin>4, wbdie('invalid usage');
   else
      A=varargin{1}; t=A.info.itags;
      j=varargin{2}; if j<=numel(t), t=t{j};
-     else wberr('index j=%g/g out of bounds',j,numel(t)); end
+     else wbdie('index j=%g/g out of bounds',j,numel(t)); end
 
      if ~isempty(A.Q)
         [i1,i2,Im]=matchIndex(A.Q{j},E.Q{1});
         if ~isempty(Im.ix1)
-           wberr('got local state space mismatch !?'); 
+           wbdie('got local state space mismatch !?'); 
         end
      end
   end

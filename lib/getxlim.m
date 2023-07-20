@@ -9,7 +9,7 @@ function xx=getxlim(varargin)
 
 % if nargin>1
 %    eval(['help ' mfilename]);
-%    if nargin || nargout, wberr('invalid usage'), end, return
+%    if nargin || nargout, wbdie('invalid usage'), end, return
 % end
 
   o={}; if isempty(varargin), varargin{1}='-data'; end
@@ -20,7 +20,7 @@ function xx=getxlim(varargin)
     case '-data', xx=getXLimData(o{:});
     otherwise
        eval(['help ' mfilename]);
-       wberr('invalid usage')
+       wbdie('invalid usage')
   end
 
 end
@@ -59,7 +59,7 @@ end
 function xx=getXLimData(varargin)
 
   if nargin
-     if ~isequal(varargin{1},'-pos'), wberr('invalid usage'); end
+     if ~isequal(varargin{1},'-pos'), wbdie('invalid usage'); end
   pflag=1; else pflag=0; end
 
   lh=findall(gca,'Type','Line','visible','on');

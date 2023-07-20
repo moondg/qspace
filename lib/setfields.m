@@ -21,7 +21,7 @@ function s=setfields(s,varargin)
    end
 
    if e || nargin<2
-      helpthis, if nargin || nargout, wberr('invalid usage'), end
+      helpthis, if nargin || nargout, wbdie('invalid usage'), end
       return
    end
 
@@ -36,7 +36,7 @@ function s=setfields(s,varargin)
       for i=1:2:n, if ~ischar(varargin{i}), e=3; break; end, end
    end
    if e
-      helpthis, if nargin || nargout, wberr('invalid usage'), end
+      helpthis, if nargin || nargout, wbdie('invalid usage'), end
       return
    end
 
@@ -54,11 +54,11 @@ end
 % -------------------------------------------------------------------- %
 function S=set_fields_based_on_reference(S,S0,kflag)
 
-   if numel(S)~=1 && numel(S0)~=1, wberr(...
+   if numel(S)~=1 && numel(S0)~=1, wbdie(...
      'invalid usage (single data set required)'); end
 
    if nargin==3
-      if ~isequal(kflag,'-k'), wberr('invalid kflag'); end
+      if ~isequal(kflag,'-k'), wbdie('invalid kflag'); end
 
       ff=fieldnames(S);
       for i=1:numel(ff), f=ff{i};

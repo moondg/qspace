@@ -21,7 +21,7 @@ function dispopts(varargin)
   if ~isempty(istr), fprintf(1,'\n%s\n\n', istr); else inl 1; end
   if n==0, return; elseif n>1
      eval(['help ' mfilename]);
-     wberr('invalid usage');
+     wbdie('invalid usage');
   end
 
   op=varargin{1}; n=length(op);

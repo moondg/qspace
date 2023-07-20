@@ -61,7 +61,7 @@ setax(ah(2,1)); h=gobjects(0); largf=0; b=0;
 
      if ~isempty(i1) && ~isempty(i2), j1=min(i1); j2=min(i2);
         if norm(j1-j2)>1
-           wberr('unexpected sweep setting !?'); end
+           wbdie('unexpected sweep setting !?'); end
         isw=max(0,min(j1,j2)+(1+isw));
      else isw=0;
      end
@@ -470,7 +470,7 @@ setax(ah(1,2));
 
 if isempty(k2x), return, end
 if ~iscell(k2x) || numel(k2x)<2 || ~ischar(k2x{2})
-   wberr('invalid usage (k2x)');
+   wbdie('invalid usage (k2x)');
 end
 
   s=k2x{2}; if numel(k2x)>2, k1L=k2x{3}; else k1L=[1 L]; end

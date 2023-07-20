@@ -19,7 +19,7 @@ function label(varargin)
   end
 
   if nargs<1 || roty && nargs<2 || nargs>3, helpthis
-     if nargin || nargout, wberr('invalid usage'), end
+     if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 

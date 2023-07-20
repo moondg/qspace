@@ -3,7 +3,7 @@ function Ek=get_ops_E(HAM,k,tflag)
 % Wb,Apr22,14 ; Wb,Aug26,15
 
   if nargin<2 || nargin>3 || nargin==3 && ~isequal(tflag,'-t')
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
   if nargin>2
@@ -15,7 +15,7 @@ function Ek=get_ops_E(HAM,k,tflag)
   Ek=HAM.oez(1,i).op;
 
   if tflag
-     if ~isIdentityQS(Ek), wberr(...
+     if ~isIdentityQS(Ek), wbdie(...
         'invalid HAM.mpo(%g): expecting HAM.oez(1,%g) to be Id',k,i);
      end
      for i=1:numel(Ek.data)

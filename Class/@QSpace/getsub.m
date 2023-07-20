@@ -35,7 +35,7 @@ function [A,B]=getsub(A,varargin)
 % Wb,Aug20,08 ; Wb,Jun19,13
 
   if nargin<2 || nargin>3
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -80,12 +80,12 @@ function [A,B]=getsub_1(A,sflag,varargin)
 
   if sflag
      rA=numel(A.Q); if ~rA || rA==2, return; end
-     if rA~=3, wberr('invalid usage #3 (got rank-%g QSpace)',rA); end
+     if rA~=3, wbdie('invalid usage #3 (got rank-%g QSpace)',rA); end
 
      idx=matchIndex(A.Q{3},zeros(1,m));
 
   elseif nargin==3 && ~iscell(varargin{1}), idx=varargin{1};
-     if ~isnumeric(idx), wberr('invalid idx'); end
+     if ~isnumeric(idx), wbdie('invalid idx'); end
      if isempty(idx)
         if nargout>1, B=A; end
         A=QSpace; return
@@ -107,13 +107,13 @@ function [A,B]=getsub_1(A,sflag,varargin)
            k=k(find(k));
         else
            s=[ n, numel(k) ]; if diff(s)
-           wberr('invalid usage #3 (size mismatch %g/%g)',s); end
+           wbdie('invalid usage #3 (size mismatch %g/%g)',s); end
         end
 
         qq=[];
         for i=1:n, if isempty(q{i}), continue; end
            if isequal(q{i},'0') || isequal(q{i},0), q{i}=zeros(1,m);
-           elseif size(q{i},2)~=m, wberr(...
+           elseif size(q{i},2)~=m, wbdie(...
              'invalid usage #2 [size(q{%g},2) = %g/%g]',i,size(q{i},2),m);
            end
            if ~isempty(qq)
@@ -124,7 +124,7 @@ function [A,B]=getsub_1(A,sflag,varargin)
         q=qq;
 
      elseif isempty(k)
-        wberr('invalid usage #2 (missing argument dim)');
+        wbdie('invalid usage #2 (missing argument dim)');
      end
 
      ia=matchIndex(cat(2,A.Q{k}),q);
@@ -153,7 +153,7 @@ function [A,B]=getsub_1(A,sflag,varargin)
   end
 
   if sflag>1
-     d=getDimQS(A); if d(end)~=1, wberr(...
+     d=getDimQS(A); if d(end)~=1, wbdie(...
        'invalid usage (got dimension d=%g on scalar sector)',d(end)); end
      A=squeeze(A,3);
   end

@@ -8,7 +8,7 @@ function ah = repax(varargin)
   nflag=0; ah1=[]; ah2=[];
 
   if nargin<2, helpthis
-     if nargin || nargout, wberr('invalid usage'), end
+     if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -22,7 +22,7 @@ function ah = repax(varargin)
 
   if ~isaxis(ah1) || ~isaxis(ah2)
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   set(gca,'selected','off')

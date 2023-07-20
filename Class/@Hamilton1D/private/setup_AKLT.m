@@ -5,7 +5,7 @@ function [HAM]=setup_AKLT(varargin)
 % deprecated / old version // Wb,Aug28,15
 
   if nargin<1
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -21,8 +21,8 @@ function [HAM]=setup_AKLT(varargin)
        L=getopt('get_last',[]);
   else getopt('check_error'); end
 
-  if isempty(L), wberr('length L not specified'); end
-  if B, wberr('finite B (%.3g) not yet implemented',B); end
+  if isempty(L), wbdie('length L not specified'); end
+  if B, wbdie('finite B (%.3g) not yet implemented',B); end
 
   o={'-v'};
   if regexp(sym,'^SU\d+')
@@ -33,7 +33,7 @@ function [HAM]=setup_AKLT(varargin)
 
   if isequal(sym,'SU2')
      if isempty(qloc), qloc=[1];
-     elseif numel(qloc)~=1 || qloc<1, wberr('invalid spin S=%g',qloc);
+     elseif numel(qloc)~=1 || qloc<1, wbdie('invalid spin S=%g',qloc);
      end
      [S,IS]=getLocalSpace('Spin',qloc/2,o{:});
      if S.data{1}<0, S.data{1}=-S.data{1}; end
@@ -50,7 +50,7 @@ function [HAM]=setup_AKLT(varargin)
        'Heisenberg Hamiltonian (J=%g, %s) having %s',...
         J,sym,IS.istr);
 
-  else wberr('invalid usage'); end
+  else wbdie('invalid usage'); end
 
   qz=zeros(1,size(S.Q{3},2));
 

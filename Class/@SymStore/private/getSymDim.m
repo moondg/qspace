@@ -22,7 +22,7 @@ function [dd,qq,I]=getSymDim(varargin)
      qs=strread(istr,'%s','whitespace',' (),;*');
      for i=1:numel(qs)
         if isempty(regexp(qs{i},'^[\d\w]+$'))
-        error('Wb:ERR','\n   ERR invalid input string'); end
+        wbdie('invalid input string'); end
      end
      nq=numel(qs);
   else nq=0; end
@@ -57,8 +57,7 @@ function [dd,qq,I]=getSymDim(varargin)
 
   for i=1:nq
      mat=sprintf('%s/(%s).rep',D,qs{i});
-     if ~exist(mat,'file')
-        error('Wb:ERR','\n   ERR file ''%s'' not found',mat); end
+     if ~exist(mat,'file'), wbdie('file ''%s'' not found',mat); end
      I=load(mat,'-mat'); q=I.RSet;
      if isfield(I,'err')
         err(i)=I.err;

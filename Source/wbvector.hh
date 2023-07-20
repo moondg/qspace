@@ -1263,8 +1263,7 @@ class wbvector {
 
        if (!data) { WB_NEW(data,len); } 
 
-       if (long(l)>0 && l>len) wblog(FL,
-          "ERR %s() length out of bounds (%ld/%ld)",FCT,l,len);
+       if (long(l)<0) { l=len; }
 
        if (d && l) {
           MEM_CPY<T>(data,l<len ? l:len,d); if (l<len && init) {

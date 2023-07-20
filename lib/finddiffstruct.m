@@ -21,7 +21,7 @@ function ndiff=finddiffstruct(a,b,varargin)
 
   if nargin<2 || nargout>1
      helpthis, if nargin || nargout
-     wberr('invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   if isobject(a), a=struct(a); end
@@ -29,7 +29,7 @@ function ndiff=finddiffstruct(a,b,varargin)
 
   if ~isstruct(a) || ~isstruct(b)
      helpthis, if nargin || nargout
-     wberr('invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   ipre=find(pre=='.');

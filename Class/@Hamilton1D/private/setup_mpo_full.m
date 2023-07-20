@@ -22,7 +22,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
 
    gotH=0;
 
-   if nargs>2, wberr('invalid usage'); end
+   if nargs>2, wbdie('invalid usage'); end
    if nargs, HS=args{1};
    else
       if isfield(HAM.info,'HS')
@@ -37,7 +37,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
 
    if isnumeric(HS) && size(HS,2)==5, HS=convert_HH(HS); gotH=0; end
    if ~isstruct(HS) || ~isfield(HS,'iop') || ~isfield(HS,'hcpl')
-      wberr('invalid HS (struct array expected)');
+      wbdie('invalid HS (struct array expected)');
    end
 
    nH=numel(HS); mH=zeros(nH,1);
@@ -56,21 +56,21 @@ function [HAM]=setup_mpo_full(HAM,varargin)
          wbdie('invalid usage (got all-zero Hamiltonian terms)');
       end
       HS(i)=[]; q=[numel(i),norm(q)];
-      wblog(' * ','eliminating %g zero-terms in Hamiltonian (@ %.3g)',q);
+      wblog(' * ','eliminating %g zero-terms in Hamiltonian (@ %.2g)',q);
       nH=numel(HS);
    end
 
    q=cell(nH);
    for i=1:nH, [q{i},is]=sort(HS(i).iop(:,1));
       if numel(unique(q{i}))~=numel(q{i})
-         disp(HS(i)), wberr('got non-unique site index in HS(%g)',i);
+         disp(HS(i)), wbdie('got non-unique site index in HS(%g)',i);
       end
       HS(i).iop=HS(i).iop(is,:);
    end
 
    k=unique(cat(1,q{:})); L=k(end); ntype=0;
    if ~isequal(k,(1:L)')
-      wberr('invalid usage [HS is not addressing all sites !?]');
+      wbdie('invalid usage [HS is not addressing all sites !?]');
    end
 
    ndig='2';
@@ -79,31 +79,31 @@ function [HAM]=setup_mpo_full(HAM,varargin)
    ops=getdatafield(HAM.ops,'op'); nops=size(ops,1);
 
    ntype=size(oez,2); q=[ntype,size(ops,2)];
-   if diff(q), wberr('invalid usage (ntype=%g/%g !?)',q); end
+   if diff(q), wbdie('invalid usage (ntype=%g/%g !?)',q); end
 
    q=cell(nH); for i=1:nH, q{i}=HS(i).iop(:,2); end
    q=cat(1,q{:}); q=[min(q), max(q), nops];
-   if q(1)<1 || q(2)>q(3), wberr('HS.iop out of bounds (%g,%g/%g)',q); end
+   if q(1)<1 || q(2)>q(3), wbdie('HS.iop out of bounds (%g,%g/%g)',q); end
 
    if ~isempty(stype)
       if unique(stype)==1, stype=[];
       else
          q=[numel(stype), L];
-         if diff(q), wberr('stype size mismatch (l=%g/%g)',q); end
+         if diff(q), wbdie('stype size mismatch (l=%g/%g)',q); end
          ntype=max(stype);
-         if ntype<=1, wberr('got stype with ntype=%g',ntype); end
+         if ntype<=1, wbdie('got stype with ntype=%g',ntype); end
       end
    end
 
    q=[ntype, size(ops,2), size(oez,2)];
-   if diff(q(2:3)), wberr(...
+   if diff(q(2:3)), wbdie(...
      'HAM.ops and HAM.oez size mistmatch (%g/%g)',q(2:3)); end
-   if q(1)>q(2), wberr('stype out of bounds (%g/%g)',q(1:2)); end
+   if q(1)>q(2), wbdie('stype out of bounds (%g/%g)',q(1:2)); end
 
-   if isempty(oez), wberr('invalid usage (HAM.oez not yet setup)');
+   if isempty(oez), wbdie('invalid usage (HAM.oez not yet setup)');
    else
      q=size(oez,1);
-     if q(1)>2, wberr('invalid HAM.oez (unexpected size %d/2)',q(1)); end
+     if q(1)>2, wbdie('invalid HAM.oez (unexpected size %d/2)',q(1)); end
    end
 
    if ~isempty(stype), s=sprintf(', %g',stype);
@@ -118,43 +118,35 @@ function [HAM]=setup_mpo_full(HAM,varargin)
 
    iop=cat(1,HS.iop);
 
-   qops=ones(size(ops));
-   for i=1:numel(ops)
-      if isempty(ops(i)) || normQS(ops(i))<1E-6 || ...
-         isempty(ops(i).Q), qops(i)=0;
-      end
-   end
+   xops=ones(size(ops));
+   for i=1:numel(ops), xops(i)=normQS(ops(i)); end
+   qops=(xops>1E-6);
 
-   qoez=ones(size(oez));
-   for i=1:numel(oez)
-      if isempty(oez(i)) || normQS(oez(i))<1 || ...
-         isempty(oez(i).Q), qoez(i)=0; end
+   xoez=ones(size(oez));
+   for i=1:numel(oez), xoez=normQS(oez(i)); end
+   if isempty(xoez) || any(xoez(1,:)<1)
+      wbdie('invalid usage (HAM.oez not yet setup !?)');
    end
-
-   if any(qoez(:)==0)
-      wberr('invalid usage (HAM.oez not yet setup !?)'); end
 
    for j=1:size(oez,2)
       if ~isIdentityQS(oez(1,j))
-      wberr('invalid oez (expecting E as first operator)'); end
+      wbdie('invalid oez (expecting E as first operator)'); end
    end
 
    isFerm=getdatafield(HAM.ops,'fermionic');
    isferm=max(isFerm,[],1); i=find(isferm);
    if ~isempty(i)
-      if size(oez,1)~=2 || any(~qoez(2,i))
-         wberr('invalid oez (z-ops required based on HAM.ops)');
+      if size(oez,1)~=2 || any(xoez(2,i)<1)
+         wbdie('invalid oez (z-ops required based on HAM.ops)');
       end
-   end
-
-   if size(qoez,1)>1 && all(qoez(2,:)==0)
+   elseif size(xoez,1)>1 && all(xoez(2,:)==0)
       wblog('mpo','unsetting z-ops since not required'); 
       oez=oez(1,:);
    end
    noez=size(oez,1);
 
-   isHconj=getdatafield(HAM.ops,'hconj');
-   if any(isHconj(find(qops)))
+   HCflag=getdatafield(HAM.ops,'hconj');
+   if any(HCflag(find(qops)))
         addHc=bitor(addHc,2);
    else addHc=0; end
 
@@ -201,19 +193,21 @@ function [HAM]=setup_mpo_full(HAM,varargin)
 
    if mops>2
       wblog('NB!','got %g-site operator terms',mops);
-   elseif mops~=2, wberr('got mops=%g',mops); end
+   elseif mops~=2, wbdie('got mops=%g',mops); end
 
    q=uniquerows(iop(:,2:end));
    i=q(:,1) + (q(:,2)-1)*size(ops,1);
-   if any(~qops(i)), wberr('got referenced zero ops'); end
+   if any(~qops(i))
+      wbdie('got referenced zero ops (%.2g)',max(xops(:)));
+   end
 
    q=cat(1,HS(iloc).iop); q=uniquerows(q(:,2:end));
    for i=1:size(q,1)
       X=HAM.ops(q(i,1),q(i,2)); r=numel(X.op.Q);
-      if r~=2, wberr('got non-scalar local Hamiltonian term'); end
-      if X.fermionic, wberr('got fermionic local Hamiltonian term'); end
+      if r~=2, wbdie('got non-scalar local Hamiltonian term'); end
+      if X.fermionic, wbdie('got fermionic local Hamiltonian term'); end
       if ~X.hconj, e=normQS(X.op-X.op'); if e>1E-8
-         wberr('got non-hermitian local Hamiltonian term'); end
+         wbdie('got non-hermitian local Hamiltonian term'); end
       end
    end
 
@@ -225,7 +219,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
       q=reshape(q',[s(1), s(2)-1, size(q,1)]);
 
       j=q(:,1)+nops*(q(:,2)-1); opl=[HAM.ops(j).op]; l=0;
-      n=numel(opl); if n>4, wberr('unexpected #ops = %g',n); end
+      n=numel(opl); if n>4, wbdie('unexpected #ops = %g',n); end
       for k=1:n
          r=numel(opl(k).Q); 
          if r<3, continue; elseif ~l, l=k; end
@@ -237,9 +231,9 @@ function [HAM]=setup_mpo_full(HAM,varargin)
          elseif l<0, X=contract(X,opl(k)); l=l-1; end
       end
       if l
-         q=norm(X); if q<1E-8, wberr(...
+         q=norm(X); if q<1E-8, wbdie(...
           'invalid %g-site interaction term (nrm=%g)',n,q); end
-         q=numel(X.Q); if q~=2*(-l), wberr(...
+         q=numel(X.Q); if q~=2*(-l), wbdie(...
           'invalid %g-site interaction term (contracts to rank %g)',n,q); end
       end
    end 
@@ -255,7 +249,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
 
       l2=1:nH; l2(iloc)=[];
       for l=l2, q=HS(l).iop; h=HS(l).hcpl;
-         if numel(q)~=6, disp(HS(l)), wberr('unepected iop'); end
+         if numel(q)~=6, disp(HS(l)), wbdie('unepected iop'); end
 
          k1=q(1,1); k2=q(2,1); i=q(1,2); j=q(1,3);
          if ~HAM.ops(i,j).hconj, h=h/2; end % see (H+H') below!
@@ -288,7 +282,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
       if rank(q)<3 && ~isscalarop(q), q=makeIrop(q); end
       d=getqdir(q);
       if numel(d)>=3 && d(3)>0 || numel(d)==4 && d(4)<0
-         wberr('invalid operator qdir');
+         wbdie('invalid operator qdir');
       end
       ops(i)=q;
    end
@@ -314,7 +308,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
             Q=contract(Q,'12*',E0(j),'12');
             x2=x2+contract(Q,'12*',Q,'12'); l=l+1;  
 
-            if isHconj(i,j)
+            if HCflag(i,j)
                Q=contract(q,'21',E0(j),'12');
                x2=x2+contract(Q,'12*',Q,'12');
             end
@@ -335,13 +329,13 @@ function [HAM]=setup_mpo_full(HAM,varargin)
                end
                if x>1E-12 && size(q,2)==1, Ie.AK.data{i}=[U,q];
                else wblog('WRN',...
-                 'got x=%.3g with %g vectors in q',x,size(q,2));
+                 'got x=%.2g with %g vectors in q',x,size(q,2));
                end
             end
          end
-         EE(j)=rmitags(contract(E0(j),3,Ie.AK,1));
+         EE(j)=untag(contract(E0(j),3,Ie.AK,1));
       else
-         EE(j)=rmitags(E0(j));
+         EE(j)=untag(E0(j));
       end
    end
    EE_=EE; EE=EE(1,stype);
@@ -368,6 +362,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
          oez(i,k)=appendSingletons(oez(i,k),['  ' qdir]);
          oez(i,k)=contract(oez(i,k),'12',EE(k),'12*');
          oez(i,k)=setitags(oez(i,k),['-A:H,H,S@' ndig],k);
+         EE(k)=setitags(EE(k),['-op:s,S#@' ndig],k);
       end
    end
 
@@ -407,7 +402,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
          end
 
          e=normQS(S); if e<1E-12
-            wberr('got S projected out by EE(%g) (l=%g @ e=%.3g)',k,l,e);
+            wbdie('got S projected out by EE(%g) (l=%g @ e=%.2g)',k,l,e);
          end
 
          if k==1, S=contract(zL,2,S,1); end
@@ -428,7 +423,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
 
          if ~nz, iz=1;
          else    iz=2;
-            if nz==2, nz=0; elseif nz~=1, wberr('invalid nz=%g',nz); end
+            if nz==2, nz=0; elseif nz~=1, wbdie('invalid nz=%g',nz); end
             mm(l,kk)=mz;
          end
 
@@ -438,7 +433,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
          end
       end
 
-      if nz, wberr('invalid setup (got open z-string !?)'); end
+      if nz, wbdie('invalid setup (got open z-string !?)'); end
 
       h=HS(l).hcpl;
       if n==1
@@ -453,7 +448,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
 
    i=find(max(mm,[],1)<1);
    if ~isempty(i), q=sprintf(', %s',i);
-      wberr('got non-referenced sites %s',q(3:end));
+      wbdie('got non-referenced sites %s',q(3:end));
    end
 
    dk1=L;
@@ -508,7 +503,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
 
       n=numel(i); if n, s={s,''};
          if n>1, if n>2, s{2}=' ..'; else s{2}=','; end
-              s{2}=sprintf('%.3g%s %.3g',q(i(1)), s{2}, q(i(end)));
+              s{2}=sprintf('%.2g%s %.2g',q(i(1)), s{2}, q(i(end)));
          else s{2}=sprintf('%.4g',q(i)); end
 
          wblog('WRN','got %g/%g %s HAM terms (%s)',n,nH,s{:});
@@ -566,7 +561,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
                   if all(q2<0)
                      if     all(q2==mL), nL=nL+1; if nL>1, continue; end
                      elseif all(q2==mR), nR=nR+1; if nR>1, continue; end
-                     else wberr('invalid q2 data [%g,%g] (l=%g)',q2,l); end
+                     else wbdie('invalid q2 data [%g,%g] (l=%g)',q2,l); end
                   end
 
                   if   all(q2>=0), Q={  SS(l,k1),  SS(l,k2) };
@@ -582,7 +577,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
                      elseif q2(1)==mL
                         Q=S2; if k1_, Q={EM(k1_),'*',Q}; end
                         a=contractQS(Q,SA(k2_),'*',[1 3 2]);
-                     else wberr('!?'); end
+                     else wbdie('!?'); end
 
                      X=X+a; a=normQS(a);
                      if a<1E-6, s='  '; if isw<2, s=[s '\r\\']; end
@@ -606,7 +601,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
                      X=X+a;
                   end
                end
-               if isempty(X), wberr('got empty MPO !?'); end
+               if isempty(X), wbdie('got empty MPO !?'); end
 
                X4=contract(X,E2);
 
@@ -638,7 +633,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
                SA(k)=contract(oez(1,k),ic,Q);
 
                r=numel(SA(k).Q);
-               if r>4, wberr('got growing tensor rank (r=%g)',r); end
+               if r>4, wbdie('got growing tensor rank (r=%g)',r); end
             else
                SA(k)=QSpace;
             end
@@ -668,7 +663,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
              % => assuming NN term between first or last pair of sites
              % the MPO must at have overlap with E at least for N-2 sites!
              % Wb,Nov28,20
-               if isbatch, wberr('%s |EM|=%.4g',ssw,x);
+               if isbatch, wbdie('%s |EM|=%.4g',ssw,x);
                else wblog('WRN','%s |EM|=%.4g',ssw,x); wbstop
                end
             end
@@ -716,7 +711,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
          wblog(s{1},'%s not yet in mpo @ %.2g',s{2},q);
 
       elseif isw>1, wblog(' * ',...
-         'all terms contained in mpo (max hmpo @ %.3g)',min(abs(hmpo)));
+         'all terms contained in mpo (max hmpo @ %.2g)',min(abs(hmpo)));
          continue
       end
       if isempty(ll) || isw>=max(3,nsw), continue; end
@@ -778,7 +773,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
             if k>k1, ic='!1*'; if k<L, Q={ Q, EM(k+1) }; end
             else     ic='!2*'; if k>1, Q={ EM(k-1), Q }; end; end
             EM(k)=contractQS(oez(1,k),ic,Q);
-            if numel(EM(k).Q)>2, wberr('ERR',''); end
+            if numel(EM(k).Q)>2, wbdie('ERR',''); end
          end
 
       end
@@ -795,28 +790,30 @@ function [HAM]=setup_mpo_full(HAM,varargin)
       Q=mpo(k); if k>1, Q={x2,Q}; end
       x2=contract(mpo(k),'!2*',Q);
    end
-   mpo2=getscalar(x2);
+   mpo2=getscalar(x2); % = <mpo|mpo> = tr(H'*H)
 
    for k=1:L
-      u=contract(EE(k),'12',EE(k),'21');
-      Q=contract(mpo(k),3,u,2);
-      if k>1, Q=contract(h2,'2', Q,1);
-      else    Q=contract(zL,'2*',Q,1); end
+      Q=contract(mpo(k),{EE(k),'!3',EE(k)},2);
+      if k>1
+         Q=contract(h2,2,Q,1);
+      else
+         Q=contract(unmark(zL),'2*',Q,1);
+      end
       h2=contract(mpo(k),'13',Q,'13');
    end
    h2=getscalar(h2);
 
    q=[mpo2, h2]; e=abs(diff(q))/norm(q);
    if e<1E-9
-        wblog('ok.','got hermitian HAM @ e=%.3g',e); 
-   else wblog('NB!','got non-hermitian HAM (@ %.6g)',e); end
+        wblog('ok.','got hermitian HAM @ e=%.2g',e); 
+   else wblog('NB!','got non-hermitian HAM (@ %.3g)',e); end
 
    hmpo_=hmpo; hmpo=sum(hmpo);
 
    q=[ mpo2, real(hmpo) ]; if fflag, q(3)=ham2; end
    e=norm(diff(q))/q(1);
 
-   s=sprintf('|HAM|^2 = %.8g (D=%g) @ %.3g',mpo2,max(Dmax),e); 
+   s=sprintf('|HAM|^2 = %.8g (D=%g) @ %.2g',mpo2,max(Dmax),e); 
 
    if e<1E-8
       s={'-->',['got complete ' s]}; if fflag, s{1}='==>'; end
@@ -854,7 +851,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
  % (2) remove it from mpo while making it canonical, before finally,
  % (3) again adding it to the MPO uniformly over all sites
 
-   if k~=1, wberr('got k=%d !?',k); end
+   if k~=1, wbdie('got k=%d !?',k); end
    EM(k)=contract(oez(1,k),'!1*',{mpo(k),EM(k+1)}); EM_0=EM;
 
    xR=getscalar(EM(k));
@@ -917,7 +914,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
       X=X+contract(mpo(k),'!1*',{mpo(k),A});
 
       [ee,Ie]=eigQS(X); ee=ee(:,1);
-      if any(ee<1), ee, wbdie('got min(ee)=%.3g [k=%g]',min(ee),k); end
+      if any(ee<1), ee, wbdie('got min(ee)=%.2g [k=%g]',min(ee),k); end
 
       % NB! EM represents the identity applied all sites to the right
       % which is a well-defined single(!) super-state for the R-block!
@@ -971,7 +968,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
       end
 
       if numel(EM(k).data)~=1 || size(EM(k).data{1},1)~=1
-         wberr('unexpected EM(%g) dimensions',k);
+         wbdie('unexpected EM(%g) dimensions',k);
       end
 
       v=EM(k).data{1}.'; v2=v*v'/(v'*v); p=eye(size(v2))-v2;
@@ -988,7 +985,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
 
       if numel(u)>1
          u=u(:,[2 1,3:end]);
-      elseif numel(u)~=1, u, wberr('unexpected setting'); 
+      elseif numel(u)~=1, u, wbdie('unexpected setting'); 
        % NB! numel(u)==1 may only occur close to the boundary where
        % no H-terms are yet completed close to the L (or R) boundary
        % and where there is no global energy off set (~gotId)
@@ -1020,7 +1017,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
    EL=QSpace(1,L); xp=zeros(1,L);
    for k=1:L
       Q=mpo(k); if k>1, Q={EL(k-1),Q}; end
-      EL(k)=contractQS(oez(1,k),'!2*',Q);
+      EL(k)=contractQS(oez(1,k),'!2*',Q); q=0;
 
       if EL(k)
          q=EL(k).data{1}; a=abs(q); i=find(a==max(a),1);
@@ -1033,12 +1030,16 @@ function [HAM]=setup_mpo_full(HAM,varargin)
                wblog(s{:}); displ(q')
             end
          elseif i==2
-            if k>1 && k+dkL<L, displ(q');
-               wblog('WRN','|%g> got max xL at i=%g !?',k,i); end
-            i=1; 
+            k_=[L/2,L-dkL];
+            if a(1)<1E-12 && k<min(k_)
+               p([1 i])=[i 1];
+            elseif k<max(k_), displ(q');
+               wblog('WRN','|%g> got max xL at i=%g !?',k,i);
+               i=1; 
+            end
          end
          q=q(i);
-      else q=0; end
+      end
 
       if abs(q)>1E-6 && k<L
          a=struct(mpo(k));
@@ -1081,7 +1082,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
       q=[xR(1); diag(xL(1:end-1,:)*xR(2:end,:).'); xL(end); xR(1); xL(end)];
       e=[ norm(q-e0), abs(e0) ]; e=e(1)/max(1,e(2));
       if any(e>1E-12), s=sprintf(', %.3g',e);
-         wberr('inconsistent Id term (e=%s)',s(3:end));
+         wbdie('inconsistent Id term (e=%s)',s(3:end));
       end
 
       if ~irep
@@ -1090,7 +1091,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
          i=find(abs(xL(:,1))>1E-12,1,'last'); e=norm(xL(1:i,1)-1);
          if e>1E-10
             s=sprintf('failed to canonicalize start state (EL @ e=%.3g)',e);
-            if Fflag, wblog('ERR',s); else wberr(s); end
+            if Fflag, wblog('ERR',s); else wbdie(s); end
          elseif i<L, k=i+1;
             wblog(' * ','got start states for k<L-%g @ e=%.1g',L-k,e);
             if k<L && gotId, e1(k)=sum(e1(k:L)); e1(k+1:L)=0; end
@@ -1099,7 +1100,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
          i=find(abs(xR(:,2))>1E-12,1); e=norm(xR(i:end,2)-1);
          if e>1E-10
             s=sprintf('failed to canonicalize stop state (ER @ e=%.3g)',e);
-            if Fflag, wblog('ERR',s); else wberr(s); end
+            if Fflag, wblog('ERR',s); else wbdie(s); end
          elseif i>1, k=i-1;
             wblog(' * ','got stop  states for k>%-3g @ e=%.1g',k,e);
             if k>1 && gotId, e1(k)=sum(e1(1:k)); e1(1:k-1)=0; end
@@ -1170,7 +1171,7 @@ end
 function P=getIdProj(mpo_k,El,Er,oez_k)
 
    n=[ numel(El), numel(Er), numel(oez_k.data) ];
-   if any(n>1), n, wberr('invalid usage'); end
+   if any(n>1), n, wbdie('invalid usage'); end
    if any(~n), P=[]; return; end
 
    q=[El, Er, oez_k.data];
@@ -1231,7 +1232,7 @@ function [x,D]=mpo_overlap_0(SS,mpo,oez)
    for l=1:nH
       k=find(mm(l,:));
       if isempty(~k) || ~isequal(k,k(1):k(end))
-         wberr('unexpected S.S data'); end
+         wbdie('unexpected S.S data'); end
       K2(l,:)=k([1,end]);
    end
 
@@ -1260,7 +1261,7 @@ function [x2,e]=check_mpo_overlap(A,B,x2ref,varargin)
    getopt('check_error');
 
    if ~isequal(size(A),size(B))
-      wberr('invalid usage (size mismatch)'); end
+      wbdie('invalid usage (size mismatch)'); end
    L=numel(A);
 
    for k=1:L
@@ -1273,13 +1274,13 @@ function [x2,e]=check_mpo_overlap(A,B,x2ref,varargin)
    if nargin<3 || isempty(x2ref), return; end
 
    if numel(x2ref)~=1 || ~isfinite(x2ref) || ~abs(x2ref)
-      x2ref, wberr('invalid x2ref');
+      x2ref, wbdie('invalid x2ref');
    end
 
    e=abs(x2-x2ref)/max(1,norm(x2ref));
    if nargout<2
-      if e>1E-12, wberr('mpo changed @ %.3g',e);
-      elseif vflag, wblog('MPO','consistent @ e=%.3g',e);
+      if e>1E-12, wbdie('mpo changed @ %.3g',e);
+      elseif vflag, wblog('MPO','consistent @ e=%.2g',e);
       end
       if ~nargout, clear x2; end
    end

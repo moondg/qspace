@@ -424,10 +424,14 @@ bool IsScalar(const mxArray *a) {
    return (mxGetNumberOfDimensions(a)==2 && mxGetNumberOfElements(a)==1);
 };
 
-bool IsVector(const mxArray *a) { 
-   const size_t *s=mxGetDimensions(a);
-   const int n=mxGetNumberOfDimensions(a);
-   return (n==2 && (s[0]==1 || s[1]==1));
+int IsVector(const mxArray *a) { 
+   int q=0; 
+   if (mxGetNumberOfDimensions(a)==2) {
+      const size_t *s=mxGetDimensions(a);
+           if (s[0]==1) { q=1; }  
+      else if (s[1]==1) { q=2; }  
+   }
+   return q;
 };
 
 bool IsIndex(const mxArray *a, int base=0); 

@@ -41,7 +41,7 @@ function [Xk,e0]=updateHK(HAM,kc,kdir,varargin)
 % ----------------------------------------------------------------- %
 
    if nargin<3 || nargin>5
-      helpthis, if nargin || nargout, wberr('invalid usage'), end
+      helpthis, if nargin || nargout, wbdie('invalid usage'), end
       return
    end
 
@@ -111,13 +111,13 @@ function [Xk,e0]=updateHK_mpo_full(HAM,k,kdir,Xk,Xn)
    Ak=QSpace(Xk.AK);
 
    NPsi=get_NPsi_site(Ak);
-   if NPsi && loadXk, wberr(...
+   if NPsi && loadXk, wbdie(...
      'invalid usage (must not update HK with rank-4 current site)');
    end
 
    [q,it]=gotITags(Ak);
-   if q<3, it, wberr('itags required with MPState');
-   elseif q>3 && ~NPsi, it, wberr('got rank-%g A-tensor',q); end
+   if q<3, it, wbdie('itags required with MPState');
+   elseif q>3 && ~NPsi, it, wbdie('got rank-%g A-tensor',q); end
    sloc=it{3}; R=QSpace;
 
    if nargin==5, gotR=1;
@@ -154,14 +154,14 @@ function [Xk,e0]=updateHK_mpo_full(HAM,k,kdir,Xk,Xn)
 
    Xk.HK=contract(Ak,ic,{Q,HAM.mpo(k)});
 
-   if got_gauge(HAM.info.param) % isfield(param,'gauge') // Wb,Apr30,23
+   if got_gauge(HAM) % isfield(param,'gauge') // Wb,Apr30,23
       HG=get_HK_gauge(Ak,kdir,HAM.info.param.gauge,L,HAM.oez(1).op);
       Xk.HK = Xk.HK + contract(Ak,ic,{HG,Ak});
    end
 
    r=numel(Xk.HK.Q);
-   if r>3, wberr('unexpected rank-%g HK',r);
-   elseif ~r, wberr('Hamiltonian MPO contracted to empty',r);
+   if r>3, wbdie('unexpected rank-%g HK',r);
+   elseif ~r, wbdie('Hamiltonian MPO contracted to empty',r);
    end
 
    if gotR
@@ -221,12 +221,12 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
 
    s=size(M); s(end+1:3)=1; d=s(3);
    if d<2 || length(s)>3
-      wberr('invalid mpo (got changing d_op=%g @ kc=%g)', d,kc); 
+      wbdie('invalid mpo (got changing d_op=%g @ kc=%g)', d,kc); 
    end
 
    q=zeros(2,2,d); q(:,:,1)=eye(2);
    x=M(1:2,1:2,:); x(1,2,2:end)=0;
-   if ~isequal(q,x), wberr(...
+   if ~isequal(q,x), wbdie(...
       'invalid MPO (expecting |0> and |e> to go with first two indices)');
    end
 
@@ -242,13 +242,13 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
 
    NPsi=get_NPsi_site(Ak);
 
-   if NPsi && loadXk, wberr(...
+   if NPsi && loadXk, wbdie(...
      'invalid usage (must not update HK with rank-4 current site)');
    end
 
    [q,it]=gotITags(Ak);
-   if q<3, it, wberr('itags required with MPState');
-   elseif q>3 && ~NPsi, it, wberr('got rank-%g A-tensor !?',q);
+   if q<3, it, wbdie('itags required with MPState');
+   elseif q>3 && ~NPsi, it, wbdie('got rank-%g A-tensor !?',q);
    end
    sloc=it{3};
 
@@ -291,7 +291,7 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
    I=find(M(1,2,:)); tloc=M(1,2,I);
    if numel(I), I=I-ioff;
       if any(dop(I)~=1)
-         wberr('invalid usage (local ops must be all scalars)'); 
+         wbdie('invalid usage (local ops must be all scalars)'); 
       end
 
       q=QSpace;
@@ -415,7 +415,7 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
    end
 
    if ~isIdentityCG(H) || ~mpsIsHConj(H)
-      save2('-f','./tmp-HHc.mat'); pwd, e=normQS(H-H'); wberr(...
+      save2('-f','./tmp-HHc.mat'); pwd, e=normQS(H-H'); wbdie(...
      'got non-scalar/non-hermitian Hamiltonian (e=%g @ kc=%g) !?',e,kc);
    end
 
@@ -491,7 +491,7 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
       if t(i)~=1
          s=sprintf('got mpo weight within operator propagation !? (%.3g)',t(i));
             if k>1, wblog('WRN','%s',s);
-            else wberr('%s',s); end
+            else wbdie('%s',s); end
          qloc=t(i)*qloc;
       end
 
@@ -548,7 +548,7 @@ function [e0,ex]=get_energies(H,R,Eg)
      if isnumeric(Eg)
         q=getIdentityQS(R,4);
         d=getDimQS(q); if d(1)~=1
-           wberr('unexpected R/H setting !?'); end
+           wbdie('unexpected R/H setting !?'); end
         R0=getrhoQS(q);
      else
         R0=getrhoQS(Eg);
@@ -584,7 +584,7 @@ function [e0,ex]=get_energies(H,R,Eg)
         end
      end
   else
-     wberr('unexpected input QSpaces !?');
+     wbdie('unexpected input QSpaces !?');
   end
 
 end

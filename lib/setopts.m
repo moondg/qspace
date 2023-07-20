@@ -32,7 +32,7 @@ function opts=setopts(varargin)
   global gopt_val__ gopt_flag__
 
   if ~nargin || iscell(varargin{1}) && nargin<2
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -73,7 +73,7 @@ function opts=setopts(varargin)
 
         if l==2,     val=nm{2}; nm=nm{1}; gotval=1;
         elseif l==1, val=[];    nm=nm{1}; gotval=-1;
-        else wberr('invalid usage {''name'',val }'); end
+        else wbdie('invalid usage {''name'',val }'); end
 
      elseif i<n && ~iscell(varargin{i+1}) && ...
        ~ischar(varargin{i+1}) && isempty(vn{i+1})
@@ -85,18 +85,18 @@ function opts=setopts(varargin)
         if ~isempty(vn{i}), val=nm; nm=vn{i}; gotval=1; end
      end
 
-     if ~ischar(nm) || isempty(nm) wberr(...
+     if ~ischar(nm) || isempty(nm) wbdie(...
         'invalid usage (option name not of type char)'); end
 
      if ~gotval
         if nm(end)==':', i=i+1;
-           if i>n, wberr('missing value for `%s'')',nm); end
+           if i>n, wbdie('missing value for `%s'')',nm); end
            nm=nm(1:end-1); val=varargin{i}; gotval=1;
         elseif nm(1)=='-' || nm(1)=='~'
            gotval=nm(1); nm=nm(2:end);
            if nm(end)=='?', cflag=1; nm=nm(1:end-1); else cflag=0; end
         elseif isempty(regexp(nm,'^[a-zA-Z]\w*[!?]?$'))
-           wberr('invalid usage (invalid option name ''%s'')',nm);
+           wbdie('invalid usage (invalid option name ''%s'')',nm);
         end
      end
 
@@ -143,7 +143,7 @@ function opts=setopts(varargin)
      end
 
      if gotval<=0, if ~gotval && qflag~=1
-        wberr('missing value for option ''%s''',nm); end
+        wbdie('missing value for option ''%s''',nm); end
 
         if ~isempty(k), opts([k,k+1])=[]; k=[]; end
         continue
@@ -171,7 +171,7 @@ function opts=setopts(varargin)
   end
 
   if ~nargout && ~noassign
-     if isempty(vn{1}), wberr('invalid usage'); end
+     if isempty(vn{1}), wbdie('invalid usage'); end
      assignin('caller',vn{1},opts); clear opts
   end
 

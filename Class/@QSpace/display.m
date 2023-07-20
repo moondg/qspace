@@ -52,8 +52,8 @@ function display(A,varargin)
      if sflag, A=sort(A,sperm{:}); end
   end
 
-  sA=size(A); nA=prod(sA);
-  i=find(sA>1); rA=numel(i);
+  nA=numel(A);
+  sA=size(A); i=find(sA>1); rA=numel(i);
   if rA<2
      if  sA(1)==1, sA(1)=[]; else rA=2; end
   end
@@ -65,9 +65,10 @@ function display(A,varargin)
 
   ov2s={'-f','nofac','sep'};
 
-  cflag=1; nl=''; nl_='';
-  if nA<=2 || vflag
-     cflag=0; nl=char(10); if vflag>1, nl_='\n'; end
+  nl=''; nl_='';
+  if nA<=2 || bitand(vflag,2)
+     vflag=bitor(vflag,4);
+     nl=char(10); if bitand(vflag,2), nl_='\n'; end
   end
 
   if isequal(nm,'ans'), nm=''; end
@@ -76,7 +77,7 @@ function display(A,varargin)
        fmt=sprintf(' %%%dg',floor(log10(max(sA)))+1);
   else fmt=sprintf(',%%%dg',floor(log10(sA))+1); fmt(1)=' ';
   end
-  if ~isempty(nm) && ~cflag, fmt(1)=[]; end
+  if ~isempty(nm) && bitand(vflag,4), fmt(1)=[]; end
   fmt=regexprep(fmt,'%1g','%g');
 
   if nA==1
@@ -89,8 +90,17 @@ function display(A,varargin)
      end
      display_1(A,m,Eflag,vflag,s{:});
   elseif nA>1
-     ise=zeros(1,nA); nl2=nl;
-     for i=1:nA, ise(i)=is_empty(A(i)); end
+     n2=2;
+     if vflag && nA>n2, fprintf(1,'\n'); end
+     ise=zeros(1,nA); ocr=zeros(1,nA); rr=zeros(1,nA); nl2=nl;
+
+     for i=1:nA
+        ocr(i)=all(getqdir(A(i))>0);
+        ise(i)=is_empty(A(i));
+        rr(i)=numel(A(i).Q);
+     end
+     rmax=max(rr);
+     if numel(find(ocr)>1), oc={'~oc'}; else oc={}; end
 
      for i=1:nA
         if i>1 && i<nA && all(ise(i-1:i+1))
@@ -104,14 +114,14 @@ function display(A,varargin)
         elseif l==1,      s=sprintf(nm,i );
         else
            s=sprintf(fmt,iA);
-           if cflag || isempty(nm), s=[s '. '];
+           if ~bitand(vflag,4) || isempty(nm), s=[s '. '];
            else s=[nm '(' s ') = ']; end
         end
 
         if ~ise(i)
-           if ~cflag || vflag
+           if bitand(vflag,2+4) || vflag && nA<=n2
                 display_1(A(i),m,Eflag,vflag,s);
-           else info(A(i),s,'-C'); end
+           else info(A(i),s,'-C',oc{:},rmax); end
         else fprintf(1,[nl2 '%s(empty)\n'],s); end
      end
   else
@@ -123,9 +133,10 @@ function display(A,varargin)
      end
   end
 
-  if ~cflag && nA
+  if bitand(vflag,4) && nA
      q=[isempty(A(end).Q) isempty(A(end).data)];
      if ~q(1) || all(q), fprintf(1,'\n'); end
+  elseif vflag && nA>n2, fprintf(1,'\n');
   end
 
 end

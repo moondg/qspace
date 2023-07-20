@@ -3,7 +3,7 @@ function FF=mfull(FF,varargin)
 % Wb,Jul11,11
 
   if nargin<1 || nargout>1
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -19,14 +19,14 @@ function FF=mfull(FF,varargin)
         for i=1:nF
            FF{i}=full(FF{i});
         end
-     else wberr('invalid usage'); end
+     else wbdie('invalid usage'); end
 
   elseif isstruct(FF)
 
      nf=numel(flds); nF=numel(FF);
-     if ~nf, wberr('invalid usage'); end
+     if ~nf, wbdie('invalid usage'); end
      for i=1:nf
-        if ~isfield(FF,flds{i}), wberr('invalid field ''%s''',flds{i}); end
+        if ~isfield(FF,flds{i}), wbdie('invalid field ''%s''',flds{i}); end
      end
 
      for i=1:nF
@@ -38,7 +38,7 @@ function FF=mfull(FF,varargin)
         end
      end
 
-  else wberr('invalid usage'); end
+  else wbdie('invalid usage'); end
 
 end
 

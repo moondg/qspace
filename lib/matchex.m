@@ -15,7 +15,7 @@ function i=matchex(varargin)
 
   if nargin>2
      if ~isequal(varargin(1:end-2),{'-i'})
-        wberr('invalid usage'); end
+        wbdie('invalid usage'); end
      i=~isempty(regexpi(varargin{2:end}));
   else
      i=~isempty(regexp (varargin{:}));

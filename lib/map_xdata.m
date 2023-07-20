@@ -15,7 +15,7 @@ function map_xdata(varargin)
 %   map_xdata('lin',[1 L],[0 J2])
 
   if nargin<1
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -38,7 +38,7 @@ function map_xdata(varargin)
      isnumeric(args{1}) && numel(args{1})==2 && ...
      isnumeric(args{2}) && numel(args{2})==2, lin_flag=lin_flag+10;
   elseif lin_flag
-     wberr('invalid usage (''lin'')');
+     wbdie('invalid usage (''lin'')');
   end
 
   if lin_flag
@@ -47,7 +47,7 @@ function map_xdata(varargin)
      args(1:2)=[];
   else
      if ~isnumeric(args{1}) || nargs>1 && ~ischar(args{2})
-        args, wberr('invalid usage (map)');
+        args, wbdie('invalid usage (map)');
      end
      xd=args{1}; nx=numel(xd);
      args(1)=[];
@@ -79,7 +79,7 @@ function map_xdata(varargin)
   ph=findall(ah,'type','patch')';
   if ~isempty(ph)
      if lin_flag, lh=[lh, ph];
-     else wberr('invalid usage (got %g patches)',numel(ph)); end
+     else wbdie('invalid usage (got %g patches)',numel(ph)); end
   end
 
   if lin_flag
@@ -90,9 +90,9 @@ function map_xdata(varargin)
   else
      for h=lh
         i=get(h,'XData');
-        if any(i~=round(i)), wberr(...
+        if any(i~=round(i)), wbdie(...
            'invalid existing xdata (expecting integers)');
-        elseif any(i<1) || any(i>nx), wberr(...
+        elseif any(i<1) || any(i>nx), wbdie(...
            'invalid existing xdata (index out of bounds: [%g,%g]/%g)',...
            min(i),max(i),nx);
         end

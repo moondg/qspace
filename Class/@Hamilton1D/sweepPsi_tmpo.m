@@ -45,7 +45,7 @@ function [HAM,Iout]=sweepPsi_tmpo(HAM,varargin)
 
   if ntau<=2, vflag=vflag+1; olap=2; end
 
-  if isempty(getfield2(HAM.user,'-q','trotter','info','dt')), wberr(...
+  if isempty(getfield2(HAM.user,'-q','trotter','info','dt')), wbdie(...
     'invalid usage (need to setup first [using setupTrotter2]'); end
 
   L=length(HAM);
@@ -61,7 +61,7 @@ function [HAM,Iout]=sweepPsi_tmpo(HAM,varargin)
   ops=getfield2(Itr,'-q','ops'); nops=numel(ops);
   if nops
      if nops~=2 || ~iscell(ops) || ~isnumber(ops{2});
-        wberr('single operator needed for correlation function');
+        wbdie('single operator needed for correlation function');
      end
   end
 
@@ -82,7 +82,7 @@ function [HAM,Iout]=sweepPsi_tmpo(HAM,varargin)
        Il=load_trotter_data(HAM,1); AF(1)=Il.Af;
        if ift==1
           d=getqdir(Il.At); if any(d(1:3)<0)
-          wberr('invalid usage (current site not at k=1 !?)'); end
+          wbdie('invalid usage (current site not at k=1 !?)'); end
        end
 
        for k=2:L-1
@@ -311,7 +311,7 @@ end
 function [HAM,Il,Ir,Ixt,Ixf]=update_trotter_2site(HAM,Il,Ir,k,sdir,varargin)
 
   if     isequal(sdir,'>>'), qdir=+1;
-  elseif isequal(sdir,'<<'), qdir=-1; else sdir, wberr('invalid sdir'); end
+  elseif isequal(sdir,'<<'), qdir=-1; else sdir, wbdie('invalid sdir'); end
 
   L=length(HAM); e1=HAM.oez(1).op;
 
@@ -326,7 +326,7 @@ function [HAM,Il,Ir,Ixt,Ixf]=update_trotter_2site(HAM,Il,Ir,k,sdir,varargin)
   Xr=contract(Ar,'*',{Ir.At,Qr}); % RR',m(po)
 
   if numel(Xl.Q)>4 || numel(Xr.Q)>4
-     wberr('unexpected rank (%g/%g)', numel(Xl.Q), numel(Xr.Q));
+     wbdie('unexpected rank (%g/%g)', numel(Xl.Q), numel(Xr.Q));
   end
 
   X2=contract(Xl,Xr);
@@ -387,7 +387,7 @@ function [Ik,In]=check_normalization(Ik,ff,weps)
      if any(e>weps)
         if e>weps(2)
            s=sprintf('%s not normalized %g @ %+.3g',f,q(1),q(2));
-           if e>weps(3), wberr('%s !?',s); wrn=9;
+           if e>weps(3), wbdie('%s !?',s); wrn=9;
            else wblog('WRN',s); wrn=2; end
         else wrn=1;
         end

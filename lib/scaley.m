@@ -21,7 +21,7 @@ function lh=scaley(sc,varargin)
   getopt('check_error');
 
   h=findall(gca,'tag','scaley');
-  if ~isempty(h), if numel(h)>1, wberr(...
+  if ~isempty(h), if numel(h)>1, wbdie(...
      'got several scaley handles (%g)',numel(h)); end
      sc0=getuser(h(1),'sc'); if isempty(sc0), sc0=1; end
      delete(h);

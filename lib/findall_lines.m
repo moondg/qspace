@@ -8,7 +8,7 @@ function [lh,tt]=findall_lines(varargin)
 % Wb,Oct16,20
 
   if nargin>1
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   elseif nargin, ah=varargin{1};
   else ah=gca; end

@@ -26,19 +26,19 @@ function u=setuser(ah,varargin)
 
   if nargin<2 || ~all(ishandle(ah))
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   i=1; nargs=numel(varargin); vx=cell(floor(nargs/2),2); l=1;
   while i<=nargs,   x=varargin{i};
      if ~ischar(x), v=inputname(i+1);
-        if isempty(v), wberr(...
+        if isempty(v), wbdie(...
           'invalid usage (failed to determine field name)'); end
         vx(l,:)={v,x}; i=i+1; l=l+1;
      elseif i<nargs
         vx(l,:)={x, varargin{i+1}}; i=i+2; l=l+1;
      else
-        wberr('invalid usage (name/value mismatch; arg #%d)',i+1);
+        wbdie('invalid usage (name/value mismatch; arg #%d)',i+1);
      end
      if isempty(regexp(vx{end,1},'^[a-zA-Z][\w_]*$'))
         wbdie('invalid variable name ''%s''',vx{end,1});

@@ -17,7 +17,7 @@ function kc=initPsi(HAM)
 
   E=HAM.ops(1);
   if ~isIdentityQS(E)
-     wberr('invalid HAM (expecting');
+     wbdie('invalid HAM (expecting');
   end
 
   A(1)=addsingleton(E,'-p');

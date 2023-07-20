@@ -8,7 +8,7 @@ function q=getfields(S,varargin)
 
   if nargin<2 || ~isstruct(S)
      helpthis, if nargin || nargout
-     wberr('invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
   if numel(varargin)==1 && iscell(varargin{1})
        ff=varargin{1};
@@ -16,7 +16,7 @@ function q=getfields(S,varargin)
 
   nf=numel(ff);
   for i=1:nf
-     if ~ischar(ff{i}), wberr(...
+     if ~ischar(ff{i}), wbdie(...
         'invalid usage (expecting strings for field names [#%g])',i+1);
      end
   end
@@ -38,7 +38,7 @@ function q=getfields(S,varargin)
   f2=setdiff(ff,f0);
 
   if ~isempty(f2)  || ~isempty(e)
-     s=sprintf(', ''%s''',e{:},f2{:}); wberr(...
+     s=sprintf(', ''%s''',e{:},f2{:}); wbdie(...
     'asking for invalid field%s {%s}',iff(numel(f2)>1,'s',''),s(3:end));
   end
 

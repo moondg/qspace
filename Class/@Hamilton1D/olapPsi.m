@@ -27,7 +27,7 @@ function X=olapPsi(HAM,varargin)
 
   L=length(HAM.mpo);
 
-  if xflag && mod(L,2), wberr('invalid usage (L=%g !?)',L); end
+  if xflag && mod(L,2), wbdie('invalid usage (L=%g !?)',L); end
 
   if rflag
      if xflag
@@ -116,7 +116,7 @@ function X=olapPsi(HAM,varargin)
            i=findstrc(X.info.itags,'^s\d');
            if numel(i)==2
                 X.info.itags(i)=X.info.itags(fliplr(i));
-           else X.info.itags, wberr('unexpected itags !?');
+           else X.info.itags, wbdie('unexpected itags !?');
            end
 
            if numel(A1.Q)==4

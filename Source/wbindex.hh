@@ -595,6 +595,9 @@ class groupIndex {
 
 #define CC_ITAG '*' 
 
+#define QS_MARK_DUAL '\''
+#define IS_CHAR_MARK(c) ((c)>=32 && (c)<= QS_MARK_DUAL)
+
 #define IS_ITAGS_SEP(c) ((c)==',' || (c)==';' || (c)=='|')
 #define IS_CHAR_ITAGS(c) ((c)>32 && (c)<127)
 #define IS_CHAR_ITAG(c) (((c)>32 && (c)<127) && (c)!=CC_ITAG && !IS_ITAGS_SEP(c))
@@ -655,10 +658,21 @@ class itag_ {
       return (t & ~(IDT)(128) ? 0 : 1); 
    };
 
+   bool isEmpty(char lenient) const;
+   bool isEmpty_m() const; 
+
+   char getMark() const { 
+       char c=((char&)t) & 127; 
+       if (c && !IS_CHAR_MARK(c)) { c=0; }
+       return c;
+   };
+
    explicit operator bool() const { return (t!=0); };
    bool operator! () const { return !t; }; 
 
-   explicit operator const char*() const { return (const char*)t; };
+   explicit operator const char*() const {
+      return (const char*)(&t); 
+   };
 
    itag_& Set(const char *s) { char c=isConj();
       init(FL,s);
@@ -734,13 +748,18 @@ class itag_ {
    };
 
    itag_& SetSI( const char *F, int L, 
-      const char *tag, unsigned k, char conj=-1, char nfmt=1);
+      const char *tag, unsigned k,
+      char mflag=6, 
+      char nfmt=1); 
 
    itag_& AppendChar(char q, const char *qs=NULL);
    itag_& PrependChar(char q, const char *qs=NULL);
    int CheckFirstChar(char q, const char *qs=NULL);
 
-   itag_& MarkDual(char q='\'');
+   itag_& MarkDual(char m=QS_MARK_DUAL, bool always=1);
+
+   itag_& AddTilde() { return AppendChar('~',"KD~"); };
+   itag_& SetM() { return AppendChar('~',"KD~"); }; 
 
    itag_& SetK() {
       if (CheckFirstChar('K',"AEX")>0) return *this;
@@ -750,9 +769,6 @@ class itag_ {
       if (CheckFirstChar('D',"AEX")>0) return *this;
       return AppendChar('D',"KD~");
    };
-
-   itag_& SetM() { return AppendChar('~',"KD~"); }; 
-   itag_& AddTilde() { return AppendChar('~',"KD~"); };
 
    unsigned to_str(char *s, unsigned len, char cflag=1) const;
 
@@ -766,10 +782,10 @@ class itag_ {
 
    IDT t;
 
-   static void Reset(unsigned char q=-1) {
+   static void Reset(unsigned char q=-1) { 
       if (char(q)<0) {
-         if (itag_::flag_id & 2) { return; }
-         else { q=4; }
+         if (itag_::flag_id & 2) { return; }  
+         else { q=4; } 
       }
       if (q&1) wblog(FL,"ERR %s() invalid q=%d",FCT,q);
       if (q<4) { q+=4; } 
@@ -785,7 +801,6 @@ class itag_ {
  private:
 
    static unsigned char flag_id;
-
 };
 
    unsigned char itag_::flag_id = 4;
@@ -858,7 +873,7 @@ class iTags : public wbvector<itag_> {
    iTags& init_alpha(
       unsigned r, unsigned s, const char *tag,
       char t, 
-      unsigned k);
+      unsigned k); 
 
    unsigned Set(const char* F, int L, const char *tag,
        unsigned r=-1,  
@@ -928,6 +943,7 @@ class iTags : public wbvector<itag_> {
    };
 
    int findRegEx(const char *r) const;
+   int RegEx_replace(const char *F, int L, const char *rstr) const;
 
    int getCtr( 
       const char *F, int L, const iTags &b,

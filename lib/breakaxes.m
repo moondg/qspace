@@ -7,12 +7,12 @@ function ah=breakaxes(ah_,varargin)
 % Wb,Oct24,20
 
   if ~all(isaxis(ah_))
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
   nah=numel(ah_);
   if ~nah
-     wberr('got %g axis handles (at least 2 required)',nah);
+     wbdie('got %g axis handles (at least 2 required)',nah);
      return
   end
 
@@ -40,10 +40,10 @@ function ah=breakaxes(ah_,varargin)
 
   if nah==1
      q={isempty(w), isempty(rpos)};
-     if ~xor(q{:}), wberr(['invalid usage ' ... 
+     if ~xor(q{:}), wbdie(['invalid usage ' ... 
         '(need unique specification of location for single axis)']); end
      if q{1}, q=rpos; else q=w; end
-     if ~iscell(q) || numel(q)~=2, q, wberr('invalid usage'); end
+     if ~iscell(q) || numel(q)~=2, q, wbdie('invalid usage'); end
      w=0; rpos=[];
 
      if     isequal(q{1},'S'), w=2; p(2)=p(2)-0.5*p(4);
@@ -55,14 +55,14 @@ function ah=breakaxes(ah_,varargin)
 
      elseif isequal(q{1},'E'), w=1; p(1)=p(1)+0.5*p(3);
      elseif isequal(q{1},'W'), w=1; p(1)=p(1)-0.5*p(3);
-     else w, rpos, wberr('invalid value for location'); end
+     else w, rpos, wbdie('invalid value for location'); end
 
      if isempty(rpos), rpos=q{2};
         if     rpos>.7, p(2)=p(2)+0.5*p(4); rpos=rpos-.5;
         elseif rpos<.3, p(2)=p(2)-0.5*p(4); rpos=rpos+.5; end
      end
      if ~w || isempty(rpos)
-         w, rpos, wberr('invalid value for location'); end
+         w, rpos, wbdie('invalid value for location'); end
 
      if tflag, wblog('TST','using w=%g, rpos=%g',w,rpos); end
   elseif tflag, wblog('TST','using w=%g',w); 

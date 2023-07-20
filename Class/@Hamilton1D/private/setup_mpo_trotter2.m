@@ -44,21 +44,21 @@ function HAM=setup_mpo_trotter2(HAM,varargin)
      else wblog('WRN','using GS energy E0/L=%g (@ %.3g !?)',e0,x);
      end
   elseif numel(e0)~=1 || ~isnumeric(e0)
-     wberr('invalid usage (scalar required for e0)');
+     wbdie('invalid usage (scalar required for e0)');
   end
 
   ph0=exp(+1i*dt*e0);
 
   q=[HAM.mpo.stype];
   if any(diff(q)) || numel(q)~=numel(HAM.mpo), disp(unique(q));
-     wberr('got invalid / unexpected stype !?');
+     wbdie('got invalid / unexpected stype !?');
   end
 
   HH=HAM.info.HH; Hloc=[]; Hcpl=[];
 
   [dx,Ix,Dx]=uniquerows(abs(HH(:,3)-HH(:,1)));
   if any(dx~=0 & dx~=1)
-     wberr('only up to nearest-neighbor terms allowed with TR2');
+     wbdie('only up to nearest-neighbor terms allowed with TR2');
   end
 
   Hloc=cell(1,L); nloc=0;
@@ -69,17 +69,17 @@ function HAM=setup_mpo_trotter2(HAM,varargin)
      if l==0, nloc=nloc+1;
        for j=1:numel(k), q=Hx(Ik{j},:);
           if ~isequal(uniquerows(q(:,[1 3]))-k(j),[0 0]) || ...
-             ~isequal(q(:,2),q(:,4)), q, wberr('unexpected data');
+             ~isequal(q(:,2),q(:,4)), q, wbdie('unexpected data');
           end
           Hloc{k(j)}=q(:,[2 5:end]);
        end
      elseif l==1
        for j=1:numel(k), q=Hx(Ik{j},:);
           if ~isequal(uniquerows(q(:,[1 3]))-k(j),[0 1]), q
-             wberr('unexpected data'); end
+             wbdie('unexpected data'); end
           Hcpl{k(j)}=q(:,[2 4:end]);
        end
-     else wberr('invalid usage (dx=%g)',l); end
+     else wbdie('invalid usage (dx=%g)',l); end
   end
 
   E1=HAM.oez(1).op;
@@ -154,7 +154,7 @@ function [M,H2,U4]=get_mpo_k(HAM, w1,h1,w2,h2, Hcpl, bflag,dt,E1,A2,X2)
      if iloc==1, w=w1; else w=w2; end;  if ~w, continue; end
      if iloc==1, Hloc=h1; ic='-op:s1'; 
      else        Hloc=h2; ic='-op:s2'; end
-     if size(Hloc,2)~=2, wberr('invalid usage'); end
+     if size(Hloc,2)~=2, wbdie('invalid usage'); end
      Hloc(:,2) = w * Hloc(:,2);
 
      H1=QSpace; err=0;
@@ -167,8 +167,8 @@ function [M,H2,U4]=get_mpo_k(HAM, w1,h1,w2,h2, Hcpl, bflag,dt,E1,A2,X2)
      end
 
      r=rank(H1); e=normQS(H1-H1');
-     if r~=2, wberr('invalid rank-%g for local ops',r); end
-     if err || e>1E-12, wberr('got non-hermitian local ops (e=%g)',e);
+     if r~=2, wbdie('invalid rank-%g for local ops',r); end
+     if err || e>1E-12, wbdie('got non-hermitian local ops (e=%g)',e);
      elseif norm(H1)>1E-14
           H2=H2+contractQS(A2,'!2*',{H1,ic,A2});
      else H1=QSpace; if iloc==1, w1=0; else w2=0; end
@@ -176,7 +176,7 @@ function [M,H2,U4]=get_mpo_k(HAM, w1,h1,w2,h2, Hcpl, bflag,dt,E1,A2,X2)
   end
 
   if isempty(Hcpl)
-     if w1 || bflag>=0, wberr('invalid usage'); end
+     if w1 || bflag>=0, wbdie('invalid usage'); end
      M=permute(setitags(X2,'-op:s1','mpoR'),[3 1 2]);
      if w2
         U1 = H1 + zero*E1;
@@ -187,13 +187,13 @@ function [M,H2,U4]=get_mpo_k(HAM, w1,h1,w2,h2, Hcpl, bflag,dt,E1,A2,X2)
      end
      M=skipzeros(M); return
 
-  elseif size(Hcpl,2)~=3, wberr('invalid usage'); end
+  elseif size(Hcpl,2)~=3, wbdie('invalid usage'); end
 
   for i=1:size(Hcpl,1), X=HAM.ops(Hcpl(i,[1 2]));
 
      isferm=[X.fermionic]; hconj=[X.hconj];
      if norm(diff(isferm)) || norm(diff(hconj)), isferm, hconj
-        wberr('got fermionic/hconj mitmatch');
+        wbdie('got fermionic/hconj mitmatch');
      else isferm=isferm(1); hconj=hconj(1); end
 
      if isferm, X(2).op=HAM.oez(2).op*X(2).op; end
@@ -206,7 +206,7 @@ function [M,H2,U4]=get_mpo_k(HAM, w1,h1,w2,h2, Hcpl, bflag,dt,E1,A2,X2)
   end
 
   e=norm(H2-H2'); if e>1E-12
-     wberr('got non-hermitian Hamiltonian (e=%.2g)',e); end
+     wbdie('got non-hermitian Hamiltonian (e=%.2g)',e); end
 
   U2 = H2 + zero*QSpace(getIdentityQS(A2,2));
   for i=1:numel(U2.data)
@@ -219,7 +219,7 @@ function [M,H2,U4]=get_mpo_k(HAM, w1,h1,w2,h2, Hcpl, bflag,dt,E1,A2,X2)
   U4=skipzeros(QSpace(contractQS({A2,U2},A2,'!13*')));
 
   if bflag>0
-     if w2 && w2~=1, wberr('invalid usage'); end
+     if w2 && w2~=1, wbdie('invalid usage'); end
      M=contract(X2,'-op:s1:mpoL','*',{U4,'!12',U4});
   else
      M=contract(X2,'-op:s1:mpoL','*',{U4,'!12',...

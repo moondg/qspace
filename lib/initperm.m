@@ -23,13 +23,13 @@ function [P,iP]=initperm(r,varargin)
 % Wb,Oct07,19
 
   nargs=numel(varargin);
-  if mod(nargs,2), wberr('invalid usage'); end
+  if mod(nargs,2), wbdie('invalid usage'); end
 
   P=1:r; e=0;
 
   for k=1:2:nargs
      q=varargin{k}; j=varargin{k+1};
-     if ~ischar(q) || ~isequal(q(1),'-'), wberr('invalid usage'); end
+     if ~ischar(q) || ~isequal(q(1),'-'), wbdie('invalid usage'); end
 
      if     isequal(q,'--2end'  ), i=1:r; i(j)=[]; P=P([i,j]);
      elseif isequal(q,'--2front'), i=1:r; i(j)=[]; P=P([j,i]); 
@@ -55,10 +55,10 @@ function [P,iP]=initperm(r,varargin)
      else e=e+1; end
   end
 
-  if e, wberr('invalid usage (k=%g)',k); end
+  if e, wbdie('invalid usage (k=%g)',k); end
 
   if ~isequal(sort(P),1:r)
-     wberr('invalid permutation'); end
+     wbdie('invalid permutation'); end
   if nargout>1, iP(P)=1:r; end
 
 end

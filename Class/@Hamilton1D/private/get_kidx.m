@@ -7,7 +7,7 @@ function k=get_kidx(itags)
 % Wb,Mar30,15
 
   if ~nargin
-     helpthis, if nargout, wberr('invalid usage'), end
+     helpthis, if nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -17,7 +17,7 @@ function k=get_kidx(itags)
   elseif isa(itags,'QSpace') && numel(itags)==1
      itags=itags.info.itags;
   elseif ~iscell(itags) || isempty(itags) || ~ischar(itags{1})
-     wberr('got invalid input itags'); 
+     wbdie('got invalid input itags'); 
   end
 
   for i=1:numel(itags)

@@ -33,7 +33,7 @@ function cmap0w(varargin)
 
     if cfac<=0
        eval(['help ' mfilename]); return
-       wberr('invalid cfac = %g', cfac);
+       wbdie('invalid cfac = %g', cfac);
     end
 
     if ~isempty(sh), ah=get(sh,'parent'); end

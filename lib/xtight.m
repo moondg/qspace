@@ -23,7 +23,7 @@ function xl=xtight(varargin)
      dflag= getopt('-d' );
   fac=getopt('get_last',[]);
 
-  if ~isnumeric(fac), wberr('invalid usage (fac)'); end
+  if ~isnumeric(fac), wbdie('invalid usage (fac)'); end
 
   mh=[ findall(ah,'tag','xmark'); findall(ah,'tag','ymark') ];
   if ~isempty(mh)
@@ -34,7 +34,7 @@ function xl=xtight(varargin)
      xl=getxlim('-view'); dx=diff(xl);
      if dx<=0
         s=sprintf('getxlim() returned [%s]',vec2str(xl));
-        if dx<0, wberr(s); else wblog('WRN',s); end
+        if dx<0, wbdie(s); else wblog('WRN',s); end
      else
         xl=xlim__(ah,xl);
      end

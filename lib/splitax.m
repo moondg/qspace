@@ -16,7 +16,7 @@ function hh=splitax(ah,varargin)
 % Wb,Feb05,03  Wb,Mar14,07
 
   if nargin<1 || ~isscalar(ah) || ~isaxis(ah)
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -54,7 +54,7 @@ function hh=splitax(ah,varargin)
   rs(1)=(p0(3)+dx)/n-dx;
   rs(2)=(p0(4)+dy)/m-dy;
 
-  if rs(1)<dx || rs(2)<dy, wberr([
+  if rs(1)<dx || rs(2)<dy, wbdie([
     'axis too small to be split any further for requested margin' ...
     'dxy=(%g,%g) having (%g,%g)\n'],dx,dy,rs(1),rs(2));
   end

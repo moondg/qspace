@@ -13,7 +13,7 @@ function XX = mkron(varargin)
   if nargin<2
      if nargin && isnumeric(varargin{1}), XX=varargin{1}; return; end
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   rm=0;
@@ -24,7 +24,7 @@ function XX = mkron(varargin)
   n=length(varargin);
   for i=1:n
      if ~isnumeric(varargin{i})
-     wberr('input must be numeric'), end
+     wbdie('input must be numeric'), end
   end
 
   if rm

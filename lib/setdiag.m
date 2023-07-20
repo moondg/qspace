@@ -7,12 +7,12 @@ function M = setdiag(M,v,k)
 % Wb,Jul25,05 ; Wb,Aug16,16
 
   if nargin<2 || nargin>3 
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
   if nargin<3, k=0; end
 
-  if ~isnumeric(M) || ndims(M)>2, wberr('invalid usage'); end
+  if ~isnumeric(M) || ndims(M)>2, wbdie('invalid usage'); end
   s=size(M);
 
   i=[ max(1,1-k), min(s(1),s(2)-k)]; i=i(1):i(2);
@@ -22,7 +22,7 @@ function M = setdiag(M,v,k)
   ii=i+s(1)*j;
 
   nv=numel(v);
-  if nv~=1 && nv~=n || ~isvector(v), wberr(...
+  if nv~=1 && nv~=n || ~isvector(v), wbdie(...
     'invalid v (size mismatch %g/%g) !?',nv,n); end
 
   M(ii)=v;

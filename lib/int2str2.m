@@ -34,7 +34,7 @@ function ss=int2str2(dd,varargin)
 
         xflag=sum(M)-1; xflag1=0;
         if ~isempty(xstr)
-           if ~ischar(xstr), wberr('invalid usage'); end
+           if ~ischar(xstr), wbdie('invalid usage'); end
            xflag1=xflag+1; xflag=xflag1*numel(xstr)-1;
         end
      end
@@ -43,14 +43,14 @@ function ss=int2str2(dd,varargin)
 
   if xflag>0
      e=norm(dd-round(dd));
-     if e, wberr('invalid usage (got non-integers !?)'); else e={}; end
+     if e, wbdie('invalid usage (got non-integers !?)'); else e={}; end
      if any(dd<0), e{end+1}=sprintf('int out of bounds (%g)',min(dd)); end
      if any(dd>xflag)
         e{end+1}=sprintf('int out of bounds (%g/%g)',max(dd),xflag); end
      if ~isempty(e)
         e(2,:)={char(10)}; e(end)=[];
         if xflag1
-             wberr([e{:}]);
+             wbdie([e{:}]);
         else wbwrn([e{:}]); end
      end
 
@@ -75,7 +75,7 @@ function ss=int2str2(dd,varargin)
   nd=numel(dd);
 
   if sflag
-     if nd~=1 || dd<0, wberr('invalid usage'); end
+     if nd~=1 || dd<0, wbdie('invalid usage'); end
      if     dd==1, ss='st';
      elseif dd==2, ss='nd';
      elseif dd==3, ss='rd'; else ss='th'; end

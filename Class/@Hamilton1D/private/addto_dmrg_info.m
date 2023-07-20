@@ -3,7 +3,7 @@ function addto_dmrg_info(HAM,varargin)
 % see also @Hamilton1D/private/save_dmrg_info.m
 % Wb,Apr14,14
 
-  if nargin<2, wberr('invalid usage'); end
+  if nargin<2, wbdie('invalid usage'); end
 
   nvars={};
   for i=1:numel(varargin), nvars{i}=inputname(i+1);
@@ -11,7 +11,7 @@ function addto_dmrg_info(HAM,varargin)
         if iscell(varargin{i}) && numel(varargin{i})==2
            nvars{i}=varargin{i}{1};
            if ~ischar(nvars{i}) || ~isvarname(nvars{i})
-               wberr(['invalid usage ' ... 
+               wbdie(['invalid usage ' ... 
               '(name for input must be accessible or specified)']);
            end
            varargin{i}=varargin{i}{2};
@@ -37,7 +37,7 @@ function addto_dmrg_info(HAM,varargin)
      end
      save(sprintf('%s_info.mat',mat),nvars{:},'-append');
 
-  else wberr('invalid storage specification'); end
+  else wbdie('invalid storage specification'); end
 
 end
 

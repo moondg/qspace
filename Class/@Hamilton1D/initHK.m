@@ -18,7 +18,7 @@ function kc=initHK(HAM,varargin)
 % => keep it this way! // Wb,Apr10,14
 
   if nargin<2, helpthis
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   getopt('init',varargin);
@@ -28,7 +28,7 @@ function kc=initHK(HAM,varargin)
   L=numel(HAM.mpo);
   kc=getCurrentSite(HAM);
 
-  if kc<1 || kc>L, wberr('current site out of bounds (%g/%g)',kc,L);
+  if kc<1 || kc>L, wbdie('current site out of bounds (%g/%g)',kc,L);
   end
 
   X1=load_dmrg_data(HAM,1);

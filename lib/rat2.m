@@ -18,7 +18,7 @@ function [sr,Ir]=rat2(x,varargin)
 % Wb,Mar31,05 ; Wb,Jul04,22
 
   if ~nargin
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -35,7 +35,7 @@ function [sr,Ir]=rat2(x,varargin)
 
   if ~isempty(udat)
      if ~iscell(udat) || numel(udat)~=2 || numel(udata{1})~=1
-     wberr('invalid usage: ''-u'',{uval,ustr}'); end
+     wbdie('invalid usage: ''-u'',{uval,ustr}'); end
      if udat{1}>0, x=x/udat{1};
      else
         wblog('WRN','ignorig unit %g',udat{1}); 
@@ -67,7 +67,7 @@ if cflag, return; end
         end
      elseif ~isempty(fmt)
        if isempty(regexp(fmt,'%[^a-z]*s'))
-          wberr('invalid usage (string fmt expected)'); 
+          wbdie('invalid usage (string fmt expected)'); 
        end
        for i=1:numel(sr), sr{i}=sprintf(fmt,sr{i}); end
      end

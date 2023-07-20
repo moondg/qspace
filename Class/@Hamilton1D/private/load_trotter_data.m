@@ -5,8 +5,8 @@ function q=load_trotter_data(HAM,k,varargin)
 
   L=numel(HAM.mpo);
 
-  if nargin<2 || ~isnumber(k), wberr('invalid usage'); end
-  if k<0 || k>L, wberr(...
+  if nargin<2 || ~isnumber(k), wbdie('invalid usage'); end
+  if k<0 || k>L, wbdie(...
     'invalid usage (k out of bounds: %g/%g',k,numel(HAM.mpo)); end
 
   sflag=nargin>2;

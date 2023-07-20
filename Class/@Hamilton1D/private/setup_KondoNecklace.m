@@ -5,7 +5,7 @@ function [HAM]=setup_KondoNecklace(varargin)
 % adapted from setup_HeisenbergLadder()
 
   if nargin<1
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -23,7 +23,7 @@ function [HAM]=setup_KondoNecklace(varargin)
   getopt('check_error'); end
 
   mJ2(:,end+1:3)=0;
-  [l,m]=size(mJ2); if m~=3, wberr(...
+  [l,m]=size(mJ2); if m~=3, wbdie(...
     'invalid couplings mJ2 (expecting [my, J_K, J_H]) !?'); end
 
   if isempty(L)
@@ -32,8 +32,8 @@ function [HAM]=setup_KondoNecklace(varargin)
   elseif l==1, mJ2=repmat(mJ2,L,1);
   end
 
-  if L<=1, wberr('invalid usage (system length not specified !?)'); end
-  if L~=size(mJ2,1), wberr(...
+  if L<=1, wbdie('invalid usage (system length not specified !?)'); end
+  if L~=size(mJ2,1), wbdie(...
     'invalid usage (L=%g; mJ2: [%s]) !?',L,vec2str(size(mJ2),'-f'));
   end
 
@@ -178,7 +178,7 @@ function [HK,Fb,Zb,Nb,S2,E1,IS]=get_ops_KondoLattice(NC,sym)
   Sa=Sb;
   if isempty(sym)
      if numel(Sa.data)~=1 || size(Sa(1).data{1},1)~=4
-        wberr('expecting NC=1 (having nosym)'); end
+        wbdie('expecting NC=1 (having nosym)'); end
      Sa.data{1}=Sa.data{1}(2:3,2:3,:);
   end
 

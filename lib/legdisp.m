@@ -90,7 +90,7 @@ function [lg,ll,l2,t2]=legdisp(varargin)
   varargin={'Location',pos,varargin{:}}; end
 
   q=[~isempty(pick), ~isempty(pickE), ~isempty(pickX)];
-  if sum(q)>1, wberr(...
+  if sum(q)>1, wbdie(...
     'invalid usage (got multiple requests for pick* !?'); end
 
   if isempty(pick) && ~iscell(pick)

@@ -186,7 +186,7 @@ SPIDX_T CG::findMaxWeight(
       if (q.type==QTYPE_SUN) {
 
          if (r<1 || r>9) wblog(FL,
-            "ERR %s() got sym='%s'",FCT,STR(q));
+            "ERR %s() got symmetry %s",myname,STR(q)); 
 
          for (i=r-1; i>0; --i) {
             qm.data[i]=num2int(FL, (qm.data[i] - qm.data[i-1]) / double(i+1));
@@ -194,7 +194,10 @@ SPIDX_T CG::findMaxWeight(
       }
       else if (q.type==QTYPE_SpN) {
 
-         if (r<2 || r>9) wblog(FL,"ERR %s() got sym='%s'",FCT,STR(q));
+         if (r<2 || r>9) { wblog(FL,
+            "ERR %s() got symmmetry %s%s",myname,STR(q), 
+             r==1? "\nhint: use SU(2) instead":"");
+         }
 
          for (i=r-1; i>0; --i) {
             qm.data[i]=num2int(FL, (qm.data[i] - qm.data[i-1]) / double(i+1));
@@ -202,7 +205,10 @@ SPIDX_T CG::findMaxWeight(
       }
       else if (q.type==QTYPE_SON) {
 
-         if (r<2 || r>9) wblog(FL,"ERR %s() got sym='%s'",FCT,STR(q));
+         if (r<2 || r>9) { wblog(FL,
+            "ERR %s() got symmetry %s%s",myname,STR(q), 
+            r==1? "\nhint: use SU(2) instead":"");      
+         }
 
          unsigned j,l=(r-1)/2; TQ x=num2int(FL, 2*qm.data[0]);
          for (i=1; i<r; ++i) {
@@ -215,7 +221,13 @@ SPIDX_T CG::findMaxWeight(
       }
       else if (q.type==QTYPE_SEN) {
 
-         if (r<2 || r>9) wblog(FL,"ERR %s() got sym='%s'",FCT,STR(q));
+         if (r<=2 || r>9) { wblog(FL,
+            "ERR %s() got symmetry %s%s",myname,STR(q), 
+            r==1? "\nhint: use U(1) instead" : (        
+            r==2? "\nhint: use SU(2)xSU(2) instead":    
+            ""));
+
+         }
 
          unsigned j,l=(r-1)/2; TQ x=num2int(FL, qm.data[0] + qm.data[1]);
          for (i=1; i<r; ++i) {

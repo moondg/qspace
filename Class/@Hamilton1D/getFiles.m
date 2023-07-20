@@ -22,7 +22,7 @@ function [ff,Iout]=getFiles(HAM)
      return
   end
 
-  if isempty(HAM.mat), wberr('invalid storage specification'); end
+  if isempty(HAM.mat), wbdie('invalid storage specification'); end
   mat=HAM.mat;
 
   ff=dir([mat '_*.mat']);
@@ -34,7 +34,7 @@ function [ff,Iout]=getFiles(HAM)
 
   i=find([ff.isdir]);
   if ~isempty(i), disp(ff(i(1)))
-     wberr('file listing includes directories !? (L=%g)',L); 
+     wbdie('file listing includes directories !? (L=%g)',L); 
   end
   ff=rmfield(ff,'isdir');
 
@@ -64,7 +64,7 @@ function [ff,Iout]=getFiles(HAM)
   end
 
   if ~isequal(kk,1:L), q=[min(kk), max(kk), numel(kk), L];
-     wberr('unexpected DMRG file listing (%g .. %g; %g/%g)',q); 
+     wbdie('unexpected DMRG file listing (%g .. %g; %g/%g)',q); 
   end
 
   if nargout<2, return; end

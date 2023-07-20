@@ -50,7 +50,7 @@ function [dd,dstr]=getPsiDim(HAM,varargin)
         if k==L, break; end
      else
         if any(dd(k-1,:)>d(:,1)')
-           wberr('dimension mismatch of A-tensors !?'); 
+           wbdie('dimension mismatch of A-tensors !?'); 
         end
         dd(k,:)=d(:,2);
      end

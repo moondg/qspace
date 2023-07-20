@@ -2116,9 +2116,21 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::initIdentityCG(
    }
 
    ctime=Wb::getTimeNow(); 
-   if (!zflag) return *this;
+   if (!zflag) { return *this; }
 
-   itags[1].Conj().MarkDual(); 
+   if (zflag>2) { 
+      if (zflag=='z') { zflag=1; } else
+      if (zflag=='Z') { zflag=2; } else
+      wblog(FL,"WRN %s() unexpected zflag=%s",FCT,cSTR(zflag));
+   }
+   else if (zflag<-2) { 
+      wblog(FL,"WRN %s() unexpected zflag=-%s",FCT,cSTR(-zflag));
+   }
+
+   itags[1].Conj(); 
+   if (abs(zflag)==1) {
+      itags[1].MarkDual(); 
+   }
 
    for (i=0; i<DATA.len; ++i) {
       for (qij=QIDX.rec(i), j=0; j<qtype.len; ++j) {
@@ -2129,7 +2141,7 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::initIdentityCG(
       }
    }
 
-   if (zflag<0) Conj();
+   if (zflag<0) { Conj(); } 
 
    if (qtype.allU1()) {
       qtype.init();

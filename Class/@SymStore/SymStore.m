@@ -71,7 +71,7 @@ function varargout=SymStore(sym,task,varargin)
            print_qset(n,varargin{i},'-v');
         end
         varargout={}; return
-     else error('Wb:ERR','\n   ERR invalid usage');
+     else wbdie('invalid usage');
      end
   end
 
@@ -81,7 +81,7 @@ function varargout=SymStore(sym,task,varargin)
      [varargout{:}]=LoadCData(sym,varargin{:});
      return
   elseif isequal(upper(sym),'PERM') || isequal(upper(sym),'SYM')
-     if nargin<2, error('Wb:ERR','invalid usage'), end
+     if nargin<2, wbdie('invalid usage'), end
      [varargout{:}]=sdim(task,varargin{:});
      return
   end
@@ -113,8 +113,8 @@ function varargout=SymStore(sym,task,varargin)
         for i=1:numel(q), if ~isempty(I{i}), mark(i)=0;
            s=regexprep(q{i},'[()]','');
            if isempty(sym), sym=s;
-           elseif ~isequal(sym,s), error('Wb:ERR',...
-             '\n   ERR inconsistent symmetry !?\n   ERR %s\n',s_);
+           elseif ~isequal(sym,s)
+             wbdie('inconsistent symmetry !?\n   ERR %s\n',s_);
            end
         end, end
 
@@ -134,8 +134,8 @@ function varargout=SymStore(sym,task,varargin)
      rq=size(cat(1,s{:}),2);
      if isempty(sym), r=rq;
         sym=sprintf('SU%g',rq+1);
-     elseif ~isequal(r,rq), error('Wb:ERR',...
-       '\n   ERR invalid input (%g/%g) !?\n   ERR %s',s_,rq,r);
+     elseif ~isequal(r,rq)
+        wbdie('invalid input (%g/%g) !?\n   ERR %s',s_,rq,r);
      end
 
      if xpat
@@ -158,8 +158,7 @@ function varargout=SymStore(sym,task,varargin)
            s=regexprep(s,'\*$','')';
            s(2,1:end-1)={','}; s(2,i)={';'};
            q_=q; q=[s{:}];
-        elseif numel(i)>1, q
-           error('Wb:ERR','\n   ERR got unsorted QSet !?'); 
+        elseif numel(i)>1, q, wbdie('got unsorted QSet !?'); 
         end
      end
 
@@ -167,11 +166,13 @@ function varargout=SymStore(sym,task,varargin)
      return
   end
 
-  if nargin<2, task='dim'; end
+  if nargin<2, task='dim'; 
+     varargout=cell(1,nargout);
+  end
 
   if nargin<1 || ~ischar(task)
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   if ~isempty(regexp(task,'\.mp3'))
@@ -181,7 +182,16 @@ function varargout=SymStore(sym,task,varargin)
   end
 
   sym=regexprep(sym,'(S[pU])\(*(\d+)\)','$1$2');
-  D=get_dir(sym);
+  [D,s,err]=get_dir(sym);
+  if err || isempty(D)
+     r=get_rank(s); s='';
+     if r<=3
+        s=sprintf('\nhint: consider running ''setupRCStore %s''',sym);
+     elseif r>5
+        s=sprintf('\nwarning: asking for large rank-%d symmetry',r);
+     end
+     wbdie('-q',['symmetry %s not yet setup in RC_STORE' s],sym);
+  end
 
   switch task
      case 'mp3', [varargout{:}]=getOMmp3 (sym,varargin{:});
@@ -211,7 +221,7 @@ function varargout=SymStore(sym,task,varargin)
      case '--contract',     [varargout{:}]=contractSym(sym,varargin{:});
 
      otherwise
-     error('Wb:ERR','\n   ERR invalid task ''%s''',task);
+     wbdie('invalid task ''%s''',task);
   end
 
 end

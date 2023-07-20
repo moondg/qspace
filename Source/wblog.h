@@ -336,7 +336,7 @@ class stdio_buf {
       return l;
    };
 
-   unsigned wblog_checktag(const char *fmt, const char *t, char *tag);
+   unsigned wblog_check_tag(const char *fmt, const char *t, char *tag);
 
    char wblog_findtoken(const char *istr, const char *tok, int maxoffset=-1);
 

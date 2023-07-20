@@ -21,7 +21,7 @@ function [se,Ie,IC]=getSE(HAM,Il,varargin)
 % adapted from plotSS.m
 
   if isempty(HAM) || nargin<2 || ~isfield(Il,'se')
-     wberr('invalid Il data'); end
+     wbdie('invalid Il data'); end
 
   getopt('init',varargin);
      m=getopt('p',[]); 
@@ -50,7 +50,7 @@ function [se,Ie,IC]=getSE(HAM,Il,varargin)
   s=size(Il); s(end+1:3)=1; nsw=s(3);
 
   if xflag, if nsw<=1
-     wberr('invalid usage (IL data required for extrapolation) !?'); end
+     wbdie('invalid usage (IL data required for extrapolation) !?'); end
   elseif nsw>1, xflag=1; end
 
   if nsw_>0 && nsw_<nsw

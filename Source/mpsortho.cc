@@ -790,7 +790,7 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
       if (b.S2.dim2==1) {
          t.Set_(b.A.itags.last());
          if (!t.isConj() && NK) {
-            if (!b.A.isOp(2,'L')) { revert_new_idx=1; }
+            if (!b.A.isOp(2,'L')) { revert_new_idx=1; } 
          }
       }
       else if (b.S1.dim2==1) {

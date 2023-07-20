@@ -11,40 +11,50 @@ function [i,s]=isQSpace(A,varargin)
 %
 % Wb,Aug08,08 ; Wb,Feb15,13
 
-% *this was originally MEX/mpsIsQSpace.m, move to QSpace class here
-% see also MEX/isQSpace.m which now calls *this // Wb,Jan30,23
+% NB! *this was originally MEX/mpsIsQSpace.m, and was moved to the
+% QSpace class here; see also MEX/isQSpace.m which now calls *this
+% Wb,Jan30,23
 
-  i=0; s='';
+  sflag=(nargout>1);
 
-% by being a class routine, by construction A is of class 'QSpace'
-  if nargin<2, i=1; return; end
+% NB! by being a class routine, by construction, A is of class QSpace;
+% yet, within a QSpace method, isQSpace() may be called also on
+% other arguments, which then may be of type struct; this *still*
+% calls *this routine iirst, i.e., before MEX/isQSpace.m
+  if nargin<2
+     i=1; if sflag, s=''; end
+     return
+  end
+
+  i=0; s=''; 
 
   if ~isfield(A,'Q') || ~isfield(A,'data') || ~isfield(A,'info')
-     if nargout>1, s=sprintf('missing fields Q, data, or info'); end
+     if sflag, s=sprintf('missing fields Q, data, or info'); end
      return
   end
 
   n=numel(A);
   for k=1:n
-     if (isempty(A(k).Q) || isempty(A(k).Q{1})) && isempty(A(k).data)
-        continue;
-     end
-     if xor(isempty(A(k).Q), isempty(A(k).data)), if nargout>1
-        s=sprintf('Q or data empty, but not both (%d/%d)',k,n); end
-        return
-     end
-
-     if ~iscell(A(k).Q) || ~iscell(A(k).data), if nargout>1
+     if ~iscell(A(k).Q) || ~iscell(A(k).data), if sflag
         s=sprintf('invalid {Q, data, ...} structure (%d/%d)',k,n); end
         return
      end
 
-     if ~isnumeric(A(k).Q{1}), if nargout>1
+     if isempty(A(k).Q), q1=1; elseif isempty(A(k).Q{1}), q1=2; else q1=0; end
+     if isempty(A(k).data), q2=1; else q2=0; end
+
+     if q1 && q2, continue
+     elseif xor(q1,q2), if sflag
+        s=sprintf('Q or data empty, but not both (%d/%d)',k,n); end
+        return
+     end
+
+     if ~isnumeric(A(k).Q{1}), if sflag
         s=sprintf('Q{1} not of type numeric (%d/%d)',k,n); end
         return
      end
 
-     if ~isnumeric(A(k).data{1}), if nargout>1
+     if ~isnumeric(A(k).data{1}), if sflag
         s=sprintf('data{1} not of type numeric (%d/%d)',k,n);
         return
      end
@@ -52,8 +62,7 @@ function [i,s]=isQSpace(A,varargin)
 
   if nargin<2, i=1; return; end
 
-  getopt('init', varargin);
-     order=''; 
+  getopt('init',varargin); order=''; 
      for o={'LRs','sLR'}
         if getopt(o{1}), order=o{1}; break; end
      end
@@ -93,9 +102,8 @@ function [i,s]=isQSpace(A,varargin)
         s=sprintf('not of LRs order (dr=%d)', DD(end,3));
         return
      end
-
-  elseif ~isempty(order), disp(order)
-    wblog('ERR','invalid usage (MPS index order)');
+  elseif ~isempty(order)
+    wblog('WRN','invalid usage (MPS index order ''%s'')',order);
     return
   end
 

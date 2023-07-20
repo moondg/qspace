@@ -13,7 +13,7 @@ function hm=allmarks(varargin)
 
   if isempty(varargin)
      helpthis, if nargout
-     wberr('invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   hm=find_all_marks(ah);

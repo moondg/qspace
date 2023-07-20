@@ -58,7 +58,7 @@ function save2(varargin)
   if isempty(args);
      if ~iflag
         eval(['help ' mfilename]);
-        if nargin, wberr('invalid usage'); end
+        if nargin, wbdie('invalid usage'); end
      end
      return
   end

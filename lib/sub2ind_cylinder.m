@@ -22,24 +22,24 @@ function k=sub2ind_cylinder(I,J,L,W,varargin)
   getopt('check_error');
 
   n=[numel(I), numel(J)];
-  if any(~n), wberr('invalid usage (empty index)'); end
+  if any(~n), wbdie('invalid usage (empty index)'); end
 
   if any(n>1)
      if     n(1)==1, I=repmat(I,size(J));
      elseif n(2)==1, J=repmat(J,size(I)); end
   end
-  sI=size(I); if ~isequal(sI,size(J)), wberr('invalid usage'); end
+  sI=size(I); if ~isequal(sI,size(J)), wbdie('invalid usage'); end
 
   I=reshape(I,[],1);
   if perBCx, I=mod(I-1,L)+1;
   elseif any(I<1 | I>L)
-     wberr('index I out of bounds ([%g .. %g]/%g)',min(I),max(I),L);
+     wbdie('index I out of bounds ([%g .. %g]/%g)',min(I),max(I),L);
   end
 
   J=reshape(J,[],1);
   if perBCy, J=mod(J-1,W)+1;
   elseif any(J<1 | J>W)
-     wberr('index J out of bounds ([%g .. %g]/%g)',min(J),max(J),W);
+     wbdie('index J out of bounds ([%g .. %g]/%g)',min(J),max(J),W);
   end
 
   if snake

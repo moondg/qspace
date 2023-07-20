@@ -453,8 +453,7 @@ int Wb::get_WB_VERBOSE(const char *F, int L) {
       wblog1(F_L,"WRN %s() invalid %s (e=%d)",FCT,vname,i);
    }
 
-   { int q=0;
-     i=GetEnv(0,0,"WB_LOG_COLOR",q);
+   { int q=0; i=GetEnv(0,0,"QS_LOG_COLOR",q);
      if (i) { q=(Wb::envDKT>0 ? WLC_DARK : WLC_OFF); } else
      if (q>=NUM_WBL_COLOR_SCHEME) { q=WLC_DARK; } else
      if (q<0) { q=WLC_OFF; }

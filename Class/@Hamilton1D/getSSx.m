@@ -18,12 +18,12 @@ function SS=getSSx(HAM,Dk,varargin)
   getopt('check_error');
 
   if isempty(HAM) || ~isfield(HAM.info,'HSS')
-     wberr('invalid usage (missing field HAM.info.HSS)'); end
+     wbdie('invalid usage (missing field HAM.info.HSS)'); end
 
   [type,L,perBC]=lattice(HAM);
 
   if ~isequal(type,'ladder');
-     wberr('non-ladder not yet implemented');
+     wbdie('non-ladder not yet implemented');
   end
 
   if isfield(Dk,'Dk') && size(Dk,3)>1
@@ -40,7 +40,7 @@ function SS=getSSx(HAM,Dk,varargin)
 
   nsw=numel(HAM.info.HSS);
   if size(Dk,1)~=nsw, whos Dk
-     wberr('length mismatch (Dk: %g/%g) !?',size(Dk,1),nsw);
+     wbdie('length mismatch (Dk: %g/%g) !?',size(Dk,1),nsw);
   end
 
   for isw=1:nsw
@@ -61,7 +61,7 @@ function SS=getSSx(HAM,Dk,varargin)
 
   for k=1:nS, Sk=SS{k};
      if size(Sk,2)~=nsw
-        wberr('length mismatch (%g: %g/%g) !?',k,size(Sk,2),nsw);
+        wbdie('length mismatch (%g: %g/%g) !?',k,size(Sk,2),nsw);
      end
      for i=1:size(Sk,1)
         [p,s,mu]=polyfit(x,Sk(i,jf),m);

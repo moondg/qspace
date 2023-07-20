@@ -1,14 +1,30 @@
-%  Usage 1: A=getIdentityQS(A [,i1, perm,'-0']);
+%  Usage 1: E=getIdentityQS(A [,i1, perm,'-[0z]']);
 %
 %     get plain identity operator from given QSpace.
+%     corresponding to the state space on index i1 with A.
+%
+%  Options
 %
 %   '-0'  this generates the 1J symbol, i.e. an identity operator
-%         with all indices inward. This can be used to "revert
-%         arrows", with the effect that the second index
-%         carries the dual state space with respect to the first
-%         index. For this reason, the itag, as inherited from A @ i1,
-%         if non-empty, is also changed by flagging with a
-%         trailing prime (').
+%         with all indices inward. This can be used to "revert arrows",
+%         with the effect that the second index on E carries the
+%         *dual* state space with respect to the first index.
+%
+%         For this reason, the respective itag, as inherited from A @ i1,
+%         if non-empty, is also changed by flagging it with a trailing
+%         prime ('). Therefore in order to accommodate for this additional
+%         character, the itag in A @ i1 must have less than 8 chars in length.
+%         This flag is considered part of the itag, hence overall
+%         such a flagged itag is considered different from the original.
+%         The flagging also acts like a toggle, i.e., marking an
+%         itag that is flagged already, removes the trailing prime.
+%  
+%         For readability, the QSpace display shows such `marked'
+%         itags in color gray while hiding the trailing prime.
+%         This behavior can be turned off by setting the environmental
+%         variable QS_LOG_COLOR to zero (default: 1).
+%
+%   '-z'  same as '-0' but without flagging the itag in E @ index 2.
 %
 %  Usage 2: A=getIdentityQS(A [,i1 [,at]], B [,i2 [,bt] itag, perm]);
 %

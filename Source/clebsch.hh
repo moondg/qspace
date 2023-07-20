@@ -4128,8 +4128,8 @@ class genRG_struct {
 
     };
 
-    unsigned getTensorProdReps(const qset<TQ> &q, unsigned flag=0);
-    unsigned getTensorProdReps(unsigned dmax=-1, char sdig=0, char vflag=0);
+    unsigned genTensorProds(const qset<TQ> &q, unsigned flag=0);
+    unsigned genTensorProds(unsigned dmax=-1, char sdig=0, char vflag=0);
 
     void put(const char *vname, const char *ws="caller") const
     {  put(0,0,vname,ws); }

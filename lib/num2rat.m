@@ -24,7 +24,7 @@ function [s,q]=num2rat(xx,varargin)
   args=getopt('get_remaining'); nargs=length(args);
 
   if nargs>2
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 

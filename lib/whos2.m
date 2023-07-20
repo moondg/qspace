@@ -51,13 +51,13 @@ function [S,sz]=whos2(varargin)
 
   if isempty(sopt), sopt=3;
   elseif ~isempty(regexp(sopt,'^\d+$')), sopt=str2num(sopt); 
-  else wberr('invalid sort specification'); end
+  else wbdie('invalid sort specification'); end
 
   nS=numel(S);
   if nS>1
      ff=fieldnames(S);
      if numel(sopt)~=1 || sopt>numel(ff)
-        wberr('invalid sort specification'); end
+        wbdie('invalid sort specification'); end
      fs=ff{sopt}; ss=cell(nS,1);
      for i=1:nS, ss{i}=getfield(S(i),fs); end
      if isnumeric(ss{1})

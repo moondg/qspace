@@ -40,7 +40,7 @@ function c=getcolor(varargin)
 
   if ~narg || narg>2
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'); end
+     if nargin || nargout, wbdie('invalid usage'); end
      return
   end
 
@@ -65,7 +65,7 @@ function c=getcolor(varargin)
 
         otherwise
            disp(c)
-           wberr('unknown user color specification');
+           wbdie('unknown user color specification');
         end
      end
 
@@ -79,7 +79,7 @@ function c=getcolor(varargin)
         else cm=get(gca,'ColorOrder'); end
      else
         if ~isnumeric(cm) || size(cm,2)~=3
-        wberr('invalid input color map'); end
+        wbdie('invalid input color map'); end
      end
 
      nc=size(cm,1); ic=ic(:);
@@ -111,7 +111,7 @@ if ~narg, return; end
   elseif numel(il)==numel(ic)
      c(:,2)=mat2cell(il,ones(s(1),1),1);
   else
-     wberr('invalid specification of line style');
+     wbdie('invalid specification of line style');
   end
 
   for i=1:s(1), c{i,2}=lo{c{i,2}}; end

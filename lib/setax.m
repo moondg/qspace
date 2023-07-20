@@ -21,7 +21,7 @@ function setax(varargin)
      if ischar(a)
         ah=findall(groot,'type','axes','tag',a);
         if isempty(ah)
-           wberr('axes tag ''%s'' not found');
+           wbdie('axes tag ''%s'' not found');
         elseif numel(ah)>1
            for i=1:numel(ah)
               s=get(get(ah(i),'parent'),'Name'); %% 'untagged'
@@ -38,9 +38,9 @@ function setax(varargin)
      elseif isnumeric(a) && isequal(round(a),a)
         ah=getuser(gcf,'ah'); n=numel(ah);
         if ~n || a>n
-           wberr('invalid setuser axes set or index (%g/%g) !?',a,n); end
+           wbdie('invalid setuser axes set or index (%g/%g) !?',a,n); end
         ah=ah(a);
-     else wberr('invalid usage'); end
+     else wbdie('invalid usage'); end
 
      n=numel(ah);
      for i=1:n
@@ -51,7 +51,7 @@ function setax(varargin)
   end
 
   if nargin<2, helpthis
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   a=varargin{1};

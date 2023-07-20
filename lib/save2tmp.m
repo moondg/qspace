@@ -30,7 +30,7 @@ function save2tmp(varargin)
      varargin(1)=[]; narg=narg-1;
 
      q=str2num(tid); if q<0 || q>9
-     wberr('invalid tid=%s',tid); end
+     wbdie('invalid tid=%s',tid); end
   end
 
   if dbflag

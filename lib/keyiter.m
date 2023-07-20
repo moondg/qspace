@@ -38,7 +38,7 @@ function k=keyiter(k,varargin)
    if isempty(kmin), kmin=1; fflag=0; end
 
    if nargin && isnumeric(k) && numel(k)>1
-      if nargin>1 && isnumeric(varargin{1}), wberr('invalid usage'); end
+      if nargin>1 && isnumeric(varargin{1}), wbdie('invalid usage'); end
 
       krange=k; kmin=1; kmax=numel(k); kold=1; k=krange(kold);
          vn=inputname(1);
@@ -48,7 +48,7 @@ function k=keyiter(k,varargin)
 
    if ~isempty(krange)
       if krange(kold)==k, k=kold;
-      else wberr('invalid usage'); end
+      else wbdie('invalid usage'); end
    end
 
    if nargin==1 && ischar(k) && nargout==0
@@ -71,7 +71,7 @@ function k=keyiter(k,varargin)
    tic; dt=0;
    if ~isempty(varargin)
       if ~isequal(varargin{1},'-c')
-      wberr('invalid usage'); end
+      wbdie('invalid usage'); end
       dt=1E-2;
    end
 

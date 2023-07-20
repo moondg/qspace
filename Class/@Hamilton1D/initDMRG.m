@@ -46,13 +46,13 @@ function [HAM,Iout]=initDMRG(HAM,varargin)
   getopt('check_error');
 
   if size(HAM.ops,2)~=1
-     wberr('invalid usage (got %g different sites)',size(HAM.ops,2)); end
+     wbdie('invalid usage (got %g different sites)',size(HAM.ops,2)); end
   if M<1 || M~=round(M) || numel(M)~=1
-     wberr('invalid block size M=%g',M); end
+     wbdie('invalid block size M=%g',M); end
 
   N=numel(HAM.mpo); M2=2*M;
   if mod(N,M2)
-     wberr('invalid length (L=%g @ 2M=%g)',N,M2); end
+     wbdie('invalid length (L=%g @ 2M=%g)',N,M2); end
   L=N/M; L2=L/2;
 
   o2site=setopts('-',ndav,npass);
@@ -71,7 +71,7 @@ function [HAM,Iout]=initDMRG(HAM,varargin)
   if ~isempty(Qtot)
      if isequal(Qtot,0), Qtot=zeros(1,size(E.Q{1},2));
      elseif ~isnumeric(Qtot) || ~isequal(size(Qtot),[1, nq]), Qtot
-        wberr('got invalid Qtot (%g/%g)',numel(Qtot),nq);
+        wbdie('got invalid Qtot (%g/%g)',numel(Qtot),nq);
      end
      s=[ 'Qtot=[' vec2str(Qtot,'-f') ']' ];
   else s='Qtot=[]';
@@ -85,7 +85,7 @@ function [HAM,Iout]=initDMRG(HAM,varargin)
   wblog(' * ','%sNkeep=%g, rtol=%g %s',s{1},Nkeep,rtol,s{2});
   wblog(lsep{:});
 
-  if norm(Qtot) || NPsi>1, Qtot, NPsi, wberr(...
+  if norm(Qtot) || NPsi>1, Qtot, NPsi, wbdie(...
     'non-trivial Qtot or NPsi>1 does not permit wave function prediction!');
   end
 
@@ -241,7 +241,7 @@ function Xk=fix_HK(Xk,k,dir)
    if dir>0
       if any(dh~=da(2))
          if itags2odir(Xk.AK)~=2
-            wberr('invalid A-tensor'); 
+            wbdie('invalid A-tensor'); 
          end
          wblog(' * ','adding zero-blocks to HK(%g): D=%g->%g',k,dh(1),da(2));
          E=QSpace(contractQS(Xk.AK,'13*',Xk.AK,'13'));
@@ -250,7 +250,7 @@ function Xk=fix_HK(Xk,k,dir)
    else
       if any(dh~=da(1))
          if itags2odir(Xk.AK)~=1
-            wberr('invalid A-tensor'); 
+            wbdie('invalid A-tensor'); 
          end
          wblog(' * ','adding zero-blocks to HK(%g): D=%g->%g',k,dh(1),da(1));
          E=QSpace(contractQS(Xk.AK,'23*',Xk.AK,'23'));

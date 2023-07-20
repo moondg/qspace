@@ -115,6 +115,7 @@
 
   DEFS = "__DATE_COMP__=$(shell date '+%m/%d/%Y %Z%H%M%S')" # __TIME__ TSTAMP
   DEFS += HOST_NAME=$(shell hostname -s) # Wb,Nov05,21
+  DEFS += MEX_EXT=$(shell mexext) # Wb,Jun27,23
   ifdef MATLAB_VERSION
      DEFS += MEX_MLVER=$(MATLAB_VERSION)
   endif

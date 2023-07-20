@@ -9,7 +9,7 @@ function ss=structmerge(varargin)
 
   if nargin<2
      eval(['help ' mfilename]);
-     if nargin, wberr('invalid usage'); end
+     if nargin, wbdie('invalid usage'); end
   end
 
   s1=size(varargin{1});
@@ -21,11 +21,11 @@ function ss=structmerge(varargin)
 
      if ~isstruct(varargin{k})
         eval(['help ' mfilename]);
-        wberr('all input arguments must be structures!');
+        wbdie('all input arguments must be structures!');
      end
      if ~isequal(size(varargin{k}),s1)
         eval(['help ' mfilename]);
-        wberr('size mismatch of input arguments');
+        wbdie('size mismatch of input arguments');
      end
   end
 

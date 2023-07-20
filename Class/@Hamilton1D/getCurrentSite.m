@@ -9,17 +9,23 @@ function [kc,Ic]=getCurrentSite(HAM,varargin)
   getopt('check_error');
 
   L=numel(HAM.mpo);
+  matfiles=~using_mem(HAM);
 
-  [ff,Ix]=getFiles(HAM);
+  if matfiles
+     [ff,Ix]=getFiles(HAM);
 
-  sdir=Ix.sdir; kc=-1;
+     sdir=Ix.sdir; kc=-1;
+     [~,kk]=sort(abs((1:L)-(Ix.kc+0.25*sdir))); 
+  else
+     kk=1:L; sdir=nan;
+  end
 
-  [~,kk]=sort(abs((1:L)-(Ix.kc+0.25*sdir))); nx=0; l=0;
+  nx=0; l=0;
   for k=kk, l=l+1;
      q=load_dmrg_data(HAM,k,'info'); itags{k}=q.itags;
      if ~isempty(q.itags)
         i=find(cellfun(@numel, regexp(q.itags(1:3),'\*$')),1);
-        if numel(i)>1, wberr('got invalid MPS setting'); 
+        if numel(i)>1, wbdie('got invalid MPS setting'); 
         elseif isempty(i)
            kc=k; break
         elseif k==1 && i==1, kc=k; sdir=-1; break;
@@ -35,19 +41,21 @@ function [kc,Ic]=getCurrentSite(HAM,varargin)
      if nargout<2 && vflag
         wblog('WRN','MPS not yet initialized (%g/%g)',nx,L);
      end
-  elseif kc<0, wberr('failed to identify current site'); end
+  elseif kc<0, wbdie('failed to identify current site'); end
 
   if nargout>1
-     Ic=add2struct('-',kc,sdir,'active=0',msg);
+     Ic=add2struct('-',kc,sdir,'active=nan',msg);
 
-     tt=sort(Ix.tt);
-     Ic.time=datestr(tt(end));
-     Ic.dt=24*3600*(tt(end)-tt(1))/L;
+     if matfiles
+        tt=sort(Ix.tt);
+        Ic.time=datestr(tt(end));
+        Ic.dt=24*3600*(tt(end)-tt(1))/L;
 
-     Ic.active=0;
-     dt=max(1/(24*3600),mean(diff(tt))); dt(2)=(now-tt(end))/dt;
-     if dt(2)<L, Ic.active=1; end
-     Ic.folder=Ix.folder; Ic.bytes=Ix.bytes;
+        Ic.active=0;
+        dt=max(1/(24*3600),mean(diff(tt))); dt(2)=(now-tt(end))/dt;
+        if dt(2)<L, Ic.active=1; end
+        Ic.folder=Ix.folder; Ic.bytes=Ix.bytes;
+     end
   end
 
   if nargout || ~vflag, return; end

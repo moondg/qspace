@@ -49,6 +49,7 @@
 #include <unistd.h>
 #include <fcntl.h> 
 #include <regex.h> 
+#include <regex>   
 
 #include <cstdio>
 #include <cstdlib>

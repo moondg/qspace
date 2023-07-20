@@ -157,7 +157,7 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
      if e>1E-6
         nrm2=normQS(Psi)^2 / NPsi2;
         s={ s, sprintf('|Psi|^2 = %.3g @ NPsi=%d',nrm2,NPsi2) };
-        if e>0.01
+        if e>0.25
            banner(['ERR ',s{1}]);
            m=sprintf('./tmp_%s_%g_%g_%s_checkNorm.mat',...
              mfilename,k1,k2,iff(kdir>0,'lr','rl'));

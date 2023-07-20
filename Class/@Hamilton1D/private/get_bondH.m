@@ -29,7 +29,7 @@ function [J,hconj]=get_bondH(HAM,k1)
    hconj=hconj(J+2);
 
    if any(hconj<0), HAM.mpo(k1).iop, J, hconj
-      wberr('failed to determine hconj from iop !?');
+      wbdie('failed to determine hconj from iop !?');
    end
 
    if numel(J)>1

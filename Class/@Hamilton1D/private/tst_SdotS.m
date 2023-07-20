@@ -30,7 +30,7 @@ function tst_SdotS(ops,n)
   e=[ norm(H1-H2), norm(H1-H3) ] / dim(A,2,'-f'); % / dim(H1,1,'-f');
 
   if any(e>1E-12)
-       wberr('inconsistent (S.S)^%g !? (e=%.3g)',n,norm(e));
+       wbdie('inconsistent (S.S)^%g !? (e=%.3g)',n,norm(e));
   else wblog('ok.','(S.S)^%g consistent @ e=%.3g',n,norm(e)); 
   end
 

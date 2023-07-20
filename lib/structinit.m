@@ -23,7 +23,7 @@ function [s,s1]=structinit(varargin)
   e=0; for i=1:narg, if ~ischar(varargin{i}), e=1; break; end, end
   if e
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   if narg

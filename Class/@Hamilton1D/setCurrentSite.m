@@ -16,7 +16,7 @@ function HAM=setCurrentSite(HAM,k2)
      if odir, e=2; end
   end
   if e, k1, L
-     wberr('failed to identify current site'); 
+     wbdie('failed to identify current site'); 
   end
 
   if k2==k1

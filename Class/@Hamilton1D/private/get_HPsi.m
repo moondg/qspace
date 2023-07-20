@@ -22,7 +22,9 @@ function [HPsi,E]=get_HPsi(HAM,Psi,X1,X2,varargin)
      Psi, wbdie('unexpected Psi for bond-update');
   end
 
-  if nargin==4 && ischar(varargin{1}) && ...
+  nargs=numel(varargin);
+
+  if nargs==1 && ischar(varargin{1}) && ...
      regexp(varargin{1},'^--full-mpo')
 
      q={ X1.info.hconj, X2.info.hconj };
@@ -54,7 +56,7 @@ function [HPsi,E]=get_HPsi(HAM,Psi,X1,X2,varargin)
         HPsi=HPsi+contractQS({X1.HK,'*',Psi},X2_HK,'*',p132);
      end
 
-  elseif numel(varargin)==2
+  elseif nargs==2
      J=varargin{1}; hconj=varargin{2};
 
      HPsi=QSpace(contractQS(X1.HK,Psi)) + contractQS(Psi,X2.HK,p132);
@@ -80,7 +82,10 @@ function [HPsi,E]=get_HPsi(HAM,Psi,X1,X2,varargin)
            end
         end
      end
-  else disp(varargin), wbdie('invalid usage'); end
+  else
+     fprintf(1,'\n'); disp(varargin)
+     wbdie('invalid usage (nargs=%d)',nargs);
+  end
 
   if got_gauge(HAM)
      L=length(HAM.mpo); Eloc=HAM.oez(1).op;

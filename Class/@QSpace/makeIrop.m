@@ -33,21 +33,21 @@ function A=makeIrop_1(A,t_op)
       end
       if ~isempty(t_op), A=setitags(A,t_op,3); end
    elseif r~=3
-      wberr('invalid usage (got rank-%g op)',r);
+      wbdie('invalid usage (got rank-%g op)',r);
    end
 
    if datasize(A,'-s')<1E4
       try
          x=contractQS(A,'12',A,'21');
       catch me
-         A, wberr('invalid operator'); 
+         A, wbdie('invalid operator'); 
       end
    else
       [q1,D1,d1]=getQDimQS(A,1);
       [q2,D2,d2]=getQDimQS(A,2); [i1,i2,Ix]=matchIndex(q1,q2);
       if ~isempty(i1)
          if isequal(D1(i1,:),D2(i2,:)) || isequal(d1(i1,:),d2(i2,:))
-            A, wberr('invalid operator A(%g)'); 
+            A, wbdie('invalid operator A(%g)'); 
          end
       end
    end

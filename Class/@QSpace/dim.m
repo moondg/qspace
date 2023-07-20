@@ -17,16 +17,15 @@ function s=dim(A,varargin)
   k=getopt('get_last',[]);
 
   if ischar(k)
-     helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
+     return
   end
 
   s=getDimQS(A);
 
   if oflag
      r=numel(A.Q);
-     if r<2 || r>3, error('Wb:ERR',...
-        '\n   ERR unexpected rank for oprator'); end
+     if r<2 || r>3, wbdie('unexpected rank for oprator'); end
      if r<3, s=1; else; s=s(end); end
   else
      if ~isempty(k), s(:,end+1:max(k))=1; s=s(:,k); end

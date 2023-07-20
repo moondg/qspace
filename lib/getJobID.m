@@ -22,7 +22,7 @@ function [jid,tid]=getJobID(varargin)
         jid=sprintf('%s.%02g',jid,str2num(tid));
      end
   else
-     helpthis, wberr('invalid usage')
+     helpthis, wbdie('invalid usage')
   end
 end
 

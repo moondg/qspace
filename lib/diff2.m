@@ -35,7 +35,7 @@ function [xd,yd]= diff2(varargin)
   if ~isempty(xd)
      s=size(yd); n=numel(xd);
      if ~isvector(xd) || numel(s)>2 || all(s~=n)
-        wberr('size mismatch (%d; %s)',length(xd), sizestr(yd));
+        wbdie('size mismatch (%d; %s)',length(xd), sizestr(yd));
      end
 
      if size(xd,1)<size(xd,2), tx=1; xd=xd.'; else tx=0; end
@@ -43,7 +43,7 @@ function [xd,yd]= diff2(varargin)
      m=size(yd,2);
 
      if ~isvector(xd) || length(xd)~=size(yd,1)
-        wberr('size mismatch (%d/%d)', length(xd), length(yd));
+        wbdie('size mismatch (%d/%d)', length(xd), length(yd));
      end
 
      for i=1:k

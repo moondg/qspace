@@ -3,7 +3,7 @@ function [HAM]=setup_tightbinding(varargin)
 % Wb,Jan15,15 ; Wb,Aug26,15
 
   if nargin<1
-     helpthis, if nargin || nargout, wberr('invalid usage'), end
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
 
@@ -21,9 +21,9 @@ function [HAM]=setup_tightbinding(varargin)
        L=getopt('get_last',[]);
   else getopt('check_error'); end
 
-  if isempty(L), wberr('length L not specified'); end
+  if isempty(L), wbdie('length L not specified'); end
   if ~iscell(use_mpo)
-     wberr('invalid usage (--mpo requires cell)');
+     wbdie('invalid usage (--mpo requires cell)');
   end
 
   if NC==1

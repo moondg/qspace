@@ -48,11 +48,11 @@ function [ss,Is]=calc_SdotS(HAM,varargin)
   end
 
   if ~isempty(dx_in)
-     if numel(dx_in)~=nops, wberr(...
+     if numel(dx_in)~=nops, wbdie(...
        'invalid usage [numel(dx) does not match nops=%g]',nops); end
 
      i=find(dx_in==0);
-     if any(rop(i)~=2), wberr('got local operators of rank~=2 !?'); end
+     if any(rop(i)~=2), wbdie('got local operators of rank~=2 !?'); end
 
      dx_=dx; dx=dx_in;
   end
@@ -67,7 +67,7 @@ function [ss,Is]=calc_SdotS(HAM,varargin)
           wblog('NB!','targeting %g multiplet%s (%s)',d(1),q,s);
      else wblog('WRN','got rank-%g QSpace (%s)',r,s);
      end
-     if NPsi<=1, wberr('got NPsi=%g !?',NPsi); end
+     if NPsi<=1, wbdie('got NPsi=%g !?',NPsi); end
 
      EPsi=getIdentity3(Ak,4,'PSI','--rho'); % tag 'PSI', '--rho' => normalize
 
@@ -109,7 +109,7 @@ function [ss,Is]=calc_SdotS(HAM,varargin)
 
      if numel(tk)>3 && k~=kc
         r=numel(tk); q=sprintf(',%s',tk{:});
-        wberr('got rank-%g QSpace (%s)',r,s(2:end));
+        wbdie('got rank-%g QSpace (%s)',r,s(2:end));
      end
 
      QL=Ak; QR=Ak;

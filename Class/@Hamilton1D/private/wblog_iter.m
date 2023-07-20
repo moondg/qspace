@@ -14,7 +14,7 @@ function Il=wblog_iter(k,kdir,L,r2,I,isw)
         fprintf(1,'\n%s\n%s\n%s\n',l,s,l);
 
      elseif ~isempty(regexp(k,'sep')), fprintf(1,'%s\n',l);
-     else disp(k), wberr('invalid usage'); end
+     else disp(k), wbdie('invalid usage'); end
 
      return
   end

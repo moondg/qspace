@@ -15,7 +15,7 @@ function ah = axonax (h0, pos, flag)
   if nargin==1, pos='R'; flag=0;
   elseif nargin~=3
      eval(['help ' mfilename]);
-     if nargin || nargout, wberr('invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   pos=upper(pos);

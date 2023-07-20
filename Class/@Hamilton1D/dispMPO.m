@@ -12,17 +12,17 @@ function dispMPO(HAM,kc)
      end
 
      I=find(M(2:end,1));
-     if ~isempty(I), q.M, wberr('invalid mpo.M(:,1,%g) !?',i3); 
+     if ~isempty(I), q.M, wbdie('invalid mpo.M(:,1,%g) !?',i3); 
      end
      J=find(M(2,[1 3:end]));
-     if ~isempty(J), q.M, wberr('invalid mpo.M(2,:,%g) !?',i3); 
+     if ~isempty(J), q.M, wbdie('invalid mpo.M(2,:,%g) !?',i3); 
      end
      if i3==1 && norm(diag(M(1:2,1:2))-1), q.M
-        wberr('invalid mpo.M(1:2,1:2,1) : diag()!=Id !?',i3); 
+        wbdie('invalid mpo.M(1:2,1:2,1) : diag()!=Id !?',i3); 
      end
 
      if M(1,2), l=l+1;
-        if i3<1+ioff, wberr('invalid mpo.M(1,2,1:%g)',ioff); end
+        if i3<1+ioff, wbdie('invalid mpo.M(1,2,1:%g)',ioff); end
         s{l}=[s{l} sprintf('     %% (1,2) got local term: op(%g)',i3-ioff)];
      end
 
@@ -34,7 +34,7 @@ function dispMPO(HAM,kc)
           k1,k2, i3-ioff)
         ];
         if k1~=kc || i1~=i3-ioff, q.iop
-           wberr('inconsistent iop !?');
+           wbdie('inconsistent iop !?');
         end
      end
 
@@ -59,9 +59,9 @@ function dispMPO(HAM,kc)
           sprintf('     %% propagate coupling at (%g,%g): (site %g-%g; op %g)',...
           i+2,j+2, k1,k2,i1)
         ];
-        if i3>2, wberr('invalid propagating term M(3:end,3:end,%g) !?',i3);
+        if i3>2, wbdie('invalid propagating term M(3:end,3:end,%g) !?',i3);
         elseif i1~=i3, disp(q.iop);
-           wberr('inconsistent iop (%g,1) <> (%g,2) !?',i+2,j+2);
+           wbdie('inconsistent iop (%g,1) <> (%g,2) !?',i+2,j+2);
         elseif k1~=k3, l=l+1; s{l}=[s{l} sprintf(['     ' ...
            '%% NB! operator from site %g added with %g'], k1,k3)
         ];

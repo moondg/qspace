@@ -35,7 +35,7 @@ function tstr = time(varargin)
     case '-dt', tstr = datestr(t,'yymmdd_HHMMSS');
     case '-wb', tstr = ['Wb' datestr(t,'yymmdd')];
     case '',    tstr = datestr(t,'mmmdd,yy HH:MM:SS');
-    otherwise,  wberr('invalid tag %s',iflag);
+    otherwise,  wbdie('invalid tag %s',iflag);
   end
 
 end

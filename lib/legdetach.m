@@ -14,7 +14,7 @@ function [ah,hh]=legdetach(l)
   ah=axes('Position',get(l,'Position'));
 
   if ~isnumeric(l)
-     wberr('legdetach() depricated (merged with legdisp)'); 
+     wbdie('legdetach() depricated (merged with legdisp)'); 
   end
 
   h1=copyobj(findall(l,'type','text'),ah); set(h1,'tag','','UserD',[]);

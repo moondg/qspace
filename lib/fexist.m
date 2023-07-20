@@ -34,7 +34,7 @@ function [i,fname]=fexist(fname,tflag)
 
         [x,ok]=str2num(q);
         if ~ok
-           if nargout<2, wberr('file name provided is ignored'); end
+           if nargout<2, wbdie('file name provided is ignored'); end
            [i,fname]=fexist([p '/' q]);
         else i=~x; end
      end
