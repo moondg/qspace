@@ -131,7 +131,7 @@ int wbperm::initStr(
 
    if (!s[i]) { init(n); 
       for (i=0; i<n; ++i) { data[i]=s[i]-'0'; }
-      if (offset) {
+      if (int(offset)>=0) {
          for (i=0; i<n; ++i) {
             if (data[i]<offset) { if (F) wblog(FL,"ERR %s() "
                "invalid offset ('%s': %d !?)",FCT,s,offset);
@@ -139,6 +139,16 @@ int wbperm::initStr(
             }
             data[i]-=offset;
          }
+      }
+      else { 
+         char mark[n+1]; memset(mark,0,n+1);
+         for (i=0; i<n; ++i) { 
+            if (data[i]>n || ++mark[data[i]]!=1) { return -4; }
+         }
+         if (!mark[0]) {
+            for (i=0; i<n; ++i) { --data[i]; }
+         }
+         return len; 
       }
    }
    else {

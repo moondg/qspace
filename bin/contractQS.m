@@ -1,21 +1,21 @@
-% function contractQS(A,..B,..)
+% function contractQS()
 %
-%     performs pairwise contraction of QSpace tensors
-%     [see usage #1 and #2 below), while also properly taking care of
-%     the underlying Clebsch Gordan coefficient spaces (if present).
+%     Contract set of QSpace tensors in a pairwise fashion
+%     as described with usage #1 and #2 below. This automatically
+%     also takes care of the underlying Clebsch Gordan coefficient
+%     spaces if present based on X-symbols.
 %
 %     Each QSpace can be used as is, or as its 'conjugate' where the
 %     conjugate of a QSpace A, i.e. conj(A) is defined as the QSpace
 %
-%     a) with all `arrows' reversed
-%     b) keeping the SAME qlabels [for reversing individual
-%        arrows, see getIdentitQS(..,'-0')]
-%     c) and complex conjugation of all data{*}
-%        if applicable, i.e. a given QSpace is complex
+%      1) with all `arrows' reversed
+%      2) keeping the SAME qlabels on all legs
+%      3) and complex conjugation of all data{} if applicable,
+%         i.e., if the (reduced) matrix elements are complex.
 %
-%  Note that because of (a), the specification of conjugation flags
-%  (`conj-flags') is also important for QSpaces with all-real matrix
-%  elements.
+%     Because of (1), the specification of conjugate flags (`conj-flags')
+%     is also important for QSpaces with all-real matrix elements.
+%     For reversing individual arrows, see getIdentitQS(..,'-0').
 %
 %  Usage #1: S=contractQS(A, ica, B, icb [, perm, OPTS ]);
 %
@@ -42,7 +42,7 @@
 %       contractQS(A,'1,3;*',B,[1 3])        is equivalent to
 %       contractQS(A,'13*',B,'13')
 %
-%     (Deprecated) options specific to usage #1:
+%     (deprecated) options specific to usage #1:
 %
 %       'conjA'  use complex conjugate of A for contraction
 %       'conjB'  use complex conjugate of B for contraction
@@ -57,7 +57,7 @@
 %     If an optional permutation [perm] is specified as an explicit
 %     index array (non-string), it is applied to the final result only.
 %
-%     Cell contractions are furthermore based on QSpace 'itags'
+%     Cell contractions are furthermore based on QSpace `itags'
 %     i.e. string labels for indices with up to 8chars, and which
 %     are specified in QSpace.info.itags. This offers automated
 %     contraction ('auto-contraction') of pairs of tensors solely
@@ -65,7 +65,7 @@
 %     allow explicit specification of contraction indices as in
 %     usage #1.  Therefore itags (plus conj-flags) must be unique.
 %
-%     Itags must always also contain individual conjugate flags
+%     itags must always also contain individual conjugate flags
 %     (this represent the bare minimum that must be specified with
 %     each QSpacein v3): the conjugate flags on individual indices
 %     (legs) of a tensor determine  whether that index (leg) is
@@ -88,13 +88,13 @@
 %       A,'!ij*' both of the above in a single instruction
 %                the conjugate flag '*' always trailing.
 %
-%       A,'ij'   
+%       A,'ij'   [07/2023]
 %       A,'ij*'  explicitly specify indices to contract
-%                this is required only in the presence of degenerate itags
-%                i.e., the case when identical itags that appear on multiple
-%                legs including the same direction (conjugate flag).
+%                this is intended only for the case of degenerate itags
+%                i.e., when identical itags appear on multiple legs
+%                including the same conjugate flag.
 %
-%     Itags may be set or adapted on the fly (this is performed
+%     itags may be set or adapted on the fly (this is performed
 %     prior to the auto-contraction together wit the above directions)
 %
 %       X,'--op:<tag>[:<opl=op>]'
@@ -108,7 +108,7 @@
 %          overwritten. This is relevant e.g. for local operators that
 %          are applied to a very specific site with associated itag.
 %
-%          [11/24/2018] the specified <tag> may now also represent
+%          [11/2018] the specified <tag> may now also represent
 %          a regular expression (regexp), recognized by non-alphabetic
 %          special characters, while ignoring conj-flags (without
 %          special characters, the specified <tag> is taken as is!).
@@ -123,14 +123,16 @@
 %          An alternative operator itag may still be specified
 %          by adding a trailing ':opl' as indicated earlier.
 %
-%       A,'--itag:s/pat/rep/[gi]
+%       A,'--itag:s/pat/rep/[gi]   [07/2023]
 %
 %          replace/modify existing itags on the fly for a particular
-%          recursive level of the cell contraction based on regular
-%          expressions (regex) using ECMAScript grammar (cf. C++/regex).
-%          The trailing flags enable case insensitive replacement [i]
-%          and global replacement [g] of all possible matches.
+%          recursive level of a cell contraction based on regular
+%          expressions (regex; using ECMAScript grammar, cf. C++/regex).
 %          The syntax is much analogous to perl regex.
+%
+%          The trailing flags enable case insensitive replacement [i]
+%          and global replacement [g] of all possible matches
+%          (by default, only the first match is replaced).
 %
 %     An adaptation of usage #2 can also be used
 %     for plain sequential contractions
@@ -140,23 +142,39 @@
 %     which is equivalent to
 %     S=contractQS({A [,flagsA],{B [,flagsB], {C,...}}}, [,perm,OPTS ]).
 %     That is, by grouping A*(B*(C*...)), sequential contractions start
-%     from the right end onwards to the beginning of the set.
-%     Non-contracted indices are collected in the order they appear.
+%     from the right end onwards to the beginning of the specified set.
+%     This structure is also permitted at any lower level inside cell
+%     contractions. Non-contracted indices are always collected in the
+%     order they appear in the input.
 %
 %  The remaining trailing OPTS are
 %
 %     perm  permutation to be applied to the final object;
-%           NB! [06/02/2019] this permutation can be shorter
-%           than the rank of the resulting QSpace; in this case
-%           it only affects the leading range of indices.
+%           this permutation can be shorter than the actual rank
+%           of the resulting QSpace, in which case it only affects
+%           the leading range of indices.
 %
-%     '-v'  debug mode that shows level of cell contraction
-%           together with actual contractions performed.
-%           Internally, degenerate itags are frequently flagged
-%           in order to make them unique and thus to differentiate them;
-%           when printed, the flagged bits are formatted as <itag>⏐#
-%           using the utf character `⏐' to indicate that the subsequent
-%           number # is not part of the bare itag string.
+%           By permitting the specification of indices to contract
+%           also in contractions based on itags (cell-contractions)
+%           there is a potential ambiguity of whether perm should
+%           be interpreted as indices on the last specified tensor
+%           (the latter may also be represented in compact string
+%           format for better differentiation).
+%
+%           Hence the rules for perm to be interpreted as permutation
+%           requires that (i) it is a valid permutation of length
+%           r>=2 to start with, and (ii) that it is in numeric format,
+%           i.e., not written as compact string. Valid examples are
+%           [2 1], [2 3 1], but not, e.g., 1, [2 3], or '21'.
+%
+%     '-v'  debug mode that shows all levels of a cell contraction
+%           together with the actual contractions performed
+%           based on shown itags. Internally, degenerate itags are
+%           frequently flagged by making use of signed characters,
+%           which makes them unique and thus differentiate them.
+%           When printed, flagged bits are formatted as <itag>⏐# using
+%           the utf character `⏐' to indicate that the subsequent
+%           number # is not part of the actual itag string.
 %
 %  Mixed usage of #2 and #1 is not possible.
 %  Usage #2 is the typically recommended way because autocontraction
@@ -166,15 +184,17 @@
 %  AW (C) May 2010-2023
 
 % -------------------------------------------------------------------- %
-% CHANGE LOG:
+% CHANGE LOG
 % -------------------------------------------------------------------- %
-% [07/14/2023] cell-contraction now also permits
+% [07/2023] cell-contraction now also permits
 %     explicit specification of index to contract for particular
 %     QSpace on compact notation such as '12' equivalent to [1 2]
 %     rather than just excluding indices that could be contracted
 %     based on matching itags.
 %
-% [07/17/2023] introduced '--itag:s/pat/rep/[gi]
-% [07/17/2023] replaced '-op: by '--op:'
+% [07/2023] introduced '--itag:s/pat/rep/[gi]
+%
+% [07/2023] replaced '-op: by '--op:'
 %     yet with '-op:' still permitted for backward compatibility
-
+%
+% -------------------------------------------------------------------- %

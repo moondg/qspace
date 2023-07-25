@@ -2392,11 +2392,13 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::Permute(
  ) {
 
    unsigned i,n,r=rank(FL);
-   if ((!r && isEmpty()) || !P_.len || P_.isIdentityPerm(FL)) {
-      return *this;
+   if ((!r && isEmpty()) || !P_.len) { return *this; }
+
+   if (P_.len>r) { wblog(FL,
+     "ERR %s() invalid permutation '%s'\n(length out of bounds: %d/%d)",
+      myname,STR(P_),P_.len,r);
    }
-   if (P_.len>r) wblog(FL,
-      "ERR %s() size mismatch (%d/%d)",FCT,P_.len,r);
+   if (P_.isIdentityPerm(FL)) { return *this; }
 
    wbperm P(P_,iflag,r);
    PermuteQ(P);
