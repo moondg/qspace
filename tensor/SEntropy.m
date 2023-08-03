@@ -1,7 +1,7 @@
 function se = SEntropy(r,varargin)
 % function se = SEntropy(sv [,opts])
 %
-%    Calculate shanon entropy for given input vector
+%    Calculate entanglement entropy for given input vector
 %    The input sv is considered singular values by default.
 %
 % Options
@@ -44,7 +44,7 @@ function se = SEntropy(r,varargin)
      if min(r)<-1E-14, wblog('WRN',...
         'negative entries for shannon entropy ?? (%g)', min(r));
      if isempty(d), e=sum(r); if abs(e-1)>1E-10
-        wblog('WRN','rho_i not normalized !?? (1%+.3g)',e-1); end
+        wblog('WRN','rho_i data not normalized (1%+.3g)',e-1); end
      end
   end
 

@@ -1840,7 +1840,7 @@ mxArray* CStore<TQ>::toMx(const QType &q_) const {
       .add(BUF.load_factor(),"load_factor")
       .add(nc,"filling_buckets")
       .add(BUF.size(),"nr_entries")
-      .add(nc.max(0),"max_collisions")
+      .add(nc.max_(0),"max_collisions")
    .toMx());
 
    return C;
@@ -2277,7 +2277,7 @@ mxArray* X3Map<TQ,TD>::toMx() const {
       .add(XBUF.load_factor(),"load_factor")
       .add(nc,"filling_buckets")
       .add(XBUF.size(),"nr_entries")
-      .add(nc.max(0),"max_collisions")
+      .add(nc.max_(0),"max_collisions")
    .toMx());
 
    } catch (...) { ++ep; } 

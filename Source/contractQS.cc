@@ -163,12 +163,12 @@ char icFlags::set(const mxArray *a, const char *istr) {
 
       unsigned i=0; while (s[i]=='-') { ++i; }
 
-      if ((i==1 || i==2) && !strncasecmp(s+i,"op:",4)) { if (!tflag) {
+      if ((i==1 || i==2) && !strncasecmp(s+i,"op:",3)) { if (!tflag) {
          if (otags) wblog(FL, 
             "ERR %s() otags already set ( %s / %s)",FCT,otags.data,s+1);
          otags=s+1;
       }}
-      if (!strncmp(s,"--itag:s/",9)) { if (!tflag) { 
+      else if (!strncmp(s,"--itag:s/",9)) { if (!tflag) { 
          if (regex_r) wblog(FL,
             "ERR %s() regex_r already set (%s / %s)",FCT,regex_r.data,s);
          regex_r=s+7; 
@@ -301,20 +301,22 @@ void mexFunction(
     int nargout, mxArray *argout[],
     int nargin, const mxArray *argin[]
 ){ Wb::CleanUp aclu; try { 
-    MX_CHECK_HELPER_NARGS(2,-1,3); 
+    MX_CHECK_HELPER_NARGS(1,-1,3); 
 
-    if (nargin==1) {
+    if (nargin==1 && !mxIsCell(argin[0])) {  
        if (Mx::IsEqual(argin[0],"--stat")) { 
           CG::MemStat(FL);
+          if (nargout) wblog(FL,
+             "ERR invalid usage (no output with option --stat)",FCT);
           return;
        }
-       if (Mx::IsEqual(argin[0],"--getCG")) {
+       else if (Mx::IsEqual(argin[0],"--getCG")) {
           argout[0]=gCS.toMx(); if (nargout>1) {
           argout[1]=gXS.toMx(); if (nargout>2) {
           argout[2]=gRS.toMx(); }}
           return;
        }
-       wblog(FL,"ERR %s() invalid usage",FCT);
+       else wblog(FL,"ERR %s() invalid usage",FCT);
     }
 
     if (mxIsChar(argin[0])) {

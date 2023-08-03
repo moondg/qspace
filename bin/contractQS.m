@@ -47,15 +47,17 @@
 %       'conjA'  use complex conjugate of A for contraction
 %       'conjB'  use complex conjugate of B for contraction
 %
-%  Usage #2: S=contractQS({A,{B,{..,C}}},... [, perm, OPTS ]);
+%  Usage #2: S=contractQS(A,..,{B,..,{C,..}},.. [, perm, OPTS ]);
 %
 %     Generalized 'cell-contraction' of tensors: when encountering
 %     a cell, the content of that cell is contracted first, before
-%     using its results. This allows the specification of an entire
+%     using its result. This allows the specification of an entire
 %     patter of pairwise contractions based on a nested cell structure
 %     where the lowest-level contractions are performed first.
-%     If an optional permutation [perm] is specified as an explicit
-%     index array (non-string), it is applied to the final result only.
+%     An optional fully enveloping outer cell bracket at `base' level
+%     as in S=contractQS({A,..,{B,..,{C,..}},..} [, perm, OPTS ])
+%     is permitted, which may be used e.g., when debugging nested
+%     parts of cell-contractions.
 %
 %     Cell contractions are furthermore based on QSpace `itags'
 %     i.e. string labels for indices with up to 8chars, and which
@@ -149,10 +151,10 @@
 %
 %  The remaining trailing OPTS are
 %
-%     perm  permutation to be applied to the final object;
+%     perm  optional permutation (non-string) on the final object;
 %           this permutation can be shorter than the actual rank
-%           of the resulting QSpace, in which case it only affects
-%           the leading range of indices.
+%           of the resulting QSpace, which then is completed as
+%           an identity permutation on the remainder of indices.
 %
 %           By permitting the specification of indices to contract
 %           also in contractions based on itags (cell-contractions)
@@ -166,6 +168,15 @@
 %           r>=2 to start with, and (ii) that it is in numeric format,
 %           i.e., not written as compact string. Valid examples are
 %           [2 1], [2 3 1], but not, e.g., 1, [2 3], or '21'.
+%
+%           The ambiguity above is fully circumvented when also
+%           wrapping the last contraction at base level into a cell,
+%           such as contractQS({A,...},perm [,'-v']) [see above],
+%           in which case perm is always interpreted as permutation
+%           on the overall result, irrespective of rank or whether
+%           specified as numeric or compact string index. In case
+%           of a string, this then also permits to specify an optional
+%           conjugate flag to be applied on the overall result.
 %
 %     '-v'  debug mode that shows all levels of a cell contraction
 %           together with the actual contractions performed

@@ -256,7 +256,7 @@ class STAT_DGEMM {
     STAT_DGEMM() { nn.init(32); ss.init(32); }
    ~STAT_DGEMM() {
        unsigned i; double fac=nn.max(); fac=1./(fac!=0 ? fac:1);
-       if (nn.max()<1) return;
+       if (nn.max()<1) { return; }
 
        wblog(FL,"%NDGEMM statistics");
        printf("\n idx_n  avg.dim        count    cost (^2.5)\n\n");

@@ -10,7 +10,7 @@ function setupStorage(HAM)
   I.AK=q;
   I.HK=q;
 
-  if usingFullMPO(HAM)
+  if using_full_MPO(HAM)
        o={'hconj',use_Hconj(HAM)};
   else o={}; I.OP=q;
   end

@@ -6,7 +6,7 @@ function wbdie(varargin)
 % see also deprecated wberr.m
 % Wb,Jan19,20
 
-  msg=''; vflag=1;
+  msg=''; vflag=1; k=2;
   if nargin, l=0;
      for i=1:nargin, q=varargin{i};
         if ~isempty(q) && ischar(q) && q(1)=='-'
@@ -16,6 +16,7 @@ function wbdie(varargin)
               fprintf(1,'\n   wbdie(): ignoring invalid option ''%s''\n',q);
            end
            l=i;
+        elseif isnumber(q), k=2+q; l=i;
         else break; end
      end
      if l<nargin
@@ -33,8 +34,12 @@ function wbdie(varargin)
   end
 
   S=dbstack('-completenames');
-  if vflag && numel(S)>1
-     dispstack(S(2:end));
+  if vflag && numel(S)>1, 
+     L=getcols(); if L<60 || L>99, L=80; end
+     L=repmat('─',1,L-1);
+     if use_col, L=[ char(27) '[38;5;8m' L char(27) '[0m']; end
+     fprintf(1,L);
+     dispstack(S(k:end));
   end
 
   S=struct('message',msg,'identifier','Wb:ERR', 'stack',S(min(2,end)));

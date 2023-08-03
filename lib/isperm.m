@@ -8,11 +8,9 @@ function q=isperm(p)
 
   q=0;
   if isnumeric(p), i=find(size(p)>1);
-     if numel(i)<=1 % enforce vector
-        p=reshape(p,1,[]); r=numel(p);
-        if isequal(p,round(p)) && all(p>=1 & p<=r) && all(diff(sort(p)))>=1
-           q=r;
-        end
+     if numel(i)<=1
+        p=sort(p(:));
+        if p(1)==1 && all(diff(p)==1), q=numel(p); end
      end
   end
 

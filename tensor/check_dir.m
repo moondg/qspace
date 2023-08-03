@@ -1,12 +1,10 @@
 function kdir=check_dir(kdir)
 % function kdir=check_dir(kdir)
 %
-%    NB! this function can only be called from /
-%    is only within the scope of member functions.
+%    Check sweep direction and return / convert to numeric value.
 %
 % Wb,Apr08,14
 
-% outsourced from updateHam()
 % see also QSpace/itags2odir.m // tags: direction
 
   if ischar(kdir)

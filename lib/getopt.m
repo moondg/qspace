@@ -1,21 +1,70 @@
-function rval = getopt(varargin)
-% Usage #1: rval = getopt(args)
+function [rval,found] = getopt(varargin)
+% function [rval,found] = getopt(..)
 %
-%    options can be grouped (i.e. multiple options implying the same)
-%    getopt({opt1,opt2} [,default_value])
+%    General routine to deal with input options
+%    either specified as cell (usage #1) or structure (uage #2).
+%    The second return argument specifies whether a particular
+%    option was found in the input.
 %
-% Usage #2: rval = getopt(I,'field1','subfield1',...,default_value)
+% Usage #1
+%
+%    Analyse options provided by a cell vector such as varargin
+%    This consists of three steps:
+%
+%    1) Initialization
+%       getopt('init',args)
+%       getopt('INIT',args)
+%
+%    with args = {'opt1',val1,'opt2',val2,...,'-flag',...}.
+%    the first usage is case-insensitive on the name of the options (optN)
+%    where the second usage with capital 'INIT' is casesensitive.
+%
+%    2) Queries
+%
+%       valI=getval('optI',defI)  % with defI a default value for option I, or
+%       flagJ=getval('-flagJ')    % checking flags (boolean)
+%
+%       where flags typically start with '-' or '--').
+%       Options can also be grouped (i.e. multiple options referring
+%       to the same thing): getopt({opt1,opt2} [,default_value])
+%
+%    3) Clean up by any of the following:
+%
+%       getopt('check_error')
+%          in case that any position in args went unchecked, 
+%          this throws an error.
+%
+%       a=getopt('get_last',a_def);
+%          args may include one value that does not come
+%          with a paired name, and that typically also does not
+%          represent a flag either, but a value of some sort.
+%          This value, irrespective of the place where it occured
+%          in between options in args, is returned by this call.
+%          If more than one option in args is still left unchecked,
+%          this throws an error. If all options have been checked
+%          already, this returns the default a_def.
+%
+%       args=getopt('get_remaining');
+%          get all remaining options in argsthat have not yet been checked.
+%
+% Usage #2 - based on input structure I
+%
+%    rval = getopt(I,'field1','subfield1',...,default_value)
+%
+%    This looks for a sequence of fields specified by strings;
+%    if the final object exists, its value is returned,
+%    otherwise getopt() returns the specified default value.
 %
 % Wb,Nov05 ; Wb,Jan09,08
 
   persistent args errcount chkcase
 
   i=find(cellfun(@ischar,varargin)); if ~isempty(i)
-    if ~isempty(regexp([varargin{i}],'dbstop_if')), error('Wb:ERR','ERR'); end
+    if ~isempty(regexp([varargin{i}],'dbstop_if')), wbdie(''); end
   end
   if iscell(args)
      i=find(cellfun(@ischar,args)); if ~isempty(i)
-        if ~isempty(regexp([args{i}],'dbstop_if')), error('Wb:ERR','ERR'); end
+        if ~isempty(regexp([args{i}],'dbstop_if')), wbdie(''); end
      end
   end
 
@@ -25,6 +74,8 @@ function rval = getopt(varargin)
   if isnumeric(varargin{1})
        lflag=varargin{1}; varargin(1)=[];
   else lflag=0; end
+
+  found=0;
 
   if isstruct(varargin{1})
    % auxilliary usage to extract option from structure
@@ -41,7 +92,9 @@ function rval = getopt(varargin)
            I=getfield(I,varargin{i});
         else n=n+1; break; end
      end
-     if i==n, rval=I; else rval=varargin{end}; end
+     if i==n
+          rval=I; found=1;
+     else rval=varargin{end}; end
      return
   end
 
@@ -59,8 +112,8 @@ function rval = getopt(varargin)
   if nargin==2
      if isequal(o,'init')
         if ~isempty(args)
-           wblog('WRN','overwriting current other getopt scan !?'); 
-           dispstack(); disp(args)
+           wblog('WRN','interfering other concurrent getopt scan !?'); 
+           dispstack(1); disp(args)
         end
         args=varargin{2}; errcount=0; chkcase=0;
         return
@@ -75,22 +128,9 @@ function rval = getopt(varargin)
   if nargs==1
      if strcmpi(o,'check_error')
         if length(args)>0
-           wblog(2,'ERR','\Ninvalid option(s)\N');
-           disp(args)
+           fprintf(1,'\n'); disp(args)
            errcount = errcount + 1;
-
-           fprintf(1,'Stack: '); s='-> ';
-
-           [stack,index]=dbstack(); % '-completenames'
-           m=length(stack);
-           for i=m:-1:1
-              if i==1, s=''; end
-              fprintf(1,'%s::%d %s', stack(i).name, stack(i).line, s);
-           end
-
-           if length(stack), fprintf(1,'\n\n\n'); end
-
-           error(' ');
+           wbdie(1,'invalid option(s)');
         end
 
         if nargout, rval=errcount; end
@@ -145,7 +185,7 @@ function rval = getopt(varargin)
      return
 
   else
-     NAME=o; narg=length(args); found=0;
+     NAME=o; narg=length(args);
 
      if ~iscell(NAME), NAME={NAME}; end
      no=length(NAME);
@@ -180,7 +220,7 @@ function rval = getopt(varargin)
      else
         if found
            if i==narg
-              wblog('ERR - value expected for option %s', vname);
+              wblog('ERR','value expected for option %s', vname);
               errcount=errcount+1;
               args(narg)=[];
            else

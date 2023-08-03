@@ -240,7 +240,14 @@ function [HAM,Iout]=sweepPsi_tmpo(HAM,varargin)
     s={sprintf('%s %4s %7s |',datestr(now,'HH:MM:SS'),s{:}),''};
     f={'%s',''}; if olap, f{2}=' %25s'; else f{2}=' %8.3s'; end
 
-    Iout.Ixt=Ixt(:,end);
+  % Iout.Ixt(:,itau)=Ixt(:,end); % too much data! // Wb,Aug15,19
+    % WRN! Ixt contains useless inialized data for the case
+    % when At carries no global Psi index! // IXT_INIT // Wb,Jul31,23
+    % e.g., when applying a scalar operator, or when starting from
+    % some inital scalar wave function that is not an eigenstate
+    % cf. data Dimitris => use Ixf instead!
+  % Iout.Ixt=Ixt(:,end); // Wb,Jul31,23
+    Iout.Ixt=Ixf(:,end);
 
     if nops && itau>1
        q=Iout.Sxt(:,itau-1:itau,:); x=reshape(diff(q,[],2),[],1); a=abs(x);

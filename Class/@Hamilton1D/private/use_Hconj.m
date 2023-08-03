@@ -6,7 +6,7 @@ function q=use_Hconj(HAM)
 %
 % Wb,Dec04,20
 
-  if usingFullMPO(HAM)
+  if using_full_MPO(HAM)
        q=HAM.info.mpo.use_hconj;
   else q=0; end
 

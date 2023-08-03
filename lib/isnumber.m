@@ -1,19 +1,18 @@
-function i=isnumber(varargin)
-% function i=isnumber(var1, var2, ...)
+function q=isnumber(varargin)
+% function q=isnumber(var1, var2, ...)
 %
 %    returns 0 if any of the input arguments
 %    is not a scalar number.
 %
 % Wb,May14,09
 
-  i=0;
+  q=false(1,nargin);
 
-  for k=1:nargin
-      if ~isscalar(varargin{k}) || ~isnumeric(varargin{k})
-      return; end
+  for i=1:nargin
+      if isscalar(varargin{i}) && isnumeric(varargin{i})
+         q(i)=true;
+      end
   end
-
-  i=1;
 
 end
 

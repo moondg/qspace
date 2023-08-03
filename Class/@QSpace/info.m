@@ -87,9 +87,11 @@ function info_1line(A,vstr,cflag,ocflag,rmax)
 
   s=A.data; s=whos('s'); sbytes=num2str2(s.bytes,'-b');
 
-  if cflag, xsep='x'; Dfmt='%dD'; else xsep=' x '; Dfmt='%d-D'; end
+  if cflag
+       xsep='x';   Dfmt='%dD';
+  else xsep=' x '; Dfmt='%d-D'; end
 
-  zflag=~isreal(A);
+  zflag=~isreal(A); lsep=length(xsep);
 
   if ~nd
      sdc=class(A.data);
@@ -101,16 +103,12 @@ function info_1line(A,vstr,cflag,ocflag,rmax)
      if zflag && isequal(sdc,'double'), sdc='complex'; zflag=0; end
      sdc=sprintf([Dfmt ' %s'],rk,sdc);
 
-     if ~isempty(A.Q) && ~isempty(A.Q{1})
-        dd=getDimQS(A);
-        if isvector(dd)
-           dstr=vec2str(dd,'sep',xsep,'fmt','%d','nofac','-f');
-        else
-           dstr=vec2str(dd(1,:),'sep',xsep,'fmt','%d','nofac','-f');
-           for i=2:size(dd,1)
-               if ~isequal(dd(i,:),dd(i-1,:))
-               q=int2str2(dd(i,:)); dstr=[dstr, ' | ', strhcat(q,xsep)]; end
-           end
+     if ~isempty(A.Q) && ~isempty(A.Q{1}), dd=getDimQS(A);
+        dstr=sprintf([xsep '%d'],dd(1,:)); dstr=dstr(lsep+1:end);
+        for i=2:size(dd,1)
+            if ~isequal(dd(i,:),dd(i-1,:))
+               q=int2str2(dd(i,:)); dstr=[dstr, ' | ', strhcat(q,xsep)];
+            end
         end
      else dstr=''; end
 
@@ -141,12 +139,12 @@ function info_1line(A,vstr,cflag,ocflag,rmax)
         em=[char(27) '[0m'];
      end
 
-     l=4+5*max(3,rmax);
+     l=4+6*max(3,rmax);
      q=regexprep(stags,'\x1B\[[\d;]+m','');
      q=diff([length(q), l]);
      if q>0, stags = [stags, repmat(' ',1,q)]; end
   else
-     l=4+6*max(3,rmax);
+     l=4+7*max(3,rmax);
      q=diff([length(stags), l]);
      if q>0, stags = [stags, repmat(' ',1,q)]; end
   end

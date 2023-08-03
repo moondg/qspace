@@ -4581,7 +4581,7 @@ int MemStat(const char *F=0, int L=0) {
    if (!gstatX.isEmpty()) gstatX.print("XData", (++n==1)? hstr:0, xstr);
 
    if (n) { PRINTF("\n"); }
-   else wblog(FL,"I/O no data read or written to RCStore yet");
+   else wblog(FL,"I/O no data read or written yet to RCStore");
 
    return 0;
 };

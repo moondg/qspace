@@ -124,7 +124,7 @@ function display(HAM,varargin)
   s=sprintf('D=%s, d=%s',dMs{:});
   fprintf(1,[fmt{1:2}],'mpo dimension',s);
 
-  full_mpo=usingFullMPO(HAM);
+  full_mpo=using_full_MPO(HAM);
   if full_mpo
        printf('\e[34;1m full MPO\e[0m\n');
   else fprintf(1,' pseudo MPO\n'); end

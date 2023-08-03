@@ -171,7 +171,7 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
 
   E0=[]; H=[]; Ig=[]; converged=0; Psi0=Psi;
 
-  pseudo_mpo=(~usingFullMPO(HAM));
+  pseudo_mpo=(~using_full_MPO(HAM));
   if pseudo_mpo, [J,hconj]=get_bondH(HAM,k1);
        oH={J,hconj};
   else oH={'--full-mpo'};

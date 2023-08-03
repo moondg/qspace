@@ -15,7 +15,7 @@ function [dd,dstr]=getDimMPO(HAM,varargin)
 
   L=numel(HAM.mpo);
 
-  if usingFullMPO(HAM)
+  if using_full_MPO(HAM)
      dd=cell(1,L); for k=1:L, dd{k}=getDimQS(HAM.mpo(k)); end
      for k=[1 L]
         if size(dd{k},2)==3

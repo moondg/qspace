@@ -47,7 +47,7 @@ function [Xk,e0]=updateHK(HAM,kc,kdir,varargin)
 
    kdir=check_dir(kdir);
 
-   if usingFullMPO(HAM)
+   if using_full_MPO(HAM)
         [Xk,e0]=updateHK_mpo_full  (HAM,kc,kdir,varargin{:});
    else [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,varargin{:});
    end

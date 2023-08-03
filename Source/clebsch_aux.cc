@@ -863,11 +863,16 @@ void QMap<TQ>::getIdentityQ(const char *F, int L,
       FCT,STR(s),STR(S));
    }
 
-   M=wbsys::getMemTot();
-   if (5*DS>M && vflag) wblog(FL,"WRN %s() "  
-      "ID using %.3g / %.3g GB memory",FCT,  DS/double(1<<27),M/(1<<27));
-   else if (DS>2E8 && vflag=='V') { wblog(FL,
-      "WRN %s() ID using %.3g GB (n=%d)",FCT,DS/double(1<<27),n);
+   if (vflag) {
+      double Mtot=wbsys::getMemTot();
+      char q=(DS>Mtot? 1 : 0); if (DS>2E8 && vflag=='V') { q|=2; }
+      if (q) { 
+         DS  /=double(1<<27); 
+         Mtot/=double(1<<27);
+         if (q&1)
+              wblog(FL,"WRN %s() ID using %.3g / %.3g GB",myname,DS,Mtot);
+         else wblog(FL,"WRN %s() ID using %.3g GB (%d blocks)",myname,DS,n);
+      }
    }
 };
 
@@ -1782,7 +1787,7 @@ void CStore<TQ>::Info(const char *F, int L, char vflag) const {
 
    if (BUF.size()) { size_t n=BUF.size(); wbstring sx=Wb::size2Str(mtot);
         wblog(F_L," *  CStore::BUF got %ld entries @ %s",n,sx.data); }
-   else wblog(F_L,"<i> CStore::BUF is empty");
+   else wblog(F_L," *  CStore::BUF  is empty");
 };
 
 template <class TQ, class TD>
@@ -2358,9 +2363,10 @@ int x3map<TQ,TD>::initCtr(const char *F, int L,
 
                if (ma==ma_ || ia==0) { ma=ma_; mb=mb_; }
                else if (nrep<irep+2) {
-                  if (vflag) { wblog(FL,"==> (ia,ib)="
-                     "(%d,%d)/(%d,%d) <- (%d,%d) - repeat (n=%d)!",
-                     ia,ib,ma_,mb_,ma,mb,nrep); }
+                  if (vflag) { wblog(FL,"TST i_ab=(%d,%d): "
+                     "OM_ab = (%d,%d) -> (%d,%d), repeat n=%d -> %d",
+                     ia,ib,ma,mb,ma_,mb_,nrep,irep+2);
+                  }
                   nrep=irep+2;
                }
             }
@@ -3409,7 +3415,7 @@ void X3Map<TQ,TD>::Info(const char *F, int L) const {
       wblog(F_L," *  XStore::XBUF got %d entries @ %s",
       XBUF.size(), Wb::size2Str(mtot).data);
    }
-   else { wblog(F_L,"<i> XStore::XBUF is empty"); }
+   else { wblog(F_L," *  XStore::XBUF is empty"); }
 };
 
 #endif

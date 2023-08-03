@@ -46,10 +46,12 @@ function [lg,ll,l2,t2]=legdisp(varargin)
 
   lg=[]; ll=[]; l2=[]; t2=[];
 
-  if nargin==1 && isequal(varargin{1},'-count')
-     ll=findall(gca,'type','line','-not','Disp','');
-     l2=findall(gca,'type','patch','-not','Disp',''); ll=[ll;l2];
-     lg=numel(ll); return
+  if nargin==1
+     if isequal(varargin{1},'-count') || isequal(varargin{1},'-n')
+        ll=findall(gca,'type','line','-not','Disp','');
+        l2=findall(gca,'type','patch','-not','Disp',''); ll=[ll;l2];
+        lg=numel(ll); return
+     end
   end
 
   if nargin && iscell(varargin{1})

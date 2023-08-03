@@ -4,6 +4,9 @@ function dispstack(S,k)
 
   if ~nargin
      [S,k]=dbstack('-completenames'); S=S(2:end);
+  elseif nargin==1 && isnumber(S), i=S;
+     [S,k]=dbstack('-completenames'); S=S(2+i:end);
+     wblog('TST','k=%d, i=%d',k,i); 
   elseif nargin<2, k=-1;
   elseif nargin>2
      eval(['help ' mfilename]);

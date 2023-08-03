@@ -973,18 +973,21 @@ class wbvector {
     int recCompare(const T* v) const;
 
     T max() const;
-    T max(size_t *k) const;
+    T max(size_t *k) const; 
     T max(unsigned &k) const { T x; 
-      size_t k_; x=max(&k_); Wb::safeConvert(FL,k_,k);
+      size_t l; x=max(&l); Wb::safeConvert(FL,l,k);
       return x;
     };
 
+    T max_(T x) const;
+
     T min() const;
-    T min(size_t *k) const;
+    T min(size_t *k) const; 
     T min(unsigned &k) const { T x; 
-      size_t k_; x=min(&k_); Wb::safeConvert(FL,k_,k);
+      size_t l; x=min(&l); Wb::safeConvert(FL,l,k);
       return x;
     };
+    T min_(T x) const;
 
     T aMax(size_t *k=NULL) const; 
 
@@ -1433,72 +1436,95 @@ wbvector<T>& wbvector<T>::applyFlag(
 template <class T> inline
 T wbvector<T>::min() const {
 
-   if (!len) wblog(FL,"ERR %s() got empty vector",FCT);
-   T x=data[0];
-      for (size_t i=1; i<len; ++i) { if (x>data[i]) x=data[i]; }
+   if (len) { size_t i=1; T x=data[0];
+      for (; i<len; ++i) { if (x>data[i]) { x=data[i]; }}
+      return x;
+   }
+   wblog(FL,"ERR %s() got empty vector",FCT);
+   return 0;
+};
+
+template <class T> inline
+T wbvector<T>::min_(T x) const {
+   if (len) { size_t i=1; x=data[0];
+      for (; i<len; ++i) { if (x>data[i]) { x=data[i]; }}
+   }
    return x;
 };
 
 template <class T> inline
 T wbvector<T>::min(size_t *k) const {
-   if (!k) return min();
-   if (!len) wblog(FL,"ERR %s() got empty vector",FCT);
-
-   T x=data[0]; *k=0;
-      for (size_t i=1; i<len; ++i) { if (x>data[i]) { x=data[i]; *k=i; }}
-   return x;
+   if (!k) { return min(); }
+   if (len) { size_t i=1; T x=data[0]; *k=0;
+      for (; i<len; ++i) { if (x>data[i]) { x=data[i]; *k=i; }}
+      return x;
+   }
+   wblog(FL,"ERR %s() got empty vector",FCT);
+   return 0;
 };
 
 template <class T> inline
 T wbvector<T>::max() const {
 
-   T x=T(0);
-   if (!len) { wblog(FL,"ERR %s() got empty vector",FCT); }
-   else { x=data[0];
-      for (unsigned i=1; i<len; ++i) { if (x<data[i]) x=data[i]; }
+   if (len) { unsigned i=1; T x=data[0];
+      for (; i<len; ++i) { if (x<data[i]) { x=data[i]; }}
+      return x;
+   }
+   wblog(FL,"ERR %s() got empty vector",FCT);
+   return 0;
+};
+
+template <class T> inline
+T wbvector<T>::max_(T x) const {
+   if (len) { size_t i=1; x=data[0];
+      for (; i<len; ++i) { if (x<data[i]) { x=data[i]; }}
    }
    return x;
 };
 
 template <class T> inline
 T wbvector<T>::max(size_t *k) const {
-   if (!k) return max();
-   if (!len) wblog(FL,"ERR %s() got empty vector",FCT);
-
-   T x=data[0]; *k=0;
-      for (size_t i=1; i<len; ++i) { if (x<data[i]) { x=data[i]; *k=i; }}
-   return x;
+   if (!k) { return max(); }
+   if (len) { size_t i=1; T x=data[0]; *k=0;
+      for (; i<len; ++i) { if (x<data[i]) { x=data[i]; *k=i; }}
+      return x;
+   }
+   wblog(FL,"ERR %s() got empty vector",FCT);
+   return 0;
 };
 
 template <class T> inline
 T wbvector<T>::minpos(size_t *k) const {
-   T x=0; bool found=0; if (k) (*k)=-1;
 
-   if (len==0) wblog(FL,"WRN %s() of null vector",FCT);
-   else {
-      for (size_t i=0; i<len; i++)
-      if (data[i]>0) {
-         if (found) { if (x>data[i]) { x=data[i]; if (k) (*k)=i; }}
-         else { x=data[i]; if (k) (*k)=i; found=1; }
-      }
+   if (len) {
+      T x=0; size_t i=0; if (k) { (*k)=-1; }
+      for (; i<len; ++i) { if (data[i]>0) {
+          x=data[i]; if (k) { (*k)=i; }; ++i; break;
+      }}
+      for (; i<len; ++i) { if (data[i]>0 && x>data[i]) {
+          x=data[i]; if (k) { (*k)=i; }
+      }}
+      return x;
    }
-   return x;
+   wblog(FL,"WRN %s() of empty vector",FCT);
+   return 0;
 };
 
 template <class T> inline
 T wbvector<T>::maxneg(size_t *k) const {
-   T x=0; bool found=0; if (k) (*k)=-1;
 
-   if (len==0) wblog(FL,"WRN %s() of null vector",FCT);
-   else {
-      for (size_t i=0; i<len; i++)
-      if (data[i]<0) {
-         if (found) { if (x<data[i]) { x=data[i]; if (k) (*k)=i; }}
-         else { x=data[i]; if (k) (*k)=i; found=1; }
-      }
+   if (len) {
+      T x=0; size_t i=0; if (k) { (*k)=-1; }
+      for (; i<len; ++i) { if (data[i]<0) {
+         x=data[i]; if (k) { (*k)=i; }; ++i; break;
+      }}
+      for (; i<len; ++i) { if (data[i]<0 && x<data[i]) {
+         x=data[i]; if (k) { (*k)=i; }
+      }}
+      return x;
    }
-
-   return x;
+   wblog(FL,"WRN %s() of empty vector",FCT);
+   return 0;
 };
 
 template <class T> inline
