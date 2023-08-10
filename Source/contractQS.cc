@@ -89,7 +89,7 @@ class icFlags {
    char set(const mxArray *a, const char *istr="");
 
    template <class TQ, class TD>
-   void apply(QSpace<TQ,TD> &X);
+   void apply(QSpace<TQ,TD> &X, char vflag=1);
 
    const mxArray *a;  
 
@@ -228,7 +228,7 @@ char icFlags::set(const mxArray *a, const char *istr) {
 };
 
 template <class TQ, class TD>
-void icFlags::apply(QSpace<TQ,TD> &X) {
+void icFlags::apply(QSpace<TQ,TD> &X, char vflag) {
 
    if (X.isEmpty()) { return; } 
    unsigned r=-1;
@@ -247,9 +247,10 @@ void icFlags::apply(QSpace<TQ,TD> &X) {
    }
    else { r=X.rank(FL); }
 
-   if (regex_r) {
+   if (regex_r && vflag) {
       if (!X.itags.RegEx_replace(FL,regex_r.data)) { wblog(FL,
          "WRN %s() regex_r = '%s' had no effect",FCT,regex_r.data);
+         mexWRN("irrelevant regex_r"); 
       }
    }
 
@@ -279,7 +280,7 @@ mxArray* contract_plain(int nargin, const mxArray *argin[]);
 template<class TD>
 unsigned contractQS_itags(
    int nargin, const mxArray *argin[],
-   unsigned level, unsigned vflag, QSpace<gTQ,TD> &C,
+   unsigned level, unsigned &vflag, QSpace<gTQ,TD> &C,
    wbperm &P 
 );
 
@@ -361,7 +362,7 @@ void mexFunction(
        unsigned i,l=0, lmax=0, zflag=0,
           nc=nargin,
           level=0;  
-       char vflag=0; wbperm P;
+       unsigned vflag=1; wbperm P;
        char q, nQS=0;
 
        icFlags Q;
@@ -381,7 +382,8 @@ void mexFunction(
        if (nc<(unsigned)nargin) {
           OPTS opts(argin+nc,nargin-nc);
 
-          vflag = opts.getOpt("-v"); 
+          if (opts.getOpt("-v")) { vflag=2; } else
+          if (opts.getOpt("-q")) { vflag=0; } 
 
           opts.checkAnyLeft(FL);
        }
@@ -398,13 +400,12 @@ void mexFunction(
           "ERR invalid cell contraction (e=%d)",-i);
        zflag=(i>>16); 
 
-       if (vflag) {
+       if (vflag>1) {
           unsigned l,n=64, nQS=((i>>8)&255) + zflag; char s[n];
           l=snprintf(s,n,"%d level%s total",lmax+1, lmax?"s":"");
-          if (zflag && l<n) {
-             l+=snprintf(s+l,n-l,", complex mode (%d/%d)",zflag,nQS);
-          }
-          wblog(FL,"=== cell contraction %26R","=");
+          if (zflag && l<n) { l+=snprintf(s+l,n-l,
+             ", %d/%d QSpace%s complex",zflag, nQS, zflag!=1? "s":""); }
+          wblog(FL,"=== cell contraction %34R","=");
           wblog(FL," *  %d contractions total\n%s",i&255,s);
        }
 
@@ -487,7 +488,7 @@ int match_regex_itag(
 
 mxArray* contract_plain(int nargin, const mxArray *argin[]) {
 
-   char isra=1, isrb=1, vflag=0, cg_preview=0;
+   char isra=1, isrb=1, vflag=1, cg_preview=0;
    unsigned i=0, l=4, k=2;
 
    ctrIdx ica, icb;
@@ -522,17 +523,18 @@ mxArray* contract_plain(int nargin, const mxArray *argin[]) {
 
    if (opts.getOpt("conjA")) {
       wblog(FL,"WRN %s() got deprecated option 'conjA'",FCT);
-          mexWarnMsgIdAndTxt("Wb:MEX:contractQS","check calling function");
+          mexWRN("deprecated conjA flag");
       ica.Conj(); ++i;
    }
    if (opts.getOpt("conjB")) {
       wblog(FL,"WRN %s() got deprecated option 'conjB'",FCT);
-          mexWarnMsgIdAndTxt("Wb:MEX:contractQS","check calling function");
+          mexWRN("deprecated conjB flag");
       icb.Conj(); ++i;
    }
 
    if (opts.getOpt("--cg-preview")) cg_preview=1; 
-   if (opts.getOpt("-v")) vflag=1; 
+   if (opts.getOpt("-v")) vflag=2; else 
+   if (opts.getOpt("-q")) vflag=0; 
 
    opts.checkAnyLeft(FL);
 
@@ -597,7 +599,7 @@ int CONTRACT_QS(
        C.init(); C.mt=Wb::MEX_RETURN; 
     }
 
-    if (vflag) { wblog(FL," *  plain pair-wise contraction\n"
+    if (vflag>1) { wblog(FL," *  plain pair-wise contraction\n"
     "   %-15s -> %s\n"
     "X  %-15s -> %s",IT2STR(A), STR(ica), IT2STR(B), STR(icb));
     }
@@ -614,8 +616,8 @@ int CONTRACT_QS(
 
 template<class TD>
 unsigned contractQS_itags( 
-   int nargin, const mxArray *argin[],
-   unsigned level, unsigned vflag,
+   int nargin, const mxArray *argin[], unsigned level,
+   unsigned &vflag,   
    QSpace<gTQ,TD> &C, 
    wbperm &P    
 ){
@@ -692,29 +694,31 @@ unsigned contractQS_itags(
    QSpace<gTQ,TD> &B=X[k]; 
 
    if (k) match_regex_itag(Q[k].otags,X[k-1].itags,"opB","A");
-   Q[k].apply(B); 
+   Q[k].apply(B,vflag); 
    if (Q[k].conj) { icb.conj=1; }
 
    for (--k; k<len; --k) {
       QSpace<gTQ,TD> &A=X[k];
 
       match_regex_itag(Q[k].otags,B.itags,"opA","B");
-      Q[k].apply(A); 
+      Q[k].apply(A,vflag); 
       ica.conj=(Q[k].conj ? 1 : 0); 
 
       if (A.isEmpty() || B.isEmpty()) {
-         if (vflag) {
+         if (vflag>1) {
+            unsigned n=64; char s[n];
             char i[2]={ A.isEmpty(), B.isEmpty() };
-            char s[64]; snprintf(s,64,"cell contraction: %s empty",
+            snprintf(s,n,"cell contraction (%d): %s empty",level,
               i[0] ? (i[1] ? "both QSpaces are": "1st QSpace is")
                    : (i[1] ? "2nd QSpace is" : "NEITHER (!?) QSpace is"));
-            wblog(FL,"-%d- %s",level,s);
+            vflag += 256; 
+            wblog(FL,"%2d) %s",vflag>>8,s);
          }
          C.init(); return len;
       }
 
-      if (vflag) { unsigned l,n=16;
-         char s[]="------------------------";
+      if (vflag>1) { unsigned l,n=16;
+         char s[]="---------------------- ictr rank";
          if (level)
               { l=snprintf(s,n,"level %d",level); }
          else { l=snprintf(s,n,"base"); }
@@ -723,7 +727,8 @@ unsigned contractQS_itags(
             l+=snprintf(s+l,n-l," (%d/%d)",len-k-1,len-1);
          }; if (l<n) { s[l]= ' '; } else { s[n-1]=s[n]='?'; }
 
-         wblog(FL,"-%d- cell contraction @ %s",level,s);
+         vflag += 256; 
+         wblog(FL,"%2d) cell contraction @ %s",vflag>>8,s);
       }
 
       ra=A.rank(FL); rb=B.rank(FL); 
@@ -734,11 +739,10 @@ unsigned contractQS_itags(
       for (i=0; i<icb.len; ++i) if (icb[i]>=rb) wblog(FL,
          "ERR %s() index out of bounds (%d; %d)",PROG,icb[i],rb);
 
-      if (vflag) {
-         wblog(FL, " *     %-32s @ %s\nX  %-32s @ %s",
-         IT2STR(A), STR(ica), IT2STR(B), STR(icb));
+      if (vflag>1) { wblog(FL,
+         " *     %-37s @ %-5s %2d\nX  %-37s @ %-5s %2d",
+         IT2STR(A), STR(ica), ra, IT2STR(B), STR(icb), rb);
       }
-
       if (level==0 && k+1==len) {
          if (!A.qtype.permitsOM(ra+rb-ica.len-icb.len)) {
             wblog(FL,"TST %s() ~~~~~~~~~~~~~~~~~~~~~~~~",FCT);
@@ -754,7 +758,9 @@ unsigned contractQS_itags(
          wblog(FL,"ERR invalid cell-contraction (l=%d: k=%d/%d)\nhaving "
          "ic = %s <> %s, P=[%s]",level,k,len,STR(ica),STR(icb),STR(P));
       }
-      if (vflag) { wblog(FL, " *  =  %s",IT2STR(C)); }
+      if (vflag>1) {
+         wblog(FL, " *  =  %-45s %2d",IT2STR(C),ra+rb-2*ica.len);
+      }
 
       C.UnsetFlags();
       C.SkipZeroData(); 

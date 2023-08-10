@@ -137,8 +137,11 @@ void mexDisp(const mxArray *a, const char *vn) {
     Wb::CallMatlab(0, NULL, 1, (mxArray**) &a,"display");
 };
 
-void mexIssueWRN(const char *s) { char tag[32];
-    snprintf(tag,32,"Wb:MEX:%.24s",myname);
+void mexWRN(const char *s) {
+
+    unsigned n=32;  char tag[n];
+    snprintf(tag,n,"Wb:MEX:%.24s",myname);
+
     mexWarnMsgIdAndTxt(tag, s && s[0] ? s : "");
 };
 

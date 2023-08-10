@@ -683,8 +683,8 @@ unsigned itag_::to_str(char *sout, unsigned len,
 
    if (m>1 && l<len) {
       if (!(m&2)) 
-           { l+=snprintf(sout+l,len-l,"⏐%d",m>>2); } 
-      else { l+=snprintf(sout+l,len-l,"?%d",m>>1); } 
+           { l+=snprintf(sout+l,len-l,"|%d",m>>2); }
+      else { l+=snprintf(sout+l,len-l,"?%d",m>>1); }
    }
    if (m&1 && l<len) { sout[l++]=CC_ITAG; }
 
@@ -1160,14 +1160,15 @@ int iTags::getCtr(const char *F, int L,  const iTags &B,
          wblog(F_L,"WRN contract::match() check missing conj flag\n"
           "A: %-15s -> %s\n"
           "B: %-15s -> %s", STR_(this), STR(ia), STR(B), STR(ib));
-         mexIssueWRN("applying conj(A) flag");
+         mexWRN("applying conj(A) flag");
          ia.Conj(); 
       }
    }
-   else if (F || !L) wblog(FL, 
-     "ERR %s() empty set of matching itags (conj=%d/%d)\n%s <> %s",
-      FCT, ia.conj, ib.conj, STR_(this), STR(B)
-   ); 
+   else if (F || !L) { wblog(FL, 
+     "ERR %s() empty set of matching itags\n    %s%s\n X  %s%s", FCT,
+      STR_(this), ia.conj ? "*":"",
+      STR(B),     ib.conj ? "*":"" );
+   } 
 
    if (C) { C->init( len + B.len - 2*nc );
    if (C->len) { l=0; itag_ *c=C->data;

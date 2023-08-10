@@ -25,7 +25,7 @@
 
    void mexDisp(const mxArray *a, const char *vname=0);
 
-   void mexIssueWRN(const char *s);
+   void mexWRN(const char* s); 
 
    wbstring sprint_info(const mxArray *a); 
 

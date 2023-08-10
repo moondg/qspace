@@ -664,13 +664,13 @@ class QSpace {
         return isConsistent(NULL,0,r,level);
     };
 
-    bool isScalar() const {
-       unsigned r=rank(FL); if (r || DATA.len!=1) return 0;
-       else { 
-          const wbvector<size_t> &S = DATA[0]->SIZE;
-          if (QIDX.dim1!=1 || S[0]!=1 || S[1]!=1) wblog(FL,
-             "ERR QSpace::%s() inconsistency (%d; S=%dx%d)",
-          FCT,QIDX.dim1,S[0],S[1]);
+    bool isScalar() const { 
+       unsigned r=rank(FL);
+       if (r || DATA.len!=1) { return 0; }
+
+       if (QIDX.dim1!=1 || DATA[0]->numel()!=1) { 
+          wblog(FL,"ERR %s() inconsistency (%d; S=%s)",
+          FCT,QIDX.dim1,SSTR_(DATA[0]));
        }
        return 1;
     };

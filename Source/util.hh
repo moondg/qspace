@@ -150,6 +150,8 @@ namespace Wb {
       return findlast_sorted(F,L,d2,dd,m,N,M,lex);
    };
 
+   int dstrlen_utf8(const char *s);
+
    template <class T>
    wbstring bits(const T &x, char compact=1); 
 

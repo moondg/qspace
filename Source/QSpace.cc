@@ -1314,7 +1314,12 @@ bool QSpace<TQ,TD>::isEmpty() const {
    if (QIDX.dim1!=DATA.len) { 
       if (QIDX.dim1 || DATA.len>1) wblog(FL, 
          "ERR QSpace inconsistency (%d,%d)",QIDX.dim1, DATA.len);
-      return (QIDX.data==NULL);
+      return (!DATA.len); 
+   }
+   if (!QIDX.dim2) { 
+      if (DATA.len>1) wblog(FL,
+         "ERR QSpace inconsistency (%d,%d)",QIDX.dim1, DATA.len);
+      return (!DATA.len);
    }
 
    if (itags.len && QIDX.data) {
@@ -1329,7 +1334,7 @@ bool QSpace<TQ,TD>::isEmpty() const {
       SSTR(CGR),QIDX.dim1,qtype.len);
    }
 
-   return (QIDX.data==NULL);
+   return (!DATA.len); 
 };
 
 template <class TQ, class TD> inline
@@ -3519,8 +3524,16 @@ template <class TQ, class TD>
 QSpace<TQ,TD>& QSpace<TQ,TD>::plus_plain(
    const QSpace &B, QSpace &C, TD bfac) const {
 
-   if (B.isEmpty()) { C=*this;      return C; }
-   if (  isEmpty()) { C=B; C*=bfac; return C; }
+   if (!QIDX || !B.QIDX) {
+      if (B.isEmpty()) { C=*this;      return C; }
+      if (  isEmpty()) { C=B; C*=bfac; return C; }
+      if (!isScalar() || !B.isScalar()) {
+         this->info("A"); B.info("B");
+         wblog(FL,"ERR %s() invalid empty QSpaces !?",FCT);
+      }
+      C=*this; C.DATA[0]->data[0] += (bfac*B.DATA[0]->data[0]);
+      return C;
+   }
 
    unsigned i,j, n1=0, n2=0, n12=0; int i1,i2,np;
    unsigned cgflag=0; 
@@ -4021,8 +4034,7 @@ int QSpace<TQ,TD>::contract_getIdxSet(const char *F, int L,
       if (zflag>0) {
          if (!(ica.conj^icb.conj)) { 
             wblog(FL,"WRN contract() check missing conj-flag!?");
-            mexWarnMsgIdAndTxt(
-               "Wb:MEX:contractQS","applying conj(A) flag");
+            mexWRN("applying conj(A) flag");
             ((ctrIdx&)ica).Conj(); 
          }
       }
@@ -4089,7 +4101,7 @@ double QSpace<TQ,TD>::contract(const char *F, int L,
 
    if (QDIM!=B.QDIM) wblog(F_L,
       "ERR QSpace() QDIM mismatch (%d/%d)",QDIM,B.QDIM);
-   if (!P.isEmpty() && (!validPerm(P) || P.len!=rc)) wblog(FL,
+   if (!P.isEmpty() && (!validPerm(P) || P.len>rc)) wblog(FL,
       "ERR %s() invalid permutation [%s; %d]",FCT,STR(P),rc);
 
    if (qtype!=B.qtype) {

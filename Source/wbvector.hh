@@ -975,7 +975,7 @@ class wbvector {
     T max() const;
     T max(size_t *k) const; 
     T max(unsigned &k) const { T x; 
-      size_t l; x=max(&l); Wb::safeConvert(FL,l,k);
+      size_t l=0; x=max(&l); Wb::safeConvert(FL,l,k);
       return x;
     };
 
@@ -984,7 +984,7 @@ class wbvector {
     T min() const;
     T min(size_t *k) const; 
     T min(unsigned &k) const { T x; 
-      size_t l; x=min(&l); Wb::safeConvert(FL,l,k);
+      size_t l=0; x=min(&l); Wb::safeConvert(FL,l,k);
       return x;
     };
     T min_(T x) const;

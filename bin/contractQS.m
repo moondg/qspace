@@ -183,13 +183,14 @@
 %           based on shown itags. Internally, degenerate itags are
 %           frequently flagged by making use of signed characters,
 %           which makes them unique and thus differentiate them.
-%           When printed, flagged bits are formatted as <itag>⏐# using
-%           the utf character `⏐' to indicate that the subsequent
-%           number # is not part of the actual itag string.
+%           When printed, flagged itags are formatted as "<itag>|b"
+%           where the character `|' separates the actual itag string
+%           from number b (int8 decimal) which in its binary form
+%           reflects the internal flags.
 %
 %  Mixed usage of #2 and #1 is not possible.
-%  Usage #2 is the typically recommended way because autocontraction
-%  makes it far easier to perform entire contractions networks
+%  Usage #2 is typically recommended because auto-contraction
+%  makes it far easier to contract entire networks in a single go
 %  without having to manually track and specify index locations.
 %
 %  AW (C) May 2010-2023

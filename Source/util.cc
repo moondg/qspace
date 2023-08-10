@@ -640,6 +640,21 @@ int Wb::isUIntString(const char *s, char white) {
    }
 };
 
+int Wb::dstrlen_utf8(const char *s) {
+   int q=0; 
+   if (!s || !s[0]) { return q; }
+
+   for (int i=0, l=strlen(s); i<l && s[i]; ++i) {
+      if (s[i]<0 || s[i]>127) {
+         if ((s[i] & 0xE0) == 0xC0) { q+=1; } else 
+         if ((s[i] & 0xF0) == 0xE0) { q+=2; } else 
+         if ((s[i] & 0xF8) == 0xF0) { q+=3; } else 
+         { q=0; break; } 
+      }
+   }
+   return q;
+};
+
 template <class T>
 wbstring Wb::bits(const T &x, char compact) {
    wbstring s_; 

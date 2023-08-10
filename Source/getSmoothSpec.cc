@@ -133,7 +133,7 @@ void GET_SMOOTH_SPEC(
        wbindex I; wbMatrix<TS> ax;
        wbvector<TS> a2;
        unsigned gotdelta=0;
-       widx_t i; 
+       widx_t i=0; 
 
        wbMatrix<TS> a0(aa.dim1,2); 
 

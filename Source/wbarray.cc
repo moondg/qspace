@@ -1799,6 +1799,16 @@ int wbarray<T>::ExpandOM(
 
    if (isEmpty() ||  B.isEmpty()) { return (rval=-1); } 
 
+   if (!r) { unsigned R=MAX(SIZE.len,B.SIZE.len);
+      if (!isScalar() || !B.isScalar() || R>2) { wblog(FL,
+         "ERR %s() unexpected empy/scalar QSpaces (%s / %s, r=%d)",
+         FCT,SSTR_(this),SSTR(B),R);
+      }
+      if (  SIZE.len<R) {   appendSingletons(R); }
+      if (B.SIZE.len<R) { B.appendSingletons(R); }
+      return rval;
+   }
+
    if ((eq=SIZE.isEqual(B.SIZE))) {
      #ifndef WB_SKIP_ASSERT
       if (r<=2 && r<SIZE.len) { unsigned i=r; 
@@ -1819,9 +1829,11 @@ int wbarray<T>::ExpandOM(
 
    if (SIZE.len!=B.SIZE.len) {
       if (  SIZE.len==r) {   appendSingletons(R); rval|=1; } else
-      if (B.SIZE.len==r) { B.appendSingletons(R); rval|=2; } else
-      wblog(F_L,
-         "ERR %s() rank mismatch (r=%d/%d)",FCT,SIZE.len,B.SIZE.len);
+      if (B.SIZE.len==r) { B.appendSingletons(R); rval|=2; }
+      else {
+          wblog(F_L,"ERR %s() rank mismatch (r=%d/%d)",
+          FCT,SIZE.len,B.SIZE.len);
+      }
       eq=SIZE.isEqual(B.SIZE); 
    }
 

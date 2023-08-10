@@ -14,6 +14,10 @@ function [i,fname]=fexist(fname,tflag)
 
   i=0;
 
+  if nargin<2, tflag=0;
+  elseif isequal(tflag,'-t'), tflag=1;
+  elseif ~isnumeric(tflag), wbdie('invalid usage (tflag)'); end
+
   if exist(fname,'file')
      [p,n,x]=fileparts(fname); if isempty(p), p='.'; end
      if isbatch
@@ -22,8 +26,17 @@ function [i,fname]=fexist(fname,tflag)
         q=sprintf(['\n' ...
           '=> file %s exists.\n' ...
           '   overwrite? { [1y]|0n| new filename } '], repHome(fname));
-        if nargin<2 || ~tflag, q=input(q,'s'); inl(1);
-        else fprintf(1,'%s\n',q(1:findstr(q,'s.'))); q=0; return; end
+
+        if tflag
+           fprintf(1,'%s\n',q(1:findstr(q,'s.'))); q=0;
+           return
+        end
+
+        if wblog('--hl-check')
+           dfmt=[char(27) '[32m$1' char(27) '[0m'];
+           q=regexprep(q,'\[([^\]]*)\]',dfmt);
+        end
+        q=input(q,'s'); inl(1);
         if isempty(q); return; end
 
         if isequal(lower(q),'keyboard') || isequal(lower(q),'dbstack')

@@ -25,7 +25,7 @@ function wbdie(varargin)
   end
 
   if ~isempty(msg)
-     msg=[ regexprep([10 msg],[' *' 10 ' *'],[10 '   ERR ']), 10];
+     msg=[ regexprep([10 msg],[' *' 10],[10 '   ERR ']), 10];
      use_col=wblog('--hl-check');
      if use_col
         msg=regexprep(msg,'(ERR|WRN|invalid usage)([^\n\r]*)',...

@@ -757,8 +757,8 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
    if (Sout) {
       mxAddField2Scalar(FL, Sout, "svd",    SM.toMx());
       mxAddField2Scalar(FL, Sout, "stol",   numtoMx(stol));
-      mxAddField2Scalar(FL, Sout, "svd2tr", numtoMx(s2t)); 
-
+      mxAddField2Scalar(FL, Sout, "svd2tr", numtoMx(s2t/snorm2));
+      mxAddField2Scalar(FL, Sout, "sv2tot", numtoMx(snorm2)); 
       mxAddField2Scalar(FL, Sout, "sfac",   numtoMx(sfac));
       mxAddField2Scalar(FL, Sout, "Nkmin",  numtoMx(Nkmin));
       mxAddField2Scalar(FL, Sout, "Nkeep",  numtoMx(nk));
