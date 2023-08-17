@@ -168,9 +168,12 @@ function [HAM]=setup_mpo_full(HAM,varargin)
 
    wblog(' * ','Hamilton setup HS (L=%g, max.range=%g)',L,max(q(:,2)));
 
-   isb=isbatch(); s='      #terms  #ops  range     hcpl';
-   if isb, fprintf(1,'\n%s\n',s);
-   else printfc('\n\e[38;5;8m %s \e[0m\n',s); end
+   use_col=wblog('--hl-check');
+
+   s='      #terms  #ops  range     hcpl';
+   if use_col
+        fprintf(1,['\n' char(27) '[38;5;8m %s ' char(27) '[0m\n'],s);
+   else fprintf(1,'\n%s\n',s); end
 
    for i=1:size(q,1), ss={'',''};
       if     q(i,2)==1, ss{1}='onsite';
@@ -517,7 +520,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
    EM=QSpace(1,L);
 
    init_ops=1; Dmax=[]; NKEEP=[];
-   if isb || vflag, nl={'',''}; else nl={'   \r\\',' ...'}; end
+   if vflag, nl={'',''}; else nl={'   \r\\',' ...'}; end
 
    mpo=oez(1,:);
 

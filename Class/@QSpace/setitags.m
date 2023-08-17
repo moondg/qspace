@@ -63,8 +63,8 @@ function varargout=setitags(A,varargin)
 % Wb,Mar24,16 ; Wb,May28,18
 
   if nargin<2
-     helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
+     return
   end
 
   idx=[]; n=numel(varargin{1});
@@ -73,9 +73,9 @@ function varargout=setitags(A,varargin)
      && isnumeric(varargin{1}) && isnumeric(varargin{3})
      w=5;
 
-     ia=varargin{1}; ib=varargin{3};n=numel(ia);
-     if numel(ib)~=n
-        wbdie('invalid usage (length mismatch (%g/%g)',n,numel(ib));
+     ia=varargin{1}; ib=varargin{3}; n=numel(ia);
+     if numel(ib)~=n, wbdie(...
+       'invalid usage (index length mismatch %g/%g)',n,numel(ib));
      end
 
      tB=varargin{2}.info.itags; tB=regexprep(tB,'\**$','');
@@ -90,10 +90,14 @@ function varargout=setitags(A,varargin)
 
   elseif ischar(varargin{1}), q=varargin{1};
      if ~isempty(regexp(q,'^-A'))
-        w=3;
+        midx=[]; w=3;
 
-        if nargin~=3 || ~isnumber(varargin{2})
+        if nargin<3 || ~isnumber(varargin{2})
            wbdie('invalid usage (missing or invalid site index k)');
+        elseif nargin>3
+           getopt('init',varargin(3:end));
+              midx=getopt('--mark',[]);
+           getopt('check_error');
         end
         k=varargin{2}; fmt='%02g'; q_=q;
 
@@ -121,6 +125,12 @@ function varargout=setitags(A,varargin)
 
         fmt=['%s' fmt];
         for i=1:3, t{1,i}=sprintf(fmt,t{1,i},t{2,i}); end
+
+        if ~isempty(midx)
+            if any(idx>3) || any(diff(sort(idx)<1))
+               wbdie('invalid usage (invalid --mark index)'); end
+            for i=midx, t{1,i}=[ t{1,i} '''' ]; end
+        end
         tt=t(1,:);
 
         idx=1:3; n=3;

@@ -173,15 +173,15 @@ ih22=inset({'SE',[0 0.15]},'scale',[1.2 1.2]);
 
   i=find(n1>60); m=numel(unique(n1(i)));
   if m>=3
-     [p,mu]=polyfit(x(i),y(i),2);
+     [p,m_]=polyfit(x(i),y(i),2);
 
      xx=linspace(0,max(x(i)));
 
      set(h,'Marker','none');
-     h=plot(xx,polyval(p,xx,mu),'r');
+     h=plot(xx,polyval(p,xx,m_),'r');
      h=plot(x(i),y(i),'o'); sms(h,4);
 
-     title2('S_{\infty}=%.4g',polyval(p,0,mu));
+     title2('S_{\infty}=%.4g',polyval(p,0,m_));
   end
 
   semilogx(x(end),y(end),'*','Color',getcolor(1));

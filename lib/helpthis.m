@@ -1,6 +1,20 @@
-function helpthis
-% function helpthis
+function hflag=helpthis(nargs_out,varargin)
+% function q=helpthis([nargs_out, varargin{:}])
+%
+%    Show help for the caller function.
+%    If this is called via helpthis(nargout, varargin{:})
+%    then the help is only shown for -? or -h usage,
+%    in which case hflag=1 is returned (hflag=0 otherwise).
+%
 % Wb,Feb23,11
+
+  if nargin, hflag=true;
+     if nargs_out || nargin>2, hflag=false;
+     elseif nargin==2 || ~ischar(varargin{1}), hflag=false;
+     elseif isempty(regexp(varargin{1},'^(-[h?]|--help)$')), hflag=false;
+     end
+     if ~hflag, return; end
+  end
 
   I=dbstack(1,'-completenames');
   n=numel(I);

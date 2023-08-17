@@ -35,14 +35,16 @@ int getIdentityCD(
 
 void check_itag_markerA(
    unsigned nargin, const mxArray** argin,
-   int &l, wbvector< wbstring > &t3s, char id, const wbindex &ic
+   int &l, 
+   wbvector< wbstring > &t3s, 
+   char id, const wbindex &ic
 ) {
    if (unsigned(l)>=nargin || !mxIsChar(argin[l])) return;
 
    unsigned j=2; char s[16]; s[0]=id;
 
    if (mxGetString(argin[l],s+2,14)) wblog(FL,"ERR %s() "
-      "invalid input string option (arg#%d out of bounds)",myname,l+1);
+      "input string (arg#%d) out of bounds)",myname,l+1);
    if (strncmp(s+2,"-A",2)) return;
 
    if (ic.len!=1) wblog(FL,"ERR itags() "
@@ -55,23 +57,30 @@ void check_itag_markerA(
       "ERR invalid usage (itag %d already set, having %s / %s)",
       j+1, s+2, t3s.len>j ? t3s[j].data : "(null)");
 
-   t3s[j]=s; ++l;
+   t3s[j]=s; ++l; 
 };
 
 void check_itag_markers(
    const char *F, int L, unsigned nargin, const mxArray** argin,
-   int &l, wbvector< wbstring > &t3s, char id
+   int &l, 
+   wbvector< wbstring > &t3s, char id
 ){
    int i=0, j=0; char s[16]; s[0]=id;
 
    while (unsigned(l)<nargin && mxIsChar(argin[l])) {
       if (mxGetString(argin[l],s+1,15)) {
          if (!mxIsChar(argin[l])) wblog(F_L,
-         "ERR %s() invalid usage (%s)",myname,mxGetClassName(argin[l]));
-         else wblog(F_L,"ERR itags() "
-         "invalid usage (string out of bounds (arg#%d; 16)",l+1);
+            "ERR %s() invalid input option of type %s (arg#%d)",
+            myname, mxGetClassName(argin[l]), l+1);
+         else { wblog(F_L,
+            "ERR input itag string out of bounds (arg#%d; 16)",l+1);
+         }
       }
-
+      else if (!s[1] || !s[2] || !s[3]) {
+          if (F) wblog(FL,
+             "ERR invalid itags() option '%s' (arg#%d)",s+1,l+1);
+          break;
+      }
       i=s[2]-'1'; j=s[4]-'1'; 
 
       if (s[1]!='#' || s[3]!=':' || isdigit(s[5]) ||
@@ -93,9 +102,10 @@ template <class TQ, class TA, class TB, class TC>
 void set_ctags(
    const char *F, int L, QSpace<TQ,TC> &C,
    const wbvector< QSpace<TQ,TA> > &A,
-   const wbvector< QSpace<TQ,TB> > &B, const wbvector< wbstring > &t3s
+   const wbvector< QSpace<TQ,TB> > &B,
+   wbvector< wbstring > &t3s
 ){
-   unsigned i=0,j=-1,k=0,l; const char *s; char c; itag_ t;
+   unsigned i,j=-1,k=0,l; char *s; char c; itag_ t;
    if (t3s.len!=3) wblog(F_L,"ERR %s() got len=%d !?",myname,t3s.len);
 
    for (; k<3; ++k) { if (t3s[k]) {
@@ -107,56 +117,78 @@ void set_ctags(
       if (c=='B' && B.len!=1) wblog(F_L,"ERR %s() "
          "#n.$m.. options only with single QSpace (B.len=%d)",myname,B.len);
 
-      if (l>2 && !strncmp(s+2,"-A",2)) {
-         itag_ t2; i=s[1]-'1'; j=2;
+      if (c=='C') { 
+         if (s[1]=='-') {  
+            if (!strncmp(s+1,"-m:",3)) {
+               unsigned n=strlen(s+1); 
+               char cflag, mflag;
+
+               for (i=n; i && s[i]==CC_ITAG; --i) { s[i]=0; } 
+               cflag = ((n-i) % 2);
+               for (n=i; i && s[i]==QS_MARK_DUAL; --i) { s[i]=0; } 
+               mflag = ((n-i + (cflag ? 0 : 1)) % 2);
+
+               t.init(F_L,s+4);
+               if (mflag) { t.MarkDual(); }
+            }
+            else { wblog(FL,
+              "ERR %s() invalid itag option '%s' (arg#%d)",FCT,s+1,l+1);
+            }
+         }
+         else {
+            if (s[1] && !isalnum(s[1])) wblog(FL,
+               "ERR %s() invalid itag option '%s'",FCT,s);
+            t.init(F_L,s+1);
+         }
+         if (C.itags.len==3) { j=2; } 
+      }
+      else if (l>2 && !strncmp(s+2,"-A",2)) {
+         itag_ tloc; i=s[1]-'1'; j=2;
          if (c=='A') {
             if (!A[0].isAtensor() || i>1) wblog(FL,
                "ERR itags() invalid A-tensor (%c: %s; %d)",c,s+2,i+1);
             if (i==0)        
                  { t=A[0].itags[1]; }
-            else { t=A[0].itags[0]; }; t2=A[0].itags[2];
+            else { t=A[0].itags[0]; }; tloc=A[0].itags[2];
          }
-         else if (c=='A') {
+         else if (c=='B') {
             if (!B[0].isAtensor() || i>1) wblog(FL,
                "ERR itags() invalid A-tensor (%c: %s; %d)",c,s+2,i+1);
             if (i==0)        
                  { t=B[0].itags[1]; }
-            else { t=B[0].itags[0]; }; t2=B[0].itags[2];
+            else { t=B[0].itags[0]; }; tloc=B[0].itags[2];
          }
          else wblog(F_L,"ERR %s() invalid c=%c<%d>",myname,c,c);
 
-         C.SetTag(2,t2); 
+         C.SetTag(2,tloc); 
 
-         if (s[4]) { char sx[16];
+         if (s[4]) {
             if (s[4]!=':') wblog(FL,"ERR %s() invalid option `%s'",myname,s+2);
-            if (s[5]) {
+            if (s[5]) { char sx[16]; 
                snprintf(sx,16,"%s%s",STR(t.deConj()),s+5);
                t.init(FL,sx);
             }
          }
       }
       else if (s[1]=='#') {
-         if (c=='A' || c=='B') { i=s[2]-'1'; j=s[4]-'1'; }
-         else wblog(F_L,"ERR %s() invalid c=%c<%d> (%s)",myname,c,c,s);
+         if ((c!='A' && c!='B') || !s[2] || !s[3]) wblog(F_L,
+            "ERR %s() invalid c=%c<%d> (%s)",myname,c,c,s);
+         i=s[2]-'1'; j=s[4]-'1';
 
          if ((c=='A' && i>=A[0].itags.len) ||
              (c=='B' && i>=B[0].itags.len)) wblog(FL,
             "ERR itags() out of bounds (%c: %s @ %d)",c,s+1,i+1);
 
          if (c=='A')
-              t=A[0].itags[i];
-         else t=B[0].itags[i];
+              { t=A[0].itags[i]; }
+         else { t=B[0].itags[i]; }
 
-         if (s[5]) {
-            char sx[16]; snprintf(sx,16,"%s%s",STR(t.deConj()),s+5);
+         if (s[5]) { char sx[16];
+            snprintf(sx,16,"%s%s",STR(t.deConj()),s+5); 
             t.init(FL,sx);
          }
       }
-      else {
-         if (c!='C') wblog(FL,"ERR itags() invalid usage `%s' (%d)",s,k);
-         if (C.itags.len==3) { j=2; }
-         t.init(F_L,s+1);
-      }
+      else wblog(FL,"ERR itags() invalid usage `%s' (%d)",s,k);
 
       if (C.itags.len==3) { 
          if (j>=C.itags.len) wblog(F_L,
@@ -165,10 +197,9 @@ void set_ctags(
             "ERR %s() invalid usage (%s / k=%d)",myname,s+1,k);
          C.SetTag(j+1,t); 
       }
-      else {
-         if (c!='C') wblog(FL,"WRN %s() unexpected usage (%s)",FCT,s);
-         C.SetTags(t); 
-      }
+      else if (c=='C')
+           { C.SetTags(t); } 
+      else { wblog(FL,"WRN %s() unexpected usage (%s)",FCT,s); }
    }}
 };
 
@@ -225,7 +256,7 @@ void mexFunction(
       "ERR invalid input operator A (arg #%d)%N%N%s",l+1,str);
 
    if (l<nargin && Mx::IsIndex(argin[l])) {
-      Ia.init(argin[l++],1);
+      Ia.init(argin[l++],1); 
       check_itag_markerA(nargin,argin,l,t3s,'A',Ia);
    }
 
@@ -257,13 +288,12 @@ void mexFunction(
          if (!strcmp(s,"-q")) { --vflag; } else
          if (!strcmp(s,"-0")) { zflag+= 1; } else
          if (!strcmp(s,"-z")) { zflag+=16; } else 
-         if (s[0] && !isalnum(s[0])) { 
-            wblog(FL,"ERR %s() invalid option '%s'",FCT,s);
-         }
-         else if (!t3s[2]) {
-            char s3[16]; itag_ t; t.init(FL,argin[l]).deConj();
-            snprintf(s3,16,"C%s",STR(t));
-            t3s[2]=s3;
+         if (!t3s[2]) {
+            char sx[16]; sx[0]='C'; sx[1]=0;
+
+            if (mxGetString(argin[l],sx+1,15)) { sx[15]=0; wblog(FL,
+               "ERR invalid itag option '%s' (arg#%d)",sx,l+1); }
+            t3s[2]=sx;
          }
          else if (!P.len && isValidPerm(s)>0) {
             P.initStr(FL,s);

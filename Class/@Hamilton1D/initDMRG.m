@@ -128,7 +128,7 @@ function [HAM,Iout]=initDMRG(HAM,varargin)
         end
 
         Xc(il).AK=setitags(Al,'-A',l);
-        Xc(ir).AK=setitags(Ar,'-A',r);
+        Xc(ir).AK=setitags(Ar,'-A',r,'--mark',[1 2]);
 
         Xc(il)=updateHK(HAM,l,'>>',Xc(il));
         Xc(ir)=updateHK(HAM,r,'<<',Xc(ir));
@@ -199,7 +199,7 @@ function [HAM,Iout]=initDMRG(HAM,varargin)
 
         q=itags2int(Xr.AK);
         if q(3)~=r, wbdie('unexpected AK data'); end
-        Xr.AK=setitags(Xr.AK,'-A',r);
+        Xr.AK=setitags(Xr.AK,'-A',r,'--mark',[1 2]);
         Xr=updateHK(HAM,r,'<<',Xr);
 
         Xc(M2+2)=Xr;

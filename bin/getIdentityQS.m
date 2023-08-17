@@ -26,7 +26,7 @@
 %
 %   '-z'  same as '-0' but without flagging the itag in E @ index 2.
 %
-%  Usage 2: A=getIdentityQS(A [,i1 [,at]], B [,i2 [,bt] itag, perm]);
+%  Usage 2: A=getIdentityQS(A [,i1 [,ta]], B [,i2 [,tb], t3, perm]);
 %
 %     get tensor product space of input spaces defined by
 %     A and B. If i[12] is not specified, rank-2 objects
@@ -34,21 +34,41 @@
 %
 %     Default index order of the output space is (1,2,12*)
 %     with the itags of A and B inherited if present.
-%     An <itag> name for the combined output space (dim3) may be
-%     specified (conj flag if present, will be ignored).
+%     An itag t3 for the combined output space (dim3) may be
+%     specified. By default, a conj flag if present in t3
+%     will be ignored, with the following exception:
+%
+%     [08/2023] When t3 is written in the flagged format '...' -> '-m:...'
+%     this respects a combination of the trailing marker (') and
+%     conj flag (*) in the following sense: when inserting an identity
+%     the fused space may already refer to a particular existing itag
+%     for a given leg from the perspective of the rank-3 identity
+%     A-tensor generated here. If t3 already has conj flag, it already
+%     reflects an outgoing index, and hence can be kept. However,
+%     if t3 does not have a trailing conj flag, then the identity
+%     generated here effectively reverts the arrow and in this sense,
+%     rather refers to the dual space. In order to reflect this in the
+%     fused space, the itag t3 will `marked' as dual state space
+%     which by QSpace convention is indicated by a trailing prime (')
+%     as part of the itag, hence before the conj flag. This acts
+%     as a toggle, i.e., if a trailing prime is already present
+%     in t3, then it is removed instead.
+%
+%  identity generated here effectively reverts the
 %
 %     [06/01/2019] In addition, for an input A-tensor with LRs
 %     index order convention, its itags may be inherited to C
-%     by specifying <at> xor <bt> (see usage above) in the format
+%     by specifying <ta> xor <tb> (see usage above) in the format
 %     '-A[:..]' where `..' indicates extra characters to be
-%     catenated at the end of the itag for the fused index.
+%     concatenated at the end of the itag for the *un*fused [LR]
+%     index in A or B for <ta> xor <tb>, respectively.
 %
 %     For example, consider an A-tensor with itags {K01,K02*,s02},
 %     and E a local identity operator without itags; then in order
-%     to ensure a complete local state space, one may write
+%     to ensure a complete local state space, one may use
 %     >> getIdentityQS(A,1,'-A:~',E)
 %     which generates a QSpace with itags {K01,s02,K02~*}.
-%     K01 is inherited from A via `A,1'; the remaining two itags
+%     K01 is inherited from A via `A@1'; the remaining two itags
 %     are derived from the remaining two itags in A;
 %     therefore `A,i' must have i=1 or 2 with in LRs index order.
 %     conj-flags are properly adjusted as needed.

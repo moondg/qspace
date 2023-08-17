@@ -9,6 +9,7 @@ function banner(varargin)
 %       4   least flashy
 %       5   color coded
 %      '%'  show as matlab comment with leading % (otherwise similar to 4)
+%    'box'  draw utf8 box around text shown across entire terminal with
 %
 % NB! info string is also written to window title
 
@@ -35,7 +36,7 @@ function banner(varargin)
   elseif nargs, sout=varargin{1};
   else sout=''; end
 
-  L=getcols(); if L<60 || L>99, L=80; end
+  L=getcols(); if L<60 || L>160, L=80; end
 
   if isequal(wtype,5)
      nl=char(10); 
@@ -81,13 +82,21 @@ function banner(varargin)
       lsep=repmat('-',1,L-2);
       fprintf(1,'\n%% %s\n%% ',lsep);
       lsep=['%% ' lsep '\n\n'];
-    case {'box','Box'}
-      if isempty(regexp(wtype,'[BOX]')), use_box=1;
+    case {'box','Box','BOX'}
+      if     isequal(wtype,'BOX'), use_box=3; wtype='box';
+      elseif isequal(wtype,'Box'), use_box=2; wtype='box';
+      else                         use_box=1; end
+      if use_box==1
            bb={'─','│','┌' '┐','└','┘'};
-      else bb={'━','┃','┏','┓','┗','┛'}; use_box=2; wtype='box';
+      else bb={'━','┃','┏','┓','┗','┛'}; end
+
+      if use_box>2, S=dbstack(); 
+         if numel(S)>1, S=S(2);
+            sout=[sprintf('%s:%d\n', S.file,S.line), sout];
+         end
       end
 
-      lsep=repmat(bb{1},1,L-3);
+      lsep=repmat(bb{1},1,L-2);
       fprintf(1,['\n' bb{3} lsep bb{4} '\n']);
       istr={[bb{2} ' '],bb{2}};
       lsep=[bb{5} lsep bb{6} '\n\n'];
@@ -106,8 +115,15 @@ function banner(varargin)
   elseif use_box
      sout=regexprep(sout,'\\n\>\s*','\n');
      ss=textscan(sout,'%s','whitespace','\n'); ss=ss{1};
-     fmt=[istr{1} sprintf('%%-%ds',L-4) istr{2} '\n'];
-     for i=1:numel(ss), fprintf(1,fmt,ss{i}); end
+
+     fmt0=[istr{1} sprintf('%%-%ds',L-3) istr{2} '\n'];
+
+     for i=1:numel(ss), [~,dn]=strlen(ss{i});
+        if dn
+             fmt=[istr{1} sprintf('%%-%ds',L-3+dn) istr{2} '\n'];
+        else fmt=fmt0; end
+        fprintf(1,fmt,ss{i});
+     end
   else
      sout=regexprep(sout,'(\n|\\n\>)',['\n' istr]);
      fprintf(1,[istr '%s\n'],sout);

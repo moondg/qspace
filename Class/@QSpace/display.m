@@ -16,12 +16,16 @@ function display(A,varargin)
 %
 % Wb,Mar01,08
 
-  getopt('init',varargin);
+  getopt('INIT',varargin);
      m  = getopt('m',[6 2 2]);
      nm = getopt('nm','');
 
+     vflag=1; cflag=0;
+
      if getopt('-v'), vflag=2;
-     elseif getopt('-c'), vflag=0; else vflag=1; end
+     elseif getopt('-c'), vflag=0;
+     elseif getopt('-C'), vflag=0;   cflag=2;
+     end
 
      aflag=getopt('-a'); if ~aflag,
      aflag=getopt('-f'); end
@@ -88,8 +92,10 @@ function display(A,varargin)
      else
         s={''};
      end
-     display_1(A,m,Eflag,vflag,s{:});
-  elseif nA>1
+     if cflag<2
+          display_1(A,m,Eflag,vflag,s{:});
+     else info(A,s{:},'-C'); end
+elseif nA>1
      n2=2;
      if vflag && nA>n2, fprintf(1,'\n'); end
      ise=zeros(1,nA); ocr=zeros(1,nA); rr=zeros(1,nA); nl2=nl;
@@ -117,9 +123,9 @@ function display(A,varargin)
            if ~bitand(vflag,4) || isempty(nm), s=[s '. '];
            else s=[nm '(' s ') = ']; end
         end
-
         if ~ise(i)
-           if bitand(vflag,2+4) || vflag && nA<=n2
+           if cflag<2 && ...
+               (bitand(vflag,2+4) || vflag && nA<=n2)
                 display_1(A(i),m,Eflag,vflag,s);
            else info(A(i),s,'-C',oc{:},rmax); end
         else fprintf(1,[nl2 '%s(empty)\n'],s); end

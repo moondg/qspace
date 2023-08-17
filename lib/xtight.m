@@ -74,6 +74,7 @@ function xl=xtight(varargin)
 end
 
 function xl=xlim__(ah,xl,varargin)
+   if diff(xl)==0, return; end
    xr=round(xl); e=abs(xr-xl)/norm(diff(xl));
    i=find(e<0.025); if ~isempty(i), xl(i)=xr(i); end
    set(ah,'XLim',xl,varargin{:});

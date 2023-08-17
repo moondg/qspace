@@ -5,7 +5,7 @@ function isf=isFermOp(HAM,varargin)
 %    returning non-zero for fermionic operators, and zero otherwise
 %
 %    NB! the fermionic character is determined based on HAM.oez
-%    hence this is only intendend for local operators.
+%    hence this is only intended for local operators.
 %
 % Wb,Jun05,19
 
@@ -21,21 +21,24 @@ function isf=isFermOp(HAM,varargin)
        'not yet implemented for different site-types (stype)'); end
      Z=Z.op;
 
-     E2=getIdentity(Z,Z); E2=setitags(E2,{'a','b','ab'});
-     Z2=contract(E2,'!3*',{Z,'-op:b',{Z,'-op:a',E2}});
+   % create space of all possible local operators
+   % then apply Z on local indices shows parity on operator index
+   % (computing parity operator for the tensor product
+   % of two sites may lead to different result, since dual space
+   % needs to be included for one site, instead) // Wb,Aug11,23
+     Q=getIdentity(Z,'-0');
+     E2=contract(getIdentity(Q,1,Q,2),'!1',Q,'*',[1 3 2]);
+     E2=setitags(E2,{'a','b','ab'});
+     Z2=contract(Z,'-op:a',{Z,'-op:b',E2});
 
-     dd=Z2.data;
-     for i=1:numel(dd), 
-        z=dd{i}; dd{i}=[ z(1), norm(z-z(1)*eye(size(z))) ];
+     z2=Z2.data;
+     for i=1:numel(z2), z=z2{i}(:); j=find(abs(z)>1E-12);
+        s=unique(sign(z(j)));
+        if numel(s)~=1, wbdie('failed to determine sign of parity'); end
+        z2{i}=s;
      end
-     dd=cat(1,dd{:}); e=[ norm(dd(:,2)), norm(abs(dd(:,1))-1) ];
-     if any(e>1E-12), wbdie('unexpected parity operator'); end
-
-     [e,I,D]=uniquerows(round(dd(:,1)));
-     if ~isequal(e,[-1;1]), wbdie('unexpected parity operator'); end
-     Q2=Z2.Q{1};
-
-     fop=zeros(size(Q2,1),1); fop(I{1})=1;
+     z2=cat(1,z2{:}); fop=(z2<0);
+     Q2=Z2.Q{3};
 
      for k=1:nargs, Ak=varargin{k}; fk=nan(size(Ak)); nk=numel(Ak);
         for i=1:nk, Aki=Ak(i);

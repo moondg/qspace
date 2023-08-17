@@ -93,14 +93,14 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
 
   if ndav>0 && ~bupd
      t=regexprep(getitags(X1.AK,2),tpat,'E$1l');
-     E1=QSpace(permuteQS(getIdentityQS(X1.AK,1,Ek1,t),[1 3 2]));
+     E1=QSpace(permuteQS(getIdentityQS(X1.AK,1,Ek1,['-m:' t]),[1 3 2]));
      A1=QSpace(contractQS(E1,'*',X1.AK));
 
      X1.AK=E1;
      X1=updateHK(HAM,k1,'>>',X1);
 
      t=regexprep(getitags(X2.AK,1),tpat,'E$1r');
-     E2=QSpace(permuteQS(getIdentityQS(X2.AK,2,Ek2,t),[3 1 2]));
+     E2=QSpace(permuteQS(getIdentityQS(X2.AK,2,Ek2,['-m:' t]),[3 1 2]));
      A2=QSpace(contractQS(E2,'*',X2.AK));
 
      X2.AK=E2;
@@ -333,15 +333,14 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
            [Uk,Ek]=eig(Hk);
 
            Psi=QSpace;
+
+           it3=(rank(Ak(1))==3); 
+
            for j=1:l
               Psi=Psi+Uk(j,1)*Ak(j);
-              if j==1 && NPsi2>1
-                 Psi=setitags(Psi,'',3);
-              end
+              if j==1 && it3, Psi=setitags(Psi,'',3); end
            end
-           if NPsi2>1
-              Psi=setitags(Psi,3,Psi0,3);
-           end
+           if it3, Psi=setitags(Psi,3,Psi0,3); end
         else
            [ee,Ig]=eigQS_dav(H,NPsi1,G0);
 

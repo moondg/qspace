@@ -2,7 +2,7 @@ function [im,nn,ii]=findstrc(ss,q,varargin)
 % function [im,nn,ii]=findstrc(ss,q [,opts])
 %
 %    Find string q in cell string ss based on regexp[i].
-%    The eturned data is:
+%    The returned data is:
 % 
 %     im  index to cells in ss that match the input pattern q
 %     nn  number of matches for each cell
