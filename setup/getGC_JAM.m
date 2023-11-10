@@ -26,12 +26,12 @@ function [gc,I,lh]=getGC_JAM(om,G,F,varargin)
 
   if nargin<3
      eval(['help ' mfilename]);
-     if nargin || nargout, error('Wb:ERR','invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   if isempty(param) || ~isfield(param,'J') || ~isfield(param,'Gamma')
      eval(['help ' mfilename]);
-     error('Wb:ERR','field J and Gamma required in param')
+     wbdie('field J and Gamma required in param')
   end
 
   structexp(param)

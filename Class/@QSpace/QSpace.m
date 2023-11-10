@@ -72,7 +72,10 @@ function [A,varargout] = QSpace(varargin)
         q(i,:)=[isnumeric(varargin{i}), numel(varargin{i})];
         if ~q(i), i=-1; break; end
      end
-     if i==nargin && (i==1 || all(q(:,2)==1))
+     if i==nargin && (i==1 || all(q(:,2)<=1))
+        i=find(~q(:,2)); if ~isempty(i), wbdie(...
+          'invalid usage (arg #%d contains empty value for dimension)',i(1));
+        end
         d=[varargin{:}];
         A=repmat(class(get_struct(),'QSpace'),d);
         return

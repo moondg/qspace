@@ -27,11 +27,11 @@ function [h,th]=ymark(varargin)
      xl1  =getopt('xl',[]);
      zd   =getopt('zd',[]);
      y0   =getopt('-0');
-  varargin=getopt('get_remaining'); narg=numel(varargin);
+  args=getopt('get_remaining'); nargs=numel(args);
 
   if rmall
      delete(findall(gca,'tag','ymark'));
-     if ~narg, return; end
+     if ~nargs, return; end
   end
 
   xl=xlim; gotlog=isequal(get(gca,'XScale'),'log');
@@ -49,31 +49,31 @@ function [h,th]=ymark(varargin)
 
   if fxall
      for m=findall(gca,'type','line','tag','ymark')', set(m,'XData',xl); end
-     if ~narg, return; end
+     if ~nargs, return; end
   end
 
   if y0, y=ylim; if diff(sign(y))==2
-     if isempty(varargin)
-          varargin={0};
-     elseif isnumeric(varargin{1})
-          varargin{1}=[varargin{1}, 0];
-     else varargin=[0, varargin];
+     if isempty(args)
+          args={0};
+     elseif isnumeric(args{1})
+          args{1}=[args{1}, 0];
+     else args=[0, args];
      end
-     if numel(varargin{1})==1, bflag=1; end
-     if numel(varargin)<2
-        varargin=[varargin,{'Color',[.9 .9 .9], 'LineWidth',0.75}];
+     if numel(args{1})==1, bflag=1; end
+     if numel(args)<2
+        args=[args,{'Color',[.9 .9 .9], 'LineWidth',0.75}];
      end
   end, end
 
-  if isempty(varargin), return; end
-  if isnumeric(varargin{1})
-     y=varargin{1}; varargin(1)=[];
+  if isempty(args), return; end
+  if isnumeric(args{1})
+     y=args{1}; args(1)=[];
   end
 
   hold on
 
-  if mod(numel(varargin),2)
-       fmt=varargin(1); varargin(1)=[];
+  if mod(numel(args),2)
+       fmt=args(1); args(1)=[];
   else fmt={'Color', [1  1 .7],'LineW',4}; bflag=1; end
 
   if fgflg, bflag=0; end
@@ -86,8 +86,8 @@ function [h,th]=ymark(varargin)
      set(h,'ZData',repmat(-0.1,size(get(h,'XData'))));
   end
 
-  if ~isempty(varargin)
-  set(h,varargin{:}); end
+  if ~isempty(args)
+  set(h,args{:}); end
 
   if ~isempty(istr)
      xt=0.12; n=numel(y); th=zeros(n,1);

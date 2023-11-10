@@ -19,12 +19,12 @@ function [D,DD]=dsize(A,varargin)
   if narg==1 && isnumber(varargin{1}), k=varargin{1};
   elseif narg
      eval(['help ' mfilename]);
-     if nargin || nargout, error('Wb:ERR','invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   if nargin<1
      eval(['help ' mfilename]);
-     if nargin || nargout, error('Wb:ERR','invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   if ~isa(A,'QSpace')
@@ -35,8 +35,8 @@ function [D,DD]=dsize(A,varargin)
   end
 
   if dflag
-     if numel(A)~=1, error('Wb:ERR',...
-       'invalid usage (scalar A expected with -d)'); end
+     if numel(A)~=1
+        wbdie('invalid usage (scalar A expected with -d)'); end
 
      r=numel(A.Q); if isempty(k), k=1:r; end
      for i=1:length(k)

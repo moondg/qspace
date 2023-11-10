@@ -30,8 +30,8 @@ function B=transform(varargin)
         end
      end
      if save2caller
-        s=inputname(k); if isempty(s), error('Wb:ERR',...
-         '\n   ERR failed to obtain variable name in caller spce'); end
+        s=inputname(k); if isempty(s)
+          wbdie('failed to obtain variable name in caller spce'); end
         assignin('caller',s,B);
      end
   end

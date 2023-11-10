@@ -53,7 +53,7 @@ void EIGEN_SYM_QS(
     const char *F, int L, QSpace<gTQ,TA> &A,
     int nargout, mxArray *argout[], int nargin, const mxArray *argin[]
 ){
-    int Nk,Nkeep=-1; char vflag=0, Rflag=0; unsigned r;
+    int Nk,Nkeep=-1; char vflag=0, Rflag=0, mKD=0; unsigned r;
     double Etrunc=0; 
     double deps=0;   
     char cgflag=(A.gotCGS(F_L)>0);
@@ -79,21 +79,23 @@ void EIGEN_SYM_QS(
 
        vflag=opts.getOpt("-v");
 
+       mKD=opts.getOpt("--mKD"); 
+
        opts.checkAnyLeft(); 
     }
 
     Nk=Nkeep;
     if (!Rflag) {
        if (deps) { 
-          A.EigenSymmetric(Ak,At,Ek,Et,Etot,DD,Nk,Etrunc, 
-          NULL,wbperm(),deps,-1.,-1);
+          A.EigenSymmetric(Ak,At,Ek,Et,Etot,DD,Nk,Etrunc,NULL,mKD,
+          wbperm(),deps,-1.,-1);
        }
        else {
-          A.EigenSymmetric(Ak,At,Ek,Et,Etot,DD,Nk,Etrunc);
+          A.EigenSymmetric(Ak,At,Ek,Et,Etot,DD,Nk,Etrunc,NULL,mKD);
        }
     }
-    else{ A.EigenSymmetric(Ak,At,Ek,Et,Etot,DD,Nk,Etrunc,
-         NULL,wbperm(),0,0,-1, "desc");
+    else { A.EigenSymmetric(Ak,At,Ek,Et,Etot,DD,Nk,Etrunc,NULL,mKD,
+         wbperm(),0,0,-1,"desc"); 
     }
 
     if (vflag && Nkeep>=0) wblog(FL,

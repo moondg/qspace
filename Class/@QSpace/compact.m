@@ -5,7 +5,7 @@ function A=compact(A)
   if isempty(A.Q), return, end
 
   r=length(A.Q);
-  if mod(r,2), error('Wb:ERR','invalid usage (rank=%g)',r); end
+  if mod(r,2), wbdie('invalid usage (rank=%g)',r); end
 
 wblog('WRN','double check this');
 

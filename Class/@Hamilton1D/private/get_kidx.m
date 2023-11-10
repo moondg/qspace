@@ -15,8 +15,10 @@ function k=get_kidx(itags)
      itags=itags.itags;
   elseif ischar(itags), itags={itags};
   elseif isa(itags,'QSpace') && numel(itags)==1
-     itags=itags.info.itags;
-  elseif ~iscell(itags) || isempty(itags) || ~ischar(itags{1})
+     if ~isempty(itags.info)
+          itags=itags.info.itags;
+     else itags={}; end
+  elseif ~iscell(itags) || ~isempty(itags) && ~ischar(itags{1})
      wbdie('got invalid input itags'); 
   end
 

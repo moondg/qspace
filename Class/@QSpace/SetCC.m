@@ -11,7 +11,7 @@ function [A,t]=SetCC(A,idx)
 
   if ~n
      if ~isempty(A)
-        error('Wb:ERR','\n   ERR invalid empty QSpace'); end
+        wbdie('invalid empty QSpace'); end
      t={};
      return
   end
@@ -20,8 +20,8 @@ function [A,t]=SetCC(A,idx)
 
   for k=1:numel(A)
      [i,t]=gotITags(A(k));
-     if n>i || max(idx)>i, error('Wb:ERR',...
-       '\n   ERR input index set out of bounds or not unique');
+     if n>i || max(idx)>i
+        wbdie('input index set out of bounds or not unique');
      end
      for j=1:n, i=idx(j);
         if ~isempty(t{i}) && t{i}(end)==c
@@ -40,7 +40,7 @@ function [A,t]=SetCC(A,idx)
         for i=1:numel(cgr), q=cgr(i).qdir;
            if ~isempty(q)
                if ~ischar(q), q
-                  error('Wb:ERR','\n   ERR invalid cgr.qdir'); end
+                  wbdie('invalid cgr.qdir'); end
                ip=find(q=='+');
                in=find(q=='-'); q(ip)='-'; q(in)='+';
                cgr(i).qdir=q;

@@ -5,7 +5,7 @@ function disp_cgr(A)
 
   if nargin~=1
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   if isempty(A.Q), fprintf(1,'\n   (empty QSpace)\n'); return, end

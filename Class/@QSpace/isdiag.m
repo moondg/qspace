@@ -70,12 +70,12 @@ function [isd,estr]=isdiag(A,dflag)
   end
 
   if ~isempty(estr)
-     if nargout<2, error('Wb:ERR',estr); end
+     if nargout<2, wbdie(estr); end
      isd=0;
   elseif isd<0
      if nargin>1 && r
         if ~isequal(dflag,'-d')
-           error('Wb:ERR','\n   ERR invalid dflag'); end
+           wbdie('invalid dflag'); end
         isd=2;
      else isd=1; end
   end

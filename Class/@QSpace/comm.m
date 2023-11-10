@@ -29,7 +29,7 @@ function C=comm(A,varargin)
      elseif isequal(wc,'-'), wc=-1; end
   end
   if ~isequal(wc,-1) && ~isequal(wc,+1), disp(wc)
-     error('Wb:ERR','\n   ERR invalid comm/acomm specs');
+     wbdie('invalid comm/acomm specs');
   end
 
   n=[numel(A), numel(B)]; C=QSpace(n);
@@ -49,10 +49,8 @@ function C=commAB_1(A,B,conjA,wc)
   ra=numel(A.Q);
   rb=numel(B.Q);
 
-  if ra<2 || ra>3, error('Wb:ERR',...
-     '\n   ERR invalid usage (got A of rank %g !?)',ra); end
-  if rb<2 || rb>3, error('Wb:ERR',...
-     '\n   ERR invalid usage (got B of rank %g !?)',rb); end
+  if ra<2 || ra>3, wbdie('invalid usage (got A of rank %g !?)',ra); end
+  if rb<2 || rb>3, wbdie('invalid usage (got B of rank %g !?)',rb); end
 
   if ra==rb
      if conjA

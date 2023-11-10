@@ -67,10 +67,9 @@ function [ss,Is]=calc_SdotS(HAM,varargin)
           wblog('NB!','targeting %g multiplet%s (%s)',d(1),q,s);
      else wblog('WRN','got rank-%g QSpace (%s)',r,s);
      end
-     if NPsi<=1, wbdie('got NPsi=%g !?',NPsi); end
+     if NPsi<=1, wblog('NB!','got NPsi=%g',NPsi); end
 
      EPsi=getIdentity3(Ak,4,'PSI','--rho'); % tag 'PSI', '--rho' => normalize
-
      ss=cell(L,nops);
   else
      ss=nan(L,nops);

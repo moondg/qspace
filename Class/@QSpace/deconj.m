@@ -13,8 +13,8 @@ function [A,t]=deconj(A,idx)
 
   for k=1:numel(A)
      [i,t]=gotITags(A(k)); m=0;
-     if n>i || max(idx)>i, error('Wb:ERR',...
-       '\n   ERR input index set out of bounds or not unique');
+     if n>i || max(idx)>i
+        wbdie('input index set out of bounds or not unique');
      end
      for j=1:n, i=idx(j);
         if t{i}(end)==c, t{i}=t{i}(1:end-1); m=m+1; end

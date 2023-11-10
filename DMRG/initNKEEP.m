@@ -9,7 +9,7 @@
      setdef('nk1',4,'nk2',10,'Nspeed',2.8);
      if nk2<nk1, nk2=nk1; end
 
-     if Nspeed>0 && Nspeed<1
+     if 0<Nspeed && Nspeed<1
         n__=nk1:Nspeed:nk2;
      elseif floor(Nspeed)==1
         n__=nk1:1/3:nk2; l__=findmel(n__,10*(Nspeed-1),-1);
@@ -51,8 +51,21 @@
   else Nkeep=NKEEP(1); % setdef('Nkeep',NKEEP(1));
   end
 
-  fprintf(1,'\n>> NKEEP = [%g;%s ] (%g sweeps)\n\n',...
-  Nkeep, sprintf(' %g',NKEEP), numel(NKEEP));
+  s__={ sprintf(' %g',NKEEP)
+        sprintf('%g sweeps',numel(NKEEP))
+        '' };
+
+  if isvar('facCBE')
+     HAM.info.sweep.facCBE=facCBE;
+     if facCBE, s__{3}=sprintf('facCBE = %g',facCBE); end
+  end
+  if isempty(s__{3})
+     if isset('MBOND')
+          s__{3}='2-site with bond update';
+     else s__{3}='2-site update'; end
+  end
+
+  fprintf(1,'\n>> NKEEP = [%g;%s ] (%s, %s)\n\n',Nkeep,s__{:});
 
   clear l__ i__ n__ s__
 

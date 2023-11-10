@@ -849,6 +849,16 @@ class wbvector {
        return data[len-1];
     };
 
+    T& last(size_t &i) const { 
+       if (!len) wblog(FL,"ERR %s() got empty %s vector",FCT,TSTR(T));
+       return data[i=len-1];
+    };
+    template<class TI> 
+    T& last(TI &i_) const { size_t i=len-1; i_=i;
+       if (!len) wblog(FL,"ERR %s() got empty %s vector",FCT,TSTR(T));
+       return data[i];
+    };
+
     T& p2last() const { 
        if (!len) wblog(FL,"ERR %s() got empty %s vector",FCT,TSTR(T));
        return data+(len-1);

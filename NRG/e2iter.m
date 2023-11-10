@@ -3,7 +3,7 @@ function [n,istr]=e2iter(E,Lambda,z)
 
   if nargin<1 || nargin>2
      eval(['help ' mfilename]);
-     if nargin || nargout, error('Wb:ERR','invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   if nargin<2, z=0;

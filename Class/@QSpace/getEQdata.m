@@ -6,7 +6,7 @@ function [varargout]=getEQdata(HK,varargin)
 
   if ~nargin || ~isdiag(HK)
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   getopt('init',varargin);

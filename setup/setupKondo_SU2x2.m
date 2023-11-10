@@ -57,7 +57,7 @@
   elseif isset('SYM') && isequal(SYM,'SU2,A') || Bflag
      [FF,Z,SS,IS]=getLocalSpace('FermionS','SU2charge,Aspin',  o{:});
   elseif isset('SYM') && isequal(SYM,'A,SU2')
-     error('Wb:ERR','\n   ERR invalid SYM=%s for Kondo model !??',SYM);
+     wbdie('invalid SYM=%s for Kondo model !??',SYM);
   else
      [FF,Z,SS,IS]=getLocalSpace('FermionS','SU2charge,SU2spin',o{:});
   end
@@ -120,12 +120,12 @@
 
 % -------------------------------------------------------------------- %
   if isset('B')
-     if numel(SS)<3 || dim(SS(end),'-op')~=1, error('Wb:ERR',...
-       '\n   ERR invalid symmetry/spin setting for B!=0');
+     if numel(SS)<3 || dim(SS(end),'-op')~=1
+        wbdie('invalid symmetry/spin setting for B!=0');
      end
      q=SS(end); if rank(q)>2
-        if dim(q,'-op')~=1, error('Wb:ERR',...
-           '\n   ERR unexpected rank-%g spin operator',rank(q)); end
+        if dim(q,'-op')~=1
+           wbdie('unexpected rank-%g spin operator',rank(q)); end
         q=fixScalarOp('-f',q);
      end
      q=QSpace(contractQS(contractQS(q,2,A0,1),'13*',A0,'13'));

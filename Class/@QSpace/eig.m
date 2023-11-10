@@ -9,8 +9,8 @@ function [varargout]=eig(H,varargin)
      xflag =getopt('-x' ); end
   varargin=getopt('get_remaining');
 
-  if ~isscalarop(H), error('Wb:ERR',...
-    '\n   ERR invalid usage (scalar operator required)'); end
+  if ~isscalarop(H)
+     wbdie('invalid usage (scalar operator required)'); end
 
   if qsflag && nargout<2
      for i=1:numel(H.data)

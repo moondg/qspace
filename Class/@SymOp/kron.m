@@ -5,7 +5,7 @@ function C=kron(A,B)
   os=' (x) ';
 
   if isa(A,'SymOp') && isa(B,'SymOp'), C=A; n=numel(A);
-     if n~=numel(B), error('Wb:ERR','\n   ERR size mismatch'); end
+     if n~=numel(B), wbdie('size mismatch'); end
      for i=1:n
         C(i).istr=[ get_mstr(A(i)) os B(i).istr ];
         C(i).op=mykron(C(i).op,B(i).op);
@@ -23,15 +23,15 @@ function C=kron(A,B)
         C(i).op=mycron(B,C(i).op);
         C(i).hc=mycron(B,C(i).hc);
      end
-  else error('Wb:ERR','\n   ERR invalid usage'); end
+  else wbdie('invalid usage'); end
 
 end
 
 function AB=mykron(A,B)
     e=[isempty(A),isempty(B)];
     if any(e)
-       if xor(e(1),e(2)), error('Wb:ERR',...
-         '\n   ERR invalid usage (mixed empty / non-empty)');
+       if xor(e(1),e(2))
+          wbdie('invalid usage (mixed empty / non-empty)');
        end
        AB=A; return
     end

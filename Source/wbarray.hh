@@ -2404,7 +2404,7 @@ void wbarray<T>::initTst() {
 template<class T> inline
 wbarray<T>& wbarray<T>::initIdentity(size_t d, char dflag, T dval) {
 
-   if (dflag) { init(d); set(T(1)); }
+   if (dflag) { init(d).set(dval); }
    else {
       init(d,d);
       for (size_t i=0; i<d; ++i) {

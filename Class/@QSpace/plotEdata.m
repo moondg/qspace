@@ -23,21 +23,21 @@ function plotEdata(H,varargin)
 
    if ~nargin || ~isscalarop(H)
       helpthis, if nargin || nargout
-      error('Wb:ERR','invalid usage'), end, return
+      wbdie('invalid usage'), end, return
    end
 
    q=isdiag(H); istr='';
    if ~q
       [ee,I]=eigQS(H); R_=H; q=2;
       if ~isreal(ee)
-         error('Wb:ERR','\n   ERR got complex eigenvalues !??'); end
+         wbdie('got complex eigenvalues !??'); end
       H=QSpace(I.EK);
    else
       if q==1
          for i=1:numel(H.data), H.data{i}=diag(H.data{i}).'; end
          q=2;
-      elseif q~=2, error('Wb:ERR',['\n   ' ...
-         'ERR invalid input QSpace (not an operator!? [%g])'],q);
+      elseif q~=2
+         wbdie('invalid input QSpace (not an operator!? [%g])',q);
       end
    end
 
@@ -47,7 +47,7 @@ function plotEdata(H,varargin)
          qfac={ qfac, zeros(max(size(qfac)),1) };
       else
          if numel(qfac)~=2 || ~isvec(qfac{2})
-            error('Wb:ERR','\n   ERR invalid usage'); end
+            wbdie('invalid usage'); end
          if size(qfac,1)==1, qfac=qfac'; end
       end
 
@@ -81,9 +81,9 @@ setax(ah(1,1))
      if i<8, o={'o-'}; else o={'*-'}; end
 
      if ~isvector(dd{i})
-        error('Wb:ERR','\n   ERR expecting vector data'); end
+        wbdie('expecting vector data'); end
      if ~isfinite(dd{i})
-        error('Wb:ERR','\n   ERR invalid data (got nan''s etc)'); end
+        wbdie('invalid data (got nan''s etc)'); end
 
      if isempty(qfac)
           q=qq(i,:);

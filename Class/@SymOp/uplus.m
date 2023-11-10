@@ -3,7 +3,7 @@ function A=uplus(A)
 % Wb,Apr04,18
 
   if numel(A)~=1
-     error('Wb:ERR','\n   ERR invalid usage');
+     wbdie('invalid usage');
   end
 
   as=regexprep(A.istr,'^[^=]+=\s+','');

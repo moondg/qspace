@@ -16,7 +16,7 @@ function [qd,qa]=get_defining(sym)
   elseif regexp(sym,'Sp\d+$'), N=str2num(sym(3:end))/2;
      q=repmat('0',1,N); q(1)='1';
      q_=q;
-  else sym, error('Wb:ERR','\n   ERR invalid symmetry');
+  else sym, wbdie('invalid symmetry');
   end
 
   qd=LoadRData(sym,q);
@@ -31,8 +31,9 @@ function [qd,qa]=get_defining(sym)
         end
      end
 
-     if size(jj,1)~=1, error('Wb:ERR',...
-       '\n   ERR failed to determine adjoint representation'); end
+     if size(jj,1)~=1
+        wbdie('failed to determine adjoint representation');
+     end
 
      qa=LoadRData(sym,sprintf('%g',jj));
   end

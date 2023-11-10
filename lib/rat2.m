@@ -27,6 +27,7 @@ function [sr,Ir]=rat2(x,varargin)
   getopt('init',varargin);
      udat =getopt('-u',{});
      cflag=getopt('-c');
+     if getopt('-q'), opts{end+1}='-q'; end
 
      if getopt('~r'), rflag=0; opts{end+1}='~r'; else rflag=1; end
      if getopt('~a'), aflag=0; else aflag=1; end

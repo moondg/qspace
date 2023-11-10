@@ -8,7 +8,7 @@ function [i,s]=isQSpace(A,varargin)
 
   if ~nargin
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   order=''; i=0; s='';

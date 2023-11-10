@@ -20,7 +20,7 @@ function Iw=getrhoESpectra(R,varargin)
   gotkk=1; else gotkk=0; end
 
   if iscell(R)
-     if ~gotkk, error('Wb:ERR','\n   ERR invalid usage'); end
+     if ~gotkk, wbdie('invalid usage'); end
      mixed_usage(R,varargin{:});
      return
   end
@@ -71,7 +71,7 @@ end
 
 function mixed_usage(RC,kk,varargin)
 
-   if numel(RC)~=2, error('Wb:ERR','\n   ERR invalid usage (cell R)'); end
+   if numel(RC)~=2, wbdie('invalid usage (cell R)'); end
 
    getopt('init',varargin);
       yl = getopt('yl',[]);
@@ -184,11 +184,11 @@ end
 function EE=getrhoESpectra_aux1(ah,R,Eflag,yl,y2,istr,odeg)
 
    Q=R.Q; if numel(Q)~=2 || ~isequal(Q{:})
-      error('Wb:ERR','\n   ERR invalid density matrix R'); end
+      wbdie('invalid density matrix R'); end
 
    [rr,I]=eigQS(R); rr=rr(:,1);
       EK=I.EK; e=norm(rr(find(rr<=0))); if e>1E-12
-      error('Wb:ERR','\n   ERR invalid density matrix (%.3g)',e); end
+      wbdie('invalid density matrix (%.3g)',e); end
 
    Q=round(1E3*I.EK.Q{1})*1E-3; [N,n]=size(Q); II=zeros(N,n);
    q=cell(1,n); I=q; D=q; t='';

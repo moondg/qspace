@@ -34,7 +34,7 @@
      switch ALambda
         case { 1,'-AL'}, co{end+1}='-AL';
         case {-1,'-w' }, co{end+1}='-w';
-        otherwise error('Wb:ERR','\n   ERR invalid ALambda');
+        otherwise wbdie('invalid ALambda');
      end
   end
   ff=getNRGcoupling(Gamma,Lambda,N,co{:});
@@ -127,6 +127,6 @@ end
        else
           op1=[]; op2=FF; zflags=1;
        end
-    otherwise error('Wb:ERR','\n   ERR invalid switch (wops)');
+    otherwise wbdie('invalid switch (wops)');
   end
 

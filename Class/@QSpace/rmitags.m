@@ -10,7 +10,7 @@ function A=rmitags(A)
 
   if nargin>1
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   for k=1:numel(A)

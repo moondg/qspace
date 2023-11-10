@@ -1,14 +1,14 @@
 function C=minus(A,B)
-% overloading the + operator
+% overloading the - operator
 
   if isnumeric(B) && isscalar(B)
    % subtracting single scalar = acts like diagonal operator
      if isempty(A), C=A; return; end
-     if length(A.Q)~=2, error('Wb:ERR',...
-       '\n   ERR invalid usage (got rank-%d QSpace)',numel(A.Q)); end
+     if length(A.Q)~=2
+        wbdie('invalid usage (got rank-%d QSpace)',numel(A.Q)); end
 
      [isd,s]=isdiag(A);
-     if ~isempty(s), error('Wb:ERR',estr); end
+     if ~isempty(s), wbdie(estr); end
 
      C=A; n=length(C.data);
 
@@ -22,8 +22,8 @@ function C=minus(A,B)
         end
      end
   else
-     if ~isequal(size(A),size(B)), error('Wb:ERR',...
-        '\n   ERR invalid usage (size mismatch between A and B)'); end
+     if ~isequal(size(A),size(B))
+        wbdie('invalid usage (size mismatch between A and B)'); end
      C=A; n=numel(A);
      for i=1:n, C(i)=QSpace(plusQS(A(i),B(i),-1)); end
   end

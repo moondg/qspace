@@ -75,10 +75,10 @@ function [HAM]=setup_Kitaev(varargin)
   if NC==1, E=IS.E;
      if YLHam, wbdie('invalid usage (--YL requires NC=2)'); end
   elseif NC==2
-     T3=appendScalarSymmetry(T3,'SU2');
+     T3=addSymmetry(T3,'SU2');
 
      [Sop,IS(2)]=getLocalSpace(sym{1:end-1},'-v');
-     Sop=appendScalarSymmetry(Sop,'Z2','pos',1);
+     Sop=addSymmetry(Sop,'Z2','pos',1);
 
      A=getIdentity(sum(T3),Sop,[1 3 2]);
      E=getIdentity(A,2);

@@ -1,22 +1,30 @@
 function [Xk,e0]=updateHK(HAM,kc,kdir,varargin)
-% function [Xk,e0]=updateHK(HAM,kc,kdir [,Xk,Xn])
+% function [Xk,e0]=updateHK(HAM,kc,kdir[,Xk,Xn])
 %
-%    Update Hamiltonian (HK) and operator (OP) matrix elements;
-%    NB! this loads the data from the previous iteration,
-%    in order to propagate the operators correctly.
+%    [Usage #1] Update Hamiltonian (HK) and operator (OP)
+%    matrix elements (this loads the data from the previous
+%    iteration, in order to propagate the operators correctly).
 %
-%    If not specified, Xk will be taken from DMRG_#k#.
+%    If not specified, Xk will be loaded from DMRG_#k#.
 %    The updated HK and OPs will be stored (and returned).
 %    However, if Xk is explicitly specified, the DMRG data
 %    in store will not be changed, rather the updated data
-%    for site kc (Xk) will be returned as output argument.
+%    for site kc (Xk) is returned as output argument.
 %
 %    If Xn for the next (current) site is also specified,
 %    the reduced density matrix R is computed which allows
 %    to return the energy expectation value e0 of the newly
 %    added terms to HK.
 %
+% Usage #2: Xk=updateHK(HAM,kc,kdir,Xk,'-x')  # full mpo only
+%
+%    Compute partial overlap update as required for controlled
+%    bond expansion (CBE). Here honj(i) specifies whether H.c.
+%    should be included for Xk.OP(i[,1]) in Xk.Op(i,2).
+%
 % Wb,Apr08,14
+
+% [08/2023] added usage #2
 
 % ----------------------------------------------------------------- %
 % This uses the @Hamilton1D object HAM to update the Hamiltonian
@@ -41,7 +49,7 @@ function [Xk,e0]=updateHK(HAM,kc,kdir,varargin)
 % ----------------------------------------------------------------- %
 
    if nargin<3 || nargin>5
-      helpthis, if nargin || nargout, wbdie('invalid usage'), end
+      if ~helpthis(nargout,varargin{:}), wbdie('invalid usage'); end
       return
    end
 
@@ -58,10 +66,16 @@ function [Xk,e0]=updateHK_mpo_full(HAM,k,kdir,Xk,Xn)
 
    global gHSS
 
-   L=numel(HAM.mpo);
-   loadXk=(nargin<4); e0=zeros(0,3); ex=[];
+   loadXk=0; gotR=0; partial=0;
+   if nargin<4
+      Xk=load_dmrg_data(HAM,k); loadXk=1;
+   elseif nargin>4
+      if isfield(Xn,'AK'), gotR=1;
+      elseif ischar(Xn) && isequal(Xn,'-x'), partial=1;
+      else wbdie('invalid argument Xn'); end
+   end
 
-   if loadXk, Xk=load_dmrg_data(HAM,k ); end
+   L=numel(HAM.mpo); e0=zeros(0,3); ex=[]; kfix=0; 
 
    if L<=99, fmt='%02g'; else fmt='%03g'; end
    if kdir>0
@@ -78,7 +92,7 @@ function [Xk,e0]=updateHK_mpo_full(HAM,k,kdir,Xk,Xn)
          else       kp_=abs(i3(2))+1; end
          Xp=load_dmrg_data(HAM,kp_);
 
-         kfix=0; if kp~=kp_, kfix=1;
+         if kp~=kp_, kfix=1;
          elseif numel(ix)==2 && kp>=ix(1) && kp<=ix(2), kfix=2;
          elseif isempty(Xp.AK) || isempty(Xp.HK), kfix=3; end
 
@@ -120,7 +134,7 @@ function [Xk,e0]=updateHK_mpo_full(HAM,k,kdir,Xk,Xn)
    elseif q>3 && ~NPsi, it, wbdie('got rank-%g A-tensor',q); end
    sloc=it{3}; R=QSpace;
 
-   if nargin==5, gotR=1;
+   if gotR
       NPsi=get_NPsi_site(Xn.AK);
 
       if kdir>0
@@ -129,38 +143,54 @@ function [Xk,e0]=updateHK_mpo_full(HAM,k,kdir,Xk,Xn)
 
       R=QSpace(contractQS(Xn.AK,ic{1},Xn.AK,ic{2:end}));
 
-   elseif all(getqdir(Xk.AK)>0), gotR=-1;
-   else gotR=0; end
+   elseif ~partial && all(getqdir(Xk.AK)>0), gotR=-1;
+   end
 
    if isempty(gHSS) && gotR
       gHSS=zeros(L,L);
    end
 
-   Q=Ak;
-   if kp, Q={Q,Xp.HK};
-      tp=abs(get_kidx(Xp.HK));
-      tk=abs(get_kidx(HAM.mpo(k)));
-      if all(tp(3)~=tk(1:2))
-         if kfix<0
-            if kdir>0, i=1; else i=2; end
-            Q{2}=setitags(Q{2},HAM.mpo(k).info.itags{i},3);
-         else
-            wbdie('got Hamilton MPO inconsistency (%g/[%g %g])',tp(3),tk(3:4));
-         end
+   nrep=1; oHc={};
+   if partial && Xk.info.hconj, nrep=2; end
+
+   for irep=1:nrep
+      Q=Ak; if irep>1, oHc={'*'}; end
+      if kp, Q={Q,Xp.HK,oHc{:}};
+         if irep==1
+            if ~Xp.HK, wbdie('got empty Xp.HK'); end
+            tp=abs(get_kidx(Xp.HK));
+            tk=abs(get_kidx(HAM.mpo(k)));
+            if all(tp(3)~=tk(1:2))
+               if kfix<0
+                  if kdir>0, i=1; else i=2; end
+                  Q{2}=setitags(Q{2},HAM.mpo(k).info.itags{i},3);
+               else
+                 wbdie('got Hamilton MPO inconsistency (%g/[%g %g])',...
+                 tp(3), tk(3:4));
+               end
+            end
+         elseif kfix, wbdie('got kfix=%d with partial',kfix); end
+         if kdir>0, Q=Q([2:numel(Q), 1]); end
       end
-      if kdir<0, Q=Q([2 1]); end
-   end
-   if kdir>0, ic='!2*'; else ic='!1*'; end
+      if kdir>0, ic='!2*'; else ic='!1*'; end
 
-   Xk.HK=contract(Ak,ic,{Q,HAM.mpo(k)});
-
-   if got_gauge(HAM) % isfield(param,'gauge') // Wb,Apr30,23
-      HG=get_HK_gauge(Ak,kdir,HAM.info.param.gauge,L,HAM.oez(1).op);
-      Xk.HK = Xk.HK + contract(Ak,ic,{HG,Ak});
+      Q={Q,HAM.mpo(k),oHc{:}}; p=[]; if ~partial, Q={Ak,ic,Q}; end
+      Q=contract(Q{:},p);
+      if irep==1
+           Xk.HK=Q;
+      else Xk.HK(irep)=Q; end
    end
 
-   r=numel(Xk.HK.Q);
-   if r>3, wbdie('unexpected rank-%g HK',r);
+   gflag=got_gauge(HAM);
+   if gflag
+      HG=get_HK_gauge(Ak,Xp,HAM,kdir);
+      Q={HG,Ak}; if ~partial, Q={Ak,ic,Q}; end
+      Xk.HK = Xk.HK + contract(Q{:});
+      if gflag>1, Xk=update_Qop_gauge(Xk,Xp,HAM,kdir); end
+   end
+
+   r=numel(Xk.HK(1).Q); l=3; if partial, l=4; end
+   if r>l, wbdie('unexpected HK (rank %d/%d)',r,l);
    elseif ~r, wbdie('Hamiltonian MPO contracted to empty',r);
    end
 
@@ -202,8 +232,23 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
 
    global gHSS
 
+ % NB! no partial contraction here // tags: -x
+ % since using a pseudo MPO, this has no MPO bond dimension
+ % that can be used; therefore contracting into a 2-site (Ls,Rs)
+ % this *is* 2-site => rather used bond expansion within
+ % full 2-site setting // Wb,Sep09,23
+
+   gotR=0; loadXk=0;
+
+   if nargin<4, loadXk=1;
+   elseif nargin>4
+      if isfield(Xn,'AK')
+         if nargout>1, gotR=1; end
+      else wbdie('invalid argument Xn'); end
+   end
+
    L=numel(HAM.mpo);
-   loadXk=(nargin<4); e0=zeros(0,3); ex=[];
+   e0=zeros(0,3); ex=[];
 
    if kdir>0, kp=kc-1; sdir=sprintf('|%02g>',kc);
    else       kp=kc+1; sdir=sprintf('<%02g|',kc); end
@@ -232,8 +277,9 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
 
    Q=QSpace;
    if kdir>0 && kc>1 || kdir<0 && kc<L
-      Xp=load_dmrg_data(HAM,kp); Q=Xp.HK;
-   end
+        Xp=load_dmrg_data(HAM,kp); Q=Xp.HK;
+   else Xp=[]; end
+
    if loadXk
       Xk=load_dmrg_data(HAM,kc );
    end
@@ -252,9 +298,8 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
    end
    sloc=it{3};
 
-   if nargin==5 && nargout>1, gotR=1;
+   if gotR
       NPsi=get_NPsi_site(Xn.AK);
-
       if kdir>0
          if ~NPsi
               R=QSpace(contractQS(Xn.AK,'!1*',Xn.AK));
@@ -267,20 +312,23 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
          end
       end
    elseif all(getqdir(Xk.AK)>0)
-      R=QSpace; gotR=-1;
+        gotR=-1; R=QSpace;
    else gotR=0; end
 
    if isempty(gHSS) && gotR
       gHSS=zeros(L,L);
    end
 
-   if ~isempty(Q)
-        H=QSpace(contractQS(Ak,'*',{Ak,Q},'!1'));
+   if ~isempty(Q), Q={Ak,Q};
+        H=contract(Ak,'*',Q,'!1');
    else H=QSpace; end
 
-   if got_gauge(HAM) % isfield(param,'gauge') // Wb,Apr30,23
-      HG=get_HK_gauge(Ak,kdir,HAM.info.param.gauge,L,HAM.oez(1).op);
+   gflag=got_gauge(HAM); % isfield(param,'gauge') // Wb,Apr30,23
+
+   if gflag % isfield(param,'gauge') // Wb,Apr30,23
+      HG=get_HK_gauge(Ak,Xp,HAM,kdir);
       H=H+contract(Ak,'*',{Ak,HG},'!1');
+      if gflag>1, Xk=update_Qop_gauge(Xk,Xp,HAM,kdir); end
    end
 
  % add local term(s)
@@ -305,8 +353,8 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
          q=q+h;
       end
 
-      if kdir>0, o={'!2*'}; else o={'!1*'}; end
-      Q=contract(Ak,o{:},{Ak,q,['-op:' sloc]});
+      if kdir>0, ic='!2*'; else ic='!1*'; end
+      Q=contract(Ak,ic,{Ak,q,['-op:' sloc]});
 
       if isempty(Q.data)
          wblog('WRN','adding empty local contribution to H');
@@ -341,8 +389,8 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
  % --------------------------------------------------------------------
 
    if kdir>0
-        w=1; oc={'!2*'}; [I,K,t]=find(permute(M(:,2,:),[1 3 2]));
-   else w=2; oc={'!1*'}; [I,K,t]=find(permute(M(1,:,:),[2 3 1]));
+        w=1; ic='!2*'; [I,K,t]=find(permute(M(:,2,:),[1 3 2]));
+   else w=2; ic='!1*'; [I,K,t]=find(permute(M(1,:,:),[2 3 1]));
    end
 
    i=find(I>2);
@@ -363,16 +411,11 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
       % however, similar contraction cannot be avoided in the case
       % of longer-range interactions in the Hamiltonian (i.e. see
       % update of OP -- if required -- below; WRN_CGC_COST_RANK4)
-      Q=QSpace(contractQS( ...
-        Ak,oc{:}, { Xp.OP(I(i)),'*', { Ak,q,['-op:' sloc] } } ...
-      ));
+      Q=contract(Ak,ic,{ Xp.OP(I(i)),'*', { Ak,q,['-op:' sloc] }});
 
       if hconj(K(i)), Q=Q+Q'; end
-
-      if isempty(Q.data), wblog('WRN',...
-        '%s adding empty coupling contribution to H',sdir);
-      end
-
+      if ~Q, wblog('WRN',...
+        'got empty coupling contribution to H (%s)',sdir); end
       H=H+Q;
 
       if gotR
@@ -414,28 +457,18 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
     % ----------------------------------------------------------
    end
 
-   if ~isIdentityCG(H) || ~mpsIsHConj(H)
+   if ~isIdentityCG(H) || ~isHConjQS(H)
       save2('-f','./tmp-HHc.mat'); pwd, e=normQS(H-H'); wbdie(...
-     'got non-scalar/non-hermitian Hamiltonian (e=%g @ kc=%g) !?',e,kc);
+     'got non-scalar/non-hermitian Hamiltonian (e=%g @ kc=%g)',e,kc);
    end
 
    Xk.HK=H;
 
-   if isfield(Xk,'OP')
-      Xk.OP=QSpace(size(Xk.OP));
-   else
-      Xk.OP=QSpace; n=numel(fieldnames(Xk));
-      Xk=orderfields(Xk,[1:n-2, n, n-1]);
-   end
-
+ % --------------------------------------------------------------------
    if kdir>0
         [J,K,t]=find(permute(M(1,3:end,:),[2 3 1]));
    else [J,K,t]=find(permute(M(3:end,2,:),[1 3 2]));
    end
-
-   l=max(J); if numel(Xk.OP)<l, Xk.OP(l)=QSpace; end
-
-   uJ=all(diff(sort(J(:)))>0);
 
  % NB! non-unique K cannot be fully avoided!
  % ==> reuse already computed matrix elements
@@ -445,6 +478,18 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
  % Wb,Aug26,15 // see private/setup_mpo::reduce_RL() // MERGING_TERMS
 
    [K,i]=sort(K-ioff); J=J(i); t=t(i);
+
+   uJ=all(diff(sort(J(:)))>0);
+
+   if ~isempty(J), n=max(J);
+   else n=0; end
+
+   if isfield(Xk,'OP'), n=max(n,numel(Xk.OP));
+   else
+      n=numel(fieldnames(Xk));
+      Xk=orderfields(Xk,[1:n-2, n, n-1]);
+   end
+   Xk.OP=QSpace(1,n);
 
  % NB! keep track of originating local operator through itags!?
  % i.e. in addition to mpo(k).iop: ot=sprintf(':op%g',K(i));
@@ -458,13 +503,14 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
 
          Xk.OP(J(i)) = (t(i)/t(i-1)) * Xk.OP(J(i-1));
       else
-         q=t(i)*ops(K(i));
+         kop=t(i)*ops(K(i));
          if fop(K(i)) && kdir<0
-            q=oez(2)*q;
+            kop=oez(2)*kop;
          end
 
-         Xk.OP(J(i)) = Xk.OP(J(i)) + ...
-         contractQS(Ak,oc{:},{Ak,q,['-op:' sloc]});
+         Q=contract(Ak,ic,{Ak,kop,['-op:' sloc]});
+
+         Xk.OP(J(i)) = Xk.OP(J(i)) + Q;
       end
    end
 
@@ -485,31 +531,32 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
 
    for i=1:numel(I)
       k=K(i); if k>ioff,
-           qloc=ops(k-ioff);
-      else qloc=oez(k); end
+           kop=ops(k-ioff);
+      else kop=oez(k); end
 
       if t(i)~=1
          s=sprintf('got mpo weight within operator propagation !? (%.3g)',t(i));
             if k>1, wblog('WRN','%s',s);
             else wbdie('%s',s); end
-         qloc=t(i)*qloc;
+         kop=t(i)*kop;
       end
 
       if k>1
-           Akop={{Ak,qloc,['-op:' sloc]}}; % '*3' enters through op
+           Akop={{Ak,kop,['-op:' sloc]}}; % '*3' enters through op
       else Akop={Ak}; end
 
-try
-      Q=QSpace(contractQS(Ak,oc{:},{ Akop{:}, Xp.OP(I(i)) }));
-catch l
-   save2tmp
-   save2(sprintf('%s_%s_dbg.mat',wbstamp,mfilename));
-   rethrow(l)
-end
-      if numel(Xk.OP)>=J(i) && ~isempty(Xk.OP(J(i)))
-         Xk.OP(J(i)) = Xk.OP(J(i)) + Q;
-      else
-         Xk.OP(J(i))=Q;
+      Q={ Akop{:}, Xp.OP(I(i)) };
+
+      try
+         Q=contract(Ak,ic,Q);
+      catch l
+         save2(sprintf('%s_%s_dbg.mat',wbstamp,mfilename));
+         save2tmp; rethrow(l)
+      end
+
+      if size(Xk.OP)>=J(i) && ~isempty(Xk.OP(J(i)))
+           Xk.OP(J(i)) = Xk.OP(J(i)) + Q;
+      else Xk.OP(J(i)) = Q;
       end
    end
 

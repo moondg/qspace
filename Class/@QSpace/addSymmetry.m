@@ -1,5 +1,5 @@
-function A=appendScalarSymmetry(A,qtype,varargin)
-% function A=appendScalarSymmetry(A,qtype [,opts])
+function A=addSymmetry(A,qtype,varargin)
+% function A=addSymmetry(A,qtype [,opts])
 %
 %    Append scalar symmetry (e.g. new symmetry label,
 %    where all existing states get a newly added qlabel q=0
@@ -22,8 +22,11 @@ function A=appendScalarSymmetry(A,qtype,varargin)
 % Wb,Jul12,11 ; Wb,Dec08,14
 
 % tags: extendQ addQ expandQ, prependScalarSymmetry
-% removed q from original usage [A=appendScalarSymmetry(A,q,qtype)]
+% removed q from original usage [A=addSymmetry(A,q,qtype)]
 % and added pos as optional argument // Wb,Feb06,14
+
+% renamed from appendScalarSymmetry -> addSymmetry
+% since name was rather misleading by now // Wb,Nov04,23
 
   getopt('init',varargin);
      qs =getopt('q',[]);
@@ -38,10 +41,10 @@ function A=appendScalarSymmetry(A,qtype,varargin)
         r=str2num(qtype(end))/2;
      elseif ~isempty(regexp(qtype,'Z\d+$')), r=1;
      else
-       error('Wb:ERR','\n   ERR invalid/unknown symmetry (%s)',qtype);
+        wbdie('invalid/unknown symmetry (%s)',qtype);
      end
      if r<1 || r>9 || r~=round(r)
-        error('Wb:ERR','\n   ERR invalid usage (got rank=%g !??)',r);
+        wbdie('invalid usage (got rank=%g !??)',r);
      end
      qs=zeros(1,r);
   end
@@ -50,8 +53,7 @@ function A=appendScalarSymmetry(A,qtype,varargin)
      qd_=getqdir(Ak,'-s');
 
      if ~isempty(Ik.cgr)
-        if ~isstruct(Ik.cgr)
-           error('Wb:ERR','\n   ERR invalid info.cgr field'); end
+        if ~isstruct(Ik.cgr), wbdie('invalid info.cgr field'); end
         Ik.qtype=[Ik.qtype ',' qtype];
 
         qd=Ik.cgr(1).qdir;
@@ -66,7 +68,7 @@ function A=appendScalarSymmetry(A,qtype,varargin)
           c.type=qtype;
           c.qset=get_qset(qs,rA);
           c.qdir=qd;
-          c.cgw=['1' 0];
+          c.cgw=1;
 
         Ik.cgr(:,end+1)=c;
         Ak.info=Ik;
@@ -87,7 +89,7 @@ function A=appendScalarSymmetry(A,qtype,varargin)
           c(end).type=qtype;
           c(end).qset=get_qset(qs,rA);
           c(end).qdir=qd_;
-          c(end).cgw=['1' 0];
+          c(end).cgw=1;
         Ik.cgr=repmat(c,size(Ak.Q{1},1),1);
         Ak.info=Ik;
 
@@ -100,9 +102,24 @@ function A=appendScalarSymmetry(A,qtype,varargin)
      end
      Ak.Q=Q;
 
+     if norm(qs) && ~isempty(Ik.cgr)
+        Ak=QSpace(permuteQS(Ak,'12'));
+        s=Ak.info.cgr(1,end).size;
+        if s(1)>1, wfac=sqrt(double(s(1)));
+           if rA<=3
+              for i=1:size(Ik.cgr,1)
+                  Ak.info.cgr(i,end).cgw=wfac;
+              end
+           else
+              for i=1:numel(Ak.data),
+                  Ak.data{i}=wfac*Ak.data{i};
+              end
+           end
+        end
+     end
+
      if pos>0, n=numsym(Ak);
-        if pos>n, error('Wb:ERR',...
-           '\n   ERR index pos out of range (%g/%g) !?',pos,n);
+        if pos>n, wbdie('index pos out of range (%g/%g) !?',pos,n);
         elseif pos<n
            perm=[1:pos-1,n,pos:(n-1)];
            Ak=symperm(Ak,perm);
@@ -110,7 +127,6 @@ function A=appendScalarSymmetry(A,qtype,varargin)
      end
 
      A(k)=Ak;
-
   end
 end
 

@@ -7,18 +7,18 @@ function A=symperm(A,perm)
 
   if nargin~=2
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   ns=numel(perm);
   if size(perm,1)~=1 || ~isequal(sort(perm(:)'),1:ns), perm
-     error('Wb:ERR','\n   ERR got invalid permutation');
+     wbdie('got invalid permutation');
   end
 
   for k=1:numel(A)
      [d,s]=getsym(A(k),'-d');
-     if numel(s)~=ns, error('Wb:ERR',...
-       '\n   ERR got invalid permutation (%g/%g)',numel(s),ns);
+     if numel(s)~=ns
+        wbdie('got invalid permutation (%g/%g)',numel(s),ns);
      end
 
      if ~isempty(A(k).info.qtype)
@@ -31,8 +31,8 @@ function A=symperm(A,perm)
      end
 
      if ~isempty(A(k).Q) && ~isempty(A(k).Q{1}) 
-        n=size(A(k).Q{1},2); if n~=sum(d), error('Wb:ERR',...
-          '\n   ERR inconsistent Q data (%g/%g)',n,size(A(k).Q{1},2));
+        n=size(A(k).Q{1},2); if n~=sum(d)
+           wbdie('inconsistent Q data (%g/%g)',n,size(A(k).Q{1},2));
         end
         p=mat2cell(1:n,1,d); p=[p{perm}];
         for j=1:numel(A(k).Q)

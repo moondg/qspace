@@ -132,9 +132,17 @@ function [EE,hh,iQ,Iout]=getEEdata(HK,varargin)
      end
   end
 
-  i=find(isd<0);
-  if ~isempty(i) && ~isequal(i,1)
-     wblog('WRN','got %d/%d empty QSpace entries',numel(i),L);
+  if vflag, i=find(isd<0); n=numel(i);
+     if n==1
+        if     i==1, wblog(' * ','got empty first QSpace (L=%d)',L);
+        elseif i==L, wblog(' * ','got empty last QSpace (L=%d)',L);
+        else wblog(' * ','got empty QSpace %d/%d',i,L); end
+     elseif n
+        if n<4, s=sprintf(', %d',i);
+             wblog('WRN','got empty QSpace entries %s (L=%d)',s(3:end),L);
+        else wblog('WRN','got %d/%d empty QSpace entries',n,L);
+        end
+     end
   end
 
   i=find(isd==0 | isd==1);

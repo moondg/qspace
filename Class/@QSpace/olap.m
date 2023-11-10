@@ -14,9 +14,9 @@ function x=olap(varargin)
 
   if narg==1, A=varargin{1}; B=A;
   elseif narg==2, A=varargin{1}; B=varargin{2};
-  else varargin, error('Wb:ERR','\n   ERR invalid usage'); end
+  else varargin, wbdie('invalid usage'); end
   if numel(A)~=1 || numel(B)~=1
-  error('Wb:ERR','\n   ERR invalid usage'); end
+  wbdie('invalid usage'); end
 
   x=getscalar(QSpace(contractQS(A,1:2,B,1:2)));
 

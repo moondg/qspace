@@ -6,8 +6,7 @@ function C=sum(A,dim)
 
   s=size(A); r=numel(s);
   if nargin<2
-     if r>2, error('Wb:ERR',...
-     '\n   ERR invalid usage (got rank-%g object)',r); end
+     if r>2, wbdie('invalid usage (got rank-%g object)',r); end
      if s(1)==1, A=permute(A,[2 1]); end
      Sfin=[];
   else

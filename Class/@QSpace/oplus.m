@@ -1,72 +1,78 @@
 function C=oplus(A,B,varargin)
-% function C=oplus(A,B [r12,opts]
+% function C=oplus(A,B [,d12 [,opts]])
 %
-%    Direct sum (latex oplus) of two tensors A and B along dimension r.
-%    If r12 is not specified, an MPS or MPO like setting is assumed
-%    with L/R as first and second index, i.e., r12=[1 2].
+%    Direct sum (latex oplus) of two tensors A and B along
+%    dimensions d12 in a block-diagonal sense (default: d12=[1 2]).
+%    If d12 is single index, oplus is performed along that
+%    dimension only. For example, the following are equivalent
 %
+%                oplus(A,B,2)
+%                oplus(A,B,'first')
+%                oplus(A,B,[1 2,'first')
 % Options
 %
-%   'first'             direct sum only in index r12(2)
-%   'last'              direct sum only in index r12(1)
-%                       otherwise: direct sum in both indices r12
+%   'first'      direct sum only in index d12(2)
+%   'last'       direct sum only in index d12(1)
+%                where first/last is interpreted from an MPS point of
+%                view, where the first (last) matrix shall be extended
+%                along the 2nd (f1st) dimension, respectively.
+%                By default: direct sum in (both) indices in d12.
 %
-%   'bfac',..           apply bfac to B prior to extending A
+%   'bfac',..    apply bfac to B as in: A \oplus (bfac*B)
 %
 % E.g. see https://mathworld.wolfram.com/MatrixDirectSum.html
 % Wb,Nov23,20
+
+% [09/06/2023] permitting single index for d12 without first/last
 
   getopt('init',varargin);
      if getopt('first'); w=-1;
      elseif getopt('last'); w=1; else w=0; end
      bfac=getopt('bfac',1);
-  r12=getopt('get_last',[]);
-
-  if isempty(r12), r12=[1 2];
-  elseif ~isnumeric(r12) || numel(r12)~=2 || any(r12<1), r12
-     wbdie('invalid usage (r12)');
-  end
+  d12=getopt('get_last',[]); n=numel(d12);
 
   if numel(A)~=1 || numel(B)~=1
      wbdie('invalid usage (single QSpace tensors A and B required)'); end
-  q={ getqdir(A), getqdir(B) }; if ~isequal(q{:})
+  if ~isequal(getqdir(A), getqdir(B))
      wbdie('invalid usage (QSpace qdir mismatch)'); end
 
-  ta=getitags(A); r=numel(ta);
-  tb=getitags(A); r(2)=numel(tb);
-  if diff(r), wbdie('invalid usage (QSpace rang mismatch %g/%g)',r); end
-
-  ra=r(1); if ~ra, return; end
+  ta=getitags(A); r=numel(ta); if ~r, return; end
+  tb=getitags(A);
 
   for i=1:numel(ta)
-      if isempty(ta{i}), if ~isempty(tb{i}), ta{i}=tb{i}; end
+      if isempty(ta{i})
+         if ~isempty(tb{i}), ta{i}=tb{i}; end
       elseif isempty(tb{i}), tb{i}=ta{i}; end
   end
   if ~isequal(ta,tb), wbdie('invalid usage (QSpace itag mismatch)'); end
 
-  if     w<0, r12=r12(2);
-  elseif w>0, r12=r12(1);
-  end
-
   S=struct('type','()','subs',{{}});
 
-  for r=r12
-     [qa,Ia,Da]=uniquerows(A.Q{r});
-     [qb,Ib,Db]=uniquerows(B.Q{r}); [ia,ib,Ix]=matchIndex(qa,qb);
+  if isempty(d12)
+     if ~w, d12=[1 2]; elseif w<0, d12=2; else d12=1; end
+  elseif ~isnumeric(d12) || any(d12<1) || n>2 || (w && n~=2)
+     wbdie('invalid usage (d12)');
+  elseif w<0, d12=d12(2); % 'first' / left boundary
+  elseif w>0, d12=d12(1); % 'last'  / right boundary
+  end
+
+  for l=d12
+     [qa,Ia,Da]=uniquerows(A.Q{l});
+     [qb,Ib,Db]=uniquerows(B.Q{l}); [ia,ib,Ix]=matchIndex(qa,qb);
 
      for i=1:numel(ia)
-        sa=size(A.data{Ia{ia(i)}(1)},r);
-        sb=size(B.data{Ib{ib(i)}(1)},r);
+        sa=size(A.data{Ia{ia(i)}(1)},l);
+        sb=size(B.data{Ib{ib(i)}(1)},l);
 
         for j=Ia{ia(i)}
-           a=A.data{j}; s=size(a); s(end+1:r)=1;
-           S.subs=matcell(s); S.subs{r}=s(r)+sb; 
+           a=A.data{j}; s=size(a); s(end+1:l)=1;
+           S.subs=matcell(s); S.subs{l}=s(l)+sb; 
            A.data{j}=subsasgn(a,S,0);
         end
-        [p,ip]=initperm(ra,'--2front',r);
+        [p,ip]=initperm(r,'--2front',l);
         for j=Ib{ib(i)}
-           b=permute(B.data{j},p); s=size(b); b=reshape(b,s(1),[]);
-           b=[ zeros(sa,size(b,2)); b ]; s(1)=s(1)+sa;
+           b=permute(B.data{j},p); s=size(b); s2=prod(s(2:end));
+           b=[ zeros(sa,s2); reshape(b,s(1),s2) ]; s(1)=s(1)+sa;
            B.data{j}=permute(reshape(b,s),ip);
         end
      end

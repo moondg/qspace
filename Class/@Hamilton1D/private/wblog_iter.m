@@ -4,16 +4,17 @@ function Il=wblog_iter(k,kdir,L,r2,I,isw)
 % outsourced from sweepPsi.m // Wb,Jan20,16
 
   if nargin && ischar(k)
-     l='+-----------+---------------------------------+------------------+';
      if isequal(k,'header'), s={'',''};
         if nargin>1 && isequal(kdir,'-b')
              s{2}=' using bond updates';
         else s{1}=' 2-site'; end
         wblog(1,'@%s%s DMRG%s',mfilename('class'),s{:});
-        s='| systime   |sweep  Nkept  exp(SEnt)  disc.wt | energy/site      |';
-        fprintf(1,'\n%s\n%s\n%s\n',l,s,l);
-
-     elseif ~isempty(regexp(k,'sep')), fprintf(1,'%s\n',l);
+        fprintf(1,'\n%s\n%s\n%s\n',...
+        '────────────┬─────────────────────────────────┬───────────────────',...
+        '  systime   │sweep  Nkept  exp(SEnt)  disc.wt │ energy/site       ',...
+        '────────────┼─────────────────────────────────┼───────────────────');
+     elseif ~isempty(regexp(k,'sep')), fprintf(1,'%s\n',...
+        '────────────+─────────────────────────────────+───────────────────');
      else disp(k), wbdie('invalid usage'); end
 
      return
@@ -45,7 +46,7 @@ function Il=wblog_iter(k,kdir,L,r2,I,isw)
   elseif isfield(I,'Nkeep'), NK=I.Nkeep;
   else NK=nan; end
 
-  fprintf(['  %s  %s %5g %s %s | %s\n',s{3}],...
+  fprintf(['  %s  %s %5g %s %s │ %s\n',s{3}],...
      datestr(now,'HH:MM:SS'),s{1},NK,s{[5 4]},s{2});
 
   if nargout

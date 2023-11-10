@@ -105,7 +105,9 @@ void set_ctags(
    const wbvector< QSpace<TQ,TB> > &B,
    wbvector< wbstring > &t3s
 ){
-   unsigned i,j=-1,k=0,l; char *s; char c; itag_ t;
+   unsigned i=-1,j=-1,k=0,l;
+   char c, *s; itag_ t;
+
    if (t3s.len!=3) wblog(F_L,"ERR %s() got len=%d !?",myname,t3s.len);
 
    for (; k<3; ++k) { if (t3s[k]) {
@@ -119,25 +121,24 @@ void set_ctags(
 
       if (c=='C') { 
          if (s[1]=='-') {  
-            if (!strncmp(s+1,"-m:",3)) {
+            if (s[2]=='m' && (s[3]==':' || s[3]=='!')) { 
                unsigned n=strlen(s+1); 
-               char cflag, mflag;
+               char cflag=0, mflag=0;  
 
-               for (i=n; i && s[i]==CC_ITAG; --i) { s[i]=0; } 
-               cflag = ((n-i) % 2);
-               for (n=i; i && s[i]==QS_MARK_DUAL; --i) { s[i]=0; } 
-               mflag = ((n-i + (cflag ? 0 : 1)) % 2);
+               for (  i=n; i<=n && s[i]==CC_ITAG; --i) { ++cflag; s[i]=0; }
+               for (; i<=n && s[i]==QS_MARK_DUAL; --i) { ++mflag; s[i]=0; }
 
-               t.init(F_L,s+4);
-               if (mflag) { t.MarkDual(); }
+               if (((cflag % 2)==0) == (s[3]==':')) { ++mflag; } 
+
+               t.init(F_L,s+4);  if (mflag % 2) { t.MarkDual(); }
             }
             else { wblog(FL,
-              "ERR %s() invalid itag option '%s' (arg#%d)",FCT,s+1,l+1);
+              "ERR %s() invalid itag option '%s' (arg#%d)",myname,s+1,l+1);
             }
          }
          else {
             if (s[1] && !isalnum(s[1])) wblog(FL,
-               "ERR %s() invalid itag option '%s'",FCT,s);
+               "ERR %s() invalid itag specification '%s'",myname,s+1);
             t.init(F_L,s+1);
          }
          if (C.itags.len==3) { j=2; } 
@@ -199,7 +200,7 @@ void set_ctags(
       }
       else if (c=='C')
            { C.SetTags(t); } 
-      else { wblog(FL,"WRN %s() unexpected usage (%s)",FCT,s); }
+      else { wblog(FL,"WRN %s() unexpected usage (%s)",myname,s); }
    }}
 };
 
@@ -278,16 +279,22 @@ void mexFunction(
    check_itag_markers(0,0,nargin,argin,l,t3s,'B');
 
    for (; l<nargin; ++l) {
-      if (mxIsChar(argin[l])) {
-         char s[32];
+      if (mxIsChar(argin[l])) { char s[32];
          if (mxGetString(argin[l],s,31)) { s[31]=0;
             wblog(FL,"ERR %s() invalid usage (%d: %s)",myname,l+1,s);
          }
 
          if (!strcmp(s,"-v")) { ++vflag; } else 
          if (!strcmp(s,"-q")) { --vflag; } else
-         if (!strcmp(s,"-0")) { zflag+= 1; } else
-         if (!strcmp(s,"-z")) { zflag+=16; } else 
+         if (!zflag) { 
+            if (!strncmp(s,"-0",2)) { zflag=1; if (s[2]) {
+               if (!strcmp(s,"-0fm")) 
+                    { zflag|=2; }
+               else { wblog(FL,"WRN invalid option '%s' (using -0)",s); }
+            }} else
+            if (!strcmp(s,"-z")) { zflag=2; } 
+            if (zflag) { continue; }
+         }
          if (!t3s[2]) {
             char sx[16]; sx[0]='C'; sx[1]=0;
 
@@ -317,10 +324,6 @@ void mexFunction(
    if (vflag==2) { vflag='V'; } else
    if (vflag> 2) { wblog(FL,
       "WRN %s() got multiple options '-v' (%d)",myname,vflag); }
-
-   if ((l=( (zflag&15) + (zflag>>4) )) > 1) wblog(FL,
-      "WRN %s() got multiple options '-0' or '-z' (%d)",myname,l);
-   if (zflag>=16) { zflag=2; } 
 
    if (isra) {
       wbvector< QSpace<gTQ,double> > A;

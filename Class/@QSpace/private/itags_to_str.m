@@ -1,11 +1,13 @@
-function s=itags_to_str(tt,use_col)
-% function s=itags_to_str(tt [,use_col])
+function s=itags_to_str(tt,use_col,varargin)
+% function s=itags_to_str(tt [,use_col,...])
 % Wb,Feb24,16
 
 % outsourced from info.m
   if nargin>1 && ~isempty(use_col)
-     if isnumeric(use_col) && use_col, [use_col,e1,em]=syntax_hl('QS:info');
-     elseif isstr(use_col),            [use_col,e1,em]=syntax_hl( use_col );
+     if isnumeric(use_col) && use_col
+        [use_col,e1,em]=syntax_hl('QS:info',varargin{:});
+     elseif isstr(use_col)
+        [use_col,e1,em]=syntax_hl( use_col, varargin{:});
      else wbdie('invalid usage'); end
      if use_col
         if ischar(e1)
@@ -15,8 +17,7 @@ function s=itags_to_str(tt,use_col)
   else use_col=0; end
 
   if isempty(tt), s='';
-  elseif iscell(tt)
-     notags=1;
+  elseif iscell(tt), notags=1;
      for i=1:numel(tt) % permit mark ' and conj flag *
         if ~isempty(tt{i}) && isempty(regexp(tt{i},'^''?\*?$'))
            notags=0; break
@@ -24,9 +25,9 @@ function s=itags_to_str(tt,use_col)
      end
      if notags
         for i=1:numel(tt) % permit mark ' and conj flag *
-           if isempty(tt{i}) || tt{i}(end)~='*'
-                tt{i}=['+' tt{i}];
-           else tt{i}=['-' tt{i}]; end
+           if isempty(tt{i}), tt{i}='+';
+           elseif tt{i}(end)~='*', tt{i}=['+' tt{i}];
+           else tt{i}=['-' tt{i}(1:end-1)]; end
         end
      end
 

@@ -8,7 +8,7 @@ function S=sum(A,dim)
      for i=2:length(A), S=plusQS(S,A(i)); end
   else
      if nargin<2, dim=1;
-     elseif dim~=1 && dim~=2, dim, error('Wb:ERR','invalid usage'); end
+     elseif dim~=1 && dim~=2, dim, wbdie('invalid usage'); end
 
      [n,m]=size(A);
 

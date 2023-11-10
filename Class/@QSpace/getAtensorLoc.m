@@ -20,7 +20,7 @@ function A=getAtensorLoc(varargin)
 
   if nargin<1 || nargin>5 || numel(varargin{1})~=1
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   l='L';

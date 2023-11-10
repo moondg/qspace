@@ -34,28 +34,35 @@ function Sout=add2struct(varargin)
   for i=k+1:length(varargin), n=inputname(i);
       if ~isempty(n)
          Sout=setfield(Sout,n,varargin{i});
-      elseif ischar(varargin{i}), n=varargin{i};
-         if n(end)~='?', opt=0; else n=n(1:end-1); opt=1; end
+      elseif ischar(varargin{i}), n=varargin{i}; nx='';
+         opt=0; flag__=0; val__=[];
 
-         l=find(n==':' | n=='=');
-         if ~isempty(l), l=l(1);
+         l=find(n==':' | n=='=',1);
+         if ~isempty(l)
+            if l<2 || isempty(regexp(n(1:l-1),'^[A-Za-z][\w_]*$'))
+               wbdie('invalid field name ''%s''',n);
+            end
             nx=n(l+1:end); n=n(1:l-1);
-            if n(end)=='?', n=n(1:end-1); opt=1; end
-         else nx=n; end
 
-         cmd=sprintf([...
-           'global flag__ val__; flag__=0; ' ...
-           'try, val__=%s; flag__=1; catch; end '], nx);
-         evalin('caller',cmd);
+         elseif n(end)=='?', n=n(1:end-1); opt=1;
+         elseif ~isempty(regexp(n,'^[A-Za-z][\w_]*$')), opt=2;
+            nx=n;
+         else wbdie('invalid expression ''%s''',n);
+         end
 
-         if flag__
+         cmd=['global flag__ val__; val__=' nx '; flag__=1;'];
+         try evalin('caller',cmd); catch; end
+
+         if flag__ || opt==2
             Sout=setfield(Sout,n,val__);
          elseif ~opt
-            wblog('ERR','invalid variable or expression ''%s''',nx);
             l=lasterror; inl(1), disp(l.message), inl(1)
+            wbdie('invalid expression ''%s''',nx); % wblog('ERR',..)
          end
       else 
-      wbdie('failed to assign data (arg #%d)',i+1); end
+         wbdie('failed to assign data (got %s as arg #%d)',...
+         class(varargin{i}),i+1);
+      end
   end
 
   clear global flag__ val__

@@ -1833,7 +1833,7 @@ genRG_base<TQ,TD>& RStore<TQ,TD>::getR(
 
    genRG_base<TQ,TD> &R=gRS.Buf(t).RSet[J];
 
-   if (R.J.len && R.Z.dim2) return R;
+   if (R.J.len && R.Z.dim2) { return R; }
    if (!R.isEmpty()) wblog(FL,
       "ERR %s() got partially empty RSet",FCT);
 

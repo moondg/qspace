@@ -2,7 +2,9 @@
 /* CHANGE LOG ======================================================== *
  * =================================================================== */
 
-char USAGE[]=""; // outsourced to mpsIsHConj.m // Wb,Jan12,19
+// renamed mpsIsHConj -> isHConjQS // Wb,Oct02,23
+
+char USAGE[]=""; 
 
 #ifdef MATLAB_MEX_FILE
    #define PROG mexFunctionName()

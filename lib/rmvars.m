@@ -43,7 +43,7 @@ function rmvars(fls,varargin)
         fprintf(1,'  ERR invalid file %s\n',F);
      end
   end
-  if nerr, error('Wb:ERR','file(s) not found'); end
+  if nerr, wbdie('file(s) not found'); end
 
   getopt('INIT',varargin);
      if     getopt('-v'), vflag=2;

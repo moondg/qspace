@@ -24,7 +24,7 @@ function [X1,X2,Iout]=splitH4_SdotS(H4,varargin)
 
   qdir=getqdir(H4(1),'-s');
   if ~isequal(qdir,'++--'), H4(1), qdir
-     error('Wb:ERR','\n   ERR invalid input H4');
+     wbdie('invalid input H4');
   end
 
   H41=sum(QSpace(H4));
@@ -77,7 +77,7 @@ function [X1,X2,Iout]=splitH4_SdotS(H4,varargin)
 
      X1(i)=getIdentityQS(X2(i),1);
      if ~isequal(X1(i).Q{1},X2(i).Q{1})
-        error('Wb:ERR','\n   ERR unexpected X2'); end
+        wbdie('unexpected X2'); end
 
      nd=numel(X2(i).data); ss=cell(1,nd);
      for l=1:nd
@@ -109,8 +109,8 @@ function [X1,X2,Iout]=splitH4_SdotS(H4,varargin)
   if nH==1, Iout.SS=Iout.SS{1}; end
 
   e=sum(norm(ee(:,1:2)./ee(:,[3 3])),2); i=find(e>1E-12,1);
-  if ~isempty(i), error('Wb:ERR',...
-    '\n   ERR got %s inconsistency (@ %.3g; %.3g) !?',istr,e(i),ee(i,3));
+  if ~isempty(i)
+     wbdie('got %s inconsistency (@ %.3g; %.3g) !?',istr,e(i),ee(i,3));
   elseif vflag
      wblog(' * ','got consistent %s [@ %.2g]',istr,e);
   end

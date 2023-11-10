@@ -37,7 +37,7 @@ function [Iout,Inrg]=specificHeatNRG(varargin)
   else
      nrg=getopt('get_last',[getenv('LMA'), '/NRG/NRG']);
 
-     if ~ischar(nrg), error('Wb:ERR','invalid usage'); end
+     if ~ischar(nrg), wbdie('invalid usage'); end
      [EK,ED,Inrg]=getEDdata(nrg,'-m','-d','-K');
      Inrg.IE=add2struct('-',EK,ED);
      Inrg.nrg=nrg;
@@ -93,7 +93,7 @@ if isempty(ah)
    ah=smaxis(2,2,'tag',mfilename);
    header('%M :: %s',nrg); nrg_header; addt2fig wb
 elseif any(size(ah)<[2 2])
-   error('Wb:ERR','\n   ERR invalid ah (at least 2x2 required)');
+   wbdie('invalid ah (at least 2x2 required)');
 end
 
 setax(ah(1,1))

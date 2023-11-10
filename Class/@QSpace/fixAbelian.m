@@ -22,9 +22,8 @@ function varargout=fixAbelian(varargin)
      getopt('check_error');
   else xop3=0; nargs=nargin; end
 
-  if nargout
-     if nargs~=nargout, error('Wb:ERR',...
-       '\n   ERR invalid usage (must match input to output variables)'); end
+  if nargout && nargs~=nargout
+     wbdie('invalid usage (must match input to output variables)');
   end
 
   mark=zeros(size(IA));
@@ -49,8 +48,8 @@ function varargout=fixAbelian(varargin)
      for ia=find(mark), k=IA(ia); n=inputname(k);
         if isempty(n)
            if numel(IA)==1, varargout=varargin(IA);
-           else error('Wb:ERR',['\n   ERR ' ... 
-             'invalid usage (failed to access name of input variable)']);
+           else wbdie(...
+             'invalid usage (failed to access name of input variable)');
            end
         else
            assignin('caller',n,varargin{k});

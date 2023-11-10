@@ -39,18 +39,20 @@ function display(A,varargin)
          sperm=getopt('sperm',{});
      end
 
+     use_tex=getopt('--tex');
+
   n=getopt('get_last','');
 
   if isempty(nm), nm=n;
   elseif ~isempty(n), {nm,n}
-     error('Wb:ERR','invalid usage (name specified twice !?)')
+     wbdie('invalid usage (name specified twice !?)')
   end
 
   if Eflag, [A,isd]=sort(A,os{:}); Eflag=isd;
   else
      if ~isempty(sperm)
-        if  length(A(1).Q)~=length(sperm), sperm
-            error('Wb:ERR','\n   ERR invalid sort-permutation'); end
+        if length(A(1).Q)~=length(sperm), sperm
+           wbdie('invalid sort-permutation'); end
         sflag=1; sperm={sperm};
      end
      if sflag, A=sort(A,sperm{:}); end
@@ -69,7 +71,7 @@ function display(A,varargin)
 
   ov2s={'-f','nofac','sep'};
 
-  nl=''; nl_='';
+  nl=''; nl_=''; n2=0;
   if nA<=2 || bitand(vflag,2)
      vflag=bitor(vflag,4);
      nl=char(10); if bitand(vflag,2), nl_='\n'; end
@@ -84,6 +86,10 @@ function display(A,varargin)
   if ~isempty(nm) && bitand(vflag,4), fmt(1)=[]; end
   fmt=regexprep(fmt,'%1g','%g');
 
+  if use_tex
+     fprintf(1,'%s\n','\begin{minted}[escapeinside=??]{text}');
+  end
+
   if nA==1
      if ~isempty(nm)
         if any(nm~=' ') && vflag
@@ -93,9 +99,9 @@ function display(A,varargin)
         s={''};
      end
      if cflag<2
-          display_1(A,m,Eflag,vflag,s{:});
+          display_1(A,m,Eflag,use_tex,vflag,s{:});
      else info(A,s{:},'-C'); end
-elseif nA>1
+  elseif nA>1
      n2=2;
      if vflag && nA>n2, fprintf(1,'\n'); end
      ise=zeros(1,nA); ocr=zeros(1,nA); rr=zeros(1,nA); nl2=nl;
@@ -126,7 +132,7 @@ elseif nA>1
         if ~ise(i)
            if cflag<2 && ...
                (bitand(vflag,2+4) || vflag && nA<=n2)
-                display_1(A(i),m,Eflag,vflag,s);
+                display_1(A(i),m,Eflag,use_tex,vflag,s);
            else info(A(i),s,'-C',oc{:},rmax); end
         else fprintf(1,[nl2 '%s(empty)\n'],s); end
      end
@@ -144,6 +150,8 @@ elseif nA>1
      if ~q(1) || all(q), fprintf(1,'\n'); end
   elseif vflag && nA>n2, fprintf(1,'\n');
   end
+
+  if use_tex, fprintf(1,'%s\n','\end{minted}'); end
 
 end
 
@@ -168,28 +176,30 @@ function kk = ind2sub_aux(s,k)
 end
 
 % -------------------------------------------------------------------- %
-function display_1(A,m,Eflag,vflag,varargin)
+function display_1(A,m,Eflag,use_tex,vflag,varargin)
 
   q=str2num(getenv('WB_VERBOSE'));
   if ~isempty(q) && q>=8
      wbrat(1); q=QSpace; normQS(q); getDimQS(q);
   end
 
-  info(A,varargin{:});
+  if use_tex, o={'--tex'}; else o={}; end
+  info(A,o{:},varargin{:});
+
   r=length(A.Q); if ~r, return, end
 
-  dlen=numel(A.data);
-  if ~dlen && ~isempty(A.Q) && isempty(A.Q{1})
+  Nd=numel(A.data);
+  if ~Nd && ~isempty(A.Q) && isempty(A.Q{1})
      fprintf(1,'   (empty data and Q{:})\n');
      return;
   end
 
   cgflag=gotCGS(A); 
-  sout=cell(1,dlen); l=1;
+  sout=cell(1,Nd); l=1;
 
   if cgflag
      ns=length(find(A.info.qtype==','))+1;
-     if ~isempty(A.Q) && ~isequal(size(A.info.cgr),[dlen, ns])
+     if ~isempty(A.Q) && ~isequal(size(A.info.cgr),[Nd, ns])
         wbdie('CG size mismatch');
      end
      nq=size(A.info.cgr,2);
@@ -221,34 +231,34 @@ function display_1(A,m,Eflag,vflag,varargin)
   m(end+1:2)=m(1); m(end+1:3)=0;
   mx=sum(m); mx=max(ceil(1.2*mx), mx+4); nx=0; xflag=0;
 
-  ss=ones(dlen,r); sp=ones(dlen,1);
-  for i=1:dlen
+  ss=ones(Nd,r); sp=ones(Nd,1);
+  for i=1:Nd
      q=size(A.data{i});
      ss(i,1:numel(q))=q; sp(i)=prod(q);
   end
   if r==1, ss=sort(ss,2);
      if all(ss(:,1)==1), ss=ss(:,2:end);
-     else error('Wb:ERR','invalid rank-1 QSpace'); end
+     else wbdie('invalid rank-1 QSpace'); end
   end
   [~,is]=sort(sp);
 
-  if dlen>max(4,4*mx) && m(3)
+  if Nd>max(4,4*mx) && m(3)
        ix=sort(is(end-m(3)+1:end));
   else ix=[]; end
 
   i=0;
-  while i<dlen, i=i+1;
-      if i>=m(1) && dlen>mx
+  while i<Nd, i=i+1;
+      if i>=m(1) && Nd>mx
          if ~isempty(ix), ix(find(ix<i))=[];
             if ~isempty(ix)
-               if ix(1)-i<3
+               if ix(1)-i<3 && ~xflag
                     m(1)=ix(1);
                else i=ix(1); nx=nx+1; if xflag<1, xflag=1; end
                end
             end
          end
-         if i>=m(1) && isempty(ix), j=dlen-m(2)+1;
-            if j>i+2 && i<=dlen
+         if i>=m(1) && isempty(ix), j=Nd-m(2)+1;
+            if j>i+2 && i<=Nd
                i=j; if nx~=1, xflag=1; end
             end
          elseif ~isempty(ix), ix(1)=[];
@@ -289,7 +299,10 @@ function display_1(A,m,Eflag,vflag,varargin)
       if 1 || Eflag
          if cgflag
             [dfac,sc]=get_cgr_fac(A,i,'-S');
-            if ~isempty(sc); sc=['{' sc '}']; end
+            if ~isempty(sc)
+               if use_tex, sc=sqrt_to_tex(sc,1); end
+               sc=['{' sc '}'];
+            end
          else sc=''; end
       end
 
@@ -312,11 +325,11 @@ function display_1(A,m,Eflag,vflag,varargin)
          continue
 
       elseif Eflag
-         if ~isreal(Ai), error('Wb:ERR',...
-           '\n   ERR real data{} expected (got complex)'); end
+         if ~isreal(Ai), wbdie('real data{} expected (got complex)'); end
          if Eflag==1, Ai=diag(Ai); sa=size(Ai); end
-         if numel(find(sa>1))>1, error('Wb:ERR',...
-           '\n   ERR invalid data{} (diagonal representation expected)'); end
+         if numel(find(sa>1))>1
+            wbdie('invalid data{} (diagonal representation expected)');
+         end
          n=numel(Ai);
          if n<4
             q=sprintf([' ' fstr{1}],Ai);

@@ -7,7 +7,7 @@ function gdisp(A)
 
   if nargin~=1 || numel(A)~=1
      fprintf(1,'\n'); eval(['help ' mfilename]);
-     if nargin || nargout, error('Wb:ERR','invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   r=numel(A.Q); n=numel(A.data); ss=ones(n,r);
@@ -22,7 +22,8 @@ function gdisp(A)
 
      q=strread(A.info.qtype,'%s','whitespace',','); l=0; 
      if numel(q)~=nsym, A.info.qtype, nsym
-     error('Wb:ERR','\n  ERR failed to interprete symmetries'); end
+        wbdie('failed to interprete symmetries');
+     end
 
      cgs=A.info.cgs; sc=cell(n,nsym);
 

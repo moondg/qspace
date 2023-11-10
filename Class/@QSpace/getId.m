@@ -51,7 +51,7 @@ function A=getId(A,qs,k)
   t=regexprep(A.info.itags,'*','');
   if nargin<3, k=0;
   elseif k>numel(t)
-     error('Wb:ERR','\n   ERR index out of bounds (k=%d/%d)',k,numel(t));
+     wbdie('index out of bounds (k=%d/%d)',k,numel(t));
   end
 
   if k, A.info.itags={t{k}, [t{k} '*']};

@@ -28,16 +28,16 @@ function A=applyZ(A,idx,varargin)
            r=getsym(Ak,'-r'); d=getsym(Ak,'-d');
            if isempty(iq), i=find(r==0);
               if numel(i)==1, iq=sum(d(1:i));
-              else error('Wb:ERR','\n   ERR invalid usage (missign iq)');
+              else wbdie('invalid usage (missign iq)');
               end
            elseif numel(iq)~=1 || isempty(find(cumsum(d)==iq)) || r(iq)
-              iq, error('Wb:ERR','\n   ERR invalid index iq !?'); 
+              iq, wbdie('invalid index iq !?'); 
            end
         end
 
         r=[numel(Ak.Q), size(Ak.Q{1},2)];
         if any(idx>r(1)) || iq>r(2)
-           error('Wb:ERR','\n   ERR index out of bounds (%s/%d; %d/%d) !?',...
+           wbdie('index out of bounds (%s/%d; %d/%d) !?',...
            vec2str(idx,'-f'),r(1),iq,r(2));
         end
 
@@ -48,8 +48,8 @@ function A=applyZ(A,idx,varargin)
 
         if qfac
            q=q*qfac; e=norm(q-round(q));
-           if e>1E-8, error('Wb:ERR',...
-             '\n   ERR got non-integer charge labels !?');
+           if e>1E-8
+              wbdie('got non-integer charge labels !?');
            end
         end
 

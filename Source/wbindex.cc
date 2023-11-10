@@ -751,16 +751,19 @@ itag_& itag_::AppendChar(char q, const char *qs) {
 
    if (!IS_CHAR_ITAG(q)) wblog(FL,"ERR %s() invalid char %s",FCT,cSTR(q));
 
-   for (; i<n; ++i) {
-      if (!( s[i] & char(127) )) { break; }
-   }
+   for (; i<n; ++i) { if (!(s[i] & char(127))) { break; }}
 
    if (!i) { s[i]+=q; } 
-   else {
-      char x=(s[i-1] & char(127));
-      if (qs && strchr(qs,x)) { --i; } 
-      else if (i==n) wblog(FL,
-         "ERR %s() itag out of bounds (%s)",FCT,STR(*this));
+   else { 
+      char c=(s[i-1] & char(127));
+      if (qs && strchr(qs,c)) { --i; } 
+      else if (i<n) {
+         if (IS_CHAR_MARK(c)) {
+            s[i] = (s[i-1] & char(127)) + (s[i] & char(128));
+            --i;
+         }
+      }
+      else wblog(FL,"ERR %s() itag out of bounds (%s)",FCT,STR_(this));
 
       s[i] = q + (s[i] & char(128));
    }
@@ -785,8 +788,8 @@ itag_& itag_::MarkDual(char m, bool always) {
          s[i] = (s[i] & 128) + m; 
       }
       else { wblog(FL,
-        "ERR %s() itag string out of bounds (%s)\n(length "
-        "must not exceed %d chars for %s)",FCT,STR(*this),n-1,myname);
+        "ERR %s() itag string out of bounds (%s)\n(length must "
+        "not exceed %d chars for %s)",FCT,STR(*this),n-1,myname);
       }
    }
    return *this;

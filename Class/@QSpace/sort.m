@@ -55,7 +55,7 @@ function [A,isd]=sort(A,perm)
         if isequal(perm,'-S'), o={'descend'}; else o={}; end
         [ss,is]=sort(prod(ss,2),o{:});
 
-     else perm, error('Wb:ERR','\n   ERR invalid perm');
+     else perm, wbdie('invalid perm');
      end
 
      for i=1:r, A(k).Q{i}=A(k).Q{i}(is,:); end

@@ -32,7 +32,7 @@ function S=SymOp(varargin)
 
   if nargin && ischar(v1) && numel(v1)==1, t=lower(v1);
      if isempty(find(t=='+-z'))
-        error('Wb:ERR','\n   ERR invalid type=%s !?',v1);
+        wbdie('invalid type=%s !?',v1);
      end
      varargin=varargin(2:end);
   else t=''; end
@@ -53,7 +53,7 @@ function S=SymOp(varargin)
 
   if e
      eval(['help ' mfilename]), if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   S=struct('istr',varargin{1},'op',varargin{2},'hc',hc,'type',t);

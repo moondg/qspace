@@ -18,15 +18,14 @@ void mexFunction(
     int nargin, const mxArray *argin[]
 ){ Wb::CleanUp aclu; try { 
 
-    unsigned i,r=-1; double eps=1E-12;
+    unsigned i, r=-1; double eps=1e-12;
 
-    MX_CHECK_HELPER_NARGS(1,-1,-1); 
+    MX_CHECK_HELPER_NARGS(1,3,-1); 
 
     mxIsQSpace(FL,argin[0],r,'c',-1,NULL,NULL,
        "first argument requires valid QSpace");
 
-    if (nargin>1)
-    if (mxGetNumber(argin[1], eps)) wbdie(FL,str);
+    if (nargin>1) { if (mxGetNumber(argin[1],eps)) { wbdie(FL,str); }}
 
     if (mxIsQSpace(argin[0])>0) { 
        const QSpace<gTQ,double> A(argin[0],'r');

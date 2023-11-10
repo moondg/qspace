@@ -37,8 +37,9 @@ function [ss,s]=getsym(A,varargin)
   for k=1:numel(A), Ak=struct(A(k));
      if isfield(Ak.info,'qtype') && ~isempty(Ak.info.qtype), s=Ak.info.qtype;
         q=strread(s,'%s','delimiter',',');
-        if numel(q)>size(Ak.Q{1},2), error('Wb:ERR',['\n   ERR ' ...
-       'inconsistent symmetry type (''%s''; got rank-%d)'],s,size(Ak.Q{1},2)); end
+        if numel(q)>size(Ak.Q{1},2), wbdie(...
+          'inconsistent symmetry type (''%s''; got rank-%d)',s,size(Ak.Q{1},2));
+        end
         if cflag, s=q; end
      else
         if ~isempty(Ak.Q), ns=size(Ak.Q{1},2);
@@ -46,8 +47,8 @@ function [ss,s]=getsym(A,varargin)
            else s=repmat(',A',1,ns); s=s(2:end); end
         else s={}; end
      end
-     if k>1, if ~isequal(s,ss), error('Wb:ERR',...
-       '\n   ERR inconsistent symmetry type (%s <> %s)',s,ss); end
+     if k>1, if ~isequal(s,ss)
+        wbdie('inconsistent symmetry type (%s <> %s)',s,ss); end
      else ss=s; end
   end
 
@@ -69,10 +70,10 @@ function [ss,s]=getsym(A,varargin)
      end
 
      if ~isempty(ir)
-        if numel(ir)>1, error('Wb:ERR',['\n   ' ... 
-          'ERR SINGLE index expected for ''ir''']); end
-        if ~isempty(dim), error('Wb:ERR',[ '\n   ' ...
-          'ERR dimension shall be specified with options `ir'' itself']); end
+        if numel(ir)>1, wbdie('SINGLE index expected for ''ir''');
+        elseif ~isempty(dim), wbdie(...
+          'dimension shall be specified with options `ir'' itself');
+        end
 
         s=ss{ir};
         ic=cumsum([1 ds]); ss=ic(ir):(ic(ir+1)-1);

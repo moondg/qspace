@@ -40,7 +40,7 @@ function ee=plot_nrg_iter(varargin)
 
   if isempty(usage) || numel(varargin)>2
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
 ah=smaxis(1,1,'tag',mfilename); header('%M'); addt2fig Wb

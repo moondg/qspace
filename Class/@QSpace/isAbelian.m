@@ -7,6 +7,7 @@ function ia =isAbelian(A,varargin)
   getopt('check_error');
 
   ia=zeros(size(A));
+  apat='\<APZ\d*';
 
   for k=1:numel(A), Ak=A(k);
      if ~isfield(Ak.info,'cgr') || isempty(Ak.info.cgr)
@@ -16,26 +17,26 @@ function ia =isAbelian(A,varargin)
      if lflag
         q=strread(Ak.info.qtype,'%s','delimiter',',');
         if isempty(q), ia(k,1)=2; continue; end
-        q=regexp(q,'\<A\>'); n=numel(q); 
+        q=regexp(q,apat); n=numel(q); 
         for i=1:n
            switch numel(q{i})
               case 1, q{i}=1;
               case 0, q{i}=0;
-              otherwise error('Wb:ERR','\n   ERR unexpected symmetry');
+              otherwise wbdie('unexpected symmetry');
            end
         end
-        ia(k,1:n)=cat(2,q{:});
+        ia(k,1:n)=[q{:}];
      else
-        q=regexprep(Ak.info.qtype ,'\<A\>,*','');
+        q=regexprep(Ak.info.qtype ,[apat ',*'],'');
         if isempty(q), ia(k)=2; continue; end
      end
   end
 
-  if isfield(A(1).info,'cgr') && ~isempty(A(1).info.cgr)
-  if lflag && size(ia,2)~=size(A(1).info.cgr,2)
-     wblog('WRN','mismatch between size(ia,2) and rank (%g/%g)',...
-     size(ia,2),numel(A(1).info.cgr));
-  end
+  if lflag && isfield(A(1).info,'cgr') && ~isempty(A(1).info.cgr)
+     q=[size(ia,2), size(A(1).info.cgr,2) ];
+     if diff(q)
+        wblog('WRN','mismatch between size(ia,2) and rank (%g/%g)',q);
+     end
   end
 
 end

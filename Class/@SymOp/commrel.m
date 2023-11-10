@@ -24,8 +24,9 @@ function IC=commrel(G,varargin)
   g2=getops(G,'-catV');
 
   [u,s,v]=svd(g2,'econ'); s=diag(s);
-  k=find(s<1E-12); if ~isempty(k), error('Wb:ERR',['\n   ' ...
-   'ERR input group is not linearly independent (%g)'],numel(k)); end
+  k=find(s<1E-12); if ~isempty(k)
+    wbdie('input group is not linearly independent (%g)',numel(k));
+  end
 
   n=numel(gg); xx=zeros(n);
   for i=1:n

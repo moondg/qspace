@@ -4,7 +4,7 @@ function s=get_mstr(A)
 % Wb,Dec05,11
 
    if ~isa(A,'SymOp') || numel(A)~=1
-   error('Wb:ERR','\n   ERR invalid usage'); end
+   wbdie('invalid usage'); end
 
    s=A.istr;
    s=regexprep(s,'^[^=]+=[ ]+','');

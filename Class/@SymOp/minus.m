@@ -25,7 +25,7 @@ function C=minus(A,B)
      as=regexprep(A.istr,'^[^=]+=[ ]+','');
      C=A; C.istr=[ as ' - <M>' ];
      C.op=A.op-B;
-  else error('Wb:ERR','\n   ERR invalid usage'); end
+  else wbdie('invalid usage'); end
 
 end
 

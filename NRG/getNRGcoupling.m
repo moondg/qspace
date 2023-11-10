@@ -20,9 +20,8 @@ function [ff,N,I] = getNRGcoupling(Gamma,Lambda,N,varargin)
 %
 % Wb,May23,06
 
-  if nargin<3
-     eval(['help ' mfilename]);
-     error('Wb:ERR','Invalid number of input arguments');
+  if nargin<3, helpthis
+     wbdie('Invalid number of input arguments');
   end
 
   if nargout>1, I=[]; end
@@ -57,7 +56,7 @@ function [ff,N,I] = getNRGcoupling(Gamma,Lambda,N,varargin)
   if N<=1, ff=[]; return; end
 
   if ~isnumber(Gamma,Lambda,N)
-     error('Wb:ERR','invalid usage (need scalar arguments)'); end
+     wbdie('invalid usage (need scalar arguments)'); end
 
   if xflag
      n=ceil(-2*log(1E-15)/log(Lambda));
@@ -98,7 +97,7 @@ function [ff,N,I] = getNRGcoupling(Gamma,Lambda,N,varargin)
 
      I.fx=ff; e=max(abs(ff-fx));
      if e>1E-12
-        error('Wb:ERR','Oliveira - mismatch in couplings (%.3g)',e); end
+        wbdie('Oliveira - mismatch in couplings (%.3g)',e); end
   else
      ff=fx;
   end

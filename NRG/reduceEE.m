@@ -19,7 +19,7 @@ function EE=reduceEE(EE,varargin)
 
   if nargin<1 || ~isnumeric(EE)
      eval(['help ' mfilename]);
-     if nargin || nargout, error('Wb:ERR','invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   s=size(EE); if s(1)<s(2), wblog('ERR',...

@@ -12,12 +12,13 @@ function bt(varargin)
 
   persistent gStack iStack
 
-  n=0; iS=[]; nargs=0; df=[];
+  n=0; iS=[]; nargs=0; df=[]; vflag=1;
   if nargin
      if isnumber(varargin{1}), n=varargin{1}; varargin(1)=[]; end
      nargs=numel(varargin);
      if nargs
-        if ~isempty(regexp(varargin{1},'^(--show|-v$)'))
+        if ~isempty(regexpi(varargin{1},'^(--show|-v$)'))
+             vflag=2; if isequal(varargin{1}(1:2),'-V'), vflag=3; end
              iS=varargin(2:end);
         elseif ~isempty(regexp(varargin{1},'^--(up|down)(?@q=$1;)')) && nargs<=2
            df=[varargin{2:end}];
@@ -68,7 +69,11 @@ end
   else
      N=numel(S);
      if isempty(iS) && nargs
-        iS=[N-2:N];
+        if vflag>2 || N<=3
+          iS=1:N;
+        else 
+          iS=1:3;
+        end
      end
      if isempty(iS), return; end
   end

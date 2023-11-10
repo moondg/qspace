@@ -38,24 +38,6 @@
 %     specified. By default, a conj flag if present in t3
 %     will be ignored, with the following exception:
 %
-%     [08/2023] When t3 is written in the flagged format '...' -> '-m:...'
-%     this respects a combination of the trailing marker (') and
-%     conj flag (*) in the following sense: when inserting an identity
-%     the fused space may already refer to a particular existing itag
-%     for a given leg from the perspective of the rank-3 identity
-%     A-tensor generated here. If t3 already has conj flag, it already
-%     reflects an outgoing index, and hence can be kept. However,
-%     if t3 does not have a trailing conj flag, then the identity
-%     generated here effectively reverts the arrow and in this sense,
-%     rather refers to the dual space. In order to reflect this in the
-%     fused space, the itag t3 will `marked' as dual state space
-%     which by QSpace convention is indicated by a trailing prime (')
-%     as part of the itag, hence before the conj flag. This acts
-%     as a toggle, i.e., if a trailing prime is already present
-%     in t3, then it is removed instead.
-%
-%  identity generated here effectively reverts the
-%
 %     [06/01/2019] In addition, for an input A-tensor with LRs
 %     index order convention, its itags may be inherited to C
 %     by specifying <ta> xor <tb> (see usage above) in the format
@@ -74,6 +56,26 @@
 %     conj-flags are properly adjusted as needed.
 %     Conversely, getIdentityQS(A,2,'-A:~',E)
 %     generates itags {K02,s02,K01~*}, e.g. used for R->L sweep.
+%
+%     [08/2023] The itag t3 on the fused index may be written
+%     in the flagged format '...' -> '-m:...'  or  '-m!...'
+%     which interprets trailing marker (') and conj (*) flags
+%     in the sense described for '-m:..' here (the behavior is
+%     simply reversed w.r.t. to the conjugate flag for '-m!..'):
+%     When inserting an identity the fused space may already
+%     refer to a particular existing itag for that leg.
+%     From the perspective of the rank-3 identity A-tensor
+%     generated here, if t3 has a trailing conj marker, it already
+%     reflects an outgoing index, and hence can be kept. However,
+%     if t3 does not have a trailing conj flag, then the identity
+%     generated here effectively reverts the arrow. As such
+%     it rather refers to the dual space. In order to reflect
+%     this in the fused space, the itag t3 will `marked' as
+%     dual state space which by QSpace convention is indicated
+%     by a trailing prime (') as part of the itag, hence before
+%     the conj flag. This acts as a toggle, i.e., if a trailing
+%     prime is already present in t3, adding another one
+%     rather removes it, instead.
 %
 %  Finally, the output index order may be changed by specifying
 %  a permutation perm to be applied on the final object.

@@ -8,7 +8,7 @@ function [dd,qq,I]=getSymDim(varargin)
 
   for i=1:nargin, if ~ischar(varargin{i})
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end, end
 
   t=varargin; t(2,1:end-1)={' '}; istr=[t{:}];

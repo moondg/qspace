@@ -31,13 +31,13 @@ function [chi,Iout]=getSpinSuscept2(Simp,varargin)
 
   if nargs
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   if ischar(NRG)
      f=sprintf('%s_info.mat',NRG);
      if ~exist(f,'file')
-        error('Wb:ERR','\n   ERR invalid NRG data (%s)',NRG);
+        wbdie('invalid NRG data (%s)',NRG);
      end
      Inrg=load(f);
   end
@@ -50,9 +50,7 @@ function [chi,Iout]=getSpinSuscept2(Simp,varargin)
 
   i=find(TT<=0); n=numel(i);
   if n
-     if n>1, error('Wb:ERR',...
-       '\n   ERR invalid T (nan may only be set once)'); 
-     end
+     if n>1, wbdie('invalid T (nan may only be set once)'); end
      rw(:,i)=repmat(Inrg.rhoNorm(:,2),1,n);
      TT(i)=Inrg.rhoT;
   end
@@ -65,7 +63,7 @@ function [chi,Iout]=getSpinSuscept2(Simp,varargin)
      if n
         e=norm(rw(:,i)-repmat(Inrg.rhoNorm(:,2),1,n));
         if norm(TT(i)-Inrg.rhoT)~=0 || e>1E-12
-           error('Wb:ERR','\n   ERR FDM weigth inconsistency (@ %.3g)',e); 
+           wbdie('FDM weigth inconsistency (@ %.3g)',e); 
         end
      end
   end
@@ -112,8 +110,8 @@ function [chi,Iout]=getSpinSuscept2(Simp,varargin)
            STOT=QSpace(STOT)+contractQS(q.AK,'!2*',{q.AK,Simp,['-op:' t]});
         end
      else
-        if ~isempty(q.AD.data), error('Wb:ERR',['\n   ERR got ' ... 
-           'NRG truncation already with first Wilson site !??']);
+        if ~isempty(q.AD.data), wbdie(...
+           'got NRG truncation already with first Wilson site !?');
         end
         d=getDimQS(q.AK);
         if d(end,1)>1
@@ -122,7 +120,7 @@ function [chi,Iout]=getSpinSuscept2(Simp,varargin)
         end
 
         if isempty(SKK.data)
-           error('Wb:ERR','\n   ERR invalid Simp contraction (empty)');
+           wbdie('invalid Simp contraction (empty)');
         end
      end
 
@@ -171,22 +169,21 @@ function [chi,iS]=getSpinSuscept2_iter(Simp,H,T,iS)
      chi=get_Stot(Simp); return
   elseif nargin<3 || nargin>4
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   Simp=struct(Simp);
 
   if nargin<4 || isempty(iS)
-     if numel(Simp.Q)<3, error('Wb:ERR',[...
-       '\n   ERR cannot determine iS from abelian Simp (Sz only)' ...
-       '\n   ERR => must specify iS upon input']);
+     if numel(Simp.Q)<3, wbdie([...
+       'cannot determine iS from abelian Simp (Sz only)\n' ...
+       '=> must specify iS upon input']);
      end
 
      q=std((Simp.Q{1}-Simp.Q{2}).^2,[],1); i=find(q); n=numel(i);
      if n>1
         s=sprintf('got %g symmetries with varying q-labels (%g)',n);
-        if numel(find(q>0.99*max(q)))>1
-             error('Wb:ERR',['\n   ',s]);
+        if numel(find(q>0.99*max(q)))>1, wbdie(s);
         else wblog('WRN',s); end
      end
      if max(q)>1E-12
@@ -194,16 +191,15 @@ function [chi,iS]=getSpinSuscept2_iter(Simp,H,T,iS)
      else iS=(find(Simp.Q{3}(1,:)==2));
      end
      if numel(iS)~=1
-        iS, error('Wb:ERR','\n   ERR failed to determine iS');
+        iS, wbdie('failed to determine iS');
      end
   elseif numel(iS)~=1
-     iS, error('Wb:ERR','\n   ERR invalid iS');
+     iS, wbdie('invalid iS');
   end
 
   if numel(Simp.Q)>2
      if norm(diff(Simp.Q{3},[],1))>1E-8 || norm(Simp.Q{3}(:,iS)-2)>1E-8
-        error('Wb:ERR',['\n   ' ... 
-       'ERR invalid Simp (expecting iROP here; %g)!'],iS);
+        wbdie('invalid Simp (expecting iROP here; %g)!',iS);
      end
   end
 
@@ -229,16 +225,16 @@ function [chi,iS]=getSpinSuscept2_iter(Simp,H,T,iS)
   aflag=iff(diff(dS(:,3)),0,1);
 
   if ~isa(H,'QSpace'), H=QSpace(H); end
-  if isdiag(H,'-d')~=2, error('Wb:ERR',...
-    '\n   ERR invalid Hamiltonian (expected in diagonal format!)');
+  if isdiag(H,'-d')~=2
+     wbdie('invalid Hamiltonian (expected in diagonal format!)');
   end
 
   [i1,i2,I]=matchIndex(Simp.Q{1},H.Q{1});
-  if ~isempty(I.ix1), error('Wb:ERR',...
-     '\n   ERR Simp appears incomplete/incompatible w.r.t. given H!');
+  if ~isempty(I.ix1)
+     wbdie('Simp appears incomplete/incompatible w.r.t. given H!');
   end
 
-  if T<=0, error('Wb:ERR','\n   ERR invalid temperature (%g)',T); end
+  if T<=0, wbdie('invalid temperature (%g)',T); end
   beta=1/T;
 
   R=getrhoQS(H,beta);

@@ -105,7 +105,7 @@ function [oo,aa,ah,I] = rsmoothSpec(Om,Aa,varargin)
   else
      if iscell(afac)
         if numel(afac)~=2 || ~isnumeric(afac{1}) || ~ischar(afac{2})
-        afac, error('Wb:ERR','invalid afac'); end
+        afac, wbdie('invalid afac'); end
 
         facstr=afac{2}; afac=afac{1};
      elseif afac~=1
@@ -154,7 +154,7 @@ setax(ah(1));
          adisp{i}=sprintf('A_{%g}(\\omega)',i);
      end
   elseif ~iscell(adisp)
-  adisp, error('Wb:ERR','\n   ERR invalid adisp'); end
+  adisp, wbdie('invalid adisp'); end
 
   ox=Om(:); ox(find(ox==0))=nan; ip=find(ox>0); in=find(ox<0);
 

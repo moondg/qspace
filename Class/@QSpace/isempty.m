@@ -15,8 +15,8 @@ function ie=isempty(A)
 
         if e || xor(id,iq) && ~isscalar(A)
            if n==1
-                error('Wb:ERR','\nsevere QSpace inconsistency !??');
-           else error('Wb:ERR','\nsevere QSpace inconsistency (%d/%g) !?',k,n);
+                wbdie('severe QSpace inconsistency !?');
+           else wbdie('severe QSpace inconsistency (%d/%g) !?',k,n);
         end, end
 
         if ~id, ie=false; break; end

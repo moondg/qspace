@@ -2,7 +2,7 @@
 %
 %      Obtain eigenspectrum and eigenbasis of input 'Hamiltonian' H
 %      in QSpace represenation. The eigendecomposition is split into
-%      kept (K) and discarded (T) state space, as governed by the
+%      kept (K) and discarded (D) state space, as governed by the
 %      truncation parameters Nkeep and Etrunc (for actual Hamiltonians)
 %      or Rtrunc (for density matrices R:=H).
 %

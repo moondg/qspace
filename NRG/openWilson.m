@@ -17,7 +17,7 @@ function [fo,I]=openWilson(Gamma,Lambda,N,varargin)
     ~isnumber(N) || N<3 || N~=round(N) || ~isnumber(z)
 
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   z=mod(z,1);

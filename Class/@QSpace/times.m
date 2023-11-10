@@ -12,7 +12,7 @@ function C=times(A,B,opt)
   if nargin==3 && isequal(opt,'--skip-cgc') cgflag=0;
   elseif nargin~=2
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   i=[ isnumeric(A), isnumeric(B) ];
@@ -32,8 +32,8 @@ function C=times(A,B,opt)
   else
      if cgflag
         i=find([gotCGS(A), gotCGS(B)]);
-        if numel(i)==1, error('Wb:ERR',['\n   ' ... 
-           'ERR invalid usage (got operator with and without CGC spcaces !??)']);
+        if numel(i)==1, wbdie(...
+          'invalid usage (got operator with and without CGC spcaces !?)');
         elseif  isempty(i), cgflag=0; end
      end
 
@@ -41,12 +41,12 @@ function C=times(A,B,opt)
      QB=cat(2,B.Q{:});
 
      if numel(A.Q) ~= numel(B.Q) || size(QA,2) ~= size(QB,2)
-        error('Wb:ERR','\n   ERR incompatible QSpaces when using .*');
+        wbdie('incompatible QSpaces when using .*');
      end
 
      if size(uniquerows(QA),1)~=size(QA,1) ...
      || size(uniquerows(QB),1)~=size(QB,1)
-        error('Wb:ERR','\n   ERR QSpaces do not have unique Q-labels');
+        wbdie('QSpaces do not have unique Q-labels');
      end
 
      [Ia,Ib,I]=matchIndex(QA,QB,'-s');
@@ -60,7 +60,7 @@ function C=times(A,B,opt)
      end
 
      if cgflag
-        error('Wb:ERR','\n   ERR invalid usage (got non-abelian CGC data');
+        wbdie('invalid usage (got non-abelian CGC data');
      end
   end
 

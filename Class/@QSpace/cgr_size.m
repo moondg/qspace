@@ -5,7 +5,7 @@ function s=cgr_size(A,i,j)
 % e.g. used by display()
 
   if nargin~=3 || numel(A)~=1 || numel(i)~=1 || numel(j)~=1
-     error('Wb:ERR','\n   ERR invalid usage'); end
+     wbdie('invalid usage'); end
 
   r=numel(A.Q);
   if ~gotCGS(A), s=ones(1,r); return; end

@@ -22,7 +22,7 @@ function P=getproj(H,varargin)
      if isd==1
         P=struct(diag(H));
      else
-        if isd~=2, error('Wb:ERR','\n   ERR invalid isd=%g',isd); end
+        if isd~=2, wbdie('invalid isd=%g',isd); end
         P=struct(H);
      end
      ee=cat(1,P.data{:});
@@ -36,9 +36,9 @@ function P=getproj(H,varargin)
 
   for i=1:numel(P.data)
      x=P.data{i};
-       if isempty(x), error('Wb:ERR','\n   ERR got empty data'); end
+       if isempty(x), wbdie('got empty data'); end
      s=size(x); s=s(find(s>1)); if isempty(s), s=1; end
-       if numel(s)>1, error('Wb:ERR','\n   ERR got matrix !??'); end
+       if numel(s)>1, wbdie('got matrix !??'); end
 
      j=find(x<eref); n=numel(j);
      if n, d=d+n;

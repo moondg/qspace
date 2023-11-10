@@ -26,20 +26,22 @@ function [ph,I]=nrgphase(NRG,varargin)
 
   if nargin<1
      eval(['help ' mfilename]);
-     if nargin || nargout, error('Wb:ERR','\n   invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   if ~ischar(NRG)
      if ~isa(NRG,'QSpace') && ~isfield(NRG,'Q')
-     error('Wb:ERR','\n   invalid usage (invalid NRG space)'); end
+        wbdie('invalid usage (invalid NRG space)');
+     end
      HK=NRG;
   else
      if nargin>1 && isnumeric(varargin{1})
         k=varargin{1}; varargin=varargin(2:end);
      else
         f=[NRG '_info.mat'];
-        if ~exist(f,'file'), error('Wb:ERR',sprintf(...
-        '\n   invalid NRG space (file %s does not exist)',f)); end
+        if ~exist(f,'file')
+           wbdie('invalid NRG space (file %s does not exist)',f);
+        end
 
         load(f,'E0'); n=length(E0);
         if E0(end)<E0(end-1)
@@ -47,9 +49,9 @@ function [ph,I]=nrgphase(NRG,varargin)
      end
 
      f=sprintf('%s_%02d.mat',NRG,k);
-
-     if ~exist(f,'file'), error('Wb:ERR',sprintf(...
-     '\n   invalid NRG space (file %s does not exist)',f)); end
+     if ~exist(f,'file')
+        wbdie('invalid NRG space (file %s does not exist)',f);
+     end
 
      s=load(f,'HK','HT');
      if isempty(s.HK.Q), HK=s.HT; else HK=s.HK; end
@@ -65,7 +67,7 @@ function [ph,I]=nrgphase(NRG,varargin)
   getopt('check_error');
 
   [EQD,qq]=getEQdata(QSpace(HK),'iq',iqn);
-  if isempty(EQD), error('Wb:ERR','\n   empty QSpace !??'); end
+  if isempty(EQD), wbdie('empty QSpace !?'); end
 
   if EQD(1)~=0
      wblog('WRN','lowest energy is unequal zero !?? (%g)',EQD(1));
@@ -92,8 +94,9 @@ function [ph,I]=nrgphase(NRG,varargin)
 
   m=EQD(i0,end);
   if numel(i0)==1 && m>1
-    if mod(length(ph),m), error('Wb:ERR',['\n   ERR expecting ' ...
-      'multiple of ground state degeneracy (%g/%g=?)'],numel(ph),m); end
+    if mod(length(ph),m), wbdie(...
+      'expecting multiple of ground state degeneracy (%g/%g=?)',numel(ph),m);
+    end
     e=norm(diff(reshape(ph,m,[]),1));
     if e<1E-4
        wblog(' * ','removing ground state degeneracy (g=%g)',m); 

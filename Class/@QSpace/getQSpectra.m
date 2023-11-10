@@ -19,9 +19,8 @@ function [q,EE,qq,dz,DZ]=getQSpectra(H,ws)
 % Wb,Apr12,12
 
    Q=H.Q; if numel(Q)~=2 || ~isequal(Q{:})
-      error('Wb:ERR','\n   ERR invalid (scalar) operator'); end
-   if isdiag(H,'-d')~=2, error('Wb:ERR',['\n   ' ...
-     'ERR got non-diagonal input operator !?']); end
+      wbdie('invalid (scalar) operator'); end
+   if isdiag(H,'-d')~=2, wbdie('got non-diagonal input operator !?'); end
 
    if isreal(ws), ws=getsym(H,'-I',ws); end
 

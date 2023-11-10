@@ -5,7 +5,7 @@ function A=uplus(A)
 %
 % Wb,Sep17,06
 
-% nothing to be done
+% A=+A; // nothing to be done
 
 end
 

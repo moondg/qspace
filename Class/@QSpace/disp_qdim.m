@@ -14,7 +14,7 @@ function disp_qdim(A,varargin)
 
   if nargout
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   if ~isempty(SOP)
@@ -22,7 +22,7 @@ function disp_qdim(A,varargin)
         dz(i)=numel(SOP(i).Sz);
      end
      if ~isempty(split) && ~isequal(split,dz), split,dz
-        error('Wb:ERR','\n   ERR inconsistent split/SOP');
+        wbdie('inconsistent split/SOP');
      else split=dz; end
 
      sym={ SOP.info }; if ~isempty(P), sym=sym(P); end
@@ -35,16 +35,16 @@ function disp_qdim(A,varargin)
 
   ns=size(dc,2);
   if isempty(split)
-     if ns~=size(Q,2), error('Wb:ERR',...
-       '\n   ERR got rank>1 symmetry => must specify split'); end
+     if ns~=size(Q,2)
+        wbdie('got rank>1 symmetry => must specify split'); end
      split=ones(1,ns);
   end
 
   Q=mat2cell(Q,size(Q,1),split);
 
   if ~isempty(P)
-     if numel(P)~=ns, error('Wb:ERR',...
-       '\n   ERR invalid permutation (expected length %d)',ns); end
+     if numel(P)~=ns
+        wbdie('invalid permutation (expected length %d)',ns); end
      Q=Q(P); dc=dc(:,P);
   end
 

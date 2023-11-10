@@ -10,8 +10,9 @@ function C=sumops(CC,varargin)
    else ii=1:numel(CC); end
 
    if isempty(fac), fac=ones(size(ii));
-   elseif numel(fac)~=numel(ii), error('Wb:ERR',...
-   '\n   ERR invalid weight factors (dimension mismatch)'); end
+   elseif numel(fac)~=numel(ii)
+      wbdie('invalid weight factors (dimension mismatch)');
+   end
 
    if isempty(ii), C=CC([]); return; end
 

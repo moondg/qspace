@@ -36,12 +36,12 @@ function [TK,Itk]=getTKondo2(Simp,varargin)
 
   if numel(varargin) || ~ischar(NRG)
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   f=[ NRG, '_info.mat' ]; if ~exist(f,'file')
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   Inrg=load(f);

@@ -17,7 +17,7 @@ function [M,qex]=LoadMData(sym,varargin)
 
   if numel(varargin)==0
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   if ischar(varargin{1})
@@ -27,7 +27,7 @@ function [M,qex]=LoadMData(sym,varargin)
   else
      if numel(varargin)~=2 || ...
        ~isnumeric(varargin{1}) || ~isnumeric(varargin{2})
-        error('Wb:ERR','\n   ERR invalid usage');
+        wbdie('invalid usage');
      end
      q=cat(1,varargin{:});
      q=qmat2char(q);
@@ -87,7 +87,7 @@ function [M,qex]=LoadMData(sym,varargin)
 
         [i1,i2,I]=matchIndex(double(jj),double(j2));
         if ~isempty(I.ix2)
-           error('Wb:ERR','\n   ERR failed to find R-data in mp3 !?'); 
+           wbdie('failed to find R-data in mp3 !?'); 
         end
 
         [~,is]=sort(dd(I.ix1)); nx=numel(is);
@@ -124,7 +124,7 @@ function [M,qex]=LoadMData(sym,varargin)
         M.cgr=cgr; M.J=q3; M.omult=ss(:,4);
      end
   else
-     error('Wb:ERR','\n   ERR file not found "%s"',f);
+     wbdie('file not found "%s"',f);
   end
 
 end

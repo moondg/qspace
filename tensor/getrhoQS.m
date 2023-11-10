@@ -22,7 +22,7 @@ function [xr,Iout]=getrhoQS(H,varargin)
   for i=1:numel(H.data), q=H.data{i}; s=size(q);
      if numel(find(s>1))<=1, continue; end
      if any(diff(s)), s
-        error('Wb:ERR','\n   ERR got rectangular matrix !?'); end
+        wbdie('got rectangular matrix !?'); end
      if norm(q-diag(diag(q)))<1E-14, H.data{i}=diag(q)';
      else 
         if ~qflag, wblog(1,'WRN','diagonalizing H'); end
@@ -39,7 +39,7 @@ function [xr,Iout]=getrhoQS(H,varargin)
   if isempty(beta)
      if dE>1E-6, beta=1E5/dE; else beta=100; end
   end
-  if beta<0, error('Wb:ERR','invalid beta (%g)',beta); end
+  if beta<0, wbdie('invalid beta (%g)',beta); end
 
   R=H; nrm=0;
   for i=1:length(H.data)

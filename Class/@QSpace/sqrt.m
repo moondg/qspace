@@ -7,10 +7,9 @@ function A=sqrt(A)
 % Wb,Mar11,19
 
   neg=0; dmin=0;
-  for k=1:numel(A)
-     q=isdiag(A(k)); if ~q, error('Wb:ERR',...
-       '\n   ERR invalid usage (diagonal QSpace required)'); end
-     if q>1
+  for k=1:numel(A), q=isdiag(A(k));
+     if ~q, wbdie('invalid usage (diagonal QSpace required)');
+     elseif q>1
         for i=1:numel(A(k).data)
            dd=A(k).data{i}; A(k).data{i}=sqrt(dd);
            [neg,dmin]=check_data(dd,neg,dmin);

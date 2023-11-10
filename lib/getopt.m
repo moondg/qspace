@@ -109,7 +109,9 @@ function [rval,found] = getopt(varargin)
      return
   end
 
-  if nargin==2
+  str1=(ischar(o) && ~isempty(o) && o(1)~='-');
+
+  if nargin==2 && str1
      if isequal(o,'init')
         if ~isempty(args)
            wblog('WRN','interfering other concurrent getopt scan !?'); 
@@ -125,7 +127,7 @@ function [rval,found] = getopt(varargin)
      end
   end
 
-  if nargs==1
+  if nargs==1 && str1
      if strcmpi(o,'check_error')
         if length(args)>0
            fprintf(1,'\n'); disp(args)

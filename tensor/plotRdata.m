@@ -39,7 +39,7 @@ function [Iout,ES]=plotRdata(RR,varargin)
   getopt('check_error');
 
   if numel(find(size(RR)>1))>1
-     error('Wb:ERR','\n   ERR invalid usage (got matrix RR !?)');
+     wbdie('invalid usage (got matrix RR !?)');
   end
 
   if numel(yl12)==1 && yl12>0
@@ -50,7 +50,7 @@ function [Iout,ES]=plotRdata(RR,varargin)
 
   if ~isempty(k2x)
      if ~iscell(k2x) || numel(k2x)<2 || ~ischar(k2x{2})
-        error('Wb:ERR','\n   ERR invalid usage (k2x)');
+        wbdie('invalid usage (k2x)');
      end
 
      s=k2x{2};
@@ -140,7 +140,7 @@ end
   if rflag==0
      if ~isnumeric(HSS)
         if ~isstruct(HSS) || numel(HSS)~=1
-           error('Wb:ERR','\n   ERR invalid HSS data !?'); end
+           wbdie('invalid HSS data !?'); end
         q=HSS;
         HSS=q.HSS{end}; s=size(HSS);
         H=sparse(q.HH(:,1),q.HH(:,3),q.HH(:,end),s(1),s(2));

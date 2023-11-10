@@ -45,7 +45,7 @@ function [FS,Io,FX]=getSymmetryOps(F,SOP,varargin)
 
    if nargin<2
       eval(['help ' mfilename]);
-      if nargin || nargout, error('Wb:ERR','invalid usage'), end, return
+      if nargin || nargout, wbdie('invalid usage'), end, return
    end
 
    nS=numel(SOP); D=[]; dz=zeros(1,nS); cr=cell(1,nS);
@@ -78,8 +78,7 @@ function [FS,Io,FX]=getSymmetryOps(F,SOP,varargin)
               [is,x,e]=sameup2fac(FF(i).op,FS{k});
               if is, fac(i)=x; kk(i)=k; i=i-1; break; end
             end
-            if i==nf, error('Wb:ERR',...
-           '\n   ERR failed to match input operators'); end
+            if i==nf, wbdie('failed to match input operators'); end
          end
          if nargout<3
             if any(kk(:)==0) || numel(FF)~=numel(FS)
@@ -115,12 +114,10 @@ function [FS,Io,FX]=getSymmetryOps(F,SOP,varargin)
                 ol(i,j)=olap(FF(i).op,FF(j).op);
             end, end
             e=norm(ol-diag(diag(ol)),'fro'); if e>1E-12
-               error('Wb:ERR',['\n   ERR input ' ... 
-              'operator set FF is not orthogonal (@%.3g)!'],e);
+               wbdie('input operator set FF is not orthogonal (@%.3g)!',e);
             end
 
-            error('Wb:ERR', ...
-              '\n   ERR failed to fully match input operator set'); 
+            wbdie('failed to fully match input operator set'); 
          end
 
          if nargout>2, kk=ones(size(FF)); FX=FF;
@@ -218,12 +215,12 @@ function [FS,Io,FX]=getSymmetryOps(F,SOP,varargin)
 
         case {'A','P','ZN'}
            if norm(diff(qz{i}))>eps_
-              error('Wb:ERR','invalid Abelian z-labels'); end
+              wbdie('invalid Abelian z-labels'); end
            qq{end+1}=max(qz{i},[],1);
 
         case 'SU2'
            if norm(diff(uniquerows(sort(chopd(qz{i}))),2))>eps_
-              error('Wb:ERR','invalid SU2 z-labels'); end
+              wbdie('invalid SU2 z-labels'); end
            qq{end+1}=max(qz{i},[],1);
 
         case {'SU3','SU4','SU5','SU6','SU7','SU8','SU9'}
@@ -233,7 +230,7 @@ function [FS,Io,FX]=getSymmetryOps(F,SOP,varargin)
            q=sortrows(fliplr(chopd(q3)));
            q=fliplr(q(end,:));
 
-           if numel(q)~=r, error('Wb:ERR','invalid %s z-labels',I.type); end
+           if numel(q)~=r, wbdie('invalid %s z-labels',I.type); end
 
            qq{end+1}=q;
 
@@ -243,11 +240,11 @@ function [FS,Io,FX]=getSymmetryOps(F,SOP,varargin)
            q=sortrows(fliplr(chopd(q3)));
            q=fliplr(q(end,:));
 
-           if numel(q)~=r, error('Wb:ERR','invalid %s z-labels',I.type); end
+           if numel(q)~=r, wbdie('invalid %s z-labels',I.type); end
 
            qq{end+1}=q;
 
-        otherwise, error('Wb:ERR','invalid symmetry (%s)',I.type);
+        otherwise, wbdie('invalid symmetry (%s)',I.type);
       end
       iz=iz+numel(I.Sz);
 
@@ -273,11 +270,10 @@ function G=get_disc_unitary(t,Z)
    if isequal(t,'P'), G=Z;
    elseif regexp(t,'^Z(\d+)$'), n=str2num(t(2:end)); 
       if ~isreal(Z) || norm(Z-diag(diag(Z)),'fro')
-         error('Wb:ERR','\n   ERR invalid z-op !?'); end
+         wbdie('invalid z-op');
+      end
       G=diag(exp((2i*pi/n)*diag(Z)));
-   else
-      error('Wb:ERR','\n   ERR got sym=%s !?',t);
-   end
+   else wbdie('got sym=%s',t); end
 end
 
 function z=get_disc_label(t,g)
@@ -285,9 +281,9 @@ function z=get_disc_label(t,g)
    if isequal(t,'P'), z=g;
    elseif regexp(t,'^Z(\d+)$'), n=str2num(t(2:end));
       e=norm(abs(g)-1); if e>1E-12
-         error('Wb:ERR','\n   ERR invalid g-values (e=%.3g) !?',e); end
+         wbdie('invalid g-values (e=%.3g)',e); end
       z=imag(log(g))*(n/(2*pi));
-   else error('Wb:ERR','\n   ERR got sym=%s !?',t);
+   else wbdie('got sym=%s',t);
    end
 
 end
@@ -296,7 +292,7 @@ end
 
 function qq=get_symmetries_op(F,SOP)
 
-   if nargin~=2, error('Wb:ERR','\n   ERR invalid usage'); end
+   if nargin~=2, wbdie('invalid usage'); end
    nS=numel(SOP); qq=[];
 
    for i=1:nS, I=SOP(i); Sz=I.Sz; m=numel(Sz);
@@ -306,8 +302,8 @@ function qq=get_symmetries_op(F,SOP)
               q=G*F*G';
          else q=comm(Sz(j).op,F); end
 
-         [is,fac,e]=sameup2fac(q,F); if ~is, error('Wb:ERR',...
-            'input op without well-defined symmetry labels'); end
+         [is,fac,e]=sameup2fac(q,F); if ~is
+            wbdie('input op without well-defined symmetry labels'); end
          if isdisc, fac=get_disc_label(SOP(i).type,fac); end
 
          qq(end+1)=fac;
@@ -331,11 +327,10 @@ end
 
 function [F,qz]=get_multiplet(F,SOP,vflag)
 
-   if nargin<2 || nargin>3
-      error('Wb:ERR','\n   ERR invalid usage'); end
+   if nargin<2 || nargin>3, wbdie('invalid usage'); end
    if nargin<3, vflag=0; end
 
-   if ~isnumeric(F), error('Wb:ERR','\n   ERR invalid usage'); end
+   if ~isnumeric(F), wbdie('invalid usage'); end
 
    Fnrm=norm(F,'fro'); Fin=F; F=F/Fnrm; 
 

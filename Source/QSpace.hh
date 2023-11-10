@@ -899,6 +899,7 @@ class QSpace {
        QSpace<TQ,double> &Ek, QSpace<TQ,double> &Et, wbMatrix<double> &Etot,
        wbMatrix<unsigned> &DD, int &Nkeep,
        double Etrunc=0, double *E0=NULL,
+       char mKD=0, 
        const wbperm &P=wbperm(), double eps=0., double b=0., int dmax=-1,
        const char *sort=NULL
     ) const;
@@ -1292,22 +1293,22 @@ class QSpace {
 
     wbstring otype2Str(const char *fmt="%s") const;
 
-    QSpace& ConjOpScalar() { 
+    int ConjOpScalar() { 
+       int e=0; 
        unsigned r=rank(FL);
        if (r!=3) {
-          if (r!=2) wblog(FL,
-             "WRN %s() got rank-%d QSpace !?",FCT,r);
-          return *this;
+          if (r!=2) { wblog(FL,"WRN %s() got rank-%d QSpace !?",FCT,r); }
+          return e;
        }
        for (unsigned n=CGR.numel(), i=0; i<n; ++i) {
-          CGR[i].HConjOpScalar();
+           if ((e=CGR[i].HConjOpScalar())) { return e; }
        }
 
        if (itags.len!=3) wblog(FL,
           "ERR %s() got itags.len=%d/3 !?",FCT,itags.len);
        itags[2].Conj();
 
-       return *this;
+       return e;
     };
 
     QSpace& SortDegQ(const char *F=0, int L=0) {
@@ -2648,10 +2649,10 @@ mxArray* QSpace<TQ,TD>::DATA_save2Mx(char vflag) {
 
    for (unsigned k=0; k<DATA.len; ++k) {
       mxSetCell(a, k, DATA[k]->toMx());
-      if (vflag && k%10==0) printf("  %6d/%ld ...  \r",k+1,DATA.len);
+      if (vflag && k%10==0) PRINTF("  %6d/%ld ...  \r",k+1,DATA.len);
       DATA[k]->init();
    }
-   if (vflag) printf("\r%60s\r","");
+   if (vflag) PRINTF("\r%60s\r","");
 
    return a;
 };
@@ -2967,26 +2968,26 @@ void QSpace<TQ,TD>::info(const char *vname,
    l=snprintf(s,n,"QSpace<%s,%s> %s",
       sTSTR(TQ), sTSTR(TD), qtype.len ? qStr().data : "");
    if (l<n && itags.len) {
-      l+=snprintf(s+l,n-l," '%s'",STR(itags));
+      l+=snprintf(s+l,n-l," %s",STR(itags));
    }
    if (l>=n) wblog(FL,"WRN %s() string out of bounds (%d/%d)",FCT,l,n);
 
-   for (l=0; l<nlt; ++l) { printf("\n"); }
+   for (l=0; l<nlt; ++l) { PRINTF("\n"); }
    if (vname && vname[0]) {
       if (sp_[0] || strlen(vname)>3)
-		   { printf("%s%-3s",sp_,vname); }
-	  else { printf(" %-2s",vname); }
+		   { PRINTF("%s%-3s",sp_,vname); }
+	  else { PRINTF(" %-2s",vname); }
    }
-   else if (sp_[0]) { printf("%s",sp_); }
-   printf(" %-34s %3ld x (%d x%d)",s,QIDX.dim1,r,QDIM);
+   else if (sp_[0]) { PRINTF("%s",sp_); }
+   PRINTF(" %-34s %3ld x (%d x%d)",s,QIDX.dim1,r,QDIM);
 
    getDim(D,&DX);
 
-   printf("  %-*s",lsz,SSTR(D )); if (cgflag>0) {
-   printf("  %-*s",lsz,SSTR(DX)); }
-   printf("%s\n", isref? "  *REF*":"");
+   PRINTF("  %-*s",lsz,SSTR(D )); if (cgflag>0) {
+   PRINTF("  %-*s",lsz,SSTR(DX)); }
+   PRINTF("%s\n", isref? "  *REF*":"");
 
-   for (l=0; l<nlb; ++l) { printf("\n"); }
+   for (l=0; l<nlb; ++l) { PRINTF("\n"); }
 };
 
 template <class TQ, class TD> 
@@ -3002,24 +3003,26 @@ void QSpace<TQ,TD>::print(const char *vname, char vflag) const {
    if (vflag & 'D') { vflag |=3; } 
    if (vflag&1) { PRINTF("\n"); }  
 
-   info(vname,0,0,0); PRINTF("\n");
+   info(vname,0,0,0); 
+   PRINTF("\n");
+
+   QVec qt(qtype);
+   if (!qt) { qt.init2val(QDIM,QType(QTYPE_U1)); } 
 
    for (; i<N; ++i) {
       if (i>=m) {
          if (N>2*m) { i=N-m; qs=QIDX.rec(i);
             PRINTF("    :   ...\n");
-         }
-         m=N; 
+         }; m=N; 
       }
 
-      if (i>=N) { sprintf(qstr,"!?"); }
-      else {
+      if (i<N) {
          for (l=j=0; j<r; ++j, qs+=QDIM) {
             if (j && l<nstr) { l+=snprintf(qstr+l,nstr-l," ; "); }
-            if (l<nstr) { l+=qtype.print_qset(FL,qs,qstr+l,nstr-l); }
+            if (l<nstr) { l+=qt.print_qset(FL,qs,qstr+l,nstr-l); }
             else { break; }
          }
-      }
+      } else { sprintf(qstr,"!?"); }
 
       PRINTF("%5d. [ %s ]  %-*s ", i+1, qstr, lsz,
          i<DATA.len ? DATA[i]->sizeStr(r," @").data : "!?");
@@ -3045,7 +3048,7 @@ void QSpace<TQ,TD>::print(const char *vname, char vflag) const {
             if (n<(1<<20)) { PRINTF("   %5.2f kB", n/double(1<<10)); }
             else           { PRINTF("   %5.2f MB", n/double(1<<20)); }
          }
-         PRINTF("%s\n",DATA[i]->isRef() ? "   ref*":"");
+         PRINTF("%s\n",DATA[i]->isRef() ? "   *ref":"");
       }
    }
 

@@ -184,9 +184,10 @@ if calcflag || isset('TST_RNRG')
   else FOUT={}; end
 
   if exist('Nkeep','var')
-	 % if Nkeep>1024 && isempty(FOUT)
-	 % FOUT={'fout',[getenv('LMA') '/NRG']}; end
-       onrg=[ onrg, {'Nkeep',Nkeep} ];
+   % if Nkeep>1024 && isempty(FOUT)
+   % FOUT={'fout',[getenv('LMA') '/NRG']}; end
+     onrg=[ onrg, {'Nkeep',Nkeep} ];
+     if Nkeep>9999 && isset('fflag'), onrg{end+1}='-f'; end % Wb,Nov07,23
   else onrg=[ onrg, {'Nkeep',256} ];
   end
 

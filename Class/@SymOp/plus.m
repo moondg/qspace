@@ -31,7 +31,7 @@ function C=plus(A,B)
      C=A; q=C.op; C.istr=sprintf('%s %+g',C.istr,B);
      C.op=q+diag(repmat(B,1,size(q,1)));
 
-  else error('Wb:ERR','\n   ERR invalid usage'); end
+  else wbdie('invalid usage'); end
 
 end
 

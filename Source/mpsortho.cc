@@ -625,9 +625,9 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
    unsigned QDIM, N;
    int NK=Nkeep;
 
-   int revert_new_idx=0; 
+   int revert_Uidx=0; 
 
-   iTags tu,ts,tv;
+   iTags tU,tS,tV;
    wbperm P, cgp2;
 
    QBlock<TQ,TD,double> x;
@@ -777,7 +777,7 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
 
    {  QBlock<TQ,TD> &b=QB[0];
 
-      itag_ t(tx);
+      itag_ tu(tx), tv;
 
       b.A.checkQ(FL); 
 
@@ -788,27 +788,33 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
          FCT, b.A.itags.toStr().data, b.S1.dim2+b.S2.dim2);
 
       if (b.S2.dim2==1) {
-         t.Set_(b.A.itags.last());
-         if (!t.isConj() && NK) {
-            if (!b.A.isOp(2,'L')) { revert_new_idx=1; } 
+         tu.Set_(b.A.itags.last(i));
+         if (!tu.isConj() && NK) {
+            if (!b.A.isOp(2,'L')) { revert_Uidx=1; } 
          }
       }
       else if (b.S1.dim2==1) {
-         t.Set_(b.A.itags[0]); t.Conj();
+         tu.Set_(b.A.itags[i=0]); tu.Conj();
       }
-      else {
-         if (!b.A.itags[0].isConj()) { t.Conj(); }
+      else { i=-1;
+         if (!b.A.itags[0].isConj()) { tu.Conj(); }
       }
 
-      tu.init(b.S1.dim2, b.A.itags.data, 1, &t); 
+      tv=tu;
+      if (SQ && i==1 && b.A.rank()==2) {
+         tu.tSet(b.A.itags[0]); 
+         if (!b.A.itags[1].isConj() && revert_Uidx) { tu.MarkDual(); }
+      }
 
-      ts.init(1,&t,1,&t);
-      ts[0].Conj(); 
+      tU.init(b.S1.dim2, b.A.itags.data, 1, &tu); 
 
-      tv.init(b.S2.dim2, b.A.itags.data+b.S1.dim2, 1, &t);
-      tv.last().Conj();  
+      tS.init(1,&tu,1,&tv);
+      tS[0].Conj(); 
 
-   }
+      tV.init(b.S2.dim2, b.A.itags.data+b.S1.dim2, 1, &tv);
+      tV.last().Conj();  
+
+   } 
 
    for (i=0; i<nq; ++i) {
       QBlock<TQ,TD> &b=QB[i]; if (b.Ik.isEmpty()) continue;
@@ -821,7 +827,7 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
       if (b.Vc.rank()!=2) wblog(FL,"ERR V: invalid rank %s",SSTR(b.Vc));
 
       x.init_bare_refA(b,'U');     
-      x.initFromBlockMatrix(FL,X,b.U,tu);
+      x.initFromBlockMatrix(FL,X,b.U,tU);
 
       if (X.Append2AndDestroy(FL,UQ,'u')) wblog(FL,
          "ERR %s() U: QIDX must not overlap\n%s",FCT,istr);
@@ -831,7 +837,7 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
          Sf.initDiag(b.S.len,b.S.data); 
 
          x.init_bare_refA(b,'S');    
-         x.initFromBlockMatrix(FL,X,Sf,ts);
+         x.initFromBlockMatrix(FL,X,Sf,tS);
 
          if (X.DATA.len!=1) wblog(FL,
             "ERR %s() got S.DATA.len=%d",FCT,X.DATA.len);
@@ -841,7 +847,7 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
             "ERR %s() S: QIDX must not overlap\n%s",FCT,istr);
 
          x.init_bare_refA(b,'V');     
-         x.initFromBlockMatrix(FL,X,b.Vc,tv,&cgp2);
+         x.initFromBlockMatrix(FL,X,b.Vc,tV,&cgp2);
 
          if (X.Append2AndDestroy(FL,VC,'u')) wblog(FL,
             "ERR %s() V: QIDX must not overlap\n%s",FCT,istr);
@@ -853,7 +859,7 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
             "ERR VS: invalid rank-%d",VS.rank());
 
          x.init_bare_refA(b,'X'); 
-         x.initFromBlockMatrix(FL,X,VS,tv,&cgp2);
+         x.initFromBlockMatrix(FL,X,VS,tV,&cgp2);
 
          X.SkipZeroData(xtol2,'b',0);
 
@@ -867,7 +873,7 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
    UQ.checkQ(FL); if (SQ) SQ->checkQ(FL);
    VC.checkQ(FL);
 
-   if (revert_new_idx) {
+   if (revert_Uidx) {
       unsigned r1=UQ.rank(FL); wbindex ia(1);
       wbvector< QSpace<TQ,TD> >X(1);
       QSpace<TQ,TD> U1J;
@@ -887,6 +893,7 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
          ia[0]=VC.rank(FL)-1;
          VC.save2(X[0]); U1J.initIdentityCG(X,ia,'z');
          X[0].contract(FL,ia[0]+1,U1J,1,VC); 
+
       }
 
       UQ.save2(X[0]); {

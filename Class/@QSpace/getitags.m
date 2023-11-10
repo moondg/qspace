@@ -12,7 +12,7 @@ function [t,cflag,mark]=getitags(A,it)
 
   if nargin<1 || nargin>2 || numel(A)~=1
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   t={};
@@ -34,9 +34,12 @@ function [t,cflag,mark]=getitags(A,it)
      if numel(it)~=1, t=t(it);
      else t=t{it};
         if nargout>1
-           n=0; t=regexprep(t,'(\*+)$(?@n=numel($1);)',''); cflag=mod(n,2);
-           n=0; t=regexprep(t,'(''+)$(?@n=numel($1);)',''); mark =mod(n,2);
-        end
+           n=0; t=regexprep(t,'(\*+)$(?@n=numel($1);)','');
+           cflag=mod(n,2);
+		if nargout>2
+		   n=0; t=regexprep(t,'(''+)$(?@n=numel($1);)','');
+		   mark=mod(n,2);
+		end; end
      end
   end
 

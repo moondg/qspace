@@ -18,7 +18,7 @@ function [se,rr,I]=SEntropy(R,varargin)
 
   if nargin<1 || numel(R)~=1
      eval(['help ' mfilename]);
-     if nargin || nargout, error('Wb:ERR','invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   getopt('init',varargin);
@@ -27,7 +27,7 @@ function [se,rr,I]=SEntropy(R,varargin)
   eps=getopt('get_last',1E-10);
 
   if numel(R.Q)~=2 || ~isequal(R.Q{1},R.Q{2})
-  error('Wb:ERR','invalid density matrix'); end
+  wbdie('invalid density matrix'); end
 
   if beta>0, nd=numel(R.data);
      if isdiag(R)>1 && nargout<2
@@ -48,7 +48,7 @@ function [se,rr,I]=SEntropy(R,varargin)
      for i=1:nd, r=R.data{i}; s=size(r);
         if any(s==1),      r=exp (-beta*r);
         elseif diff(s)==0, r=expm(-beta*r);
-        else error('Wb:ERR','\n   ERR invalid operator H'); 
+        else wbdie('invalid operator H'); 
         end
         R.data{i}=r;
      end
@@ -66,9 +66,9 @@ function [se,rr,I]=SEntropy(R,varargin)
      else r1=rr; end
 
      t=sum(r1); e=abs(t-1); if e>1E-8
-        error('Wb:ERR','\n   ERR got tr(Rho)=%.4g !?',t); end
+        wbdie('got tr(Rho)=%.4g !?',t); end
      i=find(r1<=0); e=norm(r1(i)); if e>1E-12
-        error('Wb:ERR','invalid density matrix (%g)',e); end
+        wbdie('invalid density matrix (%g)',e); end
 
   if size(rr,2)==1
      rr=sort(rr,'descend');
@@ -83,7 +83,7 @@ function [se,rr,I]=SEntropy(R,varargin)
      wblog('WRN','got cgd-dim for abelian Rho !?');
   end
 
-  if size(rr,1)~=sum(I.DB(:,1)), error('Wb:ERR','dimension mismatch'); end
+  if size(rr,1)~=sum(I.DB(:,1)), wbdie('dimension mismatch'); end
 
   if size(I.DB,2)>1
        dz=I.DB(:,2)./I.DB(:,1);
@@ -117,7 +117,7 @@ function check_trace(t,eps,fflag)
 
   if norm(1-t)>eps
      s=sprintf('invalid density matrix [tr(rho)=1 %+.3g]',t-1);
-     if fflag || norm(t-1)>0.5, error('Wb:ERR',s);
+     if fflag || norm(t-1)>0.5, wbdie(s);
      else 
         if norm(t-1)<1E-4, wblog(1,'WRN',s); else wblog(1,'ERR',s); end
      end

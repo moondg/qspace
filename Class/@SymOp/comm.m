@@ -22,13 +22,14 @@ function C=comm(A,B)
 
   elseif isa(A,'SymOp') && isa(B,'SymOp')
 
-     if numel(A)~=1 || numel(B)~=1, error('Wb:ERR',['\n   ' ...
-    'ERR invalid usage (A: %s, B: %s)'],sizestr(A),sizestr(B)); end
+     if numel(A)~=1 || numel(B)~=1
+        wbdie('invalid usage (A: %s, B: %s)',sizestr(A),sizestr(B));
+     end
 
      C=A; C.hc=[]; C.istr=['[' A.istr ', ' B.istr ']'];
      C.op=comm(A.op,B.op);
 
-  else error('Wb:ERR','\n   ERR invalid usage'); end
+  else wbdie('invalid usage'); end
 
 end
 

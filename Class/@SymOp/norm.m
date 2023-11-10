@@ -2,7 +2,7 @@ function x=norm(A,varargin)
 % function x=norm(A)
 % Wb,Dec05,11
 
-   if ~isa(A,'SymOp'), error('Wb:ERR','\n   ERR invalid usage'); end
+   if ~isa(A,'SymOp'), wbdie('invalid usage'); end
 
    getopt('init',varargin);
       odiag=getopt('-offdiag');

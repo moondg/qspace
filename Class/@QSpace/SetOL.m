@@ -15,18 +15,17 @@ function A = SetOL(A,varargin)
   if nargin<2, wblog('ERR','%s() invalid usage',mfilename); end
 
   if ~ischar(varargin{1})
-     if nargin<3 || nargin>4, error('Wb:ERR','invalid usage #1'); end
+     if nargin<3 || nargin>4, wbdie('invalid usage #1'); end
 
      X=varargin{1}; k=varargin{2};
      if nargin==4, otag=varargin{3}; else otag='op'; end
 
      if ~isa(X,'QSpace')
-        if ~isfield(X,'Q') || ~isfield(X,'info'), error('Wb:ERR',...
-           '\n   ERR invalid 2nd argument (QSpace expected)'); end
+        if ~isfield(X,'Q') || ~isfield(X,'info')
+           wbdie('invalid 2nd argument (QSpace expected)'); end
         X=QSpace(X);
      elseif ~isfield(struct(X).info,'itags') || isempty(X.info.itags)
-        error('Wb:ERR',...
-       '\n   ERR invalid 2nd argument (QSpace got no itags)');
+        wbdie('invalid 2nd argument (QSpace got no itags)');
      end
 
      [r,t]=gotITags(X);
@@ -36,13 +35,13 @@ function A = SetOL(A,varargin)
      else t=t{k}; end
 
   else
-     if nargin<2 || nargin>3, error('Wb:ERR','invalid usage #2'); end
+     if nargin<2 || nargin>3, wbdie('invalid usage #2'); end
 
      t=varargin{1};
      if nargin==3, otag=varargin{2}; else otag='op'; end
   end
 
- if ~ischar(otag), otag, error('Wb:ERR','invalid otag'); end
+ if ~ischar(otag), otag, wbdie('invalid otag'); end
 
   c='*';
   if t(end)==c
@@ -55,8 +54,7 @@ function A = SetOL(A,varargin)
   for k=1:numel(A), t=t0;
      n=numel(A(k).Q);
      if n==3, t{3}=[otag c];
-     elseif n<2 || n>3
-        error('Wb:ERR','\n   invalid operator of rank-%d',n);
+     elseif n<2 || n>3, wbdie('invalid operator of rank-%d',n);
      end
 
      A(k).info.itags=t;

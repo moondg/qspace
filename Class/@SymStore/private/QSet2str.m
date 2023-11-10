@@ -28,13 +28,14 @@ function qs=QSet2str(q,varargin)
   n=length(q.qdir);
   l=length(q.qset);
 
-     if n*r~=l, q, error('Wb:ERR',...
-     '\n   ERR invalid qset data (%g*%g = %g) !?',n,r,l); end
+     if n*r~=l, q
+        wbdie('invalid qset data (%g*%g = %g) !?',n,r,l);
+     end
 
   qs=cellstr(qmat2char(reshape(q.qset,r,[]))')';
 
   k=find(diff(q.qdir)); nk=numel(k);
-  if nk>1, error('Wb:ERR','\n   ERR invalid qdir !?'); end
+  if nk>1, wbdie('invalid qdir !?'); end
 
   qs(2,:)={''};
 

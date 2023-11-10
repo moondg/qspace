@@ -21,15 +21,15 @@ function varargout=fixScalarOp(varargin)
         fflag=getopt('-f');
         lflag=getopt('-l');
      getopt('check_error');
-  elseif nopt<0, error('Wb:ERR',...
-    '\n   ERR invalid usage (no QSpace specified)');
+  elseif nopt<0
+     wbdie('invalid usage (no QSpace specified)');
   end
 
   mark=zeros(1,nargin);
 
   for i=nopt+1:nargin, n=numel(varargin{i});
-     if ischar(varargin{i}), error('Wb:ERR',...
-       '\n   ERR invalid usage (got intermediate option)');
+     if ischar(varargin{i})
+        wbdie('invalid usage (got intermediate option)');
      end
      for j=1:n, q=varargin{i}(j);
         if isempty(q) || numel(q.Q)<3, continue; end
@@ -55,21 +55,21 @@ function varargout=fixScalarOp(varargin)
             end
         end
         if ~ok && fflag
-           error('Wb:ERR','\n   ERR got non-reducible QSpace (%g,%g)',i,j);
+           wbdie('got non-reducible QSpace (%g,%g)',i,j);
         end
      end
   end
 
   if nargout
-     if nargin~=nargout+nopt, error('Wb:ERR',['\n   ' ... 
-       'ERR invalid usage (output must match input variables, ' ...
+     if nargin~=nargout+nopt, wbdie([...
+       'invalid usage (output must match input variables, ' ...
        '%g+%g=%g)'],nargout,nopt,nargin);
      end
      varargout=varargin(nopt+1:end);
   else
      for i=find(mark), n=inputname(i);
-        if isempty(n), error('Wb:ERR',['\n   ERR ' ... 
-         'invalid usage (failed to access name of input variable)']); end
+        if isempty(n), wbdie(...
+         'invalid usage (failed to access name of input variable)'); end
         assignin('caller',n,varargin{i});
      end
   end

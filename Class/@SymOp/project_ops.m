@@ -11,8 +11,8 @@ function [A,x]=project_ops(A,B,eps)
 % Wb,Sep27,17
 
   if nargin<2 || isa(A,'SymOp') && numel(A)~=1 || isa(B,'SymOp') && numel(B)~=1
-     helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     helpthis, if nargin || nargout, wbdie('invalid usage'), end
+     return
   end
   if nargin<3, eps=0; end
 

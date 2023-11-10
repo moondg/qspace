@@ -2,7 +2,7 @@ function M=blkdiag(A,varargin)
 % function M=blkdiag(A,varargin)
 % Wb,Aug10,16
 
-  if numel(A)~=1, error('Wb:ERR','invalid usage'), end
+  if numel(A)~=1, wbdie('invalid usage'), end
 
   if ~isempty(A.Q)
      if numel(A.Q)~=2 || ~isdual_(A.Q{1},A.Q{2})

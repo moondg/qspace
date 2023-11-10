@@ -9,7 +9,7 @@ function [cc,err,I]=decomposeOp(H,X,varargin)
 
   if nargin<2  || isempty(X)
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   getopt('init',varargin);
@@ -19,8 +19,8 @@ function [cc,err,I]=decomposeOp(H,X,varargin)
   if isQSpace(X), X=X(:);
   else
      for i=1:numel(X)
-        if ~isQSpace(X{i}), error('Wb:ERR',...
-          '\n   ERR invalid usage (X must contain QSpaces only)'); end
+        if ~isQSpace(X{i})
+           wbdie('invalid usage (X must contain QSpaces only)'); end
         X{i}=X{i}(:);
      end
      X=cat(1,X{:});
@@ -28,7 +28,7 @@ function [cc,err,I]=decomposeOp(H,X,varargin)
   nops=numel(X);
 
   if ~isempty(R)
-     if numel(R)~=1, error('Wb:ERR','\n   ERR invalid projector'); end
+     if numel(R)~=1, wbdie('invalid projector'); end
      e=norm(R-R'); if e>1E-14
         wblog('WRN got nonsymmetric projector !?? (%.3g)',e);
      end
@@ -43,8 +43,8 @@ function [cc,err,I]=decomposeOp(H,X,varargin)
   S=zeros(nops,nops); b=zeros(nops,1);
 
   for i=1:nops
-      if isempty(X(i)), error('Wb:ERR',['\n   ' ... 
-        'ERR invalid operator basis (got empty QSpace)']); end
+      if isempty(X(i))
+         wbdie('ERR invalid operator basis (got empty QSpace)'); end
       if isempty(R)
          b(i)=getscalar(QSpace(contractQS(X(i),[1 2],H,[1 2])));
       else 
@@ -59,14 +59,12 @@ function [cc,err,I]=decomposeOp(H,X,varargin)
       else S(i,j)=trace(R*(X(i)'*X(j))); end
       if j>i, S(j,i)=S(i,j);
       elseif i==j && abs(S(i,j))<1E-12
-         error('Wb:ERR','\n   ERR invalid operator basis (empty QSpace?)'); 
+         wbdie('invalid operator basis (empty QSpace?)'); 
       end
   end
   end
 
-  if ~isreal(S), error('Wb:ERR',...
-     '\n   ERR invalid usage (got complex QSpaces!?)');
-  end
+  if ~isreal(S), wbdie('invalid usage (got complex QSpaces !?)'); end
 
   if qflag
      warning off MATLAB:nearlySingularMatrix

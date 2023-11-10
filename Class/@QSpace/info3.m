@@ -19,7 +19,7 @@ end
   end
   if nargin<2 || numel(A)~=1
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   getopt('init',varargin);
@@ -65,7 +65,7 @@ end
      rq=size(q,2);
      if rq==1, q(:,2)=0;
      elseif rq>2
-        error('Wb:ERR','\n   ERR don''t know how to plot rank-%g object',rq); 
+        wbdie('don''t know how to plot rank-%g object',rq); 
      end
 
      m=size(q,1); d=zeros(1,m); dd=zeros(m,2);
@@ -114,7 +114,7 @@ end
   set(ah(k+1:end),'Visible','off');
 
   if norm(diff(DD(:,2))), DD(:,2)'
-     error('Wb:ERR','\n   ERR inconsistency in total multiplet dimension');
+     wbdie('inconsistency in total multiplet dimension');
   end
   header('%M [d_q\leq%g; D^\ast=%g]',max(DD(:,1)),unique(DD(:,2)));
 

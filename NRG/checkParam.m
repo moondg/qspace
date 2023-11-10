@@ -46,7 +46,7 @@ function e=checkParam(strEval)
      else
         istr='Invalid/unknown param structure!';
         if nargout, e=1; wblog('ERR',istr); return;
-        else error('Wb:ERR',str); end
+        else wbdie(str); end
      end
   elseif ~isempty(paras)
      param=struct(...
@@ -58,7 +58,7 @@ function e=checkParam(strEval)
   else
      istr='neither paras nor param are set global';
      if nargout, e=1; wblog('ERR',istr); return;
-     else error('Wb:ERR',istr); end
+     else wbdie(istr); end
   end
 
   if ~nargout, clear e; end

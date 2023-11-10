@@ -43,8 +43,8 @@ function [A,Iout]=appendSingletons(A,rnew,qdir)
   elseif nargin==3
      n=numel(qdir);
      if n==1, qdir=repmat(qdir,1,rnew);
-     elseif numel(qdir)~=rnew, error('Wb:ERR',...
-       '\n   ERR invalid qdir (len=%g/%g)',numel(qdir),rnew);
+     elseif numel(qdir)~=rnew
+        wbdie('invalid qdir (len=%g/%g)',numel(qdir),rnew);
      end
   end
 
@@ -55,8 +55,7 @@ function [A,Iout]=appendSingletons(A,rnew,qdir)
   for k=1:numel(A)
      Ak=A(k); qda=getqdir(Ak);
      r=numel(Ak.Q); if r==rnew, continue; end
-     if r>rnew, error('Wb:ERR',...
-        '\n   ERR invalid rank r=%g->%g !?',r,rnew); end
+     if r>rnew, wbdie('invalid rank r=%g->%g !?',r,rnew); end
      E=getvac(Ak);
 
      for l=r+1:rnew

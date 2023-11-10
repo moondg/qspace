@@ -2034,11 +2034,11 @@ wbarray<T>& wbarray<T>::tensorProd(
          "ERR %s() rank mismatch (r=%d/%d)",FCT,ra,rb);
       if (!ra || !rb) { return C.init(); }
 
-      if (ra==1) A.ExpandDiagonal(); else
-      if (rb==1) B.ExpandDiagonal();
+      if (ra==1) { A.ExpandDiagonal(); ra=  SIZE.len; } else
+      if (rb==1) { B.ExpandDiagonal(); rb=B.SIZE.len; }
 
       if (ra!=rb) wblog(FL, 
-      "ERR %s() rank mismatch (%d,%d)",FCT,ra,rb);
+         "ERR %s() rank mismatch (%d/%d)",FCT,ra,rb);
    }
 
    const size_t r=A.SIZE.len, l=r-1, *sa=A.SIZE.data, *sb=B.SIZE.data;

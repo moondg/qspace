@@ -185,7 +185,7 @@ rcdata: setupRCStore getRC
 mpsother: \
     skipZerosQS isIdentityCG isIdentityQS getIdentityQS \
     traceQS diagQS normQS getDimQS getQDimQS permuteQS \
-    eigQS svdQS orthoQS makeUniqueQS mpsIsHConj
+    eigQS svdQS orthoQS makeUniqueQS isHConjQS
 
 # traceQS: Wb,Aug17,16
 

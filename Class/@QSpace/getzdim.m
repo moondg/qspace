@@ -20,7 +20,7 @@ function [dd,qq]=getzdim(A,varargin)
 
   if nargin<1 || numel(A)~=1
      eval(['help ' mfilename]);
-     if nargin || nargout, error('Wb:ERR','invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   getopt('init',varargin);
@@ -64,8 +64,8 @@ function dd=getzdim_each(A,dim,pflag,xflag)
   end
 
   if isempty(dim)
-     if pflag || xflag, error('Wb:ERR',...
-       '\n   ERR invalid usage (ignoring -p and -x without dim)'); end
+     if pflag || xflag
+        wbdie('invalid usage (ignoring -p and -x without dim)'); end
      return
   end
 
@@ -75,7 +75,7 @@ function dd=getzdim_each(A,dim,pflag,xflag)
           'expecting scalar operator with ''op'' !??\n' ... 
           'hint: did you mean ''-op''?']); end
         dim=1;
-     else dim, error('Wb:ERR','\n   ERR invalid usage'); end
+     else dim, wbdie('invalid usage'); end
   end
 
   dd=dd(:,:,dim);
@@ -108,7 +108,7 @@ function [dd,qq]=getzdim_unique(A,dim,pflag,xflag)
         dd=ones(1,ns); qq=zeros(1,ns);
         return
      end
-     if r~=3, error('Wb:ERR','invalid operator'); end
+     if r~=3, wbdie('invalid operator'); end
      if norm(diff(A.Q{3},[],1))>1E-12
         wblog('WRN','got non-irop (i.e. reducible operator) !??'); end
      idx=3;

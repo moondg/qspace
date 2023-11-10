@@ -72,7 +72,7 @@ else
       TT=logspace(-8,-4,10); sigma=0.6; tfac=1; Lambda=3;
 
     otherwise
-      NC, error('Wb:ERR','invalid NC'); 
+      NC, wbdie('invalid NC'); 
   end
 
   if ~isempty(i2), Nkeep=i2; end

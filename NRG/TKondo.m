@@ -24,7 +24,8 @@ function [TK,nK,Iout]=TKondo(varargin)
   end
 
   getopt('init',varargin);
-     vflag = getopt('-v');
+     if     getopt('-v'), vflag=2;
+     elseif getopt('-q'), vflag=0; else vflag=1; end
      wTK   = getopt('wtk',[]);
   varargin=getopt('get_remaining'); narg=numel(varargin);
 
@@ -55,8 +56,8 @@ function [TK,nK,Iout]=TKondo(varargin)
      wblog('WRN','got values for J and fJ (ignore)');
   end
 
-  if  isfield(p,'epsd'), [TK,wTK,iTK]=TKondo_SIAM(p,wTK);
-  elseif isfield(p,'J'), [TK,wTK,iTK]=TKondo_J(p,wTK);
+  if  isfield(p,'epsd'), [TK,wTK,iTK]=TKondo_SIAM(p,wTK,vflag);
+  elseif isfield(p,'J'), [TK,wTK,iTK]=TKondo_J(p,wTK,vflag);
   else wbdie('invalid usage (expecting Kondo or SIAM parameters)');
   end
 
@@ -64,12 +65,12 @@ function [TK,nK,Iout]=TKondo(varargin)
 
   if nargout>1, nK=nan;
      if ~isempty(p.Lambda)
-          nK=-2*log(TK)/log(param.Lambda);
+          nK=-2*log(TK)/log(p.Lambda);
      else wblog('WRN','got missing option / field ''Lambda''');
      end
-     if vflag, wblogx(1,'<i> %s (nK=%.1f)',iTK,nK); end
-  elseif vflag
-     wblogx(1,'<i> %s',iTK);
+     if vflag>1, wblog(1,'<i> %s (nK=%.1f)',iTK,nK); end
+  elseif vflag>1
+     wblog(1,'<i> %s',iTK);
   end
 
   if nargout>2
@@ -127,7 +128,7 @@ end
 
 % -------------------------------------------------------------------- %
 
-function [TK,wTK,istr]=TKondo_J(p,wTK)
+function [TK,wTK,istr]=TKondo_J(p,wTK,vflag)
 
    istr='';
 
@@ -189,7 +190,7 @@ function [TK,wTK,istr]=TKondo_J(p,wTK)
          TK=sqrt(J)*exp(-1/J);
       case 'Kondo2'
          TK=exp(-2/J);
-      otherwise, wTK, error('Wb:ERR','\n   ERR invalid switch'); 
+      otherwise, wTK, wberr('invalid switch'); 
    end
 
    if nargout>1
@@ -211,15 +212,16 @@ end
 %   TK = sqrt(u*g/2) * exp(pi*e*(e+u)/(2*u*g));
 % -------------------------------------------------------------------- %
 
-function [TK,wTK,istr]=TKondo_SIAM(p,wTK)
+function [TK,wTK,istr]=TKondo_SIAM(p,wTK,vflag)
 
    [u,g,e]=deal_pfield(p,'U','Gamma','epsd'); istr='';
 
    if any(isnan([u,g,e])) || any([u,g]<0), TK=nan; return; end
    if g==0, TK=0; return; end
-   if u==0, TK=g; return; end
+   if u==0, u=max(1E-16,1E-6*g); end
 
    if isempty(wTK), wTK='SIAM'; end
+   bflag=0;
 
  % -------------------------------------------------------- %
  % NB! the prefactor of sqrt(u*g/2) is somewhat problematic
@@ -229,7 +231,7 @@ function [TK,wTK,istr]=TKondo_SIAM(p,wTK)
  % including higher order correction for SIAM!
  % -------------------------------------------------------- %
    switch wTK
-     case 'bethe'
+     case 'bethe', bflag=1;
 
         a = pi*(-u/(8*g) + g/(2*u));
         x = (e+u/2)*sqrt(pi/(2*u*g));
@@ -237,15 +239,23 @@ function [TK,wTK,istr]=TKondo_SIAM(p,wTK)
         TK=min(1,sqrt(u*g/2))*exp(a+x^2);
 
      case 'SIAM', a=pi*e*(e+u)/(2*u*g);
+
        TK=min(0.575,sqrt(u*g/2))*exp(a);
 
      case 2, a=pi*e*(e+u)/(2*u*g); TK=sqrt(u*g/4)*exp(2*a);
 
      case 3, a=pi*e*(e+u)/(2*u*g); TK=sqrt(u*g/(2*3.00))*exp(1.050*a);
 
-     otherwise wTK, error('Wb:ERR','invalid switch');
+     otherwise wTK, wberr('invalid switch');
    end
 
+   if vflag, q=u+2*e; q=(q<0 || q>u);
+      if q, wblog('WRN',...
+        'epsd/U=%+.3g is out of validity range for %s',e/u,mfilename);
+      elseif bflag && a>0, wblog('WRN',...
+        'U/Gamma=%.3g is out of validity range for ''%s''',u/g,wTK);
+      end
+   end
    if TK>10, TK=10; end
 
    if nargout>1

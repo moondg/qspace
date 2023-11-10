@@ -21,13 +21,13 @@ function [im,nn,ii]=findstrc(ss,q,varargin)
 %
 % Wb,Aug07,14
 
-% in order to just get the index to the entries that match
-% i = find(cellfun(@numel,regexp(ss,pat))); // Wb,Jun09,19
-
-  if nargin<2 || ~iscell(ss)
+  if nargin<2 || ~ischar(q)
      helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
+
+  if ischar(ss), ss={ss};
+  elseif ~iscell(ss), wbdie('invalid usage'), end
 
   getopt('init',varargin);
      nflag = getopt('-n'); if nflag, fflag=0; else

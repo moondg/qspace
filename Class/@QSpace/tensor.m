@@ -15,7 +15,7 @@ function C=tensor(varargin)
      if isempty(A) || isempty(A.Q)
         if ~isempty(A.data)
            if ~length(A.data)==1 || ~isscalar(A.data{1})
-           error('Wb:ERR','invalid QSpace object'); end
+           wbdie('invalid QSpace object'); end
            fac=fac*A.data{1};
         else C=QSpace; return, end
         continue
@@ -26,10 +26,8 @@ function C=tensor(varargin)
   i=find(r(:,1)<0);
   if ~isempty(i) r(i,:)=[]; sq(i)=[]; ops(i)=[]; nops=length(ops); end
 
-  if norm(diff(r,[],1)), r
-  error('Wb:ERR','QSpace::tensor - rank or QSpace mismatch'); end
-  if any(r(:,1)~=2)
-  error('Wb:ERR','QSpace::tensor - require operators (rank-2)'); end
+  if norm(diff(r,[],1)), r, wbdie('rank or QSpace mismatch'); end
+  if any(r(:,1)~=2), wbdie('require operators (rank-2)'); end
 
   C=ops{1};
   for i=2:nops, C=tensor_aux(C,ops{i}); end
@@ -46,7 +44,7 @@ function C=tensor_aux(A,B)
   C=QSpace(mpsTensorProdQS(A,B));
 
   ra=length(A.Q);
-  rb=length(A.Q); if ra~=2 || rb~=2, error('Wb:ERR','invalid usage'); end
+  rb=length(A.Q); if ra~=2 || rb~=2, wbdie('invalid usage'); end
 
   qq={ expandQ(A,'op'), expandQ(B,'op') };
   E=QSpace(qq{:},'-Rlast','identity');
@@ -60,11 +58,11 @@ end
 function C=tensor_aux_not_quite(A,B)
 
   ra=length(A.Q);
-  rb=length(B.Q); if ra~=2 || rb~=2, error('Wb:ERR','invalid usage'); end
+  rb=length(B.Q); if ra~=2 || rb~=2, wbdie('invalid usage'); end
 
   C=QSpace(mpsTensorProdQS(A,B));
 
-  Q=C.Q; rc=length(Q); if rc~=4, error('Wb:ERR','???'); end
+  Q=C.Q; rc=length(Q); if rc~=4, wbdie('!?'); end
   Q{1}=Q{1}+Q{2}; Q{2}=Q{3}+Q{4};
   C.Q=Q(1:2);
 

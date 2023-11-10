@@ -13,7 +13,7 @@ function i=checkSameSpace(A,ia,B,ib,varargin)
 
   if nargin<4
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   getopt('init',varargin);

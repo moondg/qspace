@@ -4,7 +4,7 @@ function C=mrdivide(A,B)
 
   if nargin~=2 || ~isnumeric(B)
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   C=A; fac=1/B;

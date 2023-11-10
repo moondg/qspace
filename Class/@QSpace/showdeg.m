@@ -16,7 +16,7 @@ function I=showdeg(H,varargin)
 
   if nargin<1 || numel(H.Q)~=2 || norm(H.Q{1}-H.Q{2})>1E-12
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   getopt('INIT',varargin);
@@ -75,7 +75,7 @@ function I=showdeg(H,varargin)
    else
      for i=1:ng, jj=ii(i)+1:ii(i+1);
         if norm(diff(ee(jj)))>5*dE, ee(jj), norm(diff(ee(jj))),
-           error('Wb:ERR','invalid degeneracy'); end
+           wbdie('invalid degeneracy'); end
         fprintf('%s\n',repmat('-',50,1));
 
         [x,is]=sortrows(iiq(jj,3:end));

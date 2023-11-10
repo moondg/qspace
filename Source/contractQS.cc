@@ -119,7 +119,16 @@ char icFlags::check_arg(const mxArray *ain) {
          else if (!i) { q|=3; }  
       }
       else if (mxIsCell(a)) { q=12; }  
-      else if (mxIsQSpace(0,0,a,'c')>0) { q=4; } 
+      else {
+         int i=mxIsQSpace(0,0,a,'c');
+         if (i>0) { q=4; } 
+         else if (i<-1) {
+            int n=mxGetNumberOfElements(a); 
+            if (n>1) wblog(FL,
+               "ERR invalid input QSpace (array with %d elements)",n);
+            else wblog(FL,"ERR invalid input QSpace (n=%d, e=%d)",n,i);
+         }
+      }
    }
    return q;
 };
@@ -355,7 +364,10 @@ void mexFunction(
 
     itag_::Reset(2); 
 
-    if (nargin>=4 && isCtrIdx(argin[1]) && isCtrIdx(argin[3])) {
+    if (nargin>=4 &&  
+         !mxIsCell(argin[0]) && isCtrIdx(argin[1]) &&
+         !mxIsCell(argin[3]) && isCtrIdx(argin[3])
+       ) { 
        a=contract_plain(nargin,argin);
     }
     else {
@@ -673,8 +685,12 @@ unsigned contractQS_itags(
             P_.save2(P);
          }
 
-         if (P.len) { unsigned r=C.rank(FL);
-            if (P.len<=r) { C.Permute(P); }
+         if (P) { unsigned r=C.rank(FL);
+            if (P.len<=r) {
+               if (vflag) { wblog(FL,
+                  "--> applying permutation %s",STR(P)); }
+               C.Permute(P);
+            }
             else { wblog(FL,
                "ERR invalid input permutation '%s' (len=%d/%d)",
                STR(P),P.len,r);
@@ -805,7 +821,7 @@ int is_valid_cell_ctr(
       }
       else {
          try { q=mxIsQSpace(FL,a,'c'); }
-         catch (...) { ++e; }
+         catch (...) { ++e; q=0; }
 
          if (q>0 && !e) { ++nQS; 
             rval+=(q&4 ? 65536 : 256);   

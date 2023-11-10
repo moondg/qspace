@@ -89,7 +89,7 @@ function [HPsi,E]=get_HPsi(HAM,Psi,X1,X2,varargin)
 
   if got_gauge(HAM)
      L=length(HAM.mpo); Eloc=HAM.oez(1).op;
-     HPsi = HPsi + get_HPsi_gauge(Psi,HAM.info.param.gauge,L,Eloc);
+     HPsi = HPsi + get_HPsi_gauge(Psi,HAM,X1,X2);
   end
 
   if nargout>1

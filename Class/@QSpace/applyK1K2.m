@@ -12,21 +12,21 @@ function [S1,S2]=applyK1K2(S,H)
      S1=S; S2=S; return
   end
 
-  if none(numel(S.Q)==[2 3]) || numel(H.Q)~=2, error('Wb:ERR',...
-    '\n   ERR invalid usage'); end
-  if norm(H.Q{1}-H.Q{2})>1E-12, error('Wb:ERR',...
-    '\n   ERR invalid usage (H expected a scalar operator)'); end
+  if none(numel(S.Q)==[2 3]) || numel(H.Q)~=2
+     wbdie('invalid usage'); end
+  if norm(H.Q{1}-H.Q{2})>1E-12
+     wbdie('invalid usage (H expected a scalar operator)'); end
 
   [Ia,Ib,I]=matchIndex(S.Q{1},H.Q{1},'-s');
   [Ja,Jb,J]=matchIndex(S.Q{2},H.Q{2},'-s');
 
-  if ~isempty(I.ix1) || ~isempty(J.ix1), error('Wb:ERR',...
-    '\n   ERR failed to identify all Q-sectors in S'); end
-  if ~isequal(Ia,Ja) || ~isequal(Ia,1:length(Ia)), error('Wb:ERR',...
-    '\n   ERR invalid match'); end
+  if ~isempty(I.ix1) || ~isempty(J.ix1)
+     wbdie('failed to identify all Q-sectors in S'); end
+  if ~isequal(Ia,Ja) || ~isequal(Ia,1:length(Ia))
+     wbdie('invalid match'); end
   for i=1:length(H.data)
-     s=size(H.data{i}); if numel(s)>2 || s(1)~=1, error('Wb:ERR',...
-    '\n   ERR invalid H (expecting diagonal representation)'); end
+     s=size(H.data{i}); if numel(s)>2 || s(1)~=1
+     wbdie('invalid H (expecting diagonal representation)'); end
   end
 
   S1=S;

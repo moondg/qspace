@@ -70,7 +70,7 @@ function s=get_size_OM(a,rmax)
   if isempty(a), s=zeros(1,rmax); return; end
 
   r=length(a.qdir); s=double(a.cgd.S); l=length(s);
-  if l<r || l>r+1, error('Wb:ERR','\n   ERR invalid cgd.size !?'); end
+  if l<r || l>r+1, wbdie('invalid cgd.size !?'); end
   if l==r, m=1; else m=s(end); end
 
   s=[m,zeros(1,rmax-r-1),s(1:r)];

@@ -54,14 +54,14 @@
 
   s=getsym(FC(1),'-c');
   for i=2:numel(s)
-     s0=appendScalarSymmetry(s0,s{i});
+     s0=addSymmetry(s0,s{i});
   end
 
-  A0=QSpace(permuteQS(getIdentityQS(s0(end),Z),[1 3 2]));
+  A0=getIdentity(s0(end),Z,[1 3 2]);
 
   r=numel(s0);
   if numel(SS)~=r || (r~=1 && r~=3)
-     error('Wb:ERR','\n   ERR invalid spin setting'); end
+     wbdie('invalid spin setting'); end
 
   H0=QSpace;
   for i=1:r, Q=contract(J*s0(i),'1*',A0,1);

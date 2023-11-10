@@ -27,8 +27,7 @@ function [b,a,I] = oliveira(Gamma,Lambda,z,varargin)
 
   getopt('check_error');
 
-  if numel(N)~=1 || isinf(N) || isnan(N)
-     error('Wb:ERR','\n   ERR invalid N (%g)',N); end
+  if numel(N)~=1 || isinf(N) || isnan(N), wbdie('invalid N (%g)',N); end
   if abs(N-round(N))>0
      q=N; N=ceil(N);
      wblog('WRN','got N=%g -> N=%g',q,N);
@@ -42,7 +41,7 @@ function [b,a,I] = oliveira(Gamma,Lambda,z,varargin)
      if Nmax<0, Nmax = 2*N; end
   end
 
-  if Gamma<0, error('Wb:ERR','invalid Gamma (%g)',Gamma); end
+  if Gamma<0, wbdie('invalid Gamma (%g)',Gamma); end
 
   if z==0 && ~ALambda && ~pnflag
      if qflag==1, wblog('<i>',... 
@@ -156,7 +155,7 @@ function [b,a,I] = oliveira(Gamma,Lambda,z,varargin)
   if kx>3
      s=sprintf(['got increasing couplings: ' ... 
        'ff(%g)=%.3g @ %.3g (z=%.3g)'],kx+1,beta(kx+1),br(kx),z);
-     if e>2, error('Wb:ERR',['\n   ERR ' s]);
+     if e>2, wbdie(s);
      else wblog(iff(kx<5,'WRN','ERR'),s); end
   end
 

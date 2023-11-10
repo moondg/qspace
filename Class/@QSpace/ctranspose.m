@@ -11,7 +11,7 @@ function A=ctranspose(A)
 
      if mod(r,2)==0, p=[r/2+1:r, 1:r/2];
      elseif r==3 && isequal(Ak.info.otype,'operator'), p=[2 1 3];
-     else error('Wb:ERR','got rank-%d QSpace',r); end
+     else wbdie('got rank-%d QSpace',r); end
      pc=[sprintf('%g',p) '*'];
 
      A(k)=QSpace(permuteQS(Ak,pc));

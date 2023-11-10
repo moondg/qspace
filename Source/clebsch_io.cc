@@ -633,7 +633,14 @@ int RCStore::load_RSet(
    const char *F, int L, const QType &t, const qset<TQ> &J, char rclog
 ){
    wbstring fs;
-   genRG_base<TQ,RTD> R; R.q=t; R.J=J;
+   genRG_base<TQ,RTD> R;
+
+   QSet<TQ> Q; Q.init1(t,J.data);
+#ifdef QS_USING_OMP
+   CG::Guard qLK(FL,Q,"gRS"); 
+#endif
+
+   R.q=t; R.J=J;
 
    if (R.J.len!=t.qrank()) wblog(FL,"ERR %s() "
       "got invalid qlabels (%s) len=%d/%d",FCT,STR2(J,t),J.len,t.qrank());
@@ -647,10 +654,9 @@ int RCStore::load_RSet(
       return 0;
    }
 
-   if (CG_VERBOSE>8 && L) rclog |= RCL_V1;
+   if (CG_VERBOSE>8 && L) { rclog |= RCL_V1; }
 
-   if (rclog) {
-      QSet<TQ> Q; Q.init1(t,J.data); char sbuf[256];
+   if (rclog) { char sbuf[256];
       snprintf(sbuf,256,
          "(+) RBUF[%03d] %s",int(gRS.Buf(t).RSet.size()),STR(Q));
       if (rclog & RCL_V2)
@@ -1908,45 +1914,47 @@ unsigned RStore<TQ,TD>::add(
       }
    }
 
+   unsigned i;
+   char xflag=0; 
+
    qset<TQ> qs(FL,mxGetFieldByNumber(S,k,iJ),0,'!'); 
    QType qk(FL,mxGetFieldByNumber(S,k,itype));
+
+   genRG_base<TQ,TD> X; 
 
    if (qs.len!=q.qlen() || qk!=q) wblog(FL,
       "ERR %s() invalid %s RSet (%d/%d; %s)",
       FCT, q.toStr('t').data, qs.len, q.qlen(), qk.toStr('t').data
    );
 
-   char xflag=0;
-   genRG_base<TQ,TD> X, &R = Buf(q).RSet[qs];
-
    if (CG_VERBOSE>8) {
-      QSet<TQ> Q; Q.init1(q,qs.data); wblog(PFL,
-      "(+) RBUF[%03d] %s", gRS.buf[q].RSet.size(), STR(Q));
+      QSet<TQ> Q; Q.init1(q,qs.data);
+      wblog(PFL,"(+) RBUF[%03d] %s", gRS.buf[q].RSet.size(), STR(Q));
    }
 
-   if (!R.isEmpty()) {
-      xflag=1; R.save2(X);
-   }
-
-   R.q=q;
-   R.J=qs;
-
-   R.Z.init(FL, mxGetFieldByNumber(S,k,iZ));
+   X.q=q;
+   X.J=qs;
+   X.Z.init(FL, mxGetFieldByNumber(S,k,iZ));
 
    if (!(ap=mxGetFieldByNumber(S,k,iSp)) || mxGetNumberOfElements(ap)!=qs.len)
       wblog(FL,"ERR %s() invalid %s RSet(%d)->Sp",FCT,q.toStr('t').data,k);
    if (!(az=mxGetFieldByNumber(S,k,iSz)) || mxGetNumberOfElements(az)!=qs.len)
       wblog(FL,"ERR %s() invalid %s RSet(%d)->Sz",FCT,q.toStr('t').data,k);
 
-   R.Sp.init(qs.len);
-   R.Sz.init(qs.len);
+   X.Sp.init(qs.len);
+   X.Sz.init(qs.len);
 
-   for (unsigned i=0; i<qs.len; ++i) {
-      R.Sp[i].init(FL,ap,i);
-      R.Sz[i].init(FL,az,i);
+   for (i=0; i<qs.len; ++i) {
+      X.Sp[i].init(FL,ap,i);
+      X.Sz[i].init(FL,az,i);
    }
 
-   if (xflag) {
+   genRG_base<TQ,TD> &R = Buf(q).RSet[qs];
+
+   if (R.isEmpty()) { X.save2(R);
+      gCS.getIdentityC(FL,q,qs.data); 
+   }
+   else { xflag=1;
       if (R.q!=X.q || R.J!=X.J || R.Z!=X.Z || R.Sp!=X.Sp || R.Sz!=X.Sz) {
          double e2=0, E2=0; char s[32];
          MXPut(FL,"Irx").add(R,"R").add(X,"X");
@@ -1968,9 +1976,6 @@ unsigned RStore<TQ,TD>::add(
               wblog(FL,"ERR %s() %s",FCT,s);
          else wblog(FL,"WRN %s() %s",FCT,s);
       }
-   }
-   else {
-      gCS.getIdentityC(FL,q,qs.data); 
    }
 
    gstatR.gotread(R.memSize());

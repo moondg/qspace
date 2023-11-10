@@ -23,7 +23,7 @@ function C=mtimes(A,B)
         C(i).op=C(i).op*B; if ~isempty(C(i).hc)
         C(i).hc=C(i).hc*B; end
      end
-  else error('Wb:ERR','\n   ERR invalid usage'); end
+  else wbdie('invalid usage'); end
 
 end
 

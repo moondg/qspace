@@ -28,8 +28,7 @@ function [R,Rf,I]=getrhoNRG(kk,varargin)
   if isempty(findstr(pwd,'Data')), cto lma, end
   ff=dir2([nrg '_[0-9]*.mat']);
 
-  if isempty(ff)
-  error('Wb:ERR','\n  ERR no files %s* found\n',nrg); end
+  if isempty(ff), wbdie('no files %s* found\n',nrg); end
 
   load([nrg '_info'],'Lambda','param');
 
@@ -37,8 +36,9 @@ function [R,Rf,I]=getrhoNRG(kk,varargin)
 
   if isempty(N) || N>=length(ff), N=length(ff);
      load(ff(N).name); A=AT; H=HT;
-     if ~isempty(QSpace(HK)) error('Wb:ERR',...
-     'HK must be empty at last iteration !??'); end
+     if ~isempty(QSpace(HK))
+        wbdie('HK must be empty at last iteration !?');
+     end
   else
      load(ff(N).name); A=AK; H=HK;
   end
@@ -47,9 +47,9 @@ function [R,Rf,I]=getrhoNRG(kk,varargin)
      switch kk
         case {'last','end'}, kk=N;
         case 'all',  kk=1:N;
-        otherwise error('Wb:ERR','invalid k specs.');
+        otherwise wbdie('invalid k specs.');
      end
-  elseif any(kk>N), error('Wb:ERR','invalid k-index set'); end
+  elseif any(kk>N), wbdie('invalid k-index set'); end
 
   if ~isempty(T)
        beta=( Lambda^(-N/2) * (Lambda+1)/2 )/T;

@@ -10,6 +10,7 @@ function mvaxis(ah,dxy)
   if nargin==0 | nargin>2, eval(['help ' mfilename]), return, end
   if nargin==1, dxy=ah; ah=gca; end
 
+  if norm(dxy)==0, return; end
   dxy(end+1:4)=0;
 
   for h=reshape(ah,1,[])

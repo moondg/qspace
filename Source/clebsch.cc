@@ -939,10 +939,10 @@ int QVec::print_qset(
       "ERR %s() buffer size too small (n=%d @ nsym=%d)",FCT,n,len); }
    if (!len) { s[l]=0; return l; }
 
-   if (!WbUtil<gTQ>::isInt()) {
-      wblog(F_L,"ERR %s() got non-integer type for qset  '%s'",
-      FCT, TSTR(gTQ));
-   }
+   if (!WbUtil<gTQ>::isInt()) wblog(F_L,
+      "ERR %s() got non-integer type for qset  '%s'",FCT, TSTR(gTQ));
+   if (!len && qs) wblog(FL, 
+      "WRN %s() got empty qtype (q=%d,..)",FCT,*qs);
 
    for (; k<len && l<n; ++k, qs+=m) { if (k) { s[l++]=' '; }
       if (data[k].isAbelian()) { m=1;
@@ -4206,34 +4206,26 @@ wbvector<T>& CRef<TQ>::getSize(wbvector<T> &S, char bare) const {
 template <class TQ>
 int CRef<TQ>::HConjOpScalar() {
 
+   if (cgp.len) { wblog(FL,
+      "WRN %s() expecting scalar operator\ngot %s with cgp=[%s]",
+         STR_(this),FCT,STR(cgp));
+      cgp.init();
+   }
+
    if (!cgb || cgb->isEmpty()) {
-      if (cgp.len) { wblog(FL,
-         "WRN %s() got cgp.len=%d for scalar",FCT,cgp.len);
-         cgp.init();
-      }
-      if (conj) { wblog(FL,
-         "WRN %s() got conj=%d for scalar",FCT,conj);
+      if (conj) {
+         wblog(FL,"WRN %s() got conj=%d for scalar",FCT,conj);
          conj=0;
       }
       return 0; 
    }
 
-   unsigned i=0, r=cgb->qdir.len, n=(r ? cgb->qs.len/r : 0);
-   const TQ *q=cgb->qs.data;
+   conj=0; 
 
-   if (cgp.len && cgp.len!=r) wblog(FL,
-      "ERR %s() invalid permutation cgp.len=%d/%d",FCT,cgp.len,r);
+   unsigned i=0, r=cgb->qdir.len, n=(r ? cgb->qs.len/r : 0);
+
    if (r<2 || cgb->qs.len%r || !n) wblog(FL,
       "ERR %s() got rank-%d QSpace (qlen=%d)",FCT,r,n);
-
-   if (cgp.len || conj) {
-      QDir qd(cgb->qdir);
-         if (cgp.len) qd.Permute(cgp);
-         if (conj) qd.Conj();
-         if (r==3) qd.Conj(2); 
-      if (qd!=cgb->qdir) return 2;
-      else { cgp.init(); conj=0; }
-   }
 
    if (r!=3) {
       if (r!=2) {
@@ -4243,13 +4235,14 @@ int CRef<TQ>::HConjOpScalar() {
       return 0; 
    }
 
-   if (memcmp(q,q+n,n)) {
-      return 12; 
-   }
+   const char *d=cgb->qdir.data;
+   const TQ *q=cgb->qs.data;
 
-   for (q+=2*n; i<n; ++i) {
-      if (q[i]!=0) return (30+i);
-   }
+   if (d[0]!=-d[1]) { return 2; }
+
+   if (memcmp(q,q+n,n)) { return 12; } 
+
+   for (q+=2*n; i<n; ++i) { if (q[i]) { return (30+i); }}
 
    return 0;
 };

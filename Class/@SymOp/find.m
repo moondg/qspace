@@ -7,7 +7,7 @@ function i=find(CC)
      if isempty(CC(i).op), mark(i)=0; continue; end
      if ~isempty(s)
         if ~isequal(size(CC(i).op),s)
-        error('Wb:ERR','\n   ERR incompatible SymOp set'); end
+        wbdie('incompatible SymOp set'); end
      else
         s=size(CC(i).op);
      end

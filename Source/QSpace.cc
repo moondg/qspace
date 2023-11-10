@@ -1512,10 +1512,9 @@ template <class TQ, class TD> inline
 bool QSpace<TQ,TD>::isBlockDiagMatrix(
     const char *F, int L, char dflag) const {
 
-    unsigned r=rank(F_L); if (r%2) return 0;
-
-    unsigned i, n=QIDX.dim1,
-       r2=r/2, m=r2*QDIM, sq=m*sizeof(TQ), s2=r2*sizeof(TQ);
+    unsigned r=rank(F_L); if (r%2) { return 0; }
+    unsigned i, n=QIDX.dim1, r2=r/2, m=r2*QDIM,
+       sq=m*sizeof(TQ), s2=r2*sizeof(TQ);
     TQ *q=QIDX.data;
 
     if (dflag && r>2) { wblog(FL,
@@ -1647,13 +1646,16 @@ bool QSpace<TQ,TD>::isHConj(
       QSpace<TQ,TD> X; wbperm P;
       double e=0;
 
-      try {
-         if (r!=3)
-              P.initTranspose(r); 
-         else P.initStr(FL,"2,1,3"); 
-         permute(P,X).Conj(); if (r==3) X.ConjOpScalar();
-         X-=(*this); e=X.norm();
-      }
+      if (r==3)  
+           { P.initStr(FL,"2,1,3"); }
+      else { P.initTranspose(r); } 
+      permute(P,X).Conj();
+
+      if (r==3) { if (X.ConjOpScalar()) return 0; } else
+      if (!itags.isOp(r,'L')) { return 0; } 
+      X.itags.tSet(itags); 
+
+      try { X-=(*this); e=X.norm(); }
       catch (...) {
         if (r!=3) wblog(FL,
            "ERR %s() failed to subtract block-transpose QSpace\n"
@@ -2123,19 +2125,18 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::initIdentityCG(
    ctime=Wb::getTimeNow(); 
    if (!zflag) { return *this; }
 
-   if (zflag>2) { 
+   if (zflag>3) { 
       if (zflag=='z') { zflag=1; } else
       if (zflag=='Z') { zflag=2; } else
       wblog(FL,"WRN %s() unexpected zflag=%s",FCT,cSTR(zflag));
    }
-   else if (zflag<-2) { 
+   else if (zflag<-3) { 
       wblog(FL,"WRN %s() unexpected zflag=-%s",FCT,cSTR(-zflag));
    }
 
    itags[1].Conj(); 
-   if (abs(zflag)==1) {
-      itags[1].MarkDual(); 
-   }
+   if (abs(zflag)==1) { itags[1].MarkDual(); } else 
+   if (abs(zflag)==3) { itags[0].MarkDual(); } 
 
    for (i=0; i<DATA.len; ++i) {
       for (qij=QIDX.rec(i), j=0; j<qtype.len; ++j) {
@@ -3156,7 +3157,8 @@ unsigned QSpace<TQ,TD>::SkipZeroData(
    double epsi=eps;
 
    if (!all) {
-      if (rank(FL)!=2 || !isBlockDiagMatrix('d')) { all=2; }
+      if (rank(FL)!=2) { all|=2; } else
+      if (!isBlockDiagMatrix('d') && !isHConj()) { all|=4; }
    }
 
    if (cgflag) { cgflag=(gotCGS(FL)>0); }
@@ -3178,7 +3180,7 @@ unsigned QSpace<TQ,TD>::SkipZeroData(
 
          if (cfac<eps) { isz=2;
             double x=a.aMax(); if (x>1E-6) { wblog(FL,
-              "WRN %s() skipping |cgc|=%.3g having max(|data|)=%.3g !?",
+              "WRN %s() skipping |cgw|=%.3g having max(|data|)=%.3g !?",
               FCT,cfac,x
             ); }
          }
@@ -4416,6 +4418,7 @@ void QSpace<TQ,TD>::EigenSymmetric(
    int &Nkeep,             
    double Etrunc,          
    double *E0,             
+   char mKD,            
    const wbperm &PA,       
    double deps,            
    double db,              
@@ -4441,7 +4444,7 @@ void QSpace<TQ,TD>::EigenSymmetric(
          QSpace<TQ,TD> X(*this); 
 
          X.EigenSymmetric(
-           AK,AD,EK,ED,EM,DD, Nkeep,Etrunc,E0,PA,deps,db,dmax,sdir);
+           AK,AD,EK,ED,EM,DD, Nkeep,Etrunc,E0,mKD,PA,deps,db,dmax,sdir);
          return;
       }
    }
@@ -4577,7 +4580,7 @@ void QSpace<TQ,TD>::EigenSymmetric(
       tk.init(b.S1.dim2, b.A.itags.data, 1, &t); td=tk;
       ts.init(1,&t,1,&t); ts[0].Conj(); ts_=ts;
 
-      if (nt) {
+      if (nt && mKD) {
          tk.last().SetK(); 
          td.last().SetD(); 
          for (i=0; i<2; ++i) { ts[i].SetK(); ts_[i].SetD(); }
@@ -4653,8 +4656,8 @@ void QSpace<TQ,TD>::EigenSymmetric(
    EK.itags=ts; ED.itags=ts_; 
 
    if (!PA.isEmpty() && !PA.isIdentityPerm()) {
-      if (!AK.isEmpty()) AK.Permute(PA);
-      if (!AD.isEmpty()) AD.Permute(PA);
+      if (AK) { AK.Permute(PA); }
+      if (AD) { AD.Permute(PA); }
    }
 
    AK.Sort(); 

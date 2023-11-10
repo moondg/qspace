@@ -18,7 +18,7 @@ function [g0,a0,g1]=getConductance0(om,a0,varargin)
 
   if nargin<2 || ~isvector(om)
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
   e=0; fflag=0; T=[]; param=[]; Gamma=[]; gfac=[]; 
 
@@ -56,7 +56,7 @@ function [g0,a0,g1]=getConductance0(om,a0,varargin)
      else e=e+10; end
   end
 
-  if e, error('Wb:ERR','\n   ERR invalid usage (e=%g)',e); end
+  if e, wbdie('invalid usage (e=%g)',e); end
 
   if numel(varargin)
      getopt('init',varargin);

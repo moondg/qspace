@@ -762,12 +762,14 @@ class itag_ {
    itag_& SetM() { return AppendChar('~',"KD~"); }; 
 
    itag_& SetK() {
-      if (CheckFirstChar('K',"AEX")>0) return *this;
-      return AppendChar('K',"KD~");
+      if (CheckFirstChar('K',"AEX")>0)
+           { return *this; }
+      else { return AppendChar('K',"KD~"); }
    };
    itag_& SetD() {
-      if (CheckFirstChar('D',"AEX")>0) return *this;
-      return AppendChar('D',"KD~");
+      if (CheckFirstChar('D',"AEX")>0)
+           { return *this; }
+      else { return AppendChar('D',"KD~"); }
    };
 
    unsigned to_str(char *s, unsigned len, char cflag=1) const;
@@ -828,21 +830,30 @@ class iTags : public wbvector<itag_> {
 
    iTags& Update(const iTags &b) { 
       if (len!=b.len) { wblog(FL,
-         "ERR %s() itag length mismatch '%s' | '%s' (%d/%d)",
-          FCT,STR_(this),STR(b),len,b.len);
+         "ERR %s() itag length mismatch (%d/%d) '%s' / '%s'",
+          FCT,len,b.len,STR_(this),STR(b));
       }
       for (unsigned i=0; i<len; ++i) {
          if (!data[i].isEmpty()) { if (data[i]!=b.data[i]) {
-             wblog(FL,"ERR %s() itag mismatch '%s' | '%s'",
+             wblog(FL,"ERR %s() itag mismatch '%s' / '%s'",
              FCT,STR_(this),STR(b),len,b.len);
          }}
          else if (data[i].isConj() ^ b.data[i].isConj()) {
-             wblog(FL,"ERR %s() itag conj mismatch '%s' | '%s'",
+             wblog(FL,"ERR %s() itag conj mismatch '%s' / '%s'",
              FCT,STR_(this),STR(b),len,b.len);
          }
       }
       return init(b);
    };
+
+   iTags& tSet(const iTags &b) { 
+      if (len!=b.len) { wblog(FL,
+         "ERR %s() itag length mismatch (%d/%d) '%s' / '%s'",
+          FCT,len,b.len,STR_(this),STR(b));
+      }
+      for (unsigned i=0; i<len; ++i) { data[i].tSet(b.data[i]); }
+      return *this;
+   }
 
 #ifdef LOAD_CGC_QSPACE
    unsigned init_qdir(const char *s);

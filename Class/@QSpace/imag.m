@@ -7,7 +7,7 @@ function A=imag(A)
 
   if nargin<1 || nargout>1
      eval(['help ' mfilename]);
-     if nargin || nargout, error('Wb:ERR','invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   for k=1:numel(A)

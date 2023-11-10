@@ -875,7 +875,7 @@ void NRG_Wilson(
              AK, AD, HK, HD, E4_, D4, NK(iter,0),
              iter<ED.len && ED[iter]>0 ?  ED[iter]
              : ((Etrunc1>0 && !gotTR) ? Etrunc1 : Etrunc),
-             E0.data+iter, PA, deps, db, dmax 
+             E0.data+iter, 0, PA, deps, db, dmax 
           ); E4_.getCol(0,E4);
 
           if (!gotTR) {

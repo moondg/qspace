@@ -7,7 +7,7 @@ function [dd,s]=getqdim(A)
 
   if nargin<1 || numel(A)~=1
      eval(['help ' mfilename]);
-     if nargin || nargout, error('Wb:ERR','invalid usage'), end, return
+     if nargin || nargout, wbdie('invalid usage'), end, return
   end
 
   if isempty(A.Q), dd=[]; return; end
@@ -29,12 +29,12 @@ function [dd,s]=getqdim(A)
         case 'SU2', dd(i)=1; % s{i}='SU(2)';
         case 'SU3', dd(i)=2; % s{i}='SU(3)';
         case 'SU4', dd(i)=3; % s{i}='SU(3)';
-        otherwise error('Wb:ERR','\n   ERR unknown symmetry ''%s''',s{i}); 
+        otherwise wbdie('unknown symmetry ''%s''',s{i}); 
      end
   end
 
   if sum(dd)~=m, dd
-     error('Wb:ERR','\n   ERR symmetry inconsistency (%g/%g)',m,sum(dd));
+     wbdie('symmetry inconsistency (%g/%g)',m,sum(dd));
   end
 
 end

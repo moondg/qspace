@@ -36,8 +36,8 @@ function q=isscalar_1(A,lflag)
 
   nq=numel(A.Q); if nq, nq=size(A.Q{1},1); end
   nd=numel(A.data);
-  if nq && nq~=nd, error('Wb:ERR',...
-     '\n   ERR severe QSpace inconsistency (%g/%g) !?',nq,nd);
+  if nq && nq~=nd
+     wbdie('severe QSpace inconsistency (%g/%g) !?',nq,nd);
   end
 
   if nd==1, nd=numel(A.data{1}); end

@@ -20,6 +20,7 @@ function info(A,varargin)
      else   cflag=getopt('cflag',0); end
 
      if getopt('~oc'), ocflag=0; else ocflag=1; end
+     use_tex=getopt('--tex');
 
   args=getopt('get_remaining'); nargs=numel(args);
 
@@ -57,7 +58,7 @@ function info(A,varargin)
         else fprintf(1,[nl '  (empty QSpace)\n']); end
      elseif cflag>1
           info_1line(A(k),vstr,cflag,ocflag,rmax);
-     else info_1(A(k),vstr,cflag); end
+     else info_1(A(k),vstr,cflag,use_tex); end
   end
 
 end
@@ -156,7 +157,7 @@ end
 
 % -------------------------------------------------------------------- %
 
-function info_1(A,s,cflag)
+function info_1(A,s,cflag,use_tex)
 
   if ~isempty(s), fprintf(1,'\n%s\n',s);
   elseif ~cflag,  fprintf(1,'\n'); end
@@ -179,7 +180,7 @@ function info_1(A,s,cflag)
      s{end+1}=A.info.otype;
   end
   if isfield(A.info,'itags') && ~isempty(A.info.itags)
-     s{end+1}=[ itags_to_str(A.info.itags,'QS:info') ];
+     s{end+1}=[ itags_to_str(A.info.itags,'QS:info',use_tex) ];
   end
 
   if ~isreal(A), s{end+1}='complex'; 
@@ -229,11 +230,15 @@ function info_1(A,s,cflag)
            for i=2:size(dd,1)
                q=int2str2(dd(i,:)); dstr=[dstr, ' => ', strhcat(q,xsep)]; 
            end
-           q=normQS(A); q(2)=q*q;
-           if q<0.01, i=[]; else i=find(abs(q-round(q))<1E-8); end
-           if ~isempty(i), q=rat2(q(1)); else q=sprintf('%.4g',q(1)); end
-           dstr=[dstr sprintf('  @ norm = %s',q)];
         end
+
+        q=normQS(A); q(2)=q*q;
+        if q<0.01, i=[]; else i=find(abs(q-round(q))<1E-8); end
+        if ~isempty(i)
+             q=rat2(q(1),'-q'); if use_tex, q=sqrt_to_tex(q); end
+        else q=sprintf('%.4g',q(1)); end
+        dstr=[dstr sprintf('  @ norm = %s',q)];
+
      else dstr=''; end
 
      fprintf(1,['  data:  ' Dfmt ' %s (%s)      %-16s%s\n'], ...

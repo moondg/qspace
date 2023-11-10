@@ -21,6 +21,11 @@ function [HAM]=setup_mpo_full(HAM,varargin)
    args=getopt('get_remaining'); nargs=length(args);
 
    gotH=0;
+ % in case of gauge, this is implemented on top, i.e.,
+ % not within the full MPO! (cf. updateHK!)
+ % if got_gauge(HAM)
+ %    wbdie('gauge Hamiltonian requires pseudo MPO');
+ % end
 
    if nargs>2, wbdie('invalid usage'); end
    if nargs, HS=args{1};
@@ -776,7 +781,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
             if k>k1, ic='!1*'; if k<L, Q={ Q, EM(k+1) }; end
             else     ic='!2*'; if k>1, Q={ EM(k-1), Q }; end; end
             EM(k)=contractQS(oez(1,k),ic,Q);
-            if numel(EM(k).Q)>2, wbdie('ERR',''); end
+            if numel(EM(k).Q)>2, wbdie(''); end
          end
 
       end
@@ -854,7 +859,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
  % (2) remove it from mpo while making it canonical, before finally,
  % (3) again adding it to the MPO uniformly over all sites
 
-   if k~=1, wbdie('got k=%d !?',k); end
+   if k~=1, wbdie('got k=%d',k); end
    EM(k)=contract(oez(1,k),'!1*',{mpo(k),EM(k+1)}); EM_0=EM;
 
    xR=getscalar(EM(k));
@@ -894,6 +899,8 @@ function [HAM]=setup_mpo_full(HAM,varargin)
  %     the identity operator in the right block; by the RL
  %     orthonormalization of the mpo, this coefficient is 1.
  % also check sign to make sign in EM(k) positive
+
+   klast=-1;
 
    for k=L:-1:2
     % build weighted local Hermitian super-operator
@@ -964,9 +971,12 @@ function [HAM]=setup_mpo_full(HAM,varargin)
        % Completed terms require Id for the R-block [see (1) above]!
        % [todo] Add infinitesimal local term to all sites so that
        % identity operator is not fully absent? // Wb,Feb15,21
-         q={' * ', q }; if k>2, q{1}='WRN'; end
-         if ~EM(k)
-            wblog(q{1},'<%g| got empty EM',k); break
+         s={' * ', sprintf('<%g| got |EM|=%.3g',k,q) };
+         if k>2, s{1}='WRN'; end
+         if ~EM(k), s{2}=[s{2} ' (empty)'];
+            wblog(s{:}); klast=k; break
+         elseif q<1E-14
+            wblog(s{:}); klast=k; break;
          end
       end
 
@@ -1037,8 +1047,9 @@ function [HAM]=setup_mpo_full(HAM,varargin)
             if a(1)<1E-12 && k<min(k_)
                p([1 i])=[i 1];
             elseif k<max(k_), displ(q');
-               wblog('WRN','|%g> got max xL at i=%g !?',k,i);
-               i=1; 
+               s={ 'WRN', sprintf('|%g> got max xL at i=%g',k,i) };
+               if k<klast, s{1}=' * '; else s{2}=[s{2} ' !?']; end
+               wblog(s{:}); i=1; 
             end
          end
          q=q(i);

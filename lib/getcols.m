@@ -5,6 +5,7 @@ function ncols=getcols()
 % NB! after repeated calls, this may take 10 sec for each call !(*Y_!
 % Wb,May02,13
   persistent nc
+
   if isempty(nc)
      if isdesktop>1
         [e,s]=system('command -v getcols.pl');

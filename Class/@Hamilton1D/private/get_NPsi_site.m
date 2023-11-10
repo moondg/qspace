@@ -36,6 +36,7 @@ function [NPsi,NPsi2]=get_NPsi_site(Psi,cflag)
      if isempty(regexpi(t,'Psi'))
         wblog('WRN','got itag ''%s'' for Psi !?',t);
      end
+  elseif ~Psi, wbdie('got empty QSpace Psi'); 
   else wbdie('invalid usage (got qdir=''%s'' !?)',qdir); end
 
 end

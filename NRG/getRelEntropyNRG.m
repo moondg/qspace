@@ -17,7 +17,7 @@ function [I,II,NRG,NRG0]=getRelEntropyNRG(NRG,NRG0,varargin)
 
   if nargin<2 || xor(ischar(NRG),ischar(NRG0))
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   getopt('init',varargin);
@@ -30,7 +30,7 @@ function [I,II,NRG,NRG0]=getRelEntropyNRG(NRG,NRG0,varargin)
      i=sprintf('%s_info.mat',NRG);
      i0=sprintf('%s_info.mat',NRG0);
      if ~exist(i,'file') || ~exist(i0,'file'), { NRG, NRG0 }
-        error('Wb:ERR','\n   ERR invalid NRG data (%s)',i); end
+        wbdie('invalid NRG data (%s)',i); end
      Inrg=load(i);
   else
      Inrg=NRG;

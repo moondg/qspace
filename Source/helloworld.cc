@@ -8,11 +8,20 @@
 #define PP_STRFY(a) PP_STR__(a)
 
 void mexFunction(
-   int nargin, mxArray *argin[], int nargout, const mxArray *argout[]
+   int nargout, mxArray *argout[],
+   int nargin, const mxArray *argin[]
 ){
-   printf(
-   "\n   hello world!\n"
-   "\n   This is %s() [.%s] (nargout=%d, nargin=%d)\n\n",
-   mexFunctionName(), PP_STRFY(MEX_EXT), nargout, nargin);
+   if (nargout) { mxArray *a;
+      for (unsigned i=0; i<nargout; ++i) {
+         a=mxCreateDoubleMatrix(1,1,mxREAL);
+         mxGetDoubles(a)[0]=double(i+1);
+         argout[i]=a;
+      }
+   }
+
+   printf("\n   Hello world from MEX! (.%s: nargout=%d, nargin=%d)\n\n",
+      PP_STRFY(MEX_EXT), 
+      nargout, nargin
+   );
 }
 

@@ -52,16 +52,26 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
   L=numel(HAM.mpo);
 
   if kdir>0
-       d=getDimQS(X1.AK); d=d(end,:); d([1 2])=d([2 1]);
-  else d=getDimQS(X2.AK); d=d(end,:); end
+       d3A=getDimQS(X1.AK); d3A=d3A(end,:); d3A([1 2])=d3A([2 1]);
+  else d3A=getDimQS(X2.AK); d3A=d3A(end,:); end
 
   if rtol<0
-     warning('Wb:WRN','got rtol=%g !? (set to 0)',rtol);
+     wbwrn('got rtol=%g !? (set to 0)',rtol);
      rtol=0;
   end
 
-  i=[ d(1)>=prod(d(2:end))
-      d(2)>=prod(d([1,3:end]))
+  pseudo_mpo=(~using_full_MPO(HAM));
+  if pseudo_mpo, [J,hconj]=get_bondH(HAM,k1);
+       oH={J,hconj};
+  else oH={'--full-mpo'};
+     q=getfield2(HAM.info,'sweep','init_DMRG',{0});
+     if numel(q)==2 && all(q>1)
+        oH{1}=[oH{1},'-INIT'];
+     end
+  end
+
+  i=[ d3A(1)>=prod(d3A(2:end))
+      d3A(2)>=prod(d3A([1,3:end]))
   ];
 
   if 0 & any(i)
@@ -88,32 +98,37 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
   d2=itags2odir(X2.AK);
   if d1 && d2, wbdie('got current site other than A1 and A2 !?'); end
 
-  Ek1=get_local_id(HAM,k1,X1.AK,3);
-  Ek2=get_local_id(HAM,k2,X2.AK,3);
+  facCBE=getfield2(HAM.info,'sweep','facCBE',{0});
 
   if ndav>0 && ~bupd
-     t=regexprep(getitags(X1.AK,2),tpat,'E$1l');
-     E1=QSpace(permuteQS(getIdentityQS(X1.AK,1,Ek1,['-m:' t]),[1 3 2]));
-     A1=QSpace(contractQS(E1,'*',X1.AK));
+     if facCBE
+        [X1,X2,Psi,Ix]=expand_bond(HAM,X1,X2,oH{:});
+     else
+        El1=get_local_id(HAM,k1,X1.AK,3);
+        El2=get_local_id(HAM,k2,X2.AK,3);
 
-     X1.AK=E1;
-     X1=updateHK(HAM,k1,'>>',X1);
+        t=regexprep(getitags(X1.AK,2),tpat,'E$1l');
+        E1=getIdentity(X1.AK,1,El1,['-m:' t],[1 3 2]);
 
-     t=regexprep(getitags(X2.AK,1),tpat,'E$1r');
-     E2=QSpace(permuteQS(getIdentityQS(X2.AK,2,Ek2,['-m:' t]),[3 1 2]));
-     A2=QSpace(contractQS(E2,'*',X2.AK));
+        A1=QSpace(contractQS(E1,'*',X1.AK));
+        X1.AK=E1;
+        X1=updateHK(HAM,k1,'>>',X1);
 
-     X2.AK=E2;
-     X2=updateHK(HAM,k2,'<<',X2);
+        t=regexprep(getitags(X2.AK,1),tpat,'E$1r');
+        E2=getIdentity(X2.AK,2,El2,['-m:' t],[3 1 2]);
 
-     r1=numel(A1.Q); r2=numel(A2.Q);
-     NPsi=(r1>2 || r2>2);
-     if r1<2 || r2<2 || NPsi && r1+r2~=5
-        wbdie('invalid usage (got [%g,%g]-rank A-tensors)',r1,r2); 
+        A2=QSpace(contractQS(E2,'*',X2.AK));
+        X2.AK=E2;
+        X2=updateHK(HAM,k2,'<<',X2);
+
+        r1=numel(A1.Q); r2=numel(A2.Q);
+        NPsi=(r1>2 || r2>2);
+        if r1<2 || r2<2 || NPsi && r1+r2~=5
+           wbdie('invalid usage (got [%g,%g]-rank A-tensors)',r1,r2); 
+        end
+        p=[]; if r1==3, p=[1 3 2]; end
+        Psi=contract(A1,A2,p);
      end
-     p=[]; if r1==3, p=[1 3 2]; end
-
-     Psi=contract(A1,A2,p);
   else
      if bupd, o={'-b'}; else o={}; end
 
@@ -171,19 +186,9 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
 
   E0=[]; H=[]; Ig=[]; converged=0; Psi0=Psi;
 
-  pseudo_mpo=(~using_full_MPO(HAM));
-  if pseudo_mpo, [J,hconj]=get_bondH(HAM,k1);
-       oH={J,hconj};
-  else oH={'--full-mpo'};
-     q=getfield2(HAM.info,'sweep','init_DMRG',{0});
-     if numel(q)==2 && all(q>1)
-        oH{1}=[oH{1},'-INIT'];
-     end
-  end
-
   if ndav>=prod(dpsi(1,:))
-     d1=getDimQS(E1);
-     d2=getDimQS(E2);
+     d1=getDimQS(X1.AK);
+     d2=getDimQS(X2.AK);
      if vflag>1, wblog('TST',...
         'david(%g,%g) with ndav=%g @ d=[%s; %s] {%g,%g}',k1,k2,ndav,...
          vec2str(dpsi(1,:),'-f'), vec2str(dpsi(2,:),'-f'),d1(1,2),d2(1,1));

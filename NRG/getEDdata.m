@@ -37,7 +37,7 @@ function varargout=getEDdata(varargin)
   if ischar(NRG)
      m=[NRG '_info.mat']; mf=mfilename;
        if ~exist(m,'file'), NRG
-           error('Wb:ERR','\n   ERR invalid NRG data'); end
+           wbdie('invalid NRG data'); end
      if ~qflag, fprintf(1,'\r   %s: loading %s ...  \r',mf,repHome(m)); end
      Inrg=load(m);
      if ~qflag, fprintf(1,'\r%80s\r',''); end
@@ -62,8 +62,8 @@ function varargout=getEDdata(varargin)
   dE=[ dE(2:end), 0 ];
 
   if min(dE)<0, wblog('WRN','got min(dE)=%.3g !??',min(dE)); end
-  if abs(Inrg.phE0-sum(E0))/Inrg.phE0>1E-8, error('Wb:ERR',...
-    'ground state energy discrepancy (%.3g)',sum(E0)-Inrg.phE0);
+  if abs(Inrg.phE0-sum(E0))/Inrg.phE0>1E-8
+     wbdie('ground state energy discrepancy (%.3g)',sum(E0)-Inrg.phE0);
   end
 
   if dflag, vars={'AK','HD'}; else vars={'HD'}; end
@@ -89,13 +89,12 @@ function varargout=getEDdata(varargin)
               [~,q]=eigQS(HK); AK=q.AK; HK=q.EK;
            end
         end
-        if gotHT, error('Wb:ERR',...
-          '\n   ERR got truncation at 0th NRG iteration');
+        if gotHT, wbdie('got truncation at 0th NRG iteration');
         end
      elseif k==2
         if Kflag
-           if isdiag(QSpace(HK),'-d')<2, error('Wb:ERR',...
-             '\n   ERR got non-diagonal HK at 1st NRG iteration');
+           if isdiag(QSpace(HK),'-d')<2
+              wbdie('got non-diagonal HK at 1st NRG iteration');
            end
         end
      end
@@ -145,7 +144,7 @@ function varargout=getEDdata(varargin)
   if dflag, 
      Inrg.d=d;
      d=unique(d(find(d))); if numel(d)~=1, d
-       error('Wb:ERR','\n   ERR failed to determine local d'); end
+       wbdie('failed to determine local d'); end
      Inrg.dloc=d;
   end
 

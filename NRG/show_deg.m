@@ -64,11 +64,11 @@ function th=show_deg(Ek,varargin)
   n=numel(Ek);
 
   if ~isvector(Ek)
-     error('Wb:ERR','\n   ERR invalid usage (expecting vector for Ek)'); end
+     wbdie('invalid usage (expecting vector for Ek)'); end
   if ~isempty(dz) && size(dz,1)~=n, whos dz Ek
-     error('Wb:ERR','\n   ERR invalid usage (size mismatch of dz)'); end
+     wbdie('invalid usage (size mismatch of dz)'); end
   if ~isempty(qq) && size(qq,1)~=n, whos qq Ek
-     error('Wb:ERR','\n   ERR invalid usage (size mismatch of qq)'); end
+     wbdie('invalid usage (size mismatch of qq)'); end
 
   [Ek,is]=sort(reshape(Ek,[],1));
   Ek(find(isnan(Ek)))=Inf;

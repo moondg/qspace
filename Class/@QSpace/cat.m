@@ -38,18 +38,18 @@ function X=cat_1(A,B,k)
    if isempty(B.data), X=A; return; end
 
  % by using X=A+B below, this should also take care of outer multiplicity!
- % if checkOM(A), error('Wb:ERR',...
- %    '\n   ERR outer multiplicity not yet implemented in cat()'); end
+ % if checkOM(A)
+ %    wbdie('outer multiplicity not yet implemented in cat()'); end
  % QA=[A.Q{:}]; QB=[B.Q{:}];
  % if size(uniquerows(QA),1)~=size(QA,1) || size(uniquerows(QB),1)~=size(QB,1)
- %    error('Wb:ERR','\n   ERR outer multiplicity not yet implemented in cat()');
+ %    wbdie('outer multiplicity not yet implemented in cat()');
  % end
 
    ra=numel(A.Q); rb=numel(B.Q);
 
    if iscell(k)
       if numel(k)~=2 || ~isnumber(k{1}) || ~isnumeric(k{2})
-         error('Wb:ERR','\n   ERR invalid usage'); end
+         wbdie('invalid usage'); end
       qdir=k{2}; k=k{1};
    elseif ra<rb, qdir=getqdir(B); else qdir=getqdir(A);
    end

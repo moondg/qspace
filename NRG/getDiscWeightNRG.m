@@ -77,24 +77,23 @@ function [dw,Iout,IR]=getDiscWeightNRG(varargin)
 
   if narg
      if narg>1 || ~ischar(varargin{1}), varargin
-     error('Wb:ERR','invalid NRGdata tag'); end
+     wbdie('invalid NRGdata tag'); end
      nrg=varargin{1};
   else nrg='./NRG/NRG'; end
 
   if numel(chi)~=1 || (chi<=0 || chi>=1)
-     error('Wb:ERR','\n   ERR invalid chi (%g)',chi);
+     wbdie('invalid chi (%g)',chi);
   end
 
-  if smooth>0 && smooth<2, error('Wb:ERR',...
-    '\n   ERR invalid smoothing parameter for disc. weight (%g)',smooth);
+  if smooth>0 && smooth<2,
+     wbdie('invalid smoothing parameter for disc. weight (%g)',smooth);
   end
 
   if nrg(1)~='/' && isempty(findstr(pwd,'Data')), cto lma, end
   ff=getnrgfiles(nrg,'-f');
   N=numel(ff); 
 
-  if ~N, error('Wb:ERR',...
-  '\n   ERR no NRG files ''%s'' found',nrg); end
+  if ~N, wbdie('no NRG files ''%s'' found',nrg); end
 
   Inrg=load([nrg '_info']);
   Lambda=Inrg.Lambda; Nkeep=Inrg.Nkeep;
@@ -103,12 +102,13 @@ function [dw,Iout,IR]=getDiscWeightNRG(varargin)
      Etr=Inrg.Itr.Etrunc(1);
   end
   if numel(Etr)~=1 || Etr<=0, Etr
-     error('Wb:ERR','\n   ERR invalid usage (Etr)');
+     wbdie('invalid usage (Etr)');
   end
 
   mat=ff(N).name; load(mat);
-     if ~isempty(QSpace(HK)), error('Wb:ERR',...
-     'HK must be empty at last iteration (%s) !??',mat); end
+     if ~isempty(QSpace(HK))
+        wbdie('HK must be empty at last iteration (%s) !?',mat);
+     end
 
   AK=AD; AD=QSpace;
   HK=HD; HD=QSpace;
@@ -254,7 +254,7 @@ function [dw,Iout,IR]=getDiscWeightNRG(varargin)
         if k2==N, II(k-1,n2+1)=s; end
 
         if abs(trace(IR(k2).R)-1)>1E-8, IR(k2).R
-        error('Wb:ERR','invalid density matrix R'); end
+        wbdie('invalid density matrix R'); end
      end
 
      if k>1
@@ -302,7 +302,7 @@ function [dw,Iout,IR]=getDiscWeightNRG(varargin)
 
   k=round(size(II,1)/2);
   k1=cat(2,II(k,:).k1); if norm(diff(k1))>1E-12
-     error('Wb:ERR','inconsistent k1''s !??'); end
+     wbdie('inconsistent k1''s ??'); end
   k2=cat(2,II(k,:).k2);
   n0_=k2(1)-k1(1);
 
@@ -632,7 +632,7 @@ function [dd,neg]=seteps2nan(dd,eps)
    if e>1E-12
       s=sprintf('WRN skipping small weight e=%g !??',e);
       if e<1E-6, wblog('WRN',s'); else
-      error('Wb:ERR','\n   ERR %s',s); end
+      wbdie('%s',s); end
    end
 
    dd(i)=nan;

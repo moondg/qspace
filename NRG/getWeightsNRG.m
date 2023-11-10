@@ -23,13 +23,13 @@ function [wd,TT]=getWeightsNRG(varargin)
 
   if numel(args)
      helpthis, if nargin || nargout
-     error('Wb:ERR','invalid usage'), end, return
+     wbdie('invalid usage'), end, return
   end
 
   if ischar(NRG)
      f=sprintf('%s_info.mat',NRG);
-     if ~exist(f,'file'), error('Wb:ERR',...
-       '\n   ERR invalid NRG data (inaccessible info file) !??');
+     if ~exist(f,'file')
+        wbdie('invalid NRG data (inaccessible info file) !??');
      end
      Inrg=load(f);
   end
@@ -39,7 +39,7 @@ function [wd,TT]=getWeightsNRG(varargin)
 
   dloc=IN.dloc;
   if dloc<2 || dloc~=round(dloc)
-     error('Wb:ERR','\n   ERR invalid d_loc = %g !??',dloc);
+     wbdie('invalid d_loc = %g !??',dloc);
   end
 
   for k1=1:N

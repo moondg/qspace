@@ -5,13 +5,13 @@ function h=poslabel(varargin)
 %
 % Options
 %
+%    'istr',. append info string to label
 %    'dx',..  (in normalized units in current axis set)
 %    'fs',..  font size of label (default: 16)
 %    '-wb'    white, i.e., erase  background
 %    '-wt'    white text, e.g., on top of dark surface plot
 %    '-rm'    remove existing labels
 %    '-fix'   adapt existing label (e.g. in terms of options above)
-%    'istr',. append info string to label
 %
 %     remaining options are applied to text object.
 %
@@ -89,12 +89,12 @@ function h=poslabel(varargin)
 
   if ischar(n)
      if ~isempty(n) && (n(1)=='(' || n(1)=='\' || n(1)==' ')
-         s=n; else s=sprintf('(%s)',n); end
-     h=postext(pos,s);
+     s=n; else s=sprintf('(%s)',n); end
   else
      if ~isnumber(n), n, wbdie('invalid usage'); end
-     h=postext(pos,sprintf('(%s)',char('a'+n-1)));
+     s=sprintf('(%s)',char('a'+n-1));
   end
+  h=postext(pos,s);
 
   if ~isempty(istr)
      set(h,'String',[get(h,'String') ' ' istr]);

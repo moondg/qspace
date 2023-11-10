@@ -1,5 +1,7 @@
-
+% Stop with debugger in case of warning or error
+% See also dberr()
 % Wb,Jun29,11
+
 % dbclear all
   dbstop if error
   dbstop if warning

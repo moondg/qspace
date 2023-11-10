@@ -6,8 +6,8 @@ function A=rmtrace(A)
 % Wb,Apr24,13
 
   for i=1:numel(A)
-     if numel(A(i).Q)~=2, error('Wb:ERR',...
-       '\n   ERR invalid usage (rank-2 tensors only)'); end
+     if numel(A(i).Q)~=2
+        wbdie('invalid usage (rank-2 tensors only)'); end
      A(i)=A(i)-trace(A(i))/dim(A(i),1,'-f');
   end
 
