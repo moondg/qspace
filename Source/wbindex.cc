@@ -1034,6 +1034,54 @@ iTags& iTags::Init(unsigned r, int k, const char **ss) {
    return *this;
 };
 
+bool iTags::isOp(int r, char lflag) const { 
+
+   bool rval=0; if (r>=0) {
+      if (r<2 || r>4) wblog(FL,"WRN %s() unexpected rank r=%d",FCT,r);
+      if (len!=unsigned(r)) { return rval; }
+   }
+   else if (len<2 || len>4) { return rval; }
+
+   if (len==4) { 
+      for (unsigned i=2; i<4; ++i) {
+         if (!data[i].isConj() ||
+             !data[i].isConj(data[i-2], lflag=='L'? 0:1)) {
+         return rval; }
+      }
+      return (rval=1);
+   }
+
+   if (!lflag) { unsigned i=1; 
+      for (; i<len; ++i) { if (!data[i].isConj()) { return rval; }}
+   }
+   else if (lflag!='l' && lflag!='L') {
+      wblog(FL,"WRN %s() unexpected lflag=%s",FCT,cSTR(lflag));
+   }
+
+   rval = data[0].isConj(data[1], lflag=='L'? 0:1); 
+   return rval;
+};
+
+bool iTags::isOpX(unsigned r) const {  
+   if (len<2 || len%2 || (int(r)>=0 && len!=2*r)) return 0;
+   for (unsigned n=len/2, i=0; i<n; ++i) {
+      if (!data[i].isConj(data[i+n]) || !data[i+n].isConj()) return 0;
+   }
+   return 1;
+};
+
+bool iTags::isAtensor(unsigned r) const {  
+   if (int(r)>=0) {
+      if (r<3) wblog(FL,"ERR %s() r=%d !?",FCT,r);
+      if (len!=r) return 0;
+   }
+   else if (len<3) { return 0; }
+
+   if (data[2].isConj()) return 0; 
+   if (data[0].isConj() && data[1].isConj()) return 0;
+   return 1;
+};
+
 unsigned iTags::Set(const char* F, int L,
    const char *tag, unsigned r,  
    const char *tom, 

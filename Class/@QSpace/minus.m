@@ -7,7 +7,7 @@ function C=minus(A,B)
      if length(A.Q)~=2
         wbdie('invalid usage (got rank-%d QSpace)',numel(A.Q)); end
 
-     [isd,s]=isdiag(A);
+     [isd,s]=isdiag(A,'-d');
      if ~isempty(s), wbdie(estr); end
 
      C=A; n=length(C.data);

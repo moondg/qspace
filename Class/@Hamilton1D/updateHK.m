@@ -610,7 +610,7 @@ function [e0,ex]=get_energies(H,R,Eg)
      end
 
      if nargout>1
-        if isdiag(Eg)==1, Eg=diag(Eg); end
+        if isdiag(Eg,'-f')==1, Eg=diag(Eg); end
         ee=Eg;
         for k=1:numel(Eg.data)
            q=getsub(Eg,k); n=length(q.data{1}); z=zeros(n);

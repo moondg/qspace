@@ -15,7 +15,7 @@ function Qs=getQ0str(H,varargin)
   end
 
   H=QSpace(H);
-  if isdiag(QSpace(H))<2
+  if isdiag(QSpace(H),'-d')<2
      [ee,H]=eig(H);
   end
 

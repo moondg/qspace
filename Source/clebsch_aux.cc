@@ -879,7 +879,7 @@ void QMap<TQ>::getIdentityQ(const char *F, int L,
 template <class TQ>
 int CStore<TQ>::checkInit(const char *F, int L, const QType &t) const {
     genRG_struct<TQ,RTD> &B=gRS.buf[t];
-    if (B.q.isKnown() || t.isAbelian()) return 0;
+    if (B.q.isKnown() || t.isAbelian()) { return 0; }
     else { B.checkInit(F_L,t); return 1; }
 };
 

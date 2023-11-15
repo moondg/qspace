@@ -90,7 +90,7 @@ end
   else rflag=1; end
 
   for k=1:L
-     if isdiag(RR(k))<=1
+     if isdiag(RR(k),'-d')<=1
         [~,I]=eigQS(RR(k)); RR(k)=I.EK;
      end
   end

@@ -22,7 +22,7 @@ function [A,isd]=sort(A,perm)
 
      elseif isequal(perm,'-E') || isequal(perm,'-R')
 
-        isd(k)=isdiag(A(k));
+        isd(k)=isdiag(A(k),'-d');
         if isd(k)~=1 && isd(k)~=2
            wblog('WRN','got non-diagonal operator => calling eig()');
            [~,I]=eigQS(A(k)); A(k)=I.EK;

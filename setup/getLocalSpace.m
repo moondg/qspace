@@ -141,10 +141,10 @@ function varargout=getLocalSpace(model,varargin)
      otherwise wbdie('invalid model ''%s''',model);
   end
 
-      if nargout<2, varargout=varargout(1);
+  if     nargout<2, varargout=varargout(1);
   elseif nargout<n, varargout=varargout([1:nargout-1,end]);
-  elseif nargout>n, wbdie(['invalid usage: ' ... 
-     'asking for too many output arguments (%g/%g)'],nargout,n); end
+  elseif nargout>n, wbdie(['invalid usage\n' ... 
+     'requesting too many output arguments (%g/%g)'],nargout,n); end
 
   if fixA
   for io=1:numel(varargout), q=varargout{io}; m=0;
@@ -248,7 +248,8 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
 %   'AspinJ'       U(1) total spin (J=L+S)_z
 %   'SUNchannel'   SU(N) channel symmetry
 %   'SONchannel'   SO(N) channel symmetry
-%   'SpNchannel'   Sp(N) channel symmetry
+%   'SpNchannel'   Sp(2N) channel symmetry with SU(2) particle/hole
+%   'SpNchannelS'  Sp(2N) channel symmetry with SU(2) spin
 %
 % Example: 'Acharge,SU2spin'
 % tags: symplectic symmetry, Sp2n, Sp4, Sp6, SpNchannel
@@ -276,15 +277,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
      end
   end
 
-  if isempty(NC), ss={'SU','Sp','SO'};
-     for i=1:numel(ss)
-        q=str2num(regexprep(Sym_,['.*' ss{i} '(\d+)channel.*'],'$1'));
-        if ~isempty(q), if i~=2, NC=q; else NC=q/2; end; end
-     end
-     if isempty(NC), 
-        NC=1;
-     end
-  end
+  NC=check_NC(NC,Sym_);
 
   [NC,NCx,NCxs,NCsplit]=check_NC_vec(NC,Sym_);
 
@@ -317,37 +310,40 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
      end
   end
 
-  SOP=[]; D=dim(FF); phflag=0; chflag=0; SONflag=0; Jflag=0;
+  SOP=[]; D=dim(FF);
+  phflag=0; chflag=0; SONflag=0; Jflag=0; Sflag=0;
 
   Sym=strread(Sym_,'%s','whitespace',';, ')'; clear q
 
-  for s1=Sym, s1=s1{1};
-    n=str2num(regexprep(s1,'(SU|SO)(\d+)channel','$2'));
+  for sym1=Sym, sym1=sym1{1};
+    n=str2num(regexprep(sym1,'(SU|SO)(\d+)channel','$2'));
     if ~isempty(n)
        if ~isequal(n,NC), wbdie(...
          'invalid symmetry %s (having NC=%g)',Sym_,NC); end
-       s1=[s1(1:2) 'Nchannel'];
+       sym1=[sym1(1:2) 'Nchannel'];
     end
 
-    n=str2num(regexprep(s1,'Sp(\d+)channel','$1'));
-    if ~isempty(n)
+    n=0;
+    sym1=regexprep(sym1,'Sp(\d+)channel(?@n=str2num($1);)','');
+    if n
        if ~isequal(n,2*NC), wbdie(...
          'invalid symmetry %s (having NC=%g)',Sym{i},NC); end
-       s1='SpNchannel';
+       sym1=['SpNchannel' sym1];
     end
 
-    n=str2num(regexprep(s1,'Z(\d+)charge','$1'));
+    n=str2num(regexprep(sym1,'Z(\d+)charge','$1'));
     if ~isempty(n)
        if n<2, wbdie(...
          'invalid symmetry %s (having NC=%g)',Sym{i},NC); end
-       s1='ZNcharge'; zs=sprintf('Z%g',n); nz=n;
+       sym1='ZNcharge'; zs=sprintf('Z%g',n); nz=n;
     end
 
-    if isequal(s1(end-2:end),'(:)')
-         cflag=1; if NC==1, s1=s1(1:end-3); end
+    if isequal(sym1(end-2:end),'(:)')
+         cflag=1; if NC==1, sym1=sym1(1:end-3); end
     else cflag=0; end
 
-    switch s1
+    switch sym1
+
       case 'Pcharge'
           q=init_qstruct('total charge parity','P');
           q.Sz=2*sum(CZ); z=diag(full(q.Sz.op)); z=z-min(z);
@@ -442,7 +438,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
              JJ(p)=Q+sum(SS(:,p));
           end
 
-          if s1(1)=='A'
+          if sym1(1)=='A'
              s=sprintf('total U(1) spin (J=L+S)_z having 2l+1=NC=%g',NC);
              q=init_qstruct(s,'A'); Jflag=1;
              q.Sz=2*JJ(3);
@@ -481,13 +477,24 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
 
           chflag=1; clear Sp Sz
 
-      case 'SpNchannel'
+      case {'SpNchannel','SpNchannelS'}
+         if sym1(end)~='S', phflag=12;
+         else Sflag=1;
+            if ~isempty(regexp(Sym_,'SU2charge')), wbdie(...
+              'invalid symmetry setting (%s requires abelian charge)',sym1);
+            end
+         end
+         chflag=2;
 
           if NC<2, wbdie('Sp(2*NC) symmetry requires NC>=2 (%g)',NC); end
-          if NCsplit, wbdie('NC=(%s) not yet implemented for %s',NCxs,s1); end
+          if NCsplit, wbdie('NC=(%s) not yet implemented for %s',NCxs,sym1); end
 
-          psi=FF; for i=1:size(FF,1), psi(i,2)=psi(i,2)'; end
-          psi=psi(:);
+          if phflag
+             psi=FF; for i=1:size(FF,1), psi(i,2)=psi(i,2)'; end
+             psi=psi(:);
+          else
+             psi=FF(:);
+          end
 
           sz=SymOp(1,NC); sp=SymOp(1,NC);
 
@@ -517,11 +524,9 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
 
           if ~isempty(SOP), SOP(end+1)=q; else SOP=q; end
 
-          phflag=12; chflag=2;
-
       case 'SONchannel'
           if NC~=3, wbdie(['invalid usage ' ... 
-            '(got %s with NC=%g; only implemented for NC=3)'],s1,NC);
+            '(got %s with NC=%g; only implemented for NC=3)'],sym1,NC);
           end
 
           Sp=SymOp(1,2); Sz=SymOp(1,2);
@@ -543,7 +548,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
 
           SONflag=1;
 
-      otherwise helpthis, wbdie('invalid symmetry %s (%s)',s1,Sym_);
+      otherwise helpthis, wbdie('invalid symmetry %s (%s)',sym1,Sym_);
     end
   end
 
@@ -580,11 +585,10 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
      Iout=add2struct('-',NC,SOP,'sym=Sym_',U,Is);
   end
 
-% -----------------------------------------------------------
+% --------------------------------------------------------------------
   if Jflag>1
-     oP={'-P'};
-  else oP={};
-  end
+       oP={'-P'};
+  else oP={}; end
 
   X=FF; F=QSpace;
   if phflag, X=[FF,FF']; end
@@ -623,7 +627,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
 
   F=setOpFlag(F);
 
-% -----------------------------------------------------------
+% --------------------------------------------------------------------
   x=sum(NN(:));
   if norm(x,'-offdiag')>1E-12, wbdie('N-operator not diagonal'); end
   x=full(diag(x.op));
@@ -646,7 +650,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
      Iout.Z=Z;
   end
 
-% -----------------------------------------------------------
+% --------------------------------------------------------------------
   S=QSpace;
   if SONflag || chflag || phflag>10
      SS=sum(SS,1);
@@ -661,6 +665,11 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
      S=get_spin_ops(JJ,SOP,Is,nc,sym,Jflag);
      Iout.Sop=get_spin_ops(sum(SS,1),SOP,Is,nc,sym,Jflag);
      Iout.Lop=get_spin_ops(LL,SOP,Is,nc,sym,Jflag);
+  elseif Sflag
+     [x,Io]=getSymmetryOps(SS(1),SOP);
+
+     for i=1:numel(x), x{i}=full(x{i}); end
+     S=QSpace(compactQS(oc{:},sym,Is.QZ,Is.QZ,Io.QZ, cat(3,x{:})));
   else
      for i=1:size(SS,1)
         q=get_spin_ops(SS(i,:),SOP,Is,nc,sym);
@@ -689,7 +698,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
      else Iout.S3=[]; end
   end
 
-% -----------------------------------------------------------
+% --------------------------------------------------------------------
   if phflag
 
      n=numel(CZ); if phflag>10, n=1; end
@@ -733,30 +742,29 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
      if vflag>1, wblog(' * ','%s => %s\N',Sym_,sym); info(Z); end
   end
 
-% -----------------------------------------------------------
+% --------------------------------------------------------------------
 % C'C operators (Schrieffer-Wolff) // Wb,Oct03,12
-% for old version based on explicit construction of C'C,
-% see Archive/getLocalSpace_160213.m
-% -----------------------------------------------------------
+% see Archive/getLocalSpace_160213.m for explicit construction of C'C,
+% --------------------------------------------------------------------
 % NB! if hopping preserves flavor, for N flavors this *always*
-% corresponds to a large SU(N) in the total number of symmetric
-% flavors // Wb,Mar05,20
+% reflects an SU(N) symmetry in the number of symmetric flavors
+% Wb,Mar05,20
 
   if Yops
-     i=1; nF=numel(F); Fi=F(i);
-     if nF>1, wblog('WRN','using F(%d/%d) for Yops',i,nF); end
+     nF=numel(F); F1=F;
+     if nF>1, wblog('WRN','using sum(F) for Yops'); F1=sum(F); end
 
-     Eo=getIdentity(Fi,3); Zo=getIdentity(Eo,'-0');
+     Eo=getIdentity(F1,3); Zo=getIdentity(Eo,'-0');
      E2=getIdentity(Zo,2,Zo,1); E3=contract(Zo,'2*',E2,1);
 
-     E2=getIdentity(Fi);
+     E2=getIdentity(F1);
 
    % NB! contracting E3 introduces an additional unitary
    % transformation on the operrtor space, which affects
    % the sign structure the irops in Y! however, since
    % Schrieffer-Wolff always comes in pairs (e.g. S.S)
    % this sign is irrelevant // Wb,Feb13,16
-     Y=contract({Fi,'1*',Fi,1},'24',E3,'12');
+     Y=contract({F1,'1*',F1,1},'24',E3,'12');
 
      [y1,I,D]=uniquerows(Y.Q{3}); Y2=QSpace; YY=QSpace(1,0); nY=numel(I);
      for i=nY:-1:1
@@ -788,6 +796,26 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
      Iout.SOP=init_qstruct('no symmetry used','');
   end
 
+end
+
+% -------------------------------------------------------------------- %
+
+function NC=check_NC(NC,Sym_)
+
+   ss={'SU','Sp','SO'};
+   for i=1:numel(ss), n=0; 
+      Sym_=regexprep(Sym_,[ss{i} '(\d+)channel(?@n=str2num($1);)'],'');
+      if n, if i==2, n=n/2; end
+         NC(end+1)=n;
+      end
+   end
+
+   if ~isempty(NC)
+      if any(diff(NC)), wbdie('invalid NC=[%s ]',sprintf(' %g',NC)); end
+      NC=NC(1);
+      if norm(NC-round(NC)) || NC<1, wbdie('invalid NC=%d',NC); end
+   else NC=1;
+   end
 end
 
 % -------------------------------------------------------------------- %
@@ -878,7 +906,6 @@ function S=get_spin_ops(X,SOP,Is,NC,sym,Jflag)
 end
 
 % -------------------------------------------------------------------- %
-
 function [F,Z,Iout]=getLocalSpace_SpinlessFermions(Sym_,varargin)
 % function [F,Z,Iout]=getLocalSpace_SpinlessFermions(Sym,varargin)
 % supported symmetries
@@ -898,7 +925,7 @@ function [F,Z,Iout]=getLocalSpace_SpinlessFermions(Sym_,varargin)
   end
 
   getopt('INIT',varargin);
-     NC=getopt('NC',1); oc={};
+     NC=getopt('NC',[]); oc={};
 
      if getopt('-v'), vflag=1;
      elseif getopt('-V'), vflag=2; else vflag=0; end
@@ -907,6 +934,8 @@ function [F,Z,Iout]=getLocalSpace_SpinlessFermions(Sym_,varargin)
      elseif getopt('-q2'), zflag=2; else zflag=-1; end
 
   getopt('check_error');
+
+  NC=check_NC(NC,Sym_);
 
   [NC,NCx,NCxs,NCsplit]=check_NC_vec(NC,Sym_);
 

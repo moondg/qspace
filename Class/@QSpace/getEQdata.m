@@ -4,7 +4,7 @@ function [varargout]=getEQdata(HK,varargin)
 
 % outsourced from $NRG/nrgphase.m
 
-  if ~nargin || ~isdiag(HK)
+  if ~nargin || isdiag(HK,'-d')~=2
      helpthis, if nargin || nargout
      wbdie('invalid usage'), end, return
   end

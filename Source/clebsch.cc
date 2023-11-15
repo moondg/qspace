@@ -7215,7 +7215,7 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SUN(
    else { nrep=2; }
 
    try { for (i=0; i<nrep; ++i) {
-      if (int(l=genTensorProds(dmax,'i'))>0) m+=l; 
+      if (int(l=genTensorProds(dmax,'i'))>0) { m+=l; } 
    }}
    catch (...) { Wb::SigHandler::check911_(FL); } 
 
@@ -7316,14 +7316,11 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SpN(
    else { nrep=2; }
 
    try { for (i=0; i<nrep; ++i) {
-      l=genTensorProds(dmax,'i');
-      if (int(l)>0) { m+=l;
-         if (CG_VERBOSE>2) wblog(PFL,"... %4d/%d -> %3d CGTs",i+1,nrep,l);
-      }
+      if (int(l=genTensorProds(dmax,'i'))>0) { m+=l; }; 
    }}
    catch (...) { Wb::SigHandler::check911_(FL); } 
 
-   if ((m && CG_VERBOSE>6) || (j && CG_VERBOSE>2)) wblog(PFL,
+   if ((m && CG_VERBOSE>7) || (j && CG_VERBOSE>2)) wblog(PFL,
       " *  generated %d CGTs for %s [%d passes]",m,STR(q),nrep);
 
    return *this;

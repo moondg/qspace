@@ -44,8 +44,8 @@ function [FS,Io,FX]=getSymmetryOps(F,SOP,varargin)
    FF=getopt('get_last',{});
 
    if nargin<2
-      eval(['help ' mfilename]);
-      if nargin || nargout, wbdie('invalid usage'), end, return
+      if ~helpthis(nargout,varargin{:}), wbdie('invalid usage'); end
+      return
    end
 
    nS=numel(SOP); D=[]; dz=zeros(1,nS); cr=cell(1,nS);
@@ -63,39 +63,52 @@ function [FS,Io,FX]=getSymmetryOps(F,SOP,varargin)
       return
    end
 
+% typical call takes seed X(1) to generate full irop multiplet FS
+%   [x,Io]=getSymmetryOps(X(1),SOP);
+%   [x,Io,X]=getSymmetryOps(X(1),SOP,X [,opts]);
+% where X typically consist of several operators, which also may
+% include *several*  irops (like FF operators for different spins etc)
+% which are systematically taken out of the retuned FX
+   n=numel(F); if n>1
+      wbdie('invalid usage (single operator F required; got %d)',n);
+   end
+
    [FS,qz]=get_multiplet(F.op,SOP,vflag);
    qo=get_symmetries_op(FS{1},SOP);
 
-   if numel(FF)>10
-      wblog('TST','got %g F-ops',numel(FF));
+   if numel(FF)>12
+      wblog('TST','got %g input ops',numel(FF));
    end
 
    if ~isempty(FF), ns=numel(FS); nf=numel(FF);
-      if Pflag==0
-         fac=zeros(size(FF)); kk=zeros(size(FF));
+      if ~Pflag
+         fac=zeros(size(FF)); kk=zeros(size(FF)); nx=0;
          for k=1:ns
             for i=1:nf
-              [is,x,e]=sameup2fac(FF(i).op,FS{k});
-              if is, fac(i)=x; kk(i)=k; i=i-1; break; end
+               [is,x,e]=sameup2fac(FF(i).op,FS{k});
+               if is, fac(i)=x; kk(i)=k; break
+               elseif i==nf, nx=nx+1; end
             end
-            if i==nf, wbdie('failed to match input operators'); end
          end
+         if nx, wbdie([
+            'failed to match %d/%d input operators ' ... 
+            '(having %d local operators)\nhint: use -P option ' ...
+            'to project rather than insisting on 1:1 match?'],nx,nf,ns);
+         end
+
          if nargout<3
             if any(kk(:)==0) || numel(FF)~=numel(FS)
                  wblog('ERR','failed to fully match input operator set'); 
             else wblog('ok.','all input operators matched.'); end
          else FX=FF(find(kk==0)); end
       else
-
-         for i=1:numel(FF)
-            f2(i)=norm(FF(i).op(:))^2;
-         end
+         f2=zeros(1,nf);
+         for i=1:nf, f2(i)=norm(FF(i).op(:))^2; end
 
          f2=[std(f2), mean(f2)];
-         if f2(1)/f2(2)<1E-8, f2=f2(2);
-         else
-            wblog('WRN',...
-              'got input operators of differing norm (%.3g/%g) !?',f2);
+         if f2(1)/f2(2)<1E-8, f2=f2(2); 
+         else 
+            wblog('WRN','got input operators of differing norm (%.3g/%g)',f2);
             f2=0;
          end
 
@@ -114,10 +127,10 @@ function [FS,Io,FX]=getSymmetryOps(F,SOP,varargin)
                 ol(i,j)=olap(FF(i).op,FF(j).op);
             end, end
             e=norm(ol-diag(diag(ol)),'fro'); if e>1E-12
-               wbdie('input operator set FF is not orthogonal (@%.3g)!',e);
+               wbdie('input operator set FF is not orthogonal (e=%.3g)',e);
             end
 
-            wbdie('failed to fully match input operator set'); 
+            wbdie('irop set exceeds input operator set'); 
          end
 
          if nargout>2, kk=ones(size(FF)); FX=FF;
@@ -269,9 +282,8 @@ function G=get_disc_unitary(t,Z)
 
    if isequal(t,'P'), G=Z;
    elseif regexp(t,'^Z(\d+)$'), n=str2num(t(2:end)); 
-      if ~isreal(Z) || norm(Z-diag(diag(Z)),'fro')
-         wbdie('invalid z-op');
-      end
+      if ~isreal(Z) || norm(Z-diag(diag(Z)),'fro'), wbdie('invalid z-op');
+      elseif n<2, wbdie('invalid usage ''%s''',t); end
       G=diag(exp((2i*pi/n)*diag(Z)));
    else wbdie('got sym=%s',t); end
 end
@@ -281,8 +293,13 @@ function z=get_disc_label(t,g)
    if isequal(t,'P'), z=g;
    elseif regexp(t,'^Z(\d+)$'), n=str2num(t(2:end));
       e=norm(abs(g)-1); if e>1E-12
-         wbdie('invalid g-values (e=%.3g)',e); end
+         wbdie('invalid g-values (|g|~=1 @ e=%.3g)',e); end
       z=imag(log(g))*(n/(2*pi));
+
+      q=round(z); e=norm(z-q); if e>1E-12
+         wbdie('got non-integer symmetry label (e=%.3g)',e); end
+      z=mod(q,n);
+
    else wbdie('got sym=%s',t);
    end
 
@@ -324,7 +341,6 @@ function qq=get_symmetries_op(F,SOP)
 end
 
 % ------------------------------------------------------------------- %
-
 function [F,qz]=get_multiplet(F,SOP,vflag)
 
    if nargin<2 || nargin>3, wbdie('invalid usage'); end

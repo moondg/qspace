@@ -218,7 +218,7 @@ function [TK,wTK,istr]=TKondo_SIAM(p,wTK,vflag)
 
    if any(isnan([u,g,e])) || any([u,g]<0), TK=nan; return; end
    if g==0, TK=0; return; end
-   if u==0, u=max(1E-16,1E-6*g); end
+   if ~u, u=norm([g,e])*1E-8; end
 
    if isempty(wTK), wTK='SIAM'; end
    bflag=0;
@@ -240,7 +240,17 @@ function [TK,wTK,istr]=TKondo_SIAM(p,wTK,vflag)
 
      case 'SIAM', a=pi*e*(e+u)/(2*u*g);
 
-       TK=min(0.575,sqrt(u*g/2))*exp(a);
+     % NB! For small U << Gamma (u<g) avoid down-turn to TK=0
+     % since TK->0 suggests existence of low-energy scale! // U_ZERO
+     % -> tailor towards TK ~ g for U->0, while ensuring that
+     %  - TK remains monontically increasing and continuous vs. U -> 0
+     %  - only prefactor is adjusted, i.e., leaving exponent unchanged
+       u_=u;
+       if u<2*g
+          u_=sqrt(4/5)*norm([u,g]);
+       end
+
+       TK=min(0.575,sqrt(u_*g/2))*exp(a);
 
      case 2, a=pi*e*(e+u)/(2*u*g); TK=sqrt(u*g/4)*exp(2*a);
 

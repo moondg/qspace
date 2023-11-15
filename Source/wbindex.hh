@@ -983,43 +983,11 @@ class iTags : public wbvector<itag_> {
       return 1;
    };
 
-   bool isOp(int r=-1, char lflag=0) const {
-      bool rval=0; if (r>=0) {
-         if (r<2 || r>3) wblog(FL,"WRN %s() unexpected input r=%d",FCT,r);
-         if (len!=unsigned(r)) { return rval; }
-      }
-      else if (len<2 || len>3) { return rval; }
+   bool isOp(int r=-1, char lflag=0) const;
 
-      if (!lflag) { unsigned i=1; 
-         for (; i<len; ++i) { if (!data[i].isConj()) { return rval; }}
-      }
-      else if (lflag!='l' && lflag!='L') {
-         wblog(FL,"WRN %s() unexpected lflag=%s",FCT,cSTR(lflag));
-      }
+   bool isOpX(unsigned r=-1) const;
 
-      rval = data[0].isConj(data[1], lflag=='L'? 0:1); 
-      return rval;
-   };
-
-   bool isOpX(unsigned r=-1) const {
-      if (len<2 || len%2 || (int(r)>=0 && len!=2*r)) return 0;
-      for (unsigned n=len/2, i=0; i<n; ++i) {
-         if (!data[i].isConj(data[i+n]) || !data[i+n].isConj()) return 0;
-      }
-      return 1;
-   };
-
-   bool isAtensor(unsigned r=-1) const { 
-      if (int(r)>=0) {
-         if (r<3) wblog(FL,"ERR %s() r=%d !?",FCT,r);
-         if (len!=r) return 0;
-      }
-      else if (len<3) { return 0; }
-
-      if (data[2].isConj()) return 0; 
-      if (data[0].isConj() && data[1].isConj()) return 0;
-      return 1;
-   };
+   bool isAtensor(unsigned r=-1) const; 
 
    bool got_qdir(const char *qdir, char fflag=0) const { 
       unsigned i=0, n=(qdir? strlen(qdir) : 0);

@@ -7,7 +7,7 @@ function A=sqrt(A)
 % Wb,Mar11,19
 
   neg=0; dmin=0;
-  for k=1:numel(A), q=isdiag(A(k));
+  for k=1:numel(A), q=isdiag(A(k),'-d');
      if ~q, wbdie('invalid usage (diagonal QSpace required)');
      elseif q>1
         for i=1:numel(A(k).data)

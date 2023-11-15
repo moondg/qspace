@@ -66,7 +66,7 @@ function Iq=plotQSpectra(H,varargin)
      ws(i)=getsym(H,'-I',is(i));
   end
 
-  q=isdiag(H); ylb=''; tstr='';
+  q=isdiag(H,'-d'); ylb=''; tstr='';
   if ~q
      [ee,Ie]=eigQS(H); R_=H; q=2; ee=ee(:,1);
      if ~isreal(ee), wbdie('got complex eigenvalues !?'); end

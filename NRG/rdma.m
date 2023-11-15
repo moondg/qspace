@@ -86,8 +86,8 @@
 
        Iops={ 'iop', 'n', 'zflags','cflags'
                q, matcell(n), [],  [] };
-         if isset('cflags'), Iops{2,3}=mat2cell(cflags,1,n); end
-         if isset('zflags'), Iops{2,4}=mat2cell(zflags,1,n); end
+         if isset('zflags'), Iops{2,3}=mat2cell(zflags,1,n); end
+         if isset('cflags'), Iops{2,4}=mat2cell(cflags,1,n); end
        Iops=struct(Iops{:});
 
        m=numel(Iops); clear om a0 Idma

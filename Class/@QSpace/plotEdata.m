@@ -26,7 +26,7 @@ function plotEdata(H,varargin)
       wbdie('invalid usage'), end, return
    end
 
-   q=isdiag(H); istr='';
+   q=isdiag(H,'-d'); istr='';
    if ~q
       [ee,I]=eigQS(H); R_=H; q=2;
       if ~isreal(ee)

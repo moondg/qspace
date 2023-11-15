@@ -32,7 +32,7 @@ function x=trace(A,I,varargin)
       return
    end
 
-   r=rank(A); cgflag=gotCGS(A); [isd,~]=isdiag(A);
+   r=rank(A); cgflag=gotCGS(A); isd=(isdiag(A)>1);
 
    if nargin<2, x=0;
       if mod(r,2)
@@ -58,7 +58,7 @@ function x=trace(A,I,varargin)
                 wbdie('operator dimensions must be symmetric'); end
                 d=reshape(d,prod(s(1:q)),[]);
             end
-            if isd>1
+            if isd
                  d=sum(d);
             else d=trace(d); end
 
