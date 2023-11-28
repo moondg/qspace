@@ -195,7 +195,6 @@ function display_1(A,m,Eflag,use_tex,vflag,varargin)
   end
 
   cgflag=gotCGS(A); 
-  sout=cell(1,Nd); l=1;
 
   if cgflag
      ns=length(find(A.info.qtype==','))+1;
@@ -229,7 +228,7 @@ function display_1(A,m,Eflag,use_tex,vflag,varargin)
   ov2s={'-f','nofac','sep'};
 
   m(end+1:2)=m(1); m(end+1:3)=0;
-  mx=sum(m); mx=max(ceil(1.2*mx), mx+4); nx=0; xflag=0;
+  mx=sum(m); mx=max(ceil(1.2*mx), mx+4);
 
   ss=ones(Nd,r); sp=ones(Nd,1);
   for i=1:Nd
@@ -240,118 +239,122 @@ function display_1(A,m,Eflag,use_tex,vflag,varargin)
      if all(ss(:,1)==1), ss=ss(:,2:end);
      else wbdie('invalid rank-1 QSpace'); end
   end
-  [~,is]=sort(sp);
 
-  if Nd>max(4,4*mx) && m(3)
-       ix=sort(is(end-m(3)+1:end));
-  else ix=[]; end
+  Ir={ 1:m(1), max(1,Nd-m(2)+1):Nd };
 
-  i=0;
-  while i<Nd, i=i+1;
-      if i>=m(1) && Nd>mx
-         if ~isempty(ix), ix(find(ix<i))=[];
-            if ~isempty(ix)
-               if ix(1)-i<3 && ~xflag
-                    m(1)=ix(1);
-               else i=ix(1); nx=nx+1; if xflag<1, xflag=1; end
-               end
-            end
-         end
-         if i>=m(1) && isempty(ix), j=Nd-m(2)+1;
-            if j>i+2 && i<=Nd
-               i=j; if nx~=1, xflag=1; end
-            end
-         elseif ~isempty(ix), ix(1)=[];
-         end
-         if xflag==1, sout{l}='     :   ...\n'; l=l+1; xflag=2; end
-      end
+  if Nd>max(4,mx) && m(3)
+     [~,is]=sort(sp);        Ir{end+1}=is(end-m(3)+1:end)';
+     if size(ss,2)>r
+     [~,is]=sort(ss(:,end)); Ir{end+1}=is(end-m(3)+1:end)';
+     end
+  end
+  Ir=unique([Ir{:}]);
 
-      Ai=A.data{i}; 
-      if r~=1, sa=size(Ai);
-      else sa=ss(i,:); end
+  if numel(Ir)>max(0.8*Nd,12), mark=ones(1,Nd);
+  else 
+     mark=zeros(1,Nd); mark(Ir)=1;
+     ix=find(diff(Ir)>2);
+     if isempty(ix), mark=ones(1,Nd);
+     else
+        i1=Ir(ix([1 end])  );
+        i2=Ir(ix([1 end])+1);    mark(i2)=2;
+        i=1:i1(1);  mark(i(find(~mark(i))))=-1;
+        i=i2(2):Nd; mark(i(find(~mark(i))))=-1;
+     end
+  end
 
-      s1=dim_to_str(sa,r);
+  sout=cell(1,4*(2+numel(find(mark)))); l=1;
 
-      if cgflag, sc=cell(1,nq);
-         for j=isym, sc{j}=cgr_size(A,i,j); end
-         sc=cat2(1,sc{isym},{1}); sc(:,end+1:r)=1; sa(end+1:r)=1;
+  for i=1:Nd
+     if ~mark(i), continue
+     elseif mark(i)>1, sout{l}='     :   ...\n'; l=l+1; end
 
-         if ~vflag
-            sc=prod(sc,1);
-            s2=sprintf(sfmt,dim_to_str(sc,r));
-         else
-            n=size(sc,1); s2=cell(1,n);
-            for j=1:n, s2{j}=vec2str(sc(j,:),'fmt','%g',ov2s{:},'x'); end
-            s2=sprintf(' %6s',s2{:}); s2=s2(2:end);
-         end
+     Ai=A.data{i}; 
+     if r~=1, sa=size(Ai);
+     else sa=ss(i,:); end
 
-         sout{l}=sprintf(['%6d.  ' sfmt ' | %s' ],i,s1,s2);
-      else
-         sout{l}=sprintf(sfmt, sprintf('%6d.  %s',i,s1));
-      end
+     s1=dim_to_str(sa,r);
 
-      if ~isempty(QQ)
-           sout{l+1}=[' [ ' sprintf(qfmt,QQ(:,:,i)') ' ]']; l=l+1;
-      else sout{l+1}= ' [ ]'; end
-      l=l+2;
+     if cgflag, sc=cell(1,nq);
+        for j=isym, sc{j}=cgr_size(A,i,j); end
+        sc=cat2(1,sc{isym},{1}); sc(:,end+1:r)=1; sa(end+1:r)=1;
 
-      s=prod(sa); dfac=1;
-      if 1 || Eflag
-         if cgflag
-            [dfac,sc]=get_cgr_fac(A,i,'-S');
-            if ~isempty(sc)
-               if use_tex, sc=sqrt_to_tex(sc,1); end
-               sc=['{' sc '}'];
-            end
-         else sc=''; end
-      end
+        if ~vflag
+           sc=prod(sc,1);
+           s2=sprintf(sfmt,dim_to_str(sc,r));
+        else
+           n=size(sc,1); s2=cell(1,n);
+           for j=1:n, s2{j}=vec2str(sc(j,:),'fmt','%g',ov2s{:},'x'); end
+           s2=sprintf(' %6s',s2{:}); s2=s2(2:end);
+        end
 
-      if s==1, Ai=dfac*Ai;
-         if isreal(Ai)
-            q=sprintf(fstr{1}, Ai);
-            if isempty(find(q=='.' | q=='e',1))
-               q=[q '.']; if q(1)==' ', q(1)=[]; end
-            end
-            str=sprintf('  %s',q); if ~isempty(sc), str(end+1)=' '; end
-         else
-            str=num2str2(Ai,'fmt',fstr{1});
-            str=sprintf('  %s',str);
-         end
-         if isempty(sc)
-              sout{l}=[str '\n'];
-         else sout{l}=[str ' ' sc '\n'];
-         end; l=l+1;
+        sout{l}=sprintf(['%6d.  ' sfmt ' | %s' ],i,s1,s2);
+     else
+        sout{l}=sprintf(sfmt, sprintf('%6d.  %s',i,s1));
+     end
 
-         continue
+     if ~isempty(QQ)
+          sout{l+1}=[' [ ' sprintf(qfmt,QQ(:,:,i)') ' ]']; l=l+1;
+     else sout{l+1}= ' [ ]'; end
+     l=l+2;
 
-      elseif Eflag
-         if ~isreal(Ai), wbdie('real data{} expected (got complex)'); end
-         if Eflag==1, Ai=diag(Ai); sa=size(Ai); end
-         if numel(find(sa>1))>1
-            wbdie('invalid data{} (diagonal representation expected)');
-         end
-         n=numel(Ai);
-         if n<4
-            q=sprintf([' ' fstr{1}],Ai);
-         else q=[ ...
-            sprintf([' ' fstr{1}],Ai(1:2)), sprintf(' ..(%d).. ',n-3), ...
-            sprintf(fstr{1},Ai(end)) ];
-         end
-         sout{l}=sprintf(';  %s %s\n\n', q(2:end), sc); l=l+1;
-         continue
-      end
+     s=prod(sa); dfac=1;
+     if 1 || Eflag
+        if cgflag
+           [dfac,sc]=get_cgr_fac(A,i,'-S');
+           if ~isempty(sc)
+              if use_tex, sc=sqrt_to_tex(sc,1); end
+              sc=['{' sc '}'];
+           end
+        else sc=''; end
+     end
 
-      if s, q=Ai(1); q=whos('q'); s=s*q.bytes;
-      end
+     if s==1, Ai=dfac*Ai;
+        if isreal(Ai)
+           q=sprintf(fstr{1}, Ai);
+           if isempty(find(q=='.' | q=='e',1))
+              q=[q '.']; if q(1)==' ', q(1)=[]; end
+           end
+           str=sprintf('  %s',q); if ~isempty(sc), str(end+1)=' '; end
+        else
+           str=num2str2(Ai,'fmt',fstr{1});
+           str=sprintf('  %s',str);
+        end
+        if isempty(sc)
+             sout{l}=[str '\n'];
+        else sout{l}=[str ' ' sc '\n'];
+        end; l=l+1;
 
-      if     s<2^10, s=sprintf('%6g b ',s);
-      elseif s<2^20, s=sprintf('%6.1f k',s/2^10);
-      else           s=sprintf('%6.1f M',s/2^20); end
+        continue
 
-      if ~isempty(sc)
-           sout{l}=sprintf(fstr{2},s,sc,'');
-      else sout{l}=sprintf(fstr{3},s);
-      end; l=l+1;
+     elseif Eflag
+        if ~isreal(Ai), wbdie('real data{} expected (got complex)'); end
+        if Eflag==1, Ai=diag(Ai); sa=size(Ai); end
+        if numel(find(sa>1))>1
+           wbdie('invalid data{} (diagonal representation expected)');
+        end
+        n=numel(Ai);
+        if n<4
+           q=sprintf([' ' fstr{1}],Ai);
+        else q=[ ...
+           sprintf([' ' fstr{1}],Ai(1:2)), sprintf(' ..(%d).. ',n-3), ...
+           sprintf(fstr{1},Ai(end)) ];
+        end
+        sout{l}=sprintf(';  %s %s\n\n', q(2:end), sc); l=l+1;
+        continue
+     end
+
+     if s, q=Ai(1); q=whos('q'); s=s*q.bytes;
+     end
+
+     if     s<2^10, s=sprintf('%6g b ',s);
+     elseif s<2^20, s=sprintf('%6.1f k',s/2^10);
+     else           s=sprintf('%6.1f M',s/2^20); end
+
+     if ~isempty(sc)
+          sout{l}=sprintf(fstr{2},s,sc,'');
+     else sout{l}=sprintf(fstr{3},s);
+     end; l=l+1;
   end
 
   fprintf(1,[sout{:}]);

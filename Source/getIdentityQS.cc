@@ -330,6 +330,9 @@ void mexFunction(
       mxInitQSpaceVec(FL,argin[0],A,'r');
       if (Ia.len) check_idx_bounds(FL,Ia,A,"i1");
 
+      if (zflag && isrb>=0) wblog(FL,   
+         "WRN ignoring input option %s",zflag&1 ? "-0":"-z");
+
       if (isrb>0) {
          wbvector< QSpace<gTQ,double> > B;
          QSpace<gTQ,double> C;
@@ -342,7 +345,7 @@ void mexFunction(
             if (P.len) C.Permute(P);
          a=C.save2Mx(vflag_);
       }
-      else if (isrb==0) {
+      else if (!isrb) {
          wbvector< QSpace<gTQ,wbcomplex> > B;
          QSpace<gTQ,wbcomplex> C;
 
@@ -379,6 +382,9 @@ void mexFunction(
       mxInitQSpaceVec(FL,argin[0],A,'r');
       if (Ia.len) check_idx_bounds(FL,Ia,A,"i1");
 
+      if (zflag && isrb>=0) wblog(FL,   
+         "WRN ignoring input option %s",zflag&1 ? "-0":"-z");
+
       if (isrb>0) {
          wbvector< QSpace<gTQ,double> > B;
          QSpace<gTQ,double> C;
@@ -391,7 +397,7 @@ void mexFunction(
             if (P.len) C.Permute(P);
          a=C.save2Mx(vflag_);
       }
-      else if (isrb==0) {
+      else if (!isrb) {
          wbvector< QSpace<gTQ,wbcomplex> > B;
          QSpace<gTQ,wbcomplex> C;
 

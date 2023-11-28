@@ -3009,7 +3009,6 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::Cat(
    const QSpace<TQ,TD> &A, const QSpace<TQ,TD> &B,
    TD afac, TD bfac, char uflag
 ){
-
    if (A.isEmpty()) {
       if (this!=&B   ) { (*this)=B;     }
       if (bfac!=TD(1)) { (*this)*=bfac; }; return *this;
@@ -3149,7 +3148,7 @@ unsigned QSpace<TQ,TD>::SkipZeroData(
             "ERR %s() invalid scalar or empty\n%s",FCT,STR(cj)
          );
       }
-      if (cfac<1E-12) wblog(FL,"WRN %s() got cfac=%g !?",FCT,cfac);
+      if (cfac<1e-12) wblog(FL,"ERR %s() got cfac=%g",FCT,cfac);
       (*DATA[0])*=cfac; CGR.init(1,0);
    }
 
@@ -3718,14 +3717,16 @@ unsigned QSpace<TQ,TD>::MakeUnique() {
 
    QS.groupRecs(P,D); if (D.allLE(1)) { return 0; } 
 
-   unsigned i0,i2,ib,j,j0,k, mx=0, Di, r=rank(FL);
-   wperm_t const* p; char pOM=permitsOM();
+   unsigned i0,i2,ib,j,j0,k,l, mx=0, Di, r=rank(FL);
+   double cfac0=1, cfac2=1;
+
+   wperm_t const* p; char noM=(!permitsOM());
    wbvector<widx_t> I;
 
    if (QIDX.dim1!=DATA.len || !QDIM || QIDX.dim2%QDIM) wblog(FL,
       "ERR QSpace size mismatch (%d/%d,%d)",DATA.len,QIDX.dim1,QDIM);
 
-   NormCGW( pOM? 'f': 0 ); 
+   NormCGW( noM? 0 : 'f'); 
 
    if (QS.dim1!=QIDX.dim1)
         { QIDX.groupRecs(P,D); } 
@@ -3734,8 +3735,7 @@ unsigned QSpace<TQ,TD>::MakeUnique() {
    p=P.data; I.init(DATA.len);
 
    for (Di=k=ib=0; ib<D.len; ++ib, k+=Di) { Di=D[ib];
-      wbvector<char> mark(Di,1);
-
+      wbvector<char> mark(Di,1); 
       for (j0=Di, j=0; j<Di; ++j) {
          if (gotZeroData(p[k+j])) { mark[j]=0; } else
          if (j0>j) { j0=j; } 
@@ -3743,39 +3743,62 @@ unsigned QSpace<TQ,TD>::MakeUnique() {
 
       i0=I[ib]=p[k+j0];
       wbarray<TD> &a0=(*DATA[i0]);
+      CRef<TQ> *r0=NULL, *r2=NULL;
 
-      for (j=0; j<Di; ++j) { if (j!=j0) { i2=p[k+j]; 
+      if (CGR.data) { r0=CGR.ref(i0);
+         if (noM) { cfac0=1;
+            for (l=0; l<CGR.dim2; ++l) { cfac0 *= r0[l].NormSignW(); }
+            if (fabs(cfac0)<1e-6) { wblog(FL,
+               "ERR %s() got cfac = %g",FCT,cfac0);
+            }
+         }
+      }
+
+      for (j=0; j<Di; ++j) { if (j!=j0) {
+         i2=p[k+j]; 
          wbarray<TD> &a2=(*DATA[i2]);
+
+         if (r0) { char e; r2=CGR.ref(i2);
+            if (noM) { cfac2=1;
+               for (l=0; l<CGR.dim2; ++l) { cfac2 *= r2[l].NormSignW(); }
+            }
+
+            for (l=0; l<CGR.dim2; ++l) {
+               if ((e=r0[l].sameAs_fix(0,0,r2[l])) && (e<11 || e>12)) {
+                  MXPut(FL,"Iq","base")
+                    .add(*this,"A").add(a0,"a0").add(a2,"a2")
+                    .add(i0+1,"i1").add(i2+1,"i2").add(l+1,"j")
+                    .add(r0[l],"r0").add(r2[l],"r2");
+                  wblog(FL,"WRN %s() got CGR([%d %d], %d) mismatch",
+                    FCT,i0+1,i2+1,l+1);
+                  r0[l].sameAs_fix(FL,r2[l]); 
+               }
+            }
+         }
 
          if (a0.numOM(r)>1 || a2.numOM(r)>1) {
             ExpandOM_(FL,i0,i2); 
          }
-
          if (!a2.sameSize(a0,0)) { 
             MXPut(FL,"Iq","base").add(*this,"A")
               .add(i0+1,"i1").add(i2+1,"i2");
             wblog(FL,"ERR size inconsistency (b=%d: %d,%d): %s / %s",
             ib+1, i0+1, i2+1, SSTR(a2), SSTR(a0));
          }
+
          if (mark[j]) {
             if (j<=j0) { wblog(FL,"ERR %s() %d/%d",FCT,j,j0); }
-            a0+=a2;
+            if (cfac0!=1 || cfac2!=1) {
+               if (fabs(cfac2)<1e-8) wblog(FL,
+                  "ERR %s() got cfac = %g",FCT,cfac2);
+               a0.Plus(a2,TD(cfac2),0,TD(cfac0)); cfac0=1;
+            }
+            else { a0+=a2; }
          }
          a2.init(); ++mx; 
 
-         if (CGR.data) { unsigned j=0; char e;
-            CRef<TQ> *r0=CGR.ref(i0), *r2=CGR.ref(i2);
-            for (; j<CGR.dim2; ++j) {
-               if ((e=r0[j].sameAs_fix(0,0,r2[j]))) {
-                  MXPut(FL,"Iq","base").add(*this,"A")
-                    .add(i0+1,"i1").add(i2+1,"i2").add(j+1,"j")
-                    .add(r0[j],"r0").add(r2[j],"r2");
-                  wblog(FL,"ERR %s() got CGR mismatch "
-                    "(%d,%d @ %d; e=%d)",FCT,i0+1,i2+1,j+1,e);
-               }
-               r2[j].init();
-            }
-         }
+         if (r0) { for (l=0; l<CGR.dim2; ++l) { r2[l].init(); }}
+
       }} 
    } 
 

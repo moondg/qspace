@@ -66,15 +66,17 @@ function Iq=plotQSpectra(H,varargin)
      ws(i)=getsym(H,'-I',is(i));
   end
 
-  q=isdiag(H,'-d'); ylb=''; tstr='';
+  q=isdiag(H,'-d','-f'); dstr=''; tstr='';
   if ~q
      [ee,Ie]=eigQS(H); R_=H; q=2; ee=ee(:,1);
      if ~isreal(ee), wbdie('got complex eigenvalues !?'); end
-     H=QSpace(Ie.EK); ylb='eig';
+     if vflag, wblog(' * ','applying eigQS() on input'); end
+     H=QSpace(Ie.EK); dstr='eig';
   else
-     if q==1,
+     if q==1, dstr='diag';
         for i=1:numel(H.data), H.data{i}=diag(H.data{i}).'; end
-     elseif q==3,
+        if vflag, wblog(' * ','taking diag() of input'); end
+     elseif q==3, dstr='compressed diag.';
         for i=1:numel(H.data), H.data{i}=H.data{i}.'; end
      elseif q~=2, wbdie('invalid input QSpace (not an operator!? [%g])',q);
      end
@@ -94,7 +96,7 @@ function Iq=plotQSpectra(H,varargin)
         dd(find(dd<=0))=[];
         H.data{i} = sort(-log10(dd))-e0;
      end
-     ylb={'entanglement spectrum (', '[-log_{10}(\rho)]', ylb};
+     ylb={'entanglement spectrum (', '[-log_{10}(\rho)]', dstr};
      if ~isempty(ylb{end})
           ylb=[ylb{1}, ylb{3}, ', ' ylb{2}];
      else ylb=[ylb{:}];
@@ -106,7 +108,7 @@ function Iq=plotQSpectra(H,varargin)
            H.data{i}=H.data{i}-e0; 
         end
      end
-     ylb={'energy', ylb};
+     ylb={'energy', dstr};
      if ~isempty(ylb{end})
           ylb=[ylb{1} ' (' ylb{2} ')'];
      else ylb=[ylb{:}];
@@ -145,10 +147,12 @@ function Iq=plotQSpectra(H,varargin)
         s={'','',', ','',10,s};
         if Rflag
              s{1}=['entanglement spectrum' sprintf(' S_{^{_E}}=%.4g',se)];
-        else s{1}='eig()'; end
+        else s{1}='eigenspectrum';
+        end
+        if ~isempty(dstr), s{1}=[s{1} ' (' dstr ')']; end
         if isfield(H.info,'itags') && ~isempty(H.info.itags)
            t=H.info.itags; if isequal(t{2},[t{1},'*'])
-                s{2}=[ ' on ''' t{1} ''''];
+             if ~isempty(t{1}), s{2}=[ ' on itag ''' t{1} '''']; end
            else s{2}=[ ' having itags={' itags_to_str(t) '}']; end
         end
         q=getDimQS(H);

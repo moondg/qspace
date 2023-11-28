@@ -84,7 +84,7 @@ function [isd,istr]=isdiag(A,varargin)
         if ~diff(s), isd=1;
            if fflag
               e=norm(ai-diag(diag(ai)));
-              if e>deps, isd=0; end
+              if e>deps, isd=0; break; end
            end
         elseif s(1)==1, isd=2;
         elseif s(2)==1, isd=3;

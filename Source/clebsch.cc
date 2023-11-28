@@ -5034,12 +5034,19 @@ char CRef<TQ>::sameUptoFac(const CRef &B,
       if (j<n2) {
          for (; i<n1; ++i) {
             a=ABS( fac*cgw(i,j) - B.cgw(i,j) );
-            if (a>eps) { return 10; }
+            if (a>eps) { return 6; }
          }
       }
-      if ((j<n2 && n1<sa[0]) || (j>=n2 && n2<sa[1]))
-           { for (; i<N1; ++i) { if (ABS(  cgw(i,j)) > eps) return 11; }}
-      else { for (; i<N1; ++i) { if (ABS(B.cgw(i,j)) > eps) return 12; }}
+      if ((j<n2 && n1<sa[0]) || (j>=n2 && n2<sa[1])) {
+         for (; i<N1; ++i) {           
+            if (ABS(  cgw(i,j)) > eps) { return (i==j ? 11 : 7); }
+         }
+      }
+      else {
+         for (; i<N1; ++i) {           
+            if (ABS(B.cgw(i,j)) > eps) { return (i==j ? 12 : 8); }
+         }
+      }
    }
 
    return 0; 
@@ -5059,13 +5066,14 @@ template <class TQ>
 char CRef<TQ>::sameAs_fix(
    const char *F, int L, CRef<TQ> &B, double eps) {
 
-   char q=0; double fac=0.;
+   char q=0; 
+   double fac=0;
 
    if (cgb!=B.cgb) {
 	  if ((cgb && B.cgb) || !isAbelian() || !B.isAbelian()) {
-         if (F || L) wblog(F_L,
-            "ERR CGR data mismatch (%d,%d)\n%s <> %s",STR_(this), STR(B));
-         q=7;
+         if (F || L) wblog(F_L,"ERR CGR mismatch (%p/%p)\n%s <> %s",
+            cgb,B.cgb,STR_(this), STR(B));
+         return (q=7);
       }
       else {
          if (!cgb)
@@ -5074,8 +5082,20 @@ char CRef<TQ>::sameAs_fix(
       }
    }
 
-   if (!q) { q=sameUptoFac(B,&fac,eps); } 
-   if (!q && fabs(fac-1)>eps) { q=6; }
+   if ((q=sameUptoFac(B,&fac,eps))) { 
+      if (F || L) {
+         if (q<6) wblog(F,L,"ERR CGR differ as references (e=%d)",q); else
+         if (q>10) wblog(F,L, 
+            "ERR CGR.cgw differ in size (same up to fac else; e=%d)",q);
+         else wblog(F,L,"ERR CGR.cgw not the same up to factor (e=%d)",q);
+      }
+      return q;
+   }
+
+   if (fabs(fac-1)>eps) {
+      if (F || L) wblog(FL,"ERR CGR.cgw differ by factor %g",fac);
+      return (q=6);
+   }
    return q;
 };
 
@@ -7176,7 +7196,7 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SUN(
 
       genRG_base<TQ,TD> &Rd = RSet[R.J];
 
-      if (Rd.Sp.len || Rd.Sz.len) wblog(FL,"WRN %s() "
+      if (Rd.Sp.len || Rd.Sz.len) wblog(FL,"WRN %s() " 
          "already got existing RSet (%d,%d)",FCT,Rd.Sp.len,Rd.Sz.len);
       else if (gStore.load_RSet(0,1,q,R.J)>0) {
          double e=R.normDiff(0,0,Rd,1E-10); if (e>1E-10) wblog(FL,

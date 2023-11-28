@@ -620,6 +620,7 @@ int CONTRACT_QS(
     if (cg_preview) { C.init(); return q; }
 
     C.SkipZeroData(); 
+    C.NormCGW(); 
 
     C.ctime=Wb::getTimeNow();
 
@@ -779,7 +780,11 @@ unsigned contractQS_itags(
       }
 
       C.UnsetFlags();
+
       C.SkipZeroData(); 
+      if (level<=0) {
+         C.NormCGW(); 
+      }
 
       if (k) { C.save2(B); icb.conj=0; }
       else { C.ctime=Wb::getTimeNow(); }

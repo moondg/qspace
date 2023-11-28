@@ -479,7 +479,8 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
 
       case {'SpNchannel','SpNchannelS'}
          if sym1(end)~='S', phflag=12;
-         else Sflag=1;
+         else
+            Sflag=1;
             if ~isempty(regexp(Sym_,'SU2charge')), wbdie(...
               'invalid symmetry setting (%s requires abelian charge)',sym1);
             end
@@ -606,6 +607,8 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
         if ~isIdentityQS(q), wbdie(...
            'invalid fermionic creation/annihilation ops'); end
      end
+
+     if numel(F)==numel(FF), F=reshape(F,size(FF)); end
   else
      x=cell(size(X)); for i=1:numel(x), x{i}=full(X(i).op); end
      F=QSpace([0;0;0],cat(3,x{:}),{'','*','*'});
@@ -750,9 +753,13 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
 % reflects an SU(N) symmetry in the number of symmetric flavors
 % Wb,Mar05,20
 
-  if Yops
-     nF=numel(F); F1=F;
-     if nF>1, wblog('WRN','using sum(F) for Yops'); F1=sum(F); end
+  if Yops, F1=F;
+     if numel(F)>1, s=size(F);
+        if any(s==1)
+             wblog('NB!','using sum(F) for Yops'); F1=sum(F);
+        else wblog('NB!','using sum(F(:,1)) for Yops'); F1=sum(F(:,1));
+        end
+     end
 
      Eo=getIdentity(F1,3); Zo=getIdentity(Eo,'-0');
      E2=getIdentity(Zo,2,Zo,1); E3=contract(Zo,'2*',E2,1);
@@ -783,7 +790,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
    %    this also ensures that |Cij|^2=4 for all i and j
    % => this corresponds to making the scaler term in Y traceless!
      if norm(YY(end).Q{3}(:))>1E-12, wbdie(...
-       'invalid usage (misplaced scalar operator ?!)'); end
+       'invalid usage (misplaced scalar operator in Y ?!)'); end
      a=fixScalarOp(YY(end)); q=trace(a)/trace(E2);
      Iout.Y(end)=makeIrop(skipzeros(a-q*E2));
 
@@ -1446,14 +1453,9 @@ function [S,Iout]=getLocalSpace_SpinSUN(sym,qloc,varargin)
    S=skipzeros(Sk); S.info.otype='operator';
 
    for i=1:numel(S.data)
-    % S.data{i}=S.data{i}(1);
-    % may have OM index with data by now // Wb,Jul11,22
-    % => safely reduce to singe multiplet while making
-    % sure that coefficients of spin operator including signs
-    % are well preserved
-      q=S.data{i}; s=size(q); s(end+1:3)=1; e=0;
+      q=S.data{i}; s=size(q); s(end+1:3)=1; e2=eye(s(1:2)); e=0;
       for j=1:prod(s(3:end)), qj=q(:,:,j);
-          e=e+norm(qj-qj(1)*eye(size(qj)));
+          e=e+norm(qj-qj(1)*e2);
       end
       if e>1E-12
          wbdie('got unexpected spin operator (e=%.3g)',e);

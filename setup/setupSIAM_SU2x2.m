@@ -27,9 +27,6 @@
      if isfield(param,'ALambda') param=rmfield(param,'ALambda'); end
   end
 
-  if exist('TK0')==1, TK=TK0; else
-  TK=TKondo; end
-
   clear ZFLAG*
 
 % -------------------------------------------------------------------- %
@@ -61,6 +58,10 @@
 
   end
 
+   if exist('TK0')==1, TK=TK0;
+   elseif NC==1, TK=TKondo;
+   end
+
   if isempty(istr)
      if NC==1
           istr='one-channel Anderson model (SIAM)';
@@ -73,6 +74,7 @@
         FF(i)=fixScalarOp('-l',FF(i));
         NF(i)=FF(i)'*FF(i);
      end
+     Sop=SS(end);
 
      HU=skipzeros(NF(1)*NF(2));
      H0=skipzeros(epsd*(NF(1)+NF(2)) + U*HU - B*SS(3));

@@ -490,7 +490,7 @@ void NRG_Wilson(
           }
        }
        else if (FC.len && FC[0].otype==QS_OPERATOR) {
-          wbperm P("1,3,2,4");
+          wbperm P = (zflag<=1? "1324" : "2314");
 
           for (i=0; i<F1.len; ++i) {
              if (zflag<=1) {

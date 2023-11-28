@@ -36,6 +36,7 @@ inline QSpace<TQ,TD>& MPS_PLUS_QS(
    if (A.gotCGS(FL)<2) {
       C.mt=Wb::MEX_RETURN; 
       A.plus_plain(B,C,bfac); 
+      C.NormCGW();
    }
    else {
       C.Cat(FL,A,B,TD(1),TD(bfac),vflag? vflag:1);
@@ -43,7 +44,6 @@ inline QSpace<TQ,TD>& MPS_PLUS_QS(
 
    C.SkipZeroData();   
 
-   C.NormCGW();
    C.ctime=Wb::getTimeNow();
 
    return C;
