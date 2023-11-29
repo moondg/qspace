@@ -3669,26 +3669,33 @@ int QSpace<TQ,TD>::NormCGW(
       }
    }
    else { 
-      unsigned r=rank(FL);
+      unsigned r=rank(FL); double cfacM;
       wbvector<unsigned> iOM;
 
       ExpandOM(FL,iOM,'f'); 
 
-      for (i=0; i<CGR.dim1; ++i) { cfac=1;
-         for (j=0; j<CGR.dim2; ++j) {
-            if (iOM[j]) { CRef<TQ> &Rij=CGR(i,j);
-            if (Rij.wisId()<=0) {
-               cfac*=Rij.cgw.norm(); 
+      for (i=0; i<CGR.dim1; ++i) { cfac=cfacM=1;
+         for (j=0; j<CGR.dim2; ++j) { CRef<TQ> &Rij=CGR(i,j);
+            if (!iOM[j] || Rij.wisId()>0) {
+               cfac *= Rij.NormSignW(0,0, full? 0:1);
+            }
+            else {
                m=Rij.wdim1(); 
+               cfacM *= Rij.cgw.norm(); 
                DATA[i]->ContractMat(FL,iOM[j]+1,Rij.cgw,2); 
                Rij.cgw.initIdentity(m);
-            }}
+            }
          }
-         if (fabs(cfac)<CG_SKIP_DEPS2 && skipzeros) {
+         if (fabs(cfac*cfacM)>CG_SKIP_DEPS2 || !skipzeros) {
+            DATA[i]->FuseOM(FL,r);
+            if (cfac!=TD(1)) {
+               DATA[i]->Times(cfac,rcpy); 
+            }
+         }
+         else {
             if (!mark.len) { mark.init(CGR.dim1); }
             mark[i]=1;
          }
-         else { DATA[i]->FuseOM(FL,r); }
       }
    }
 
