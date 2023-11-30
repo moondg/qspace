@@ -48,16 +48,54 @@ void mexFunction(
    int nargin, const mxArray *argin[]
 ){ Wb::CleanUp aclu; try { 
 
-   MX_CHECK_HELPER_NARGS(0,-1,-1);
+   MX_CHECK_HELPER_NARGS(0,-1,0);
 
-   mexPrintf("\n"
+   if (!nargin) { mexPrintf("\n"
    "   Hello world, this is the %s() [.%s] !\n\n"
    "   This C++ mex-file needs to be (re)compiled locally.\n"
    "   It is complimentary to %s.m which contains the usage information (help) only.\n\n"
    "   Type `help %s', `%s -h', or `%s --version'\n"
    "   for typical help (usage, documentation, and compilation info) of mex files.\n\n"
-   "   AW (2019)\n\n",myname,PP_STRFY(MEX_EXT),myname,myname,myname,myname
-   );
+   "   AW (2019)\n\n",myname,PP_STRFY(MEX_EXT),myname,myname,myname,myname);
+       return;
+   }
+
+   for (unsigned i=0; i<nargin; ++i) {
+      if (!mxIsChar(argin[i])) { wblog(FL,
+         "WRN ignoring input argument (%s)",mxGetClassName(argin[i]));
+         continue;
+      }
+      if (mxGetString(argin[i],str,24)) { wblog(FL,
+         "WRN invalid option %d (string out of bounds)",i+1);
+         continue;
+      }
+      if (i) { PRINTF("\n"); }
+
+      if (!strcmp(str,"--check-hl")) {
+         wblog(FL,"TST useCol = %d",Wb::useCol);
+         wblog(FL,"NB! some message");
+         wblog(FL,"WRN some message");
+         wblog(FL,"ENV some message");
+         wblog(FL,"ok. some message");
+         wblog(FL,"*   some message");
+         wblog(FL," *  some message");
+         wblog(FL,"  * some message");
+         wblog(FL,"hdr some message");
+         wblog(FL,"DBG some message");
+         wblog(FL,"XXE some message");
+         wblog(FL,"XXW some message");
+         wblog(FL,"XXG some message");
+         wblog(FL,"XXY some message");
+         wblog(FL,"XXB some message");
+      }
+      else if (!strcmp(str,"--check-env")) {
+         wblog(FL," *  envVRB = %d = %s",Wb::envVRB,BITS(Wb::envVRB));
+         wblog(FL," *  envDKT = %d",Wb::envDKT);
+         wblog(FL," *  useCol = %d",Wb::useCol);
+         wblog(FL," *  envDBG = %d",Wb::envDBG);
+      }
+      else { wblog(FL,"TST %s() %s",FCT,str); }
+   }
 
 }  catch (Wb::LogException &e) { ExitMsg(e.istr); }
    catch (...) { ExitMsg("caught exception in wbhist"); }

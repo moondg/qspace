@@ -75,7 +75,7 @@ char fgrFlag=0;
 void mexFunction(
    int nargout, mxArray *argout[],
    int nargin, const mxArray *argin[]
-){ Wb::gpara.init(); try {
+){ Wb::CleanUp aclu; try { 
 
    unsigned i,k,m,nloc=0,iter, e=0, N=0, QDIM, NRho=0, dloc=0, nlog=256;
    char disp=0, store=1, partial=0, RAW=0, lflag, raw=0, gotC2=0;
@@ -608,6 +608,7 @@ void mexFunction(
 
 }  catch (Wb::LogException &e) { ExitMsg(e.istr); }
    catch (...) { ExitMsg("caught exception in tdmNRG"); }
+   aclu.Check();
 };
 
 template <class TQ, class TD>

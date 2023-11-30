@@ -103,7 +103,7 @@ void MEX_FUNCTION(
 void mexFunction(
    int nargout, mxArray *argout[],
    int nargin, const mxArray *argin[]
-){ Wb::gpara.init(); try {
+){ Wb::CleanUp aclu; try { 
 
    int i=0;
    for (; i<nargin; ++i) {
@@ -121,6 +121,7 @@ void mexFunction(
 
 }  catch (Wb::LogException &e) { ExitMsg(e.istr); }
    catch (...) { ExitMsg("caught exception in fgrNRG"); }
+   aclu.Check();
 }; 
 
 template <class TS>

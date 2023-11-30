@@ -1052,7 +1052,7 @@ void wblog::SBUF::flush(FILE *fid, char fflag) {
          else {
             wblog::myIO.clear(); 
 
-            if (Wb::envDKT) { mexPrintf("%s",sbuf); }
+            if (Wb::envDKT==1) { mexPrintf("%s",sbuf); }
             else {
                PRINTF("%s",sbuf); fflush(stdout);
             }

@@ -15,6 +15,10 @@
      'N',36, 'Lambda',4,'Nkeep',1024,'Etrunc',8 ...
   );
 
+  if numel(J)>1
+       dJ=diff(J); if ~dJ, J=J(1); end
+  else dJ=0; end
+
   global param
   param=add2struct('-',J,B,Lambda,N,Nkeep,Etrunc);
   TK=TKondo;
@@ -28,6 +32,7 @@
   setdef('SYM','');
   if B || ~isempty(regexp(SYM,'^A,'));
        sym={'Aspin',   'SpNchannel'};
+  elseif dJ, sym={'SU2spin', 'SU2charge(:)'};
   else sym={'SU2spin', 'SpNchannel'};
   end
 
@@ -44,9 +49,9 @@
 
   SYM=getsym(IS.E); param.sym=IS.sym;
 
-  disp(param);
+  structdisp(param);
 
-  if ~isempty(regexp(sym{2},'^(SpN|SU2)'))
+  if ~isempty(regexp(sym{2},'^(Sp|SU)'))
        ZFLAG=3;
   else ZFLAG=1; end
 
@@ -60,17 +65,24 @@
   A0=getIdentity(s0(end),Z,[1 3 2]);
 
   r=numel(s0);
-  if numel(SS)~=r || (r~=1 && r~=3)
-     wbdie('invalid spin setting'); end
+  if r~=1 && r~=3, wbdie('invalid spin setting'); end
+
+  if dJ, SS_=SS; SS=IS.S3; end
+
+  [n,m]=size(SS); q=[ numel(J), n ];
+  if diff(q), wbdie('invalid J (len=%d / %d)',q); end
+  if m~=r, wbdie('invalid spin setting'); end
 
   H0=QSpace;
-  for i=1:r, Q=contract(J*s0(i),'1*',A0,1);
+  for p=1:n
+  for i=1:m, Q=contract(J(p)*s0(i),'1*',A0,1);
      if numel(s0(i).Q)==3
-          Q=contract(Q,'42',SS(i),'23');
-     else Q=contract(Q,3,SS(i),2);
+          Q=contract(Q,'42',SS(p,i),'23');
+     else Q=contract(Q,3,SS(p,i),2);
      end
      Q=contract(A0,'13*',Q,'13');
      H0=H0+Q;
+  end
   end
   HJ=H0;
 
@@ -98,7 +110,7 @@
   Z0=contract(A0,'13*',contractQS(A0,3,Z,2),'13');
 
   AJ=A0; H0_=H0;
-  A0=QSpace(permuteQS(getIdentityQS(Z0,Z),[1 3 2]));
+  A0=getIdentity(Z0,Z,[1 3 2]);
 
   f1=ff(1); ff=ff(2:end);
 

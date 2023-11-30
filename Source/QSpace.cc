@@ -711,7 +711,7 @@ unsigned QSpace<TQ,TD>::getDim(unsigned k, widx_t *D_) const {
 
       for (l=i=0; i<dd.len; ++i, l+=dd[i-1]) { ip=pp[l];
          const wbarray<TD> &a=*DATA[ip];
-         if (!a.isRankm(r,m)) wblog(FL, 
+         if (!a.isRankM(r,m)) wblog(FL, 
             "ERR %s() rank mismatch (%s / %d)",FCT,SSTR(a),r);
          s=a.SIZE[k]; Dm+=s;
 
@@ -792,7 +792,7 @@ void getQDimGen(wbvector< const QSpace<TQ,TD>* > &A,
    if (!A.len) wblog(FL,"ERR got empty input space");
 
    unsigned i,j,k,l,ic,d, d2=0, m=0, nq,p,i1,i2, n=0; widx_t *ip;
-   unsigned r=-1, rx, QDIM=A[0]->QDIM;
+   unsigned r_=-1, rk, QDIM=A[0]->QDIM;
    const QS_TYPES &otype=A[0]->otype;
    const QVec &qtype=A[0]->qtype;
    wbMatrix<widx_t> S0,SC,II;
@@ -807,11 +807,11 @@ void getQDimGen(wbvector< const QSpace<TQ,TD>* > &A,
       if (!A[k]) wblog(FL,"ERR %s() got null object",FCT);
       n+=Ak.QIDX.dim1;
 
-      if (I.len) { r=rx=Ak.rank(FL); }
-      else { rx=r;
-         if (int(r=Ak.isOperator(&rx,'x'))<=0) wblog(FL,
-            "ERR %s() invalid rank-%d operator\n(%d: %d/%d, '%s')",
-            FCT,Ak.itags.len,k+1,rx,r,A[0]->otype2Str().data
+      if (I.len) { r_=rk=Ak.rank(FL); }
+      else {
+         if (int(rk=Ak.isOperator(&r_,'x'))<=0) wblog(FL,
+            "ERR %s() invalid rank-%d operator\n(%d: r=%d/%d, '%s')",
+            FCT,Ak.itags.len,k+1,rk,r_,A[0]->otype2Str().data
          );
          if (Ak.otype!=otype) wblog(FL,
             "ERR %s() object type inconsistency (%s ; %s)",
@@ -819,7 +819,7 @@ void getQDimGen(wbvector< const QSpace<TQ,TD>* > &A,
          );
       }
 
-      if (!k) d2=r*QDIM;
+      if (!k) d2=r_*QDIM;
 
       if (Ak.qtype!=qtype) wblog(FL,
          "ERR %s() Q-type inconsistency (%s ; %s)",
@@ -844,12 +844,12 @@ void getQDimGen(wbvector< const QSpace<TQ,TD>* > &A,
          FCT,k+1,A.len,Ak.CGR.dim2,nq);
       }
    }
-   if (!r) wblog(FL,"ERR got empty QSpaces (r=%d)",r);
+   if (!rk) wblog(FL,"ERR got empty QSpaces (r=%d)",rk);
    cgflag&=1;
 
-   if (!I.len) I.Index(r); 
-   else if (I.anyGE(r)) wblog(FL,
-     "ERR %s() index out of bounds (%s; %d)",FCT,STR((I+1)),r);
+   if (!I.len) I.Index(r_); 
+   else if (I.anyGE(r_)) wblog(FL,
+     "ERR %s() index out of bounds (%s; %d)",FCT,STR((I+1)),r_);
 
    S0.init(n,I.len);
    II.init(n,I.len*2);
@@ -858,10 +858,10 @@ void getQDimGen(wbvector< const QSpace<TQ,TD>* > &A,
    wbvector<unsigned> rm; 
    if (cgflag) {
       SC.init(n,nq*I.len).set(1);
-      rm.init2val(nq,rx);
+      rm.init2val(nq,rk);
    }
    for (j=0; j<nq; ++j) {
-      if (qtype[j].permitsOM(rx)) { m=1;
+      if (qtype[j].permitsOM(rk)) { m=1;
          if (cgflag) { ++rm[j]; } else break;
       }
    }
@@ -872,9 +872,9 @@ void getQDimGen(wbvector< const QSpace<TQ,TD>* > &A,
 
       for (i=0; i<nd; ++i, ++l) {
          const wbvector<widx_t> &s=Ak.DATA[i]->SIZE;
-         if (!Ak.DATA[i]->isRankm(rx,m)) {
+         if (!Ak.DATA[i]->isRankM(rk,m)) {
             wblog(FL,"ERR %s() rank mismatch (data[%d]: %s (r=%d)",
-            FCT,i+1,SSTR_(Ak.DATA[i]), rx);
+            FCT,i+1,SSTR_(Ak.DATA[i]), rk);
          }
 
          Q .recSetB(l,I,QDIM, qq.rec(i));
@@ -884,9 +884,9 @@ void getQDimGen(wbvector< const QSpace<TQ,TD>* > &A,
             for (j=0; j<nq; ++j) {
                wbvector<widx_t> s; Ak.CGR(i,j).getSize(s);
                if (!s.len || s.allEqual(1)) continue;
-               if (s.len<rx || s.len>rm[j]) wblog(FL,
-                  "ERR %s() rank mismatch (cgb(%d,%d): [%s](r=%d)",
-                   FCT,i+1,j+1, SSTR(Ak.CGR(i,j)), r
+               if (s.len<rk || s.len>rm[j]) wblog(FL,
+                  "ERR %s() rank mismatch (cgb(%d,%d): [%s](r=%d/%d)",
+                   FCT,i+1,j+1, SSTR(Ak.CGR(i,j)), rk,r_
                );
                for (ic=j, i1=0; i1<I.len; ++i1, ic+=nq) {
                   SC(l,ic)=s[I.data[i1]];
@@ -1383,7 +1383,7 @@ bool QSpace<TQ,TD>::isConsistent(
            return 0;
        }
 
-       if (!DATA[i]->isRankm(r,m)) {
+       if (!DATA[i]->isRankM(r,m)) {
           if ((l=DATA[i]->SIZE.len)==1 && !r) { continue; }
 
           sprintf(str,"QSpace inconsistency (%s)\nDATA[%d] has rank "
@@ -1414,31 +1414,30 @@ bool QSpace<TQ,TD>::isConsistent(
 template <class TQ, class TD>
 int QSpace<TQ,TD>::isOperator(unsigned *r_, char xflag) const {
 
-   unsigned r0=rank(FL), r=r0; 
+   unsigned rk=rank(FL), r=rk; 
 
-   if (r_ && int(*r_)<0) { *r_=-r0; }
+   if (r_ && int(*r_)<0) { *r_=-rk; }
 
    if (otype==QS_OPERATOR) { char c=gotCGS(FL);
-      if ((c>0 && r!=3) || (c<=0 && (r<2 || r>3))) {
-         wblog(FL,"ERR %s() got rank-%d for %sabelian %s",
-         FCT,r,c? "non-":"",otype2Str().data);
-      }
+      if ((c>0 && r!=3) || (c<=0 && (r<2 || r>3))) { wblog(FL,
+         "ERR %s() got rank-%d for %sabelian %s", FCT,r, c? "non-":"",
+         otype2Str().data); }
       r=2;
    }
    else if (otype!=QS_NONE) { return -9; }
 
-   if (int(r0)<2) {
+   if (int(rk)<2) {
       return -1;
    }
 
    if (r>2) { 
       if (r>3 && xflag) {
-         if (r0%2) { return -3; }
+         if (rk%2) { return -3; }
          if (!itags.isOpX()) { return -4; }
       }
       else {
          if (!itags.isOp()) { return -2; }
-         if (r0>3) { return 0; }
+         if (rk>3) { return 0; }
          r=2;
       }
    }
@@ -1446,10 +1445,10 @@ int QSpace<TQ,TD>::isOperator(unsigned *r_, char xflag) const {
    if (r_) {
       if (int(*r_)>0)
            { if ((*r_)!=r) { return 0; }}
-      else { (*r_)=r0; }
+      else { (*r_)=r; }
    }
 
-   return r;
+   return rk;
 };
 
 template <class TQ, class TD> 

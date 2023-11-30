@@ -2063,18 +2063,19 @@ void updateOp_L(const char *F, int L,
    const QSpace<TQ,TD> &A2,
    QSpace<TQ,TD> &Xout       
 ){
-   QSpace<TQ,TD> Xk; unsigned r=-1;
+   unsigned rk, r_=-1;
+   QSpace<TQ,TD> Xk;
 
    if (Xin.isEmpty()) { wblog(F_L,
       "ERR %s() got empty L-operator",FCT); return; }
-   if (Xin.isOperator(&r)<=0) { Xin.info("L-op");
-      wblog(F_L,"ERR %s() got invalid L-operator (%d)",FCT,r);
+   if (int(rk=Xin.isOperator(&r_))<=0) { Xin.info("L-op");
+      wblog(F_L,"ERR %s() got invalid L-operator (%d/%d)",FCT,rk,r_);
    }
 
    Xin.contract(F,L,2,A2,1,Xk); 
-   A1.contract(F,L,"1,3;*",Xk, (r!=3 ? "1,3":"1,4"), Xout); 
+   A1.contract(F,L,"1,3;*",Xk, (rk!=3 ? "1,3":"1,4"), Xout); 
 
-   if (r==3) Xout.Permute("1,3,2"); 
+   if (rk==3) Xout.Permute("1,3,2"); 
 
    Xout.otype=Xin.otype;
    Xout.SkipZeroData();
@@ -2087,12 +2088,13 @@ void updateOp_s(const char *F, int L,
    const QSpace<TQ,TD> &A2,
    QSpace<TQ,TD> &Xout      
 ){
-   QSpace<TQ,TD> Xk; unsigned r=-1;
+   unsigned rk, r_=-1;
+   QSpace<TQ,TD> Xk;
 
    if (x.isEmpty()) { wblog(FL,
       "WRN %s() got empty L-operator",FCT); return; }
-   if (x.isOperator(&r)<=0) { x.info("local-op");
-      wblog(FL,"ERR %s() got invalid L-operator (%d)",FCT,r);
+   if (int(rk=x.isOperator(&r_))<=0) { x.info("local-op");
+      wblog(FL,"ERR %s() got invalid L-operator (%d/%d)",FCT,rk,r_);
    }
 
    A2.contract(F,L,3,x,2, Xk); 
@@ -2109,12 +2111,13 @@ inline void updateOp_Ls(
    const QSpace<TQ,TD> &A2,
    QSpace<TQ,TD> &Xout       
 ){
-   QSpace<TQ,TD> Xk; unsigned r=-1;
+   unsigned rk, r_=-1;
+   QSpace<TQ,TD> Xk;
 
    if (Xin.isEmpty()) { wblog(FL,
       "WRN %s() got empty L-operator",FCT); return; }
-   if (Xin.isOperator(&r,'x')<=0 || r!=4) { Xin.info("Ls-op");
-      wblog(FL,"ERR %s() got invalid Ls-operator (%d)",FCT,r);
+   if ((rk=Xin.isOperator(&r_,'x'))!=4) { Xin.info("Ls-op");
+      wblog(FL,"ERR %s() got invalid Ls-operator (%d/%d)",FCT,rk,r_);
    }
 
    Xin.contract("3,4",A2,"1,3", Xk);  
@@ -2131,12 +2134,13 @@ inline void updateOp_sL(
    const QSpace<TQ,TD> &A2,
    QSpace<TQ,TD> &Xout
 ){
-   QSpace<TQ,TD> Xk; unsigned r=-1;
+   unsigned rk, r_=-1;
+   QSpace<TQ,TD> Xk;
 
    if (Xin.isEmpty()) { wblog(FL,
       "WRN %s() got empty L-operator",FCT); return; }
-   if (Xin.isOperator(&r)<=0 || r!=4) { Xin.info("sL-op");
-      wblog(FL,"ERR %s() got invalid sL-operator (%d)",FCT,r);
+   if ((rk=Xin.isOperator(&r_))!=4) { Xin.info("sL-op");
+      wblog(FL,"ERR %s() got invalid sL-operator (%d)",FCT,rk,r_);
    }
 
    Xin.contract("4,3",A2,"1,3", Xk);  
@@ -2156,17 +2160,17 @@ void updateOp_loc(const char *F, int L,
    QSpace<TQ,TD> &Xout,     
    unsigned iter
 ){
-   QSpace<TQ,TD> Ax,XA; 
-   unsigned r1=-1, r2=-1;
    bool o1=0, o2=0;
+   unsigned rk, r_=-1;
+   QSpace<TQ,TD> Ax,XA; 
 
    if (!x.isEmpty()) {
-      if (x.isOperator(&r2)<=0) { x.info("local_op"); wblog(FL,
-         "ERR %s() got invalid local operator (%d)",FCT,r2); }
+      if (int(rk=x.isOperator(&r_))<=0) { x.info("local_op"); wblog(FL,
+         "ERR %s() got invalid local operator (%d/%d)",FCT,rk,r_); }
       if (XL.otype!=x.otype && !XL.isEmpty()) wblog(FL,
          "WRN %s() got different operator types (%s; %s)",
           FCT, QS_STR[XL.otype],QS_STR[x.otype]);
-      o2=(int(r2)==3);
+      o2=(rk==3);
 
       wblog(FL," *  contracting %s[%d] onto A(%d).%s",
          NRG.name.data,i, iter, A2.itags.toStrk(str,8,2,"s"));
@@ -2175,10 +2179,10 @@ void updateOp_loc(const char *F, int L,
    }
    else Ax.init2ref(A2);
 
-   if (iter || !XL.isEmpty()) {
-      if (XL.isOperator(&r1)<=0) { x.info("L-op"); wblog(FL,
-         "ERR %s() got invalid L-operator (%d)",FCT,r1); }
-      o1=(int(r1)==3);
+   if (iter || !XL.isEmpty()) { r_=-1;
+      if (int(rk=XL.isOperator(&r_))<=0) { x.info("L-op"); wblog(FL,
+         "ERR %s() got invalid L-operator (%d/%d)",FCT,rk,r_); }
+      o1=(rk==3);
 
       if (iter<1) wblog(FL,"TST contracting onto A[%d].%s",
          iter, A2.itags.toStrk(str,8,0,"L"));
@@ -2210,7 +2214,7 @@ int Wb::updateOp(const char *F, int L,
    const wbvector< QSpace<TQ,TD> > &FKK, 
    unsigned iter
 ){
-   unsigned i, j=0, m=0, r=-1, rx=-1, nop=FKK.len;
+   unsigned i, j=0, m=0, r_=-1, rk, nop=FKK.len;
    int e=0, i1=0;
 
    const wbvector< wbvector<QSpace<TQ,TD> > > &CI=NRG.CI;
@@ -2222,18 +2226,18 @@ int Wb::updateOp(const char *F, int L,
       "ERR %s() severe size mismatch (nrgIdx: %d,%d)",FCT,nrgIdx.len,nop);
 
    if (iter>0) {
-      for (i=0; i<nop; ++i) { rx=r; 
+      for (i=0; i<nop; ++i) { 
          if (nrgIdx[i].idx>=0) continue;
          if (!(i1=FKK[i].isConsistent(FL))
-         || int(r=FKK[i].isOperator(&rx))<=0) break;
+         || int(rk=FKK[i].isOperator(&r_))<=0) break;
       }
    }
    else if (CI.isEmpty()) {
-      for (i=0; i<nop; ++i) { rx=r;
+      for (i=0; i<nop; ++i) {
          if (!(i1=FKK[i].isConsistent(FL)) ||
-            int(r=FKK[i].isOperator(&rx,'x'))<=0
+            int(rk=FKK[i].isOperator(&r_,'x'))<=0
          ){ wblog(FL,
-            "WRN FKK[%d] -> (%d; %d/%d/%d) ",i+1,i1,r,rx,FKK[i].rank());
+            "WRN FKK[%d] -> (%d; %d/%d/%d) ",i+1,i1,rk,r_,FKK[i].rank());
             break;
          }
       }
@@ -2243,14 +2247,14 @@ int Wb::updateOp(const char *F, int L,
          "ERR size inconsistency (%d/%d)",nop,CI.len);
 
       for (i=0; i<nop; ++i) { m=CI[i].len;
-      for (j=0; j<m; ++j) { if (!CI[i][j].isEmpty()) { rx=r;
+      for (j=0; j<m; ++j) { if (!CI[i][j].isEmpty()) {
          if (!(i1=CI[i][j].isConsistent(FL)) ||
-            int(r=CI[i][j].isOperator(&rx))<=0) break;
+            int(rk=CI[i][j].isOperator(&r_))<=0) break;
       }}}
    }
 
    if (i<nop || j<m) wblog(F,L,
-      "ERR invalid rank-%d operator (iter=%d, op=%d/%d)",r,iter,i+1,nop);
+      "ERR invalid rank-%d operator (iter=%d, op=%d/%d)",rk,iter,i+1,nop);
    if (A1.rank(F,L)!=3 || A2.rank(F,L)!=3 || A1.QDIM!=A2.QDIM) wblog(F,L,
       "ERR %s() severe rank inconsistency (%s; %s)",
        FCT, A1.sizeStrQ().data, A2.sizeStrQ().data);
@@ -2291,9 +2295,9 @@ int Wb::updateOp(const char *F, int L,
 
       for (i=0; i<nop; ++i) {
          if (nrgIdx[i].idx>=0) continue;
-         r=FKK[i].rank(FL);
+         rk=FKK[i].rank(FL);
 
-         if (r==2 || (r==3 && FKK[i].otype==QS_OPERATOR)) {
+         if (rk==2 || (rk==3 && FKK[i].otype==QS_OPERATOR)) {
             if (Lflag && 
                 FKK[i].hasQOverlap(1,A1,1,'<')>0 &&
                 FKK[i].hasQOverlap(2,A1,1,'<')>0
@@ -2319,7 +2323,7 @@ int Wb::updateOp(const char *F, int L,
             else wblog(FL,
               "ERR %s() failed to deal input operator with A%d",FCT,iter);
          }
-         else if (r==4) {
+         else if (rk==4) {
 
             wbvector<int> m1,m2;
             int mm[]= {
@@ -2364,7 +2368,7 @@ int Wb::updateOp(const char *F, int L,
             }
          }
          else wblog(FL,
-        "ERR %s() invalid rank-%d operator (iter=%d)",FCT,r,iter);
+        "ERR %s() invalid rank-%d operator (iter=%d)",FCT,rk,iter);
 
          if (F12[i].isEmpty() && !FKK[i].isEmpty()) ++e;
       }

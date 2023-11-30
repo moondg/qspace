@@ -245,7 +245,8 @@ void icFlags::apply(QSpace<TQ,TD> &X, char vflag) {
    if (otags) { 
       if (!strncmp(otags.data,"op:",3)) {  
          int q=X.isOperator(&r);
-         if (q<=0) { wblog(FL, 
+         if (q>0) { r=q; } 
+         else { wblog(FL,  
             "ERR failed to set itags for rank%+d QSpace\n"
             "'%s' %s ('%s', q=%d/%d, e=%d)",
             q, X.itags2Str().data, X.otype2Str().data, otags.data,

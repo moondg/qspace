@@ -479,14 +479,14 @@ itag_& itag_::init(const char *F, int L,
    unsigned k=0, l=0; itag_ x;
 
    if (!ia.len) {
-      unsigned r=-1, rx;
-      for (; k<A.len; ++k) { rx=r;
-         if (int(r=A[k].isOperator(&rx,'x'))<=0) wblog(FL,
+      unsigned rk,r_=-1;
+      for (; k<A.len; ++k) {
+         if (int(rk=A[k].isOperator(&r_,'x'))<=0) wblog(FL,
             "ERR %s() invalid rank-%d operator \n(%d: %d/%d, `%s')",
-            FCT,A[k].itags.len,k+1,r,rx,A[k].otype2Str().data
+            FCT,A[k].itags.len,k+1,rk,r_,A[k].otype2Str().data
          );
       }
-      ia.Index(r); k=0;
+      ia.Index(r_); k=0;
    }
    if (!ia.len) wblog(FL,"ERR %s() got empty index set !?",FCT);
 

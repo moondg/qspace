@@ -698,7 +698,7 @@ class QSpace {
     bool isOp(int r=-1, char lflag=0) const { 
         return itags.isOp(r,lflag); };
 
-    int isOperator(unsigned *dr, char xflag=0) const;
+    int isOperator(unsigned *r_, char xflag=0) const;
 
     bool isOperator() const { return (isOperator(NULL,0)>0 ? 1 : 0); };
 

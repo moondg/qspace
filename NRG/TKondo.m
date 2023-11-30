@@ -163,7 +163,10 @@ function [TK,wTK,istr]=TKondo_J(p,wTK,vflag)
       end
    end
 
-   if n~=1, wbdie('invalid usage (got %g values for J)',n); end
+   if n>1
+      if vflag, wblog('WRN','using max(J) for TK'); end
+      J=max(J);
+   end
 
    if isnan(J) || J<0, TK=nan; return
    elseif J==0, TK=0; return; end

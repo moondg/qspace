@@ -53,17 +53,17 @@
 
     nops=max(numel(op1),numel(op2));
 
-    if ~isset('use_mem')
-       use_mem=(ischar(NRG) || ~isfield(NRG,'AK'));
-    elseif ischar(NRG) || ~isfield(NRG,'AK')
+    q=isfield(NRG,'AK');
+    if ~isvar('use_mem') || isempty(use_mem), use_mem=q;
+    elseif use_mem && ~q
        wbdie('invalid usage (got use_mem with invalid NRG variable)');
     end
 
     if ~isset('splitops') || ~nops
        setopts(odma,'cflags?','zflags?');
-       if ~use_mem
-            [om,a0,Idma    ]=fdmNRG_QS(NRG,     op1,op2,Z0, odma{:});
-       else [om,a0,Idma,NRG]=fdmNRG_QS(NRG,Inrg,op1,op2,Z0, odma{:});
+       if use_mem
+            [om,a0,Idma,NRG]=fdmNRG_QS(NRG,Inrg,op1,op2,Z0, odma{:});
+       else [om,a0,Idma    ]=fdmNRG_QS(NRG,     op1,op2,Z0, odma{:});
        end
     else
        if ~isset('nostore')
@@ -99,9 +99,9 @@
           q=Iops(k).cflags; if ~isempty(q), o=[o, {'cflags',q}]; end
           q=Iops(k).zflags; if ~isempty(q), o=[o, {'zflags',q}]; end
 
-          if ~use_mem
-               [om{k},a0{k},Idma(k)    ]=fdmNRG_QS(NRG,     o{:}, odma{:});
-          else [om{k},a0{k},Idma(k),NRG]=fdmNRG_QS(NRG,Inrg,o{:}, odma{:});
+          if use_mem
+               [om{k},a0{k},Idma(k),NRG]=fdmNRG_QS(NRG,Inrg,o{:}, odma{:});
+          else [om{k},a0{k},Idma(k)    ]=fdmNRG_QS(NRG,     o{:}, odma{:});
           end
 
           if k>1

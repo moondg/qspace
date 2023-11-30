@@ -702,7 +702,7 @@ namespace Wb {
 class CleanUp {
   public:
     CleanUp() : i(0) {
-       gpara.init();
+       gpara.init(); 
     };
 
    void Check() {

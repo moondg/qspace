@@ -453,8 +453,8 @@ int Wb::get_WB_VERBOSE(const char *F, int L) {
       wblog1(F_L,"WRN %s() invalid %s (e=%d)",FCT,vname,i);
    }
 
-   { int q=0; i=GetEnv(0,0,"QS_LOG_COLOR",q);
-     if (i) { q=(Wb::envDKT>0 ? WLC_DARK : WLC_OFF); } else
+   { int q=0; i=GetEnv(0,0,"QS_LOG_COLOR",q); 
+     if (i) { q=(Wb::envDKT>1 ? WLC_DARK : WLC_OFF); } else
      if (q>=NUM_WBL_COLOR_SCHEME) { q=WLC_DARK; } else
      if (q<0) { q=WLC_OFF; }
      Wb::useCol=(WBL_COLOR_SCHEME)q;
@@ -488,13 +488,15 @@ int Wb::got_DBSTOP(const char *F, int L) {
 #ifdef MATLAB_MEX_FILE
 int Wb::got_DESKTOP() { 
 
-   int q=(
-       Wb::CallMatlab(0,0,"isdeployed") ? 0 :
-       Wb::CallMatlab(0,0,"usejava","desktop") 
-   );
+   int q=0;
+   if (Wb::CallMatlab(0,0,"isdeployed")) { q=0; }
+   else if (Wb::CallMatlab(0,0,"usejava","desktop")) { q=1; }
+   else if (Wb::CallMatlab(0,0,"usejava","awt")) { q=2; }
 
-   if ((Wb::envDKT>=0 && Wb::envDKT!=q) || (Wb::envVRB&8)) wblog1(FL,
-      "ENV %s() Wb::envDKT = %d (%s)",myname,q,q?"desktop":"terminal");
+   if ((Wb::envDKT>=0 && Wb::envDKT!=q) || (Wb::envVRB&8)) { wblog1(FL,
+      "ENV %s() Wb::envDKT = %d (%s)",myname, q,
+      q>1? "terminal":(q? "desktop":"batch"));
+   }
    Wb::envDKT=q;
 
    return q;

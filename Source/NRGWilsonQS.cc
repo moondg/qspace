@@ -115,7 +115,7 @@ void NRG_Wilson(
 void mexFunction(
     int nargout, mxArray *argout[],
     int nargin, const mxArray *argin[]
-){ Wb::gpara.init(); try {
+){ Wb::CleanUp aclu; try { 
 
    MX_CHECK_HELPER_NARGS(1,-1,-1);
 
@@ -165,6 +165,7 @@ void mexFunction(
 
 }  catch (Wb::LogException &e) { ExitMsg(e.istr); }
    catch (...) { ExitMsg("caught exception in NRGWilsonQS"); }
+   aclu.Check();
 }; 
 
 template<class TQ, class TD>

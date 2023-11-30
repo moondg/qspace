@@ -845,7 +845,7 @@ class wbarray {
        return q;
     };
 
-    bool isRankm(unsigned r, unsigned m) const {  
+    bool isRankM(unsigned r, unsigned m) const {  
        bool q=1;
        if (SIZE.len==r) { return q; }
        if (r>2 && m) { if (SIZE.len==r+1 || SIZE.len==r+m ) { return q; }}

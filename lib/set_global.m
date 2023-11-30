@@ -50,6 +50,7 @@ function [dkt,dbg,isb]=check_ml_mode()
    dkt=0; dbg=0; isb=0;
    if usejava('Desktop'), dkt=1;
    elseif isdeployed(), isb=1;
+   elseif batchStartupOptionUsed(), isb=1;
    elseif ~isempty(getenv('SGE_O_HOST')) && ...
           ~isempty(getenv('SGE_O_HOME')), isb=2;
    elseif ~isempty(getenv('PBS_JOBID')) && ...

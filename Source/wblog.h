@@ -251,7 +251,7 @@ class stdio_buf {
        }
        if (f) { fprintf(f,"%s",s); }
        else {
-          if (Wb::envDKT) 
+          if (Wb::envDKT==1) 
                { mexPrintf("%s",s); }
           else { PRINTF("%s",s); }
        }

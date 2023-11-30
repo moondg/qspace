@@ -130,7 +130,7 @@ void FDM_NRG(
 void mexFunction(
    int nargout, mxArray *argout[],
    int nargin, const mxArray *argin[]
-){ Wb::gpara.init(); try {
+){ Wb::CleanUp aclu; try { 
 
    char cmplx=0, mat_setup=0;  int i=0;
    const mxArray *ap=NULL;
@@ -187,6 +187,7 @@ void mexFunction(
 
 }  catch (Wb::LogException &e) { ExitMsg(e.istr); }
    catch (...) { ExitMsg("caught exception in fdmNRG_QS"); }
+   aclu.Check();
 }; 
 
 template<class TQ, class TD>
