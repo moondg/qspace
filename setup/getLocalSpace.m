@@ -1177,46 +1177,49 @@ function [S,Iout]=getLocalSpace_Spin(qloc,varargin)
      if getopt('-v'), vflag=1;
      elseif getopt('-V'), vflag=2; else vflag=0; end
 
-     sym=getopt('get_last',''); Aflag=0; Z2=0; noSym=0;
-     if isequal(sym,'-A'), Aflag=1;
-     elseif isequal(sym,'--Z2') || isequal(sym,'Z2spin'), Z2=1;
+     sym=getopt('get_last',''); Aflag=0; Z2=0; noSym=0; istr='';
+     if isequal(sym,'-A'), Aflag=1; istr='abelian';
+     elseif isequal(sym,'--Z2') || isequal(sym,'Z2spin')
+        Z2=1; istr='Z2';
      elseif isequal(sym,'--nosym'), noSym=1;
      elseif ~isempty(sym), sym, wbdie('invalid usage'); end
 
   getopt('check_error');
 
-  istr=sprintf([iff(Aflag,'abelian ',''), 'spin-%g system'],qloc);
-
   if norm(round(2*qloc)-2*qloc) || qloc<=0
-  wbdie('invalid spin S=%g',qloc); end
+     wbdie('invalid spin S=%g',qloc); end
+
+  istr=sprintf([istr ' spin S=%g system'],qloc);
+  Iout=add2struct('-',istr,'Sloc=qloc');
 
   sx=spinmat(2*qloc+1,'-sp','-sym');
   sx=sx([1 3 2]);
 
- if Z2
+  if Z2 && qloc==1/2
    % e.g. used for Kitaev model on honeycomb lattice, where bonds have
    % either XX or YY or ZZ interactions only => S_ and S+ must have the
    % same irop q-labels so they can be added up! Therefore in Young tableaus
-   % parity implies 4*m boxes for even, and 4*m+2 boxes for odd parity
+   % parity implies 4m boxes for even, and 4m+2 boxes for odd parity
    % with m an integer // Wb,Oct25,21
-     if qloc~=0.5, wblog('WRN','got Z2 with qloc=%g !?',qloc); end
-     [F,Z,Iout]=getLocalSpace('Fermion','Z2charge');
-     sym=regexprep(Iout.sym,'charge','spin');
-     SOP=Iout.SOP;
+
+     [F,Z,IS]=getLocalSpace('Fermion','Z2charge');
+     sym=regexprep(IS.sym,'charge','spin');
+     SOP=IS.SOP;
      SOP.info=sprintf('spin S=%s with Z2 parity only',rat2(qloc,'-s'));
 
      E=getIdentity(Z);
 
      S=QSpace(3,1); Z.info.otype='operator';
-     S(2)=F/sqrt(2);
      S(1)=makeIrop(Z/2); % = Sz = comm(S(2),S(2)')
+     S(2)=F/sqrt(2);
      S(3)=-S(2)'; S(3).info.itags{end}='*';
 
      q=sum(S); e=normQS(contractQS(q,'13*',q,'13') - 0.75*E);
      if e>1E-12, wbdie('got spin-half operator inconsistency @ %.3g',e); end
 
-     Iout=add2struct('-','Sloc=qloc',SOP,sym,'U=[]','Is=struct',E,'S2=[]');
+     Iout=add2struct(Iout,SOP,sym,'U=[]','Is=struct',E,'S2=[]');
      return
+
   elseif noSym
      SOP.info=sprintf('spin S=%s without symmetries',rat2(qloc,'-s'));
      SOP.type='';
@@ -1229,7 +1232,7 @@ function [S,Iout]=getLocalSpace_Spin(qloc,varargin)
      ];
 
      sym='';
-     Iout=add2struct('-','Sloc=qloc',SOP,sym,'U=[]','Is=struct',E,'S2=[]');
+     Iout=add2struct(Iout,SOP,sym,'U=[]','Is=struct',E,'S2=[]');
      return
   end
 
@@ -1239,7 +1242,11 @@ function [S,Iout]=getLocalSpace_Spin(qloc,varargin)
      SS(1,j)=SymOp(s([1,3:end]),sx{j});
   end
 
-  if Aflag
+  if Z2
+     q=init_qstruct('total spin Z2','Z2');
+     q.Sz=2*sum(SS(:,3));
+     wbstop xxx
+  elseif Aflag 
      q=init_qstruct('total spin U(1)','A');
      q.Sz=2*sum(SS(:,3));
   else

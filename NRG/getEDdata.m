@@ -34,13 +34,18 @@ function varargout=getEDdata(varargin)
      Qflag=getopt('-Q');
   NRG=getopt('get_last','NRG/NRG');
 
+  if Kflag && nargout>3 || ~Kflag && nargout>2
+     wbdie('invalid usage (too many output arguments requested)'); 
+  end
+
   if ischar(NRG)
-     m=[NRG '_info.mat']; mf=mfilename;
-       if ~exist(m,'file'), NRG
-           wbdie('invalid NRG data'); end
-     if ~qflag, fprintf(1,'\r   %s: loading %s ...  \r',mf,repHome(m)); end
+     f='_info.mat'; m=[NRG f];
+     if ~exist(m,'file'), NRG, wbdie('invalid NRG data'); end
+     if ~qflag
+        nstr=sprintf('   %s: loading %s',mfilename,repHome(NRG));
+        fprintf(1,'\r%s%s ...  ',nstr,f);
+     end
      Inrg=load(m);
-     if ~qflag, fprintf(1,'\r%80s\r',''); end
   else
      if ~iscell(NRG) || numel(NRG)~=2 || ...
         ~isfield(NRG{1},'AK') || ~isfield(NRG{2},'EScale')
@@ -61,7 +66,7 @@ function varargout=getEDdata(varargin)
   dE=-fliplr(cumsum(fliplr(E0)));
   dE=[ dE(2:end), 0 ];
 
-  if min(dE)<0, wblog('WRN','got min(dE)=%.3g !??',min(dE)); end
+  if min(dE)<0, wblog('WRN','got min(dE)=%.3g !?',min(dE)); end
   if abs(Inrg.phE0-sum(E0))/Inrg.phE0>1E-8
      wbdie('ground state energy discrepancy (%.3g)',sum(E0)-Inrg.phE0);
   end
@@ -69,39 +74,36 @@ function varargout=getEDdata(varargin)
   if dflag, vars={'AK','HD'}; else vars={'HD'}; end
   if Kflag, vars{end+1}='HK'; end
 
-  k=0; HD={};
+  HD=QSpace; k=0; 
   while 1
      if ischar(NRG)
-        m=sprintf('%s_%02d.mat',NRG,k);
+        f=sprintf('_%02d.mat',k); m=[NRG f];
         if ~exist(m,'file'), break; end
-        if ~qflag, fprintf(1,'\r   %s: loading %s ...  \r',mf,repHome(m)); end
+        if ~qflag, fprintf(1,'\r%s%s ...  ',nstr,f); end
         load(m,vars{:}); k=k+1;
      else
-        k=k+1; if k>numel(NRG{1}), break; end
+      % bug-fix: Matan Lotem [11/2023]
+        if k<numel(NRG{1}), k=k+1; else break; end
         structexp(NRG{1}(k));
      end
 
-     gotHT=(~isempty(HD) && ~isempty(HD.data));
+     gotHD=~isempty(HD.data);
 
      if k==1
-        if Kflag
-           if isdiag(QSpace(HK),'-d')<2
-              [~,q]=eigQS(HK); AK=q.AK; HK=q.EK;
-           end
-        end
-        if gotHT, wbdie('got truncation at 0th NRG iteration');
+        if gotHD, wbdie('got truncation at 0th NRG iteration !?'); end
+        if Kflag && isdiag(QSpace(HK),'-d')<2
+           [~,q]=eigQS(HK); AK=q.AK; HK=q.EK;
         end
      elseif k==2
-        if Kflag
-           if isdiag(QSpace(HK),'-d')<2
-              wbdie('got non-diagonal HK at 1st NRG iteration');
-           end
+        if Kflag && isdiag(QSpace(HK),'-d')<2
+           wbdie('got non-diagonal HK at 1st NRG iteration');
         end
      end
 
-     if gotHT
-        ED(k).E=ES*cat(2,HD.data{:})' + dE(k);
-        ED(k).deg=getzdim(QSpace(HD),2,'-p','-x');
+     if gotHD, HD_=HD.data;
+      % bug-fix: loaded HD by now QSpace // Matan Lotem [11/2023]
+        ED(k).E = ES(k)*[HD_{:}]' + dE(k);          % physical energies
+        ED(k).deg=getzdim(QSpace(HD),2,'-p','-x');  % degeneracies
 
         if Qflag
            nd=numel(HD.data); qq=cell(1,nd); Q=HD.Q{1};
@@ -110,18 +112,20 @@ function varargout=getEDdata(varargin)
            end
            ED(k).Q=cat(1,qq{:});
         end
+     else HD_={};
      end
 
-     if dflag && ~isempty(HD) && ~isempty(HD.data) ...
-              && ~isempty(AK) && ~isempty(AK.data)
+   % consider only iterations where truncation occured
+   % eg. allow impurity to have altered state space
+     if dflag && gotHD && ~isempty(AK) && ~isempty(AK.data)
         q=getDimQS(AK); d(k)=q(end);
      end
 
      if Kflag
-        if isempty(HD.data) && ~iscell(HD.data), HD.data={}; end
-        if isempty(HK.data) && ~iscell(HK.data), HK.data={}; end
+        if ~isempty(HK.data), HK_=HK.data; else HK_={}; end
 
-        EK(k).E=ES*[cat(2,HK.data{:}), cat(2,HD.data{:})]';
+      % bug-fix: loaded HK by now QSpace // Matan Lotem [11/2023]
+        EK(k).E = ES(k)*[HK_{:}, HD_{:}]' + dE(k);
         EK(k).deg=[
             getzdim(QSpace(HK),2,'-p','-x')
             getzdim(QSpace(HD),2,'-p','-x') ];
@@ -130,7 +134,7 @@ function varargout=getEDdata(varargin)
            for i=1:nd
               qq{i}=repmat(Q(i,:),length(HK.data{i}),1);
            end
-           qq=cat(1,qq{:}); if gotHT
+           qq=cat(1,qq{:}); if gotHD
            EK(k).Q=[qq; ED(k).Q ]; else EK(k).Q=qq; end
         end
 
@@ -161,11 +165,10 @@ function varargout=getEDdata(varargin)
      ED=cat(1,ED.dd);
   end
 
-  if ~nargout, varargout={ED}; else
-     if Kflag
-          varargout={EK,ED,Inrg};
-     else varargout={ED,Inrg}; end
-     varargout=varargout(1:nargout);
+  if ~nargout, varargout={ED};
+  elseif Kflag
+       varargout={EK,ED,Inrg};
+  else varargout={   ED,Inrg};
   end
 
 end
