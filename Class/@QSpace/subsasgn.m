@@ -5,7 +5,7 @@ function A=subsasgn(A,S,val)
 % Classes and objects in matlab: the quick and dirty way
 % Kevin Murphy, 2005
 
-  if ~isa(A,  'QSpace'), A=QSpace(A); end
+  if ~isa(A,'QSpace'), A=QSpace(A); end
 
 % required by matlab/2016a // Wb,Aug03,16
   if numel(S)==1 && isequal(S.type,'()') && ~isa(val,'QSpace')

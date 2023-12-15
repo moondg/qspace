@@ -5,6 +5,10 @@ function varargout=subsref(A,S)
 %
 % AW (2012)
 
+% NB! This routine is required to access fields within a QSpace tensor
+% outside this class environment. If not defined, matlab issues error:
+% "Access to an object's fields is only permitted within its methods."
+
 % WRN! subsref() behaves like a regular matlab function. This behaves
 % different e.g., from A.data{:} which returns a `comma separated list'.
 % Therefore if multiple output arguments are requested, as in A.Q{:}

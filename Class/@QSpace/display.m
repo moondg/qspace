@@ -227,7 +227,11 @@ function display_1(A,m,Eflag,use_tex,vflag,varargin)
 
   ov2s={'-f','nofac','sep'};
 
-  m(end+1:2)=m(1); m(end+1:3)=0;
+  if isempty(m) || sum(m(:))>Nd, m=[Nd Nd 0];
+  else
+     m(end+1:2)=m(1);
+     m(end+1:3)=0;
+  end
   mx=sum(m); mx=max(ceil(1.2*mx), mx+4);
 
   ss=ones(Nd,r); sp=ones(Nd,1);

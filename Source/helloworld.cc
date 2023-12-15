@@ -13,8 +13,11 @@ void mexFunction(
 ){
    if (nargout) { mxArray *a;
       for (unsigned i=0; i<nargout; ++i) {
-         a=mxCreateDoubleMatrix(1,1,mxREAL);
-         mxGetDoubles(a)[0]=double(i+1);
+         if (i<nargin) { a=mxDuplicateArray(argin[i]); }
+         else {
+            a=mxCreateDoubleMatrix(1,1,mxREAL);
+            mxGetDoubles(a)[0]=double(i+1);
+         }
          argout[i]=a;
       }
    }
