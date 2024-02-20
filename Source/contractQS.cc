@@ -215,9 +215,11 @@ char icFlags::set(const mxArray *a, const char *istr) {
             if (sidx) wblog(FL, 
                "ERR ctr-idx already set ( %s / [%s])",sidx.data,STR(x));
             sidx.init(x.len+1);
-            for (; i<x.len; ++i) {
-               if (!(j=x[i]) || j>9 || x[i]!=j) wblog(FL,
-                  "ERR invalid ctr-idx [%s]",STR(x));
+            for (; i<x.len; ++i) { j=x[i];
+               if (!j || j>9 || j!=x[i]) { wblog(FL,
+                  "ERR invalid ctr-idx [%s]\nfailed to convert "
+                  "to compact string (j=%d/%g)",STR(x),j,x[i]);
+               }
                sidx[i]=j+'0'; 
             }
             sidx[i]=0; xflag=1;

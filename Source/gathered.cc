@@ -65,7 +65,8 @@ void wbSigHandler(int sig) {
       return;
    }
 
-   unsigned l=128; char istr[l], s[16]; strcpy(s,"(signal)");
+   unsigned l=128; char istr[l], s[16];
+   istr[0]=0; strcpy(s,"(signal)");
 
    if (sig==SIGINT) { 
       strcpy(s,"SIGINT"); --Wb::SigHandler::icount;
@@ -98,15 +99,12 @@ void wbSigHandler(int sig) {
       s,"----------");
    }
 
-#ifdef __APPLE__
    time_t curr_time=time(NULL);
    struct tm *tblock=localtime(&curr_time);
    char t[16]; strftime(t,16,"%T",tblock); 
 
-   fprintf(stdout,"%-20s %s  %s\n",shortFL(gsh_F,gsh_L),t,istr);
-#else
-   wblog(gsh_F,gsh_L,istr);
-#endif
+   fprintf(stdout,"%-20s %s  %s\n",shortFL(gsh_F,gsh_L), t, istr);
+
 };
 
 void dbstop(const char* F, int L) {

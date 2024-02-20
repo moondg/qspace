@@ -2214,7 +2214,7 @@ int Wb::updateOp(const char *F, int L,
    const wbvector< QSpace<TQ,TD> > &FKK, 
    unsigned iter
 ){
-   unsigned i, j=0, m=0, r_=-1, rk, nop=FKK.len;
+   unsigned i, j=0, m=0, r_=-1, rk=-1, nop=FKK.len;
    int e=0, i1=0;
 
    const wbvector< wbvector<QSpace<TQ,TD> > > &CI=NRG.CI;

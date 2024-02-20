@@ -1,0 +1,64 @@
+## -------------------------------------------------------------------- #
+## User specific setup of the Matlab environment for QSpace
+## -------------------------------------------------------------------- #
+
+## Environmental variables: MATLAB_ROOT and GCC
+
+## Matlab requires very specific c++ compilers for mex/mcc compilation
+## for compatible matlab/compiler combinations, see, e.g.,
+## https://www.mathworks.com/support/requirements/supported-compilers-linux.html
+## https://www.mathworks.com/support/requirements/previous-releases.html
+
+## define MATLAB_ROOT (e.g., required for MEX compilation etc.)
+ # export MATLAB_ROOT="your-matlab-path (excluding ./bin)"
+
+## define C++ compiler to use (default in matlab_setup.pl: `which gcc')
+ # export GCC="your-C++-compiler"
+
+## if MATLAB_ROOT is not yet set, the following chooses
+## the module system as another way to define MATLAB_ROOT;
+## this may be configured such that it also defines MATLAB_ROOT.
+## if MATLAB_ROOT is still not set after that,
+## then the wrap up per script matlab_setup.pl called below
+## will check whether matlab is already available on the
+## path as the last check to set MATLAB_ROOT accordingly.
+
+   if [ -z $MATLAB_ROOT ]; then
+      if `type module >/dev/null 2>&1`; then
+       # module load matlab/2018b  # matlab/R2018 pairs with gcc/6.3.x
+       # module load gcc/6.3.0
+ 
+       # module load matlab/2020b
+       # module load gcc/8.4.0
+ 
+       # here for macOS
+       # matlab/2020b -> xcode/11.x
+       # matlab/2022b -> xcode/13.x
+         module load matlab/2022b
+         module load xcode/13.4
+      fi
+   fi
+
+## directory settings (please adapt to your environment)
+
+## see default value in matlab_setup.sh
+ # export MYMATLAB=$HOME/Matlab
+
+## LMA = local matlab data directory (default for data storage)
+   if [ ! $LMA ]; then
+      export LMA=/data/$USER/Data
+   fi
+   if [ ! $RC_STORE ]; then
+      export RC_STORE=$LMA/RCStore  # for non-abelian symmetries
+      export RC_SYNC=$LMA/RCSync    # just for lock files
+   fi
+  
+## level of parallization of the MEX routines
+## this overwrites the defaults chosen by matlab_setup.pl
+ # export QSP_NUM_THREADS=2  #> QSpace
+ # export OMP_NUM_THREADS=4  #> Intel MKL library
+ # export MKL_NUM_THREADS=4  #> Intel MKL library
+ 
+## used for parallelization of MEX compilation (see Makefile)
+ # export MSLOTS=12
+

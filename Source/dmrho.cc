@@ -303,7 +303,7 @@ void getEData(
           }
        }}
        if (e) wblog(FL,
-          "ERR HK[%d] must be rank-2 object! (%s)",
+          "ERR HK[%d] must be rank-2 tensor! (%s)",
            k+1, HK.DATA[k]->sizeStr().data
        );
    }

@@ -792,7 +792,7 @@ void getQDimGen(wbvector< const QSpace<TQ,TD>* > &A,
    if (!A.len) wblog(FL,"ERR got empty input space");
 
    unsigned i,j,k,l,ic,d, d2=0, m=0, nq,p,i1,i2, n=0; widx_t *ip;
-   unsigned r_=-1, rk, QDIM=A[0]->QDIM;
+   unsigned r_=-1, rk=-1, QDIM=A[0]->QDIM;
    const QS_TYPES &otype=A[0]->otype;
    const QVec &qtype=A[0]->qtype;
    wbMatrix<widx_t> S0,SC,II;
@@ -844,7 +844,7 @@ void getQDimGen(wbvector< const QSpace<TQ,TD>* > &A,
          FCT,k+1,A.len,Ak.CGR.dim2,nq);
       }
    }
-   if (!rk) wblog(FL,"ERR got empty QSpaces (r=%d)",rk);
+   if (int(rk)<=0) wblog(FL,"ERR got empty QSpaces (r=%d)",rk);
    cgflag&=1;
 
    if (!I.len) I.Index(r_); 

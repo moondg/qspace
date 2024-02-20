@@ -12,7 +12,7 @@ void mexFunction(
    int nargin, const mxArray *argin[]
 ){
    if (nargout) { mxArray *a;
-      for (unsigned i=0; i<nargout; ++i) {
+      for (int i=0; i<nargout; ++i) {
          if (i<nargin) { a=mxDuplicateArray(argin[i]); }
          else {
             a=mxCreateDoubleMatrix(1,1,mxREAL);

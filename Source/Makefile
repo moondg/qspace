@@ -25,13 +25,6 @@
      issue_error = 1
   endif
 
-# WRN! DO NOT 'module load gcc..' in ~/.bashrc as this can crash
-# the entire ubuntu desktop at startup/login!?! // Wb,Sep08,16
-  ifndef ML_GCC_VERSION # Wb,Sep08,16
-     $(warning ML_GCC_VERSION not defined (ensure compatible compiler))
-     $(warning having gcc -> $(shell gcc --version 2>/dev/null |  egrep -i 'gcc|clang'))
-  endif
-
   ifdef issue_error
      $(info ------------ \
             ----------------------------------------------------------------)
@@ -48,21 +41,27 @@
      CLIBS = -lmwblas -lmwlapack # -lmysqlclient # -liomp5
   endif
 
+# the following options assume gcc on linux and Xcode/clang for macOS;
+# this is checked with `make test' in makelog.pl
+# NB! removed ML_GCC_VERSION since mex -setup may use C++ compiler
+# other than what is on the path via `which gcc' // Wb,Feb19,24
+
   ifeq (,$(findstring mac, $(ARCH)))
-   # NB! -lrt required by clock_gettime() starting gcc6 [matlab/2018a]
-   # NB! -lrt not present (by default) for osx/mac
+     ismac = 0 # linux environment
      CLIBS += -lrt
+	 # required by clock_gettime() starting gcc6 [matlab/2018a]
+     # (this option is gcc/linux specific, i.e., is not present for
+	 # clang on osx/mac at all; including it would result in error)
 	 GMP = -lgmp
      MPF = $(MATLAB_ROOT)/bin/glnxa64/libmpfr.so.1
      OMP = $(MATLAB_ROOT)/sys/os/$(ARCH)/libiomp5.so
      XOPT= CFLAGS="\$$CFLAGS -fopenmp -pthread"
-     ismac = 0
   else
+     ismac = 1 # macOS environment
 	 GMP = /usr/local/lib/libgmp.dylib  # Wb,Oct19,20 / matlab/2020b
      MPF = $(MATLAB_ROOT)/bin/maci64/libmpfr.1.dylib # Wb,Sep19,19
      OMP = $(MATLAB_ROOT)/sys/os/$(ARCH)/libiomp5.dylib
      XOPT= CFLAGS="\$$CFLAGS -Xclang -fopenmp -pthread"
-     ismac = 1
   endif
   XOPT += CXXLIBS="\$$CXXLIBS $(OMP)"
 
@@ -95,8 +94,7 @@
   endif
 
   ifdef VFLAG
-   # e.g. make ... VFLAG=1
-     OPTS += '-v'
+     OPTS += '-v' # e.g. include by running: make ... VFLAG=1
   endif
 
   ifdef MEX_R2018
@@ -128,6 +126,18 @@
 
   MEXC = $(MATLAB_ROOT)/bin/mex # see mex -h[elp] on unix prompt
 
+# NB! default C++ compiler is chosen via 'mex -setup cpp'
+# this is the recommended way as this automatically looks for compilers
+# that are compatible with particular matlab version.
+# mex -setup may be called from a system shell or within matlab
+  ifdef CXX
+     MEXC += "CXX=$(CXX)"
+  else
+     ifdef GCC
+        MEXC += "GCC=$(GCC)"
+     endif
+  endif
+
   I = -I. -I$(MATLAB_ROOT)/extern/include
 # I = -I. -I/usr/include/x86_64-linux-gnu -I$(MATLAB_ROOT)/extern/include
   L = -L. -L$(MATLAB_ROOT)/bin/$(ARCH)
@@ -148,11 +158,11 @@
 # ./make.pl --odir $< "$$MATLAB_ROOT;$$MCC_TAG;$$CLIBS;$(OPTS)"` \
 
 .cc: $(STD_DEP)
-	@(eval "$$(../system/matlab_setup.pl -LD)" ; XLIBS=; \
-      if source_check.pl --cgc $<; then XLIBS="$(MPF_LIB)"; fi ; \
-      OD="`./make.pl --odir $< ";;$(CLIBS) $$XLIBS;"`"; \
-      $(MEXC) $< $(OPTS) $(L) $(I) $(CLIBS) $$XLIBS $(XOPT) \
-         -outdir "$$OD" $(DEFS)  2>&1 | makelog.pl \
+	@( eval "$$(../system/matlab_setup.pl -LD)"; XLIBS=; \
+       if source_check.pl --cgc $<; then XLIBS="$(MPF_LIB)"; fi ; \
+       OD="`./make.pl --odir $< ";;$(CLIBS) $$XLIBS;"`"; \
+       $(MEXC) $< $(OPTS) $(L) $(I) $(CLIBS) $$XLIBS $(XOPT) \
+      -outdir "$$OD" $(DEFS)  2>&1 | makelog.pl \
     )
 #	NB! -largeArrayDims required by mxGet(Ir|Jc)
 
@@ -199,23 +209,45 @@ utils: helloworld mexworld printfc getchar filestat \
 
 world: helloworld mexworld
 
-env:
-	@(eval "$$(../system/matlab_setup.pl -LD)" ; ldpath -v ; \
-      printf "  which gcc    : "; which gcc; \
-      printf "  which matlab : "; which matlab ; \
+# -------------------------------------------------------------------------- #
+# Matlab requires very specific C++ compilers for mex/mcc compilation;
+# for supported matlab/C++ compiler combinations, see
+# https://www.mathworks.com/support/requirements/supported-compilers-linux.html
+# https://www.mathworks.com/support/requirements/previous-releases.html
+#
+#    R2016a       -> gcc-4.7.x                        # macOS
+#    R2016b       -> gcc-4.8.x            R2018-20   -> Xcode [10-11].x
+#    R2018-R2020a -> gcc-6.3.x            R2021      -> Xcode [11-12].x
+#    R2020b       -> gcc-8.[3-5].x        R2022a     -> Xcode [12-13].x
+#    R2022b       -> gcc-[7-10].x         R2022b-23  -> Xcode [12-14].x
+#
+# -------------------------------------------------------------------------- #
+
+# Make sure to have successfully run 'mex -setup C++':
+# based on a test compile here (without output due to -n flag)
+# check whether mex runs correctly, including C++ compiler imployed.
+# Formerly, this was part of system/matlab_setup.sh with explicit
+# additional compiler check in system/matlab_setup.pl // Wb,Feb19,24
+
+env: test
+
+test:
+	@(eval "$$(../system/matlab_setup.pl -LD)" ; \
+      mex -n -v helloworld.cc 2>&1 | makelog.pl --test \
     )
 
 # -------------------------------------------------------------------------- #
 # Wb,Jan23,18
 
-# NB! compiles, but unfortunately also returns an empty array by now
+# NB! compiles, but by now also returns an empty array!?
 
 feature: feature_tst # NB! keep feature('s') as matlab's command!
 
 feature_tst: feature_tst.cc
 	@$(MEXC) $< $(L) -lmwservices -outdir $(MXC_DIR)
 
-util: # keep this (otherwise this tries to make util.cc into a binary)
+# keep this (otherwise this tries to make util.cc into a binary)
+util:
 	@echo call "'make utils'" instead!
 
 clean:

@@ -18,9 +18,12 @@ function s=structdisp(varargin)
      return
   end
 
+  vflag=1;
+
   getopt('init',varargin);
      xpat =getopt('-x',[]);
      hflag=getopt('-h');
+     if getopt('-q'), vflag=0; end
      dn   =getopt('-dn',[]);
      istr =getopt('istr',[]);
   varargin=getopt('get_remaining');
@@ -70,6 +73,12 @@ function s=structdisp(varargin)
   end
 
   if ~nargout
+     if nargin && vflag, v=inputname(1);
+        if ~isempty(v)
+           v={v,' ='}; if nargin>1, v{2}=':'; end
+           fprintf(1,'\n   %s%s',v{:});
+        end
+     end
      disp(s); clear s
   end
 

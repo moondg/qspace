@@ -757,11 +757,11 @@ void mexFunction(
    mxCellVec2Data(prhs[3],sx);
 
    if (sx.D.len!=3)
-   wblog(FL,"ERR sx must be a 3D cell array of %dx%d matrizes.",d,d);
+   wblog(FL,"ERR sx must be a 3D cell array of %dx%d matrices.",d,d);
 
    for (i=0; i<sx.D.len; i++)
    if (sx.D[i].R.dim1!=d || sx.D[i].R.dim2!=d || sx.D[i].I.data) {
-       sprintf(str, "3d cell array of %s%dx%d matrizes",
+       sprintf(str, "3d cell array of %s%dx%d matrices",
        sx.D[i].I.data ? "REAL " : "", d, d);
        if (sx.D[i].R.dim1!=d || sx.D[i].R.dim2!=d)
                            wblog(FL,"ERR sx must be %s.",   str);

@@ -83,10 +83,10 @@
 %     can be specified, appearing right after the affected tensor
 %     e.g. QSpace A:
 %
-%       A,'!ij'  do not contract indices specified by ij (in compact
-%                format) despite they share common matching itags.
 %       A,'*'    apply overall (complex) conjugation on given input
 %                tensor A (see early comments above)
+%       A,'!ij'  do not contract indices specified by ij (in compact
+%                format) despite they share common matching itags.
 %       A,'!ij*' both of the above in a single instruction
 %                the conjugate flag '*' always trailing.
 %

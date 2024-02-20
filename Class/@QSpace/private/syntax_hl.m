@@ -24,7 +24,7 @@ function varargout=syntax_hl(wtype,use_tex)
   end
 
   if nargin<2, use_tex=0; end
-  if use_tex, q=1;
+  if 0 && use_tex, q=1;
   else
      q=str2num(getenv('QS_LOG_COLOR'));
      if isempty(q)
@@ -44,9 +44,20 @@ function varargout=syntax_hl(wtype,use_tex)
      % getcolor(2) ~ [217 83 25] // red/orange
      % getcolor(5) ~ [19 172 50] // green
      % color for marked itags (')
-       wesc{2}=[22 200 58];
-       if q>1
-          wesc{2}={ wesc{2}, [128 128 128], round(0.50*wesc{2}) };
+       if use_tex
+          if q<=1, wesc{2}='mtag';
+          else
+             wesc{2}={
+                'mcol'
+                'ccol'
+                'mccl'
+             };
+          end
+       else
+          wesc{2}=[22 200 58];
+          if q>1
+             wesc{2}={ wesc{2}, [128 128 128], round(0.50*wesc{2}) };
+          end
        end
     otherwise
     if nargout<3
@@ -69,16 +80,21 @@ function varargout=syntax_hl(wtype,use_tex)
   if ~iscell(wc), wc={wc}; end
 
   for i=1:numel(wc), k=wc{i};
-     if numel(k)==1
+     if ischar(k) && use_tex
+        wc{i}=['?\textcolor{' k '}{'];
+        wesc{3}='}?';
+     elseif numel(k)==1
         if use_tex, wbdie('invalid usage (use_tex with single color value)'); end
         if k<0 || k>255 || k~=round(k), wbdie('invalid color code %g',k);
         elseif k<8, s='3'; else s='38;5;'; end
         wc{i}=[ esc_ s num2str(k) 'm' ];
      elseif numel(k)==3
-        k=round(k); if any(k<0 | k>255), wbdie('invalid color code %g',k); end
+        if any(k<0 | k>255), wbdie('invalid color code %g',k); end
         if use_tex
-             wc{i}=sprintf('?$\\textcolor[rgb]{%.3g,%.3g,%.3g}{\\rm ',k/255);
-        else wc{i}=[esc_ '38;2;' sprintf('%d;%d;%dm',k)];
+           wc{i}=sprintf('?$\\textcolor[rgb]{%.3g,%.3g,%.3g}{\\rm ',k/255);
+           wesc{3}='}$?';
+        else
+           wc{i}=[esc_ '38;2;' sprintf('%d;%d;%dm',round(k))];
         end
      else
         disp(wesc)
@@ -87,8 +103,7 @@ function varargout=syntax_hl(wtype,use_tex)
   end
 
   if nargout>2
-     if use_tex, wesc{3}='}$?';
-     else wesc{3}=[esc_ '0m']; end
+     if ~use_tex, wesc{3}=[esc_ '0m']; end
   end
 
   if numel(wc)==1

@@ -352,8 +352,8 @@ void NRG_Wilson(
 #endif
 
     if (!H0.isHConj() || H0.rank(FL)!=2) { if (str[0])
-       wblog(FL,"ERR H0 must be Hermitian rank-2 object\n%s",str); else
-       wblog(FL,"ERR H0 must be Hermitian rank-2 object");
+       wblog(FL,"ERR H0 must be Hermitian rank-2 tensor\n%s",str); else
+       wblog(FL,"ERR H0 must be Hermitian rank-2 tensor");
     }
 
     if (H0.itags.isEmpty()) {
@@ -609,7 +609,7 @@ void NRG_Wilson(
            k+1, FG[k].QDIM, FG[k].rank(FL));
        }
        if (!FG[k].isHConj()) wblog(FL,
-       "ERR FL(%d) not a Hermitian rank-2 object", k+1);
+       "ERR FL(%d) not a Hermitian rank-2 tensor", k+1);
 
        if (k) {
           char ic=FG[k].gotCGS(FL); if (cgflag!=ic)

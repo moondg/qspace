@@ -38,14 +38,13 @@
            if (/^\s*#(define|undef)\s+(LOAD_CGC_QSPACE|QS_SKIP_MPFR)/) {
               my $a=$1; my $b=$2; $b=($b=~/LOAD/ ? 1 : 2);
               if ($a eq 'define')
-                   { $q |=  $b; }  # set bit
-              else { $q &= ~$b; }  # unset bit
+                   { $q |=  $b; }
+              else { $q &= ~$b; }
            }
         }; close(FH);
-        if ($q==1) { exit 0; } # MPFR libs required
+        if ($q==1) { exit 0; }
      }
 
-   # printf STDERR "no CGC/MPFR occurances found\n";
      exit 1;
   }
   elsif ($tag eq '--loc') {
@@ -63,8 +62,6 @@
         foreach my $m (@lx) { $_=$m; s/\/[^\/]+$//; $D{$_}++; }
         @d1=sort(keys %D);
 
-      # print join("\n",'',@d1,'');
-
         if (@d1>1) { @d1=grep(!/Archive/i,@d1); }
         if (@d1>1) { 
            printf STDERR
@@ -73,10 +70,8 @@
                printf "  %5d)  %s\n",$i+1,$_; }
            print STDERR "\n";
 
-         # favor subdirectories of current working directory
            $pat=`pwd`; $pat=~s/[\/\s]*$//; $pat=~s/.*\///; $pat="\b$pat\b";
            foreach (@d1) { if (/$pat/) { @d1=grep(/$pat/,@d1); last; }}
-         # print STDERR "  --> picking ",$d1[0],"\n";
         }
 
         $_=(@d1 ? $d1[0] : $dd[0]);

@@ -455,7 +455,7 @@ wbvector<TD>& wbsparray<TD>::getDiag(
       SPIDX_T i=0, n=-1; const SPIDX_T *I=IDX.data;
 
       if (!isSMatrix(F_L,&n) || IDX.dim2!=2) wblog(F_L,
-         "ERR %s() requires rank-2 object (%s)",FCT,SSTR_(this));
+         "ERR %s() requires rank-2 tensor (%s)",FCT,SSTR_(this));
       dd.init(n);
 
       for (; i<IDX.dim1; ++i, I+=2) {
@@ -480,7 +480,7 @@ TD wbsparray<TD>::getDiag(const char *F, int L, SPIDX_T k) const {
       SPIDX_T i=0, n=-1; const SPIDX_T *I=IDX.data;
 
       if (!isSMatrix(F_L,&n) || IDX.dim2!=2) wblog(F_L,
-         "ERR %s() requires rank-2 object (%s)",FCT,SSTR_(this));
+         "ERR %s() requires rank-2 tensor (%s)",FCT,SSTR_(this));
       if (sSPIDX_T(k)<0) { k+=n; }
       if (k>=n) wblog(FL,
          "ERR %s() index out of bounds (%d/%d)",FCT,k,n);
@@ -1046,7 +1046,7 @@ wbsparray<TD>& wbsparray<TD>::QRdecomp(const char *F, int L,
    TD eps     
 ){
    if (rank()!=2 || SIZE.len!=2 || IDX.dim2!=2) wblog(F_L,
-      "ERR %s() requires rank-2 array (%s)",FCT,SSTR_(this));
+      "ERR %s() requires rank-2 tensor (%s)",FCT,SSTR_(this));
 
    SPIDX_T d1=SIZE[0], d2=SIZE[1], *idx=IDX.data;
    if (!d1 || !d2) { Q.init(); return *this; }
@@ -1251,7 +1251,7 @@ wbsparray<TD>& wbsparray<TD>::OrthoNormalizeColsGS(
    unsigned np  
 ){
    if (rank()!=2) wblog(FL,
-      "ERR %s() requires rank-2 array (%s)",FCT,SSTR_(this));
+      "ERR %s() requires rank-2 tensor (%s)",FCT,SSTR_(this));
 
    SPIDX_T i,j,ip;
    char xflag=(qflag=='x' || qflag=='X');
@@ -2664,12 +2664,12 @@ wbsparray<TD>& wbsparray<TD>::getBlock(const char *F, int L,
    SPIDX_T k1,k2,dim1,dim2, i=0, l=0, n=IDX.dim1;
 
    if (!isRank(2)) wblog(FL,
-      "ERR %s() only applies to rank-2 objects (%d)",FCT,SIZE.len);
+      "ERR %s() only applies to rank-2 tensors (%d)",FCT,SIZE.len);
 
    if (!SIZE.len) { dim1=dim2=D.len; } 
    else {
       if (SIZE.len!=2 || IDX.dim2!=2) wblog(FL,"ERR %s() "
-         "got invalid rank-2 object (%ld,%ld)!?",FCT,SIZE.len,IDX.dim2);
+         "got invalid rank-2 tensor (%ld,%ld)!?",FCT,SIZE.len,IDX.dim2);
       dim1=SIZE[0]; dim2=SIZE[1];
    }
 
@@ -2731,7 +2731,7 @@ wbsparray<TD>& wbsparray<TD>::splitBlock(const char *F, int L,
    SPIDX_T k1,k2,dim1,dim2, j,i_, i=0, l=0, n=IDX.dim1;
 
    if (!isRank(2) || SIZE.len!=2) wblog(FL,
-      "ERR %s() only applies to rank-2 objects (%d)",FCT,SIZE.len);
+      "ERR %s() only applies to rank-2 tensors (%d)",FCT,SIZE.len);
 
    B.init(SIZE); if (!D.len) return B;
    dim1=SIZE[0]; dim2=SIZE[1];
@@ -2787,7 +2787,7 @@ TD wbsparray<TD>::getHouseholderVec(const char *F, int L,
    TD x2=0, b2=0; 
 
    if (!isRank(2) || SIZE.len!=2 || IDX.dim2!=2) wblog(F_L,
-      "ERR %s() only applies to rank-2 objects (%s; %d,%d)",
+      "ERR %s() only applies to rank-2 tensors (%s; %d,%d)",
       FCT,SSTR_(this),SIZE.len,IDX.dim2);
 
    SPIDX_T dim1=SIZE[0], dim2=SIZE[1], i1,i2, i=0, l=0, n=IDX.dim1;
@@ -2838,7 +2838,7 @@ template <class TD>
 wbsparray<TD>& wbsparray<TD>::IDX_Shift(sSPIDX_T i1, sSPIDX_T i2) {
 
    if (!isRank(2) || SIZE.len!=2 || IDX.dim2!=2) wblog(FL,
-      "ERR %s() only applies to rank-2 objects (%s; %d,%d)",
+      "ERR %s() only applies to rank-2 tensors (%s; %d,%d)",
       FCT,SSTR_(this),SIZE.len,IDX.dim2
    );
 
@@ -2872,7 +2872,7 @@ SPIDX_T wbsparray<TD>::LContractVec_omp(
    SPIDX_T i, k0=0, d2, l=0; 
 
    if (!isMatrix()) wblog(FL,
-      "ERR %s() only applies to rank-2 objects (%d)",FCT,SIZE.len);
+      "ERR %s() only applies to rank-2 tensors (%d)",FCT,SIZE.len);
 
    if (!isEmpty() && !b.isEmpty()) {
       if (b.IDX.dim2!=1 || b.SIZE.len!=1) wblog(FL,

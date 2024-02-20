@@ -44,7 +44,7 @@ function Sout=add2struct(varargin)
             end
             nx=n(l+1:end); n=n(1:l-1);
 
-         elseif n(end)=='?', n=n(1:end-1); opt=1;
+         elseif n(end)=='?', n=n(1:end-1); nx=n; opt=1;
          elseif ~isempty(regexp(n,'^[A-Za-z][\w_]*$')), opt=2;
             nx=n;
          else wbdie('invalid expression ''%s''',n);

@@ -1382,7 +1382,7 @@ class QSpace {
           wbperm P2("2 1"); unsigned r=rank(FL);
 
           if (r!=2) wblog(FL,
-          "ERR %s() only applicable to rank-2 objects (%d)",FCT,r);
+          "ERR %s() only applicable to rank-2 tensors (%d)",FCT,r);
 
           permute(P2,X); if (tflag=='C') X.Conj();
           return X;

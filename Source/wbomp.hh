@@ -26,6 +26,8 @@ namespace Wb {
 
 wbstring ompID2Str(char vflag=0);
 
+int ompStatus(const char *F, int L); 
+
 class ompNLock { 
 
  public:

@@ -71,7 +71,7 @@ char USAGE[] =
                                                                         \n\
     'NCV'...   number of Lanczos vectors (arpack; max(20, 2*nev)).      \n\
     'nev'...   number of eigenvalues to compute (1).                    \n\
-    'randall'  randomize input A matrizes.                              \n\
+    'randall'  randomize input A matrices.                              \n\
                                                                         \n\
    OUTPUT                                                               \n\
                                                                         \n\

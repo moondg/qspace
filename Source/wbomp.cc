@@ -39,6 +39,55 @@ wbstring Wb::ompID2Str(char vflag) {
    return s;
 };
 
+int Wb::ompStatus(const char *F, int L) {
+    unsigned l=0, n=1024;
+    char fmt[]="  %-30s %2d\n", s[n];
+
+    if (l<n) l+=snprintf(s+l,n-l,fmt,
+      "omp_get_active_level", omp_get_active_level()); 
+    if (l<n) l+=snprintf(s+l,n-l,fmt,
+      "omp_get_cancellation", omp_get_cancellation());  
+    if (l<n) l+=snprintf(s+l,n-l,fmt,
+      "omp_get_default_device", omp_get_default_device()); 
+    if (l<n) l+=snprintf(s+l,n-l,fmt,
+      "omp_get_dynamic", omp_get_dynamic());   
+    if (l<n) l+=snprintf(s+l,n-l,fmt,
+      "omp_get_level", omp_get_level());       
+    if (l<n) l+=snprintf(s+l,n-l,fmt,
+      "omp_get_max_task_priority", omp_get_max_task_priority()); 
+    if (l<n) l+=snprintf(s+l,n-l,fmt,
+      "omp_get_max_threads", omp_get_max_threads());  
+    if (l<n) l+=snprintf(s+l,n-l,fmt,   
+      "omp_get_max_active_levels", omp_get_max_active_levels());
+    if (l<n) l+=snprintf(s+l,n-l,fmt,
+      "omp_get_num_procs", omp_get_num_procs()); 
+    if (l<n) l+=snprintf(s+l,n-l,fmt,
+      "omp_get_num_teams", omp_get_num_teams()); 
+    if (l<n) l+=snprintf(s+l,n-l,fmt,
+      "omp_get_num_threads", omp_get_num_threads());  
+
+    if (l<n) l+=snprintf(s+l,n-l,fmt,
+      "omp_get_proc_bind", omp_get_proc_bind());
+    if (l<n) l+=snprintf(s+l,n-l,fmt,
+      "omp_get_team_num", omp_get_team_num());
+    if (l<n) l+=snprintf(s+l,n-l,"\n"); 
+    if (l<n) l+=snprintf(s+l,n-l,fmt,
+      "omp_get_thread_num", omp_get_thread_num()); 
+    if (l<n) l+=snprintf(s+l,n-l,fmt,
+      "omp_in_parallel", omp_in_parallel());
+    if (l<n) l+=snprintf(s+l,n-l,fmt,
+      "omp_in_final", omp_in_final());
+    if (l<n) l+=snprintf(s+l,n-l,fmt,
+      "omp_is_initial_device", omp_is_initial_device());
+
+    fprintf(stdout,"\n%-18s %s -> %s()\n\n",shortFL(F_L),myname,FCT);
+    if (l<n)
+         fprintf(stdout,"%s\n",s);
+    else fprintf(stdout,"%s  ... (%d/%d)\n",s,l,n);
+
+    return 0;
+};
+
 int Wb::ompNLock::acquire() {
 
    omp_set_nest_lock(&_nlk);
@@ -517,14 +566,14 @@ int CG::Guard::acquire_set_wait(
             shortFLT, iter,ntry,wt, Tc.e1,xl.t0,xl.nt,Tc.em, sout.data);
 
          unsigned l, n=64; char sx[n];
-         l=snprintf(sx,n,"%d/%d OMP deadlocks encountered ",i,ndead);
+         l=snprintf(sx,n,"%d/%d OMP deadlocks? ",i,ndead);
          snprintf(sx+l,n-l,"(ith=%d/%d)",xl.t0,xl.nt); 
 
          if (ndead) { char xflag=(wt>wt1 && ndead>10);
             if (++nlog==1 || xflag) {
                Wb::termcolor Tc("WRN");
                fprintf(stdout,
-                  "%s %s %sWRN got %d deadlocks%s (%ld locks total)\n\n",
+                  "%s %s %sWRN %d deadlocks?%s (%ld locks total)\n\n",
                    shortFLT, Tc.e1,i,Tc.em, CG::lock_map.size());
                print_CG_locks();
             }

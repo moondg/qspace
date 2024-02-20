@@ -2,10 +2,9 @@
 # to load use: require "$ENV{HOME}/bin/plib.pl";
 
   use strict;
-  use warnings; # always use these // WRN_STRICT
+  use warnings;
 
   use File::stat;
-# use Term::ReadKey; # e.g. not defined on erato
   use Cwd 'realpath';
 
 # -------------------------------------------------------------------- #
@@ -46,7 +45,7 @@ sub hostid() {
 
   if (/th-(cl|ws)-(.*)/) { $id=$1; }
   else {
-     s/[\s_.-]+//g; # skip all special characters (safeguard)
+     s/[\s_.-]+//g;
      $id=substr($_,0,3);
   }
   return $id;
@@ -72,7 +71,7 @@ sub getARCH {
          if (/i686/  ) { return 'glnx86';  }
       }
       elsif (/Darwin/i) {
-         if (/x86_64|arm64/) { return 'maci64'; } # *.mexmaci64
+         if (/x86_64|arm64/) { return 'maci64'; }
       }
    }
    wblog("ERR %F() failed to determine ARCH");
@@ -95,7 +94,6 @@ sub getMEXEXT {
 };
 
 # -------------------------------------------------------------------- #
-# -------------------------------------------------------------------- #
 # usage: wblog([k,] fmt, args);
 #
 #    where k specifies how far up in the caller stack to go
@@ -111,18 +109,16 @@ sub getMEXEXT {
 sub wblog {
 
   my ($k,@S,@S_,$fmt,$f,$s,$h,$x1,$w,$e); my $nh=20;
-  my $in=''; # leadig newlines
+  my $in='';  # leadig newlines
 
-# trailing newlines
-# by default: terminating newline (skipped if trailing \\ in fmt string)
   my $nl="\n";
 
   $k=0; if (@_ && "$_[0]"=~/^\d+$/) { $k=shift; }
-  @S = caller($k); @S=($S[1],'',$S[2]); # ->FILE,(FUNCTION),LINE
-  @S_= caller($k+1); # caller stack (here 0=me/caller)
+  @S = caller($k); @S=($S[1],'',$S[2]);
+  @S_= caller($k+1);
 
   $fmt=shift;
-  if ($fmt=~s/^(\s*\n)//) { my $q=$1; $q=~s/ //g;  $in=$q; } # leading newlines
+  if ($fmt=~s/^(\s*\n)//) { my $q=$1; $q=~s/ //g;  $in=$q; }
 
   if ($fmt=~s/\\+$//) { $nl=''; }
   elsif ($fmt=~s/(\s+)$//) {
@@ -131,7 +127,7 @@ sub wblog {
   }
 
   if ($fmt=~s/^\s*([\w<>!]{3})( |$)//) { $w=$1;
-     if    ($w eq 'ERR') { $x1="\e[31m"; $e=1; } # e!=0 -> STDOUT
+     if    ($w eq 'ERR') { $x1="\e[31m"; $e=1; }
      elsif ($w eq 'WRN') { $x1="\e[35m"; $e=1; }
   }
   elsif ($fmt=~s/^( *\*+) +//) { $w=sprintf('%-3s',$1); } # e.g. ' * '
@@ -139,12 +135,11 @@ sub wblog {
       $w=sprintf('%-3s',$fmt); $fmt=shift; }
   else { $w='   '; }
 
-  $S[0]=~s/.*\///; # skip path in __FILE__
+  $S[0]=~s/.*\///;
   $S[2]=sprintf(":%-3d",$S[2]);
 
   if (@S_ && $S_[3]) {
-   # overwrite name of this subroutine ('wblog')
-     my $f=$S_[3]; $f=~s/.*:://; # __FUNCTION__, __SUB__
+     my $f=$S_[3]; $f=~s/.*:://;
      if ($fmt=~/$f/) { print STDERR
         "\n !? wblog() may want to replace sub-name $f by \%F".
         "\n !? in fmt=$fmt)\n\n";
@@ -184,7 +179,6 @@ sub print_stack {
      if ($_[0]=~/^\d+$/) { $k=shift; }
      elsif ($_[0]=~/^-s/) { $sflag=shift; }
      else {
-      # NB! no wbdie() here (may result in infinite recursive loop!)
         die "ERR invalid usage ($_[0])\n ";
      }
   }
@@ -200,11 +194,9 @@ sub print_stack {
      if ($i==1) { $h=sprintf("%s -> %s()",$FL,$q[3]); }
      $q[1]=~s/.*\///; $FL=$q[1].':'.$q[2];
   }
- 
+
   @ll=reverse(@ll);
   if (!$sflag) { print "\n",$h,": current caller stack\n\n",@ll,"\n"; }
-
-# wblog("TST"); print @ll,"----\n";
 
   return @ll;
 };
@@ -231,23 +223,21 @@ sub wbdie {
 
   my $k=0; if (@args && "$args[0]"=~/^\d+$/) { $k=shift(@args); }
 
-# caller stack (here 0=me/caller)
   my @S=caller($k);
   my @S_=caller($k+1);
 
-  @S=($S[1],$S[2],''); # ->FILE,(FUNCTION),LINE
+  @S=($S[1],$S[2],'');
 
   my $fmt; if (@args)
        { chomp($fmt=shift(@args)); $fmt=~s/\bERR\b//g; }
-  else { $fmt='!?'; } # -> ERR !? # encountered 
+  else { $fmt='!?'; }
 
      $fmt=~s/^\s*/\n/;
      $fmt=~s/\s*\n\s*/\n  ERR /g;
 
-  $S[0]=~s/.*\///; # skip path in __FILE__
+  $S[0]=~s/.*\///;
   if (@S_ && $S_[3]) {
-   # overwrite name of this subroutine ('wblog')
-     my $f=$S_[3]; $f=~s/.*:://; # __FUNCTION__, __SUB__
+     my $f=$S_[3]; $f=~s/.*:://;
      if ($fmt=~/$f/) { print STDERR
         "\n !? wbdie() may want to replace sub-name $f by \%F".
         "\n !? in fmt=$fmt)\n\n";
@@ -263,8 +253,7 @@ sub wbdie {
   if (@args) { $q=sprintf($fmt,@args); } else { $q=$fmt; }
   print STDERR "\e[31m".$q."\e[0m";
 
-  die "\n"; # <- this can be caught
-# exit 127; # <- this can't!
+  die "\n";
 };
 
 # -------------------------------------------------------------------- #
@@ -282,8 +271,6 @@ sub usage() {
   my $name=$_[0]; $name=~s/.*\///g;
   my @header=("\n");
 
-# do not use $_ here (e.g., may have been used as input argument
-# die usage(__FILE__,__LINE__,"got extra arguments: ",$_,@ARGV);
   foreach my $l (<FID>) {
      if ($l=~/^#!/) { next; }
      if ($l=~/^#/) { $l=~s/^#/ /; $l=~s/NAME/$name/g; push(@header,$l); }
@@ -293,7 +280,7 @@ sub usage() {
 
   if (@_>1 && $_[1]=~/^\d+$/) {
      my $f=shift; repHome($f);
-     push(@header,"\n  See $f:".(shift)."\n"); # Wb,Aug09,16
+     push(@header,"\n  See $f:".(shift)."\n");
   }
 
   if (@_) { my @ll=@_;
@@ -307,9 +294,8 @@ sub usage() {
 # replace HOME and other standard PATHs by shortcuts
 # switched from in-place to copy // Wb,Oct19,16
 
-  sub repHome { my $q; my @DD=@_; # create copy
+  sub repHome { my $q; my @DD=@_;
      foreach (@DD) {
-      # $q='MYMATLAB'; if ($ENV{$q}) { s/$ENV{$q}/\$ML/g; }
         $q='HOME';     if ($ENV{$q}) { s/$ENV{$q}/~/g; }
         $q='LMA';      if ($ENV{$q}) { s/$ENV{$q}/\$LMA/g; }
         $q='RC_STORE'; if ($ENV{$q}) { s/$ENV{$q}/\$RCS/g; }
@@ -329,7 +315,7 @@ sub usage() {
 sub rsys {
 
   my $qflag=0; my $vflag=0; my $cflag=0;
-  while (@_) { my $q=$_[0]; # do not use $_ here (alters $_ in caller!)
+  while (@_) { my $q=$_[0];
      if ($q eq '-q') { $qflag=1; shift; }
      elsif ($q eq '-v') { $vflag=1; shift; }
      elsif ($q eq '-c') { $cflag=1; shift; }
@@ -356,7 +342,7 @@ sub is_cluster_job {
   if ($q>1) { return 1; }
 
   $q='';
-  foreach ('SLURM_ARRAY_JOB_ID','SLURM_JOB_ID','SLURM_JOBID') { # jid
+  foreach ('SLURM_ARRAY_JOB_ID','SLURM_JOB_ID','SLURM_JOBID') {
      if ($ENV{$_} && $ENV{$_}=~/^\s*([\d\._-]+)\s*$/) { $q=$1; last; }
   }; if (!$q) { return 0; }
 
@@ -383,8 +369,6 @@ sub env_num_threads {
 
   my $np=-1;
   if (is_cluster_job()) {
-  # e.g. when used with $MCC/runMCC etc. // Wb,Aug10,17
-  # PBS -l nodes=n041:ppn=16+n042:ppn=16 may set PBS_NP to PPN, but PPN to 1 !?
     foreach ('SLURM_NPROCS','SLURM_NTASKS','PBS_NP','PBS_NUM_PPN') {
        if ($ENV{$_} && $ENV{$_}=~/^\s*(\d+)\s*$/) {
           if ($np<$1) { $np=$1; if ($np>0) { return $np; }}
@@ -414,7 +398,7 @@ sub env_num_threads {
 # Wb,Apr12,18
 
 sub remove_paths {
-   
+
    my ($pat,$x,$P,@P,$q,@p,@q,@out,$bflag); my $vflag=1;
 
    foreach (@_) {
@@ -431,7 +415,7 @@ sub remove_paths {
    $pat=shift(@P);
 
    foreach (@P) {
-      if ($bflag) { # assume got names of environmental variables
+      if ($bflag) {  # assume got names of environmental variables
          if (!exists $ENV{$_}) {
             if ($vflag) { print STDERR 
             "  WRN ignoring non-existing environemental variable $_\n";}
@@ -449,8 +433,7 @@ sub remove_paths {
       $q=join($x,@q);
 
       if ($bflag) { if ($#q!=$#p) {
-       # only export command if path actually changed
-         if (@q)
+         if (@q)  # only export command if path actually changed
               { push(@out,"export $_=".$q); }
          else { push(@out,"unset $_"); }
       }}
@@ -480,7 +463,7 @@ sub add_paths {
    if (@X<2) { die "\n".'  invalid usage: add_paths ($0)'."\n"; }
    $P=shift(@X);
 
-   if ($bflag) { # assume got name of environmental variables
+   if ($bflag) {  # assume got name of environmental variables
       if (!exists $ENV{$P}) { print STDERR 
       "  ERR ignoring non-existing environemental variable $P\n"; }
       $N=$P; $P=$ENV{$P};
@@ -516,4 +499,4 @@ sub add_paths {
 };
 
 # -------------------------------------------------------------------- #
-1; # keep this
+1;  # keep this

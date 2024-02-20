@@ -253,7 +253,7 @@ int CPAT_Set<TQ,TD>::init(
       A[0].init(FL,a,'r');
 
       if (!A[0].isConsistent_r(2)) {
-         sprintf(str,"%s:%d rank-2 object required (arg #1; %s)",FL,_CP);
+         sprintf(str,"%s:%d rank-2 tensor required (arg #1; %s)",FL,_CP);
          return 1;
       }
    }

@@ -312,10 +312,17 @@ function [EE,hh,iQ,Iout]=getEEdata(HK,varargin)
      co(1:numel(ic),:)=co(ic,:);
   end
 
-  setuser(gcf,'cmap',co);
-  setuser(gcf,'Q',Q);
-  setuser(gcf,'D',D);
-  setuser(gcf,'d',d);
+  u=getuser(gcf); if isempty(u), u=struct; end
+     u.cmap=co;
+     u.Q=Q;
+     u.D=D;
+     u.d=d; l=numel(HK); 
+     if l>12
+        if HK(end), i=l-1:l; else i=l-2:l-1; end
+        u.HK_end   =HK(i);  i=floor(l/2)+(0:1);
+        u.HK_center=HK(i);
+     end
+  set(gcf,'UserData',u);
 
   Iq=struct('sym',[],'Q',[],'i',[],'j',[],'o',[]);
   if ~isempty(HK(1).info)

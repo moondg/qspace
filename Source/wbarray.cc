@@ -582,7 +582,7 @@ bool wbarray<T>::isDiag_aux(double *epsp, const char* task) const {
    if (!isDiag && !isIdty) wblog(FL,"ERR invalid task '%s'", task);
 
    if (!isRank(2)) { info("this"); wblog(FL,
-   "ERR %s only appies to rank-2 objects (%s).",task,SSTR_(this)); }
+   "ERR %s only appies to rank-2 tensors (%s).",task,SSTR_(this)); }
 
    for (i=0; i<s; i++) {
        if (I[0]!=I[1]) { a=ABS(data[i]);
@@ -737,7 +737,7 @@ template<class T>
 wbarray<T>& wbarray<T>::swapRows(size_t i1, size_t i2) {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() for matrizes only (%s)",FCT,SSTR_(this));
+      "ERR %s() for matrices only (%s)",FCT,SSTR_(this));
    if (i1>=SIZE[0] || i2>=SIZE[0]) wblog(FL,"ERR %s() "
       "index out of bounds (%d,%d; %s)",FCT,i1+1,i2+1,SSTR_(this));
 
@@ -754,7 +754,7 @@ template<class T>
 wbarray<T>& wbarray<T>::swapCols(size_t j1, size_t j2) {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() for matrizes only (%s)",FCT,SSTR_(this));
+      "ERR %s() for matrices only (%s)",FCT,SSTR_(this));
    if (j1>=SIZE[1] || j2>=SIZE[1]) wblog(FL,"ERR %s() "
       "index out of bounds (%d,%d; %s)",FCT,j1+1,j2+1,SSTR_(this));
 
@@ -770,7 +770,7 @@ wbarray<T>& wbarray<T>::swapCols(size_t j1, size_t j2) {
 template<class T>
 wbarray<T>& wbarray<T>::setCol(size_t k, size_t k0) {
    if (rank()!=2) wblog(FL,
-      "ERR %s() for matrizes only (%s)",FCT,SSTR_(this));
+      "ERR %s() for matrices only (%s)",FCT,SSTR_(this));
    if (k>=SIZE[1] || k0>=SIZE[1]) wblog(FL,
       "ERR %s() index out of bounds (%d,%d; %s)",
        FCT,k+1,k0+1,SSTR_(this));
@@ -788,7 +788,7 @@ wbarray<T>& wbarray<T>::setCol(
    size_t k, const T* v, T fac, size_t stride) {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() for matrizes only (%s)",FCT,SSTR_(this));
+      "ERR %s() for matrices only (%s)",FCT,SSTR_(this));
    if (k>=SIZE[1]) wblog(FL,
       "ERR %s() index out of bounds (%d; %s)",FCT,k+1,SSTR_(this));
 
@@ -805,7 +805,7 @@ template<class T>
 wbarray<T>& wbarray<T>::setCol(size_t k, const wbvector<T> &v) {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() for matrizes only (%s)",FCT,SSTR_(this));
+      "ERR %s() for matrices only (%s)",FCT,SSTR_(this));
    if (k>=SIZE[1]) wblog(FL,
       "ERR %s() index out of bounds (%d: %s)",FCT,k+1,SSTR_(this));
 
@@ -820,7 +820,7 @@ template<class T2>
 wbarray<T>& wbarray<T>::setCol(size_t k, const wbvector<T2> &v) {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() for matrizes only (%s)",FCT,SSTR_(this));
+      "ERR %s() for matrices only (%s)",FCT,SSTR_(this));
    if (k>=SIZE[1]) wblog(FL,
       "ERR %s() index out of bounds (%d: %s)",FCT,k+1,SSTR_(this));
 
@@ -837,7 +837,7 @@ template<class T>
 wbarray<T>& wbarray<T>::setRow(size_t k, const T* d0) {
 
    if (rank()!=2) wblog(FL,
-   "ERR %s() for matrizes only (%s)",FCT,SSTR_(this));
+   "ERR %s() for matrices only (%s)",FCT,SSTR_(this));
    if (k>=SIZE[0]) wblog(FL,
    "ERR %s() index out of bounds (%d; %s)",FCT,k+1,SSTR_(this));
 
@@ -852,7 +852,7 @@ template<class T>
 wbvector<T>& wbarray<T>::colNorm2(wbvector<T> &a) const {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() for matrizes only (%s)",FCT,SSTR_(this));
+      "ERR %s() for matrices only (%s)",FCT,SSTR_(this));
 
    size_t i,j, dim1=SIZE[0], dim2=SIZE[1];
    const T* d0=data; T x2;
@@ -873,7 +873,7 @@ T wbarray<T>::colNorm2(size_t k) const {
    T a=0;
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() for matrizes only (%s)",FCT,SSTR_(this));
+      "ERR %s() for matrices only (%s)",FCT,SSTR_(this));
    if (k>=dim2) wblog(FL,
       "ERR %s() index out of bounds (%d/%d; %s)",FCT,k,dim2,SSTR_(this));
 
@@ -1387,7 +1387,7 @@ wbarray<T>& wbarray<T>::OrthoNormalizeCols(
 
    if (xflag && l<k) {
       if (SIZE.len!=2) wblog(F_L,"ERR %s() qflag='%c' must be "
-         "used with rank-2 arrays (%d)",FCT,qflag,qflag,SIZE.len);
+         "used with rank-2 tensors (%d)",FCT,qflag,qflag,SIZE.len);
       if (!l) wblog(F_L,"ERR %s() got all null-vectors (%g)",FCT,k);
       SIZE[1]=l;
    }
@@ -2212,7 +2212,7 @@ wbarray<T>& wbarray<T>::blockTrace(
 ) const {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() only applies to rank-2 objects (%d)",FCT,rank());
+      "ERR %s() only applies to rank-2 tensors (%d)",FCT,rank());
 
    size_t i, dim1=SIZE[0], dim2=SIZE[1], m=(D1 ? dim1/D1 : 0);
    if (int(D2)<0) { D2=D1; }
@@ -2234,7 +2234,7 @@ wbarray<T>& wbarray<T>::BlockDiag(const wbvector< wbarray<T> > &D) {
 
    for (i=0; i<D.len; i++) {
       if (!D[i].isMatrix()) wblog(FL,
-         "ERR %s() matrizes expected (%s)",FCT,SSTR(D[i]));
+         "ERR %s() matrices expected (%s)",FCT,SSTR(D[i]));
       D1+=D[i].SIZE[0];
       D2+=D[i].SIZE[1];
    }
@@ -2257,7 +2257,7 @@ wbarray<T>& wbarray<T>::addBlock(
 ) const {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() only applies to rank-2 objects (%s)",FCT,SSTR_(this));
+      "ERR %s() only applies to rank-2 tensors (%s)",FCT,SSTR_(this));
    size_t dim1=SIZE[0], dim2=SIZE[1];
 
    if (i+n>dim1 || j+m>dim2) wblog(FL,
@@ -2279,7 +2279,7 @@ T wbarray<T>::norm2block(
    T x2=0; 
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() only applies to rank-2 objects (%s)",FCT,SSTR_(this));
+      "ERR %s() only applies to rank-2 tensors (%s)",FCT,SSTR_(this));
    size_t dim1=SIZE[0], dim2=SIZE[1];
 
    if (i0+n>dim1 || j0+m>dim2) wblog(FL,
@@ -2303,7 +2303,7 @@ wbarray<T>& wbarray<T>::getBlock(
 ) const {
 
    if (rank()!=2) wblog(FL,
-   "ERR %s() only applies to rank-2 objects (%d)",FCT,rank());
+   "ERR %s() only applies to rank-2 tensors (%d)",FCT,rank());
 
    size_t dim1=SIZE[0], dim2=SIZE[1];
 
@@ -2319,7 +2319,7 @@ template<class T>
 void wbarray<T>::copyStride(T* dd, size_t stride, T afac) const {
 
    if (SIZE.len!=2) wblog(FL,"ERR %s() "
-      "only intended for rank-2 objects (r=%d)",FCT,rank());
+      "only intended for rank-2 tensors (r=%d)",FCT,rank());
 
    size_t i, j=0, dim1=SIZE[0], dim2=SIZE[1];
    T *d0=data;
@@ -2347,7 +2347,7 @@ template<class T>
 void wbarray<T>::addStride(T* dd, size_t stride, const T afac) const {
 
    if (SIZE.len==2) wblog(FL,"ERR %s() "
-      "only intended for rank-2 objects (r=%d)",FCT,rank());
+      "only intended for rank-2 tensors (r=%d)",FCT,rank());
 
    size_t i=0, j=0, dim1=SIZE[0], dim2=SIZE[1];
    T *a=data; 

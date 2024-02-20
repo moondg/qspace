@@ -60,7 +60,7 @@ void DZGEMM(
     double afac, double cfac
 ){
    if (A.SIZE.len!=2 || B.SIZE.len!=2 || C.SIZE.len!=2) wblog(FL,
-      "ERR %s() requires matrizes (got: %s * %s = %s)",
+      "ERR %s() requires matrices (got: %s * %s = %s)",
       FCT, SSTR(A), SSTR(B), SSTR(C));
 
    unsigned
@@ -101,7 +101,7 @@ void DZGEMM(
     wbcomplex afac, wbcomplex cfac
 ){
    if (A.SIZE.len!=2 || B.SIZE.len!=2) wblog(FL,
-      "ERR %s() matrizes required (%s * %s)",FCT,
+      "ERR %s() matrices required (%s * %s)",FCT,
    A.sizeStr().data, B.sizeStr().data);
 
    unsigned
@@ -286,7 +286,7 @@ wbarray<TC>& Wb::MatProd(
 #endif
 
    if (A.rank()!=2 || B.rank()!=2) wblog(FL,
-      "ERR %s() rank-2 objects required (%s; %s)",FCT,SSTR(A),SSTR(B));
+      "ERR %s() rank-2 tensors required (%s; %s)",FCT,SSTR(A),SSTR(B));
 
    a1=A.SIZE[0]; a2=A.SIZE[1]; if (aflag!='N') SWAP(a1,a2);
    b1=B.SIZE[0]; b2=B.SIZE[1]; if (bflag!='N') SWAP(b1,b2);
@@ -387,7 +387,7 @@ template<>
 wbarray<double>& wbInverse(const char *F, int L, wbarray<double> &M) {
 
    if (M.rank()!=2 || M.SIZE[1]>M.SIZE[0]) wblog(F_L,
-      "ERR %s() invalid rank-2 object (%s)",FCT,M.sizeStr().data);
+      "ERR %s() invalid rank-2 tensor (%s)",FCT,M.sizeStr().data);
 
    pINT e=0, l=-1, m=M.SIZE[0], n=M.SIZE[1], N=m*n;
    wbvector<pINT> ipiv(MIN(m,n));

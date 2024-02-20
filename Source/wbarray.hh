@@ -191,7 +191,7 @@ class wbarray {
     ) const {
 
        if (!isMatrix()) wblog(F,L,
-          "ERR %d - rank-2 object required (%d)",FCT,SIZE.len);
+          "ERR %d - rank-2 tensor required (%d)",FCT,SIZE.len);
        if (!strchr("NTC",flag)) wblog(F,L,
           "ERR %d - invalid flag %c<%d>",FCT,flag,flag);
 
@@ -2426,7 +2426,7 @@ wbarray<T>& wbarray<T>::initIdentity(
    for (i=0; i<m; i++) if (s[i]!=s[i+m]) wblog(FL,
    "ERR %s() requires symmetric object (%s)",FCT,SSTR_(this));
    if (m>1 && dflag) wblog(FL,
-   "ERR %s() rank-2 object required with dflag (%s)",FCT,SSTR_(this));
+   "ERR %s() rank-2 tensor required with dflag (%s)",FCT,SSTR_(this));
 
    if (!m) { init(); return *this; }
    if (dflag) { init(s[0]).set(T(1)); return *this; }

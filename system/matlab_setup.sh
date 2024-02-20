@@ -1,77 +1,63 @@
 #!/bin/bash
 
-# minimal centralized startup script to setup Matlab environment
-# using BASH_SOURCE[0] rather than $0 so this also works for `source'
+# -------------------------------------------------------------------- #
+# Minimal centralized startup script to setup Matlab environment.      #
+# -------------------------------------------------------------------- #
+# Please no longer modify this file, since it is tracked in the        #
+# git repository. Rather use system/matlab_setup_user.sh               #
+# or set the suggested environmental variable QS_CONFIG_ML_SH          #
+# pointing to your configuration file, instead. // Wb,Feb15,24         #
+# A template is provided in system/matlab_setup_user.sh-template       #
+# -------------------------------------------------------------------- #
 
   if command -v realpath >/dev/null; then
-       P0=`dirname $(realpath "${BASH_SOURCE[0]}")`;  # linux
-  else P0=`dirname $(readlink "${BASH_SOURCE[0]}")`;  # macOS
+     # using BASH_SOURCE[0] rather than $0 since $0 is not set
+     # when using `source *this'
+       P0=`realpath    "${BASH_SOURCE[0]}"`;  # linux
+  else P0=`readlink -f "${BASH_SOURCE[0]}"`;  # macOS
   fi
 
-# -------------------------------------------------------------------- #
-# NB! matlab requires very specific gcc version for mex/mcc compilation
+  P0=`dirname "$P0"`
 
-  if [ -z $MATLAB_ROOT ]; then
-   # this assumes that the module system is set up
-   # otherwise ensure that `matlab' and `gcc' can be found on the PATH
-   # or that MATLAB_ROOT and GCC are set (the latter is required
-   # for mex-compilation only)
-     if ! `type module >/dev/null 2>&1`; then
-        printf "\n  ERR $0 : module environment not available\n";
-        exit 1
-     fi
-
-   # module load matlab/2016a # NB! matlab/R2016 pairs with gcc/4.7.4
-   # module load gcc/4.7.4
-
-   # module load matlab/2018b # NB! matlab/R2018 pairs with gcc/6.3.x
-   # module load gcc/6.3.0
-
-     module load matlab/2020b
-     module load gcc/8.4.0
-
-   # on macOS
-   # matlab/2020b -> xcode/11.x
-   # matlab/2022b -> xcode/13.x
-  fi
-
-  if [ -z "$MATLAB_ROOT" ]; then
-     MATLAB_ROOT=`which matlab`;
-     export MATLAB_ROOT=${MATLAB_ROOT//bin*matlab*/}
-  fi
-
-# -------------------------------------------------------------------- #
-# directory setting (please adapt)
-
-# your matlab root directory in HOME
-# script 'ml' starts in here -> ensure that $MYMATLAB/startup.m is present
-# export MYMATLAB=$HOME/Matlab
+# script 'ml' starts form MYMATLAB
+# -> ensure that $MYMATLAB/startup.m is present;
+# you may change the default value here, based on the location
+# of this script, in the user-specific script called right below
   export MYMATLAB="${P0//system/}"
-  export MSLOTS=12
 
-# LMA = local matlab data directory
-  if [ ! $LMA ]; then
-     export LMA=/data/$USER/Data
+# Put your own setup into a separate file that is not part
+# of this git repository, so it does not get overwritten by
+# git updates; you may do this by defining an environmental
+# variable QS_CONFIG_ML_SH; by default, otherwise, this looks
+# for matlab_setup_user.sh in the same directory as this file
+# Wb,Feb14,24
+  if [ -z "$QS_CONFIG_ML_SH" ]; then
+     msh="$P0/matlab_setup_user.sh"
+     if [ -f "$msh" ]; then
+        export QS_CONFIG_ML_SH="$msh"
+     else printf "\n \e[31m matlab_setup.sh:\n  %s\n  %s\n  %s\e[0m\n\n" \
+       "Please setup the system environment for QSpace first" \
+       "e.g., set environmental variable QS_CONFIG_ML_SH or use file" "$msh"
+     fi
   fi
-  if [ ! $RC_STORE ]; then
-     export RC_STORE=$LMA/RCStore  # for non-abelian symmetries
-     export RC_SYNC=$LMA/RCSync    # just for lock files
-  fi
-  
-# this overwrites the defaults chosen by matlab_setup.pl below
-# export QSP_NUM_THREADS=2  #> QSpace
-# export OMP_NUM_THREADS=4  #> Intel MKL library
-# export MKL_NUM_THREADS=4  #> Intel MKL library
 
-# -------------------------------------------------------------------- #
+  if [ ! -z "$QS_CONFIG_ML_SH" ]; then
+     source $QS_CONFIG_ML_SH
+  fi
+
 # double check and complete parameter setting
-
+  msh="$P0/matlab_setup.pl"
   if [[ "$*" == '-t' ]]; then
-       $P0/matlab_setup.pl -t  # use this to check/test output
-  else eval "$($P0/matlab_setup.pl "$@")"
+   # use "matlab_setup.sh -t" to check/test printed output
+     "$msh" -t 
+  else
+     sout="$($msh "$@")"
+     if [ $? -eq 0 ]; then
+          eval "$sout"
+     else echo "$sout"; fi
   fi
 
-# -------------------------------------------------------------------- #
+  unset P0 msh sout
 
-  unset P0
+# -------------------------------------------------------------------- #
 

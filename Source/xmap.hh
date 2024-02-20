@@ -139,7 +139,7 @@ void XMAP_Node::set(
    ic=ic_; i1=i1_; i2=i2_; z=z_;
 
    if (A.rank()!=2) wblog(FL,
-   "ERR expecting rank-2 objects to contract.");
+   "ERR expecting rank-2 tensors to contract.");
 
    if (ref) {
       Z=&A; isref=1;
@@ -158,7 +158,7 @@ void XMAP_Node::set(
    ic=ic_; i1=i1_; i2=i2_; z=z_;
 
    if (A.rank()!=2) wblog(FL,
-   "ERR expecting rank-2 objects to contract.");
+   "ERR expecting rank-2 tensors to contract.");
 
    if (ref) {
       R=&A; isref=1;
@@ -215,7 +215,7 @@ void XMAP::init(const mxArray *a) {
 
    for (i=0; i<N; i++) {
       if (data[i].rank()!=2) wblog(FL,
-      "ERR Expecting rank-2 objects (%d)", data[i].rank());
+      "ERR Expecting rank-2 tensors (%d)", data[i].rank());
    }
 }
 

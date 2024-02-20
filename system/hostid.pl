@@ -23,8 +23,6 @@
 
   my $hid=hostid();
 
-# NB! no '-' (eg. hid may be used in file name for matlab script!
-# Wb,Jun26,12
   if ($jflag) { my $j=jobid();
      if ($hid=~/\d$/) { $hid.=('_'.$j); }
      else { $hid.=$j; }

@@ -73,7 +73,7 @@ char USAGE[] =
    Test parameters                                                      \n\
                                                                         \n\
     'nev'...   number of eigenvalues to compute (1).                    \n\
-    'randall'  randomize input A matrizes.                              \n\
+    'randall'  randomize input A matrices.                              \n\
                                                                         \n\
    OUTPUT                                                               \n\
                                                                         \n\

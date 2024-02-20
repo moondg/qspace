@@ -175,17 +175,17 @@ class SigHandler {
        return (i + 10*a);
     };
 
-    static unsigned NC0, icount, acount;
+    static int NC0, icount, acount;
 
   protected:
   private:
 
 };
 
-   unsigned SigHandler::NC0=3;
+   int SigHandler::NC0 = 3;
 
-   unsigned SigHandler::icount=SigHandler::NC0;
-   unsigned SigHandler::acount=SigHandler::NC0;
+   int SigHandler::icount = SigHandler::NC0;
+   int SigHandler::acount = SigHandler::NC0;
 
 }; 
 

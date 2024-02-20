@@ -9,7 +9,7 @@
   my ($vflag,$mflag); $vflag=0;
 
   my @odir=('../bin','../util');
-  my $odef=$ENV{MXC_DIR}; # see variable exported by MEX/make.m!
+  my $odef=$ENV{MXC_DIR};
   if (!$odef) { $odef=$odir[0]; }
 
   my $me=$0; $me=~s/.*\///;
@@ -18,9 +18,7 @@
      if (/^-[h\?]$/) { die usage($0); }
      elsif (/^-(v)$/i) { $vflag+=($1 eq 'v' ? 1 : 2); }
      elsif (/^--odir$/) {
-       # usage: --odir file $MATLAB_ROOT $MCC_TAG $CLIBS $OPT
-       # with last 3 args simply only used for logging
-         $mflag+=1; # see MEX/Makefile! // USAGE_MAKE
+         $mflag+=1;
      }
      elsif (/^--make-/) { my $x=$';
         if    ($x=~/info/) { disp_info(@ARGV); exit 0; }
@@ -35,7 +33,7 @@
 
   if ($mflag) {
      if (@ff>1) { @mopts=split(/[:;,\|]/,' '.$ff[1].' '); }
-     if (@ff!=2 || @mopts!=4) {   # see USAGE_MAKE
+     if (@ff!=2 || @mopts!=4) {
         die sprintf("invalid usage %s -> 4 args expected: '%s' (%d)",
         $ff[0], join("', '",@ff[1 ..  $#ff]),$#mopts+1);
      }
@@ -48,19 +46,18 @@
 
   foreach $d (@odir) {
      opendir(DH,$d) || die("invalid directory ($d)");
-  # lookfor *.mex* files, but also *.m (in chase the mex-file does not exist!)
      @fx=grep(/\w\.m\w*$/,readdir(DH));
      close(DH); $e=0; $n1=$n2=$nx=0;
 
      foreach $f (@fx) { $F="$d/$f";
         if (-d $F) { ++$nx; next; }
-        if (!-f $F) { # exclude dirs (if accidentally included)
+        if (!-f $F) {
            printf STDERR "  WRN %s not a file !?\n", $F;
            ++$n2; next;
         }
 
         if ($f=~/\.mex\w*$/) { ++$n1;
-           if (!-x $F && !$mflag) { # ++$e;
+           if (!-x $F && !$mflag) {
            printf STDERR "  WRN %s not executable\n", $F; }
         }
         elsif ($f=~/\.m/) { ++$n2; }
@@ -78,7 +75,6 @@
      }
   }
 
-# foreach (sort keys %FD) { push(@fx,$FD{$_}.'/'.$_); }
   @fx = sort keys %FD;
 
   if ($vflag>1) {
@@ -88,16 +84,12 @@
 
   foreach $f (@ff) {
      if (-d $f) { next; }
-     # e.g. may happen when using: make.pl bin/*
-     $f=~s/.*\///; # skip path if specfied
+     $f=~s/.*\///;
 
-     $p=$f; $p=~s/\..*$//; $p=~s/.*\///; # pattern: skip path and extension
+     $p=$f; $p=~s/\..*$//; $p=~s/.*\///;
      @q=grep(/^$p\b/,@fx);
 
      if (@q>1) {
-      # e.g. may have gotten m-file (for help) and/or
-      # mex-files for different systems (linux & mac)
-      # for consistency, check whether in same path:
         my $i=1; my $D0=$FD{$q[0]};
         for (; $i<=$#q; ++$i) { if ($FD{$q[$i]} ne $D0) { last; }}
         if ($i<@q) { printf STDERR
@@ -123,9 +115,8 @@
 
   my ($q,$l,@lb,@gg,@mo);
 
-# mex(2016a; a64: lapack/blas; mpfr) NRGWilsonQS.cc => $MEX/bin
-  $l=' '.$mopts[2]; # eg: -lmwblas -lmwlapack  -lmpfr -lgm
-  $l=~s/\s{2,}/ /g; # $l, @l -> libraries
+  $l=' '.$mopts[2];
+  $l=~s/\s{2,}/ /g;
 
   if ($l=~/blas|lapack/) { my $m=0; $_=$l;
      if (s/\s(-l|-lmw|\/[^\s]+\/lib)blas\b[^\s]*//  ) { ++$m; }
@@ -146,22 +137,18 @@
   if (($q=$ENV{DEBUG})) {
      if    ($q>=3) { push(@gg,'-V'); $vflag+=2; }
      elsif ($q>=2) { push(@gg,'-v'); $vflag+=1; }
-   # push(@gg,'-g','-DDEBUG'); # these defs are hiding with $$OD in # Makefile
   }
   if ($ENV{ML_DEBUG}) {
      if (!@gg) { push(@gg,'-g'); }
      else { print(STDERR "\n  WRN using DEBUG (ignoring ML_DEBUG)\n\n"); }
   }
-# if ($ENV{DBSTOP}) {
-#    printf STDERR "\n  WRN ignoring DBSTOP (use DEBUG or ML_DEBUG instead)\n\n";
-# }
 
   if ($_=$mopts[0]) { s/.*\///;
      s/\.app$//i; # osx/mac has trailin \.app
      push(@mo,substr($_,-5));
   }
 
-  if ($_=$mopts[1]) { # $MCC_TAG
+  if ($_=$mopts[1]) {
      push(@mo,substr($_,3));
   }
 
@@ -188,13 +175,11 @@ sub disp_info {
    @q=split(/\s+/,$_); $tag=''; push(@tag,$tag);
 
    select STDERR;
- # print "\n",join(' ',@_),"\n";
-
 
    foreach (@q) {
       if (/^--make-info/) { next; }
       if (/^\/[^\s]*\/(matlab\/[^\s]*)/i) { $_=$1;
-         s/\.app$//; # mac: /Applications/MATLAB_R2018b.app
+         s/\.app$//;
       }
       if (/^bin(\w*)$/) { $_=$1; }
       if (/([A-Za-z]\w+)=$/) { $tag=$1;
@@ -244,14 +229,12 @@ sub disp_defs {
       }
    }
 
-   if ($ENV{DBSTOP}) { # Wb,Jul04,20
+   if ($ENV{DBSTOP}) {
       if (!grep(/DBSTOP/,@args)) { push(@args,'DBSTOP'); }
    }
 
    foreach (@args) {
       if (/^([A-Z_]{4,})(=|$)/) {
-       # -Uvar        undefines macro
-       # -Dvar[=val]  defines macro
          my $a=$1; my $x=$2;
          my $v=$'; 
             if ($a=~/CXX_FLAGS/) { $v=~s/(^|\s)-Wall\b//; }

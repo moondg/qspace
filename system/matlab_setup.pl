@@ -1,23 +1,28 @@
 #!/usr/bin/perl
 # Usage: eval "$(matlab_setup.pl [opts])"
 # 
-#    this script double checks current matlab bash environment
-#    and generates further relevant bash settings in text form
-#    if required for running matlab.
+#    This script double checks current matlab bash environment.
+#    It generates further relevant bash settings in text form
+#    used by matlab_setup.sh required for running matlab.
 # 
-#    the correct matlab and gcc version must already be available
-#    e.g. loaded via the module system.
+#    Note that the matlab and C++ compiler version must already
+#    be setup and available.
 # 
 # Options
 # 
-#   -t   test flag (prints status info to stderr)
-#   -q   quiet mode, i.e., suppress certain warnings
-#        intended for calling *this in Makefiles
+#    -t   test flag (prints status info to stderr)
+#    -q   quiet mode, i.e., suppress certain warnings
+#         intended for calling *this in Makefiles
 #
-#   -LD  enforces buildup of full LD_LIBRARY_PATH
-#   -ld  using matlab's default LD_LIBRARY_PATH (once it starts)
+#    -LD  enforces buildup of full LD_LIBRARY_PATH
+#    -ld  using matlab's default LD_LIBRARY_PATH (once it starts)
 # 
 # Wb,Jan09,19
+
+# [02/19/2024] removed --pre-run
+# [02/19/2024] removed gcc/GCC checks and gver/ML_GCC_VERSION
+# since 'mex -setup' may use other C++ compiler anyway
+# => rather use cd Source && make test, instead
 
   use Cwd 'realpath';
 
@@ -25,54 +30,27 @@
   require "$P/plib.pl";
 
   my $nerr=0; my $nwrn=0; my $vflag=1;
-  my ($q,$mver,$gver, $tflag, $ldflag,$clear,$pre,@pre);
+  my ($q,$mver,$tflag, $ldflag,$clear);
 
   while (defined ($_=shift)) {
      if (/^-[h\?]$/) { die usage($0); }
      elsif (/^-(t)$/i) { $tflag+=($1 eq 'v'?1:2);  }
-   # elsif (/^-(v)$/i) { $vflag+=($1 eq 'v'?1:2);  }
      elsif (/^-q$/) { $vflag=0; }
-     elsif (/^-(ld)$/i) { $ldflag+=($1 eq 'ld'?1:2);  } # -ld -LD
+     elsif (/^-(ld)$/i) { $ldflag+=($1 eq 'ld'?1:2);  }
      elsif (/^--clear$/) { ++$clear; }
-     elsif (/^--pre-run$/) { ++$pre; } # Wb,May05,19May04,19
-     elsif (/^-\d+[a-z]$/i) { push(@pre,$_); }
      else { 
         die usage(__FILE__,__LINE__,"got extra arguments: ",$_,@ARGV);
      }
   }
 
-  if ($pre) { $_=$pre[0];
-     if (@pre==1 && /^-(\d+)([a-z])$/i) { # Wb,May05,19
-        my ($y,$v,@ll); $y=$1; $v=lc($2);
-        if (length($1)<=2) { $y+=2000; }
-
-        push(@ll,"module load matlab/$y$v");
-
-        if ($y<2014 || $y>2020) { wbdie("invalid matlab version $y$v ($_)"); }
-        if ($y<2018)
-             { push(@ll,"module load gcc/4.7.4"); }
-        else { push(@ll,"module load gcc/6.3.0"); }
-
-        $v=($tflag ? stderr : stdout);
-        foreach (@ll) { printf($v "  $_\n"); }
-     }
-     elsif (@pre) { wbdie("invalid usage (".join(', ',@pre).')'); }
-   # elsif ($tflag) { print(stderr "\n  TST got empty --pre-run\n\n"); }
-
-     exit 0;
-  }
-# else ignore @pre
-
-# $\="\n  ";
-  $|=1; # auto flush after every printf
+  $|=1;  # auto flush after every printf
 
 # -------------------------------------------------------------------- #
 # check MATLAB_ROOT and consistency with `which matlab`
 
+  my ($matlab,$mex);
   my $mlr='MATLAB_ROOT';
   my $MLR=$ENV{$mlr};
-  my $matlab=`which matlab 2>/dev/null`;
-  my ($gcc);
 
   if ($clear) {
      my $ML=$ENV{MYMATLAB};
@@ -82,9 +60,26 @@
      exit 0;
   }
 
-  if (!$MLR || !$matlab) { ++$nerr; wblog(
-     "ERR env $mlr not defined (hint: load module for matlab?)"); }
-  else { chomp($matlab); 
+  chomp($matlab=`which matlab 2>/dev/null`);
+  if (!$matlab) { ++$nerr; wblog(
+     "ERR command 'matlab' not available on PATH (see matlab_setup*.sh)");
+  }
+  chomp($mex=`which mex 2>/dev/null`);
+  if (!$mex) { ++$nwrn; wblog(
+     "WRN command 'mex' not available on PATH (see matlab_setup*.sh)");
+  }
+
+  if (!$MLR) {
+     if ($matlab) {
+        $MLR=$matlab; $MLR=~s/\/bin.*matlab.*//;
+        export_plain($MLR,$matlab);
+     }
+     else { ++$nerr; wblog(
+       "ERR env $mlr not defined (see matlab_setup*.sh)");
+     }
+  }
+
+  if (!$nerr) {
      if (!-d $MLR.'/bin/') { ++$nerr; wblog(
         "ERR invalid env $mlr=%s (missing subdirectory ./bin",$MLR); }
      elsif ($matlab!~/$MLR/) { ++$nerr; wblog(
@@ -92,76 +87,40 @@
      elsif ($MLR!~/matlab/i) { ++$nwrn; wblog(
         "WRN unexpected value for env $mlr=%s",$MLR); }
      if ($matlab=~/[_\/rR]?(\d{4}\w?)[_\.\/]/) { $mver=$1; }
-     # e.g. mac path /Applications/MATLAB_R2018a.app
-     # e.g. LRZ: matlab/R2018a_Update6
-  }
-
-# check gcc version and consistency with MATLAB_ROOT
-
-  if (islinux()) {
-     $gcc=`which gcc 2>/dev/null`;
-
-     if ($gcc) { chomp($gcc);
-        foreach (`$gcc --version 2>/dev/null`) {
-        if (/gcc[^\d]* (\d+\.\d+.\d+)[^\w]/) { $gver=$1; }}
+     if ($mex!~/$MLR/) { ++$nwrn; wblog(
+        "WRN unexpected mex command (outside matlab folder?)");
      }
-     else { ++$nerr;
-     wblog("ERR gcc not found (hint: load module for gcc?)"); }
   }
-  elsif (ismac()) {
-     $gcc=`which gcc 2>/dev/null`; # mac also writes to stderr here
 
-     if ($gcc) { chomp($gcc);
-        foreach (`$gcc --version 2>/dev/null`) {
-           if (/Apple.*clang/) {
-              foreach (`xcodebuild -version`) {
-              if (/Xcode *(\d+[\.\d]+)/) { $gver='clang/'.$1; last; }}
-              last;
+  if (!$mver && $MLR) { 
+   # checkout $(MATLAB_ROOT)/VersionInfo.xml // Wb,Feb15,24
+     my $v="$MLR/VersionInfo.xml";
+     if (-f $v) { my (%R,@R);
+        open(FH,$v);
+        foreach (<FH>) {
+           if (/<release>R?(\w+)<\/release>/) { $mver=$1; ++$R{$1}; }
+           if (/R(\d{4}\w?)/) { ++$R{$1}; }
+        }; close FH;
+
+        if (%R) { @R=keys %R;
+           if (@R==1) { if (!$mver) { $mver=$R[0]; }}
+           else {
+              wblog("WRN failed to auto-determine matlab release (%s)",
+              join(', ',sort @R));
            }
         }
      }
-     else { ++$nerr;
-     wblog("ERR gcc not found (hint: load module for gcc?)"); }
   }
-  else { wbdie("got unknown OS %s !?",`uname -s`); }
 
   if (!$nerr) {
   if (!$mver) { ++$nwrn; wblog(
-     "WRN failed to derive matlab version from env $mlr"); }
-  elsif (!$gver) { ++$nerr; wblog(
-     "ERR failed to derive gcc version (having $gcc)"); }
-  elsif (islinux()) {
-     if ($mver=~/2016a/) { if ($gver!~/^4\.7\./) { ++$nerr; wblog(
-        "ERR unsupported gcc version $gver for matlab/$mver"); }}
-     elsif ($mver=~/2016b/) { if ($gver!~/^4\.8\./) { ++$nerr; wblog(
-        "ERR unsupported gcc version $gver for matlab/$mver"); }}
-     elsif ($mver=~/201[89]|2020a/) { if ($gver!~/^6\.3\./) { ++$nerr; wblog(
-        "ERR unsupported gcc version $gver for matlab/$mver"); }}
-     elsif ($mver=~/2020b/) { if ($gver!~/^8\.[3-5]\./) { ++$nerr; wblog(
-        "ERR unsupported gcc version $gver for matlab/$mver"); }}
-     elsif ($mver=~/2022b/) { if ($gver!~/^([789]|10)\./) { ++$nerr; wblog(
-        "ERR unsupported gcc version $gver for matlab/$mver"); }}
-     else { ++$nwrn; if ($vflag) { wblog(
-        "WRN check valid gcc version ($gver) for matlab/$mver"); 
-     }}
+     "ERR failed to derive matlab version from env\n$mlr = $MLR\n%s",
+     "this is required for MEX compilation, etc."); }
   }
-  elsif (ismac()) { my $wrn=0;
-     if ($mver=~/201[89]|2020/) {
-      # matlab/2020b supports Xcode 10.x and 11.x
-        if ($gver!~/\/1[01]\.[0-7]/) { ++$wrn; }
-     }
-     elsif ($mver=~/2022/) {
-      # matlab/2022a supports Xcode 12.x and 13.x
-        if ($gver!~/\/1[23]\.[0-9]/) { ++$wrn; }
-     }
-     else { ++$wrn; }
-
-     if ($wrn) { $nwrn+=$wrn; if ($vflag) {
-        wblog("WRN unsupported C++ compiler version $gver for matlab/$mver");
-     }}
-  }}
 
   if ($nerr) { exit 1; }
+
+  if ($nwrn) { exit 2; }
 
 # -------------------------------------------------------------------- #
 # check MYMATLAB, MEX, MCC
@@ -191,13 +150,14 @@
      "ERR invalid directory env $MX=%s\n",$MEX); 
   }
 
-  my $mar=getARCH(); my $mxt=getMEXEXT(); # plib.pl
+  my $mar=getARCH(); my $mxt=getMEXEXT();
   if (!$mxt) { ++$nerr; }
 
   if ($tflag) {
-     printf(STDERR "\n  %-20s %s\n",$MM,repHome($ML));
-     if ($mver) { printf(STDERR "  %-20s %-12s # %s\n",'matlab version',$mver,$matlab); }
-     if ($gver) { printf(STDERR "  %-20s %-12s # %s\n\n",'gcc version',$gver,$gcc); }
+     printf STDERR "\n  %-20s %s\n",$MM,repHome($ML);
+     if ($mver) { printf STDERR
+        "  %-20s %-14s (%s)\n",'matlab version',$mver,$matlab;
+     }
   }
 
   if ($mver) {
@@ -206,8 +166,8 @@
         my $a=lc($1); $q+=(ord($a)-ord('a')+1)/10;
      }
 
-     export_plain('MATLAB_VERNUM',$q);     # numeric value for conditionals
-     export_plain('MATLAB_VERSION',$mver); # to be used with 'module load ...'
+     export_plain('MATLAB_VERNUM',$q);
+     export_plain('MATLAB_VERSION',$mver);
 
      if ($q>=18) {
       # required for MEX files to avoid compiler errors with functions
@@ -215,13 +175,8 @@
       # NB! matlab>=2018 has interleaved complex format
       # without this, mex compiles with the old non-iterleaved mex API.
       # which may be explicitly specified by the flag '-R2017b'
-        export_plain('MEX_R2018','-R2018a'); # used with Makefile
+        export_plain('MEX_R2018','-R2018a');  # used with Makefile
      }
-  }
-
-  if ($gver) {
-   # just a safeguard to tell Makefile that gcc version has been checked
-     export_plain('ML_GCC_VERSION',$gver);
   }
 
 # NB! needed by MatLab runtime library
@@ -234,15 +189,12 @@
   print "\n";
 
   if ($MEX) {
-   # MYMEX is my MEX root directory (used by MEX/make)
      export_frc('MEX',  $MEX);
      export_frc('MYMEX',$MEX);
   }
   export_frc('MCC',$MCC);
 
   $q=export_chk('MCC_BIN',"$MCC/$mcd");
-  # if (!$q) { $q='MCC_BIN'; if (!-d $ENV{$q}) { ++$nerr; wblog(
-  # "ERR invalid directory env $q=$ENV{$q}"); }}
 
   if ($nerr) { exit 1; }
 
@@ -253,9 +205,6 @@
 
   if ($ldflag) {
      my $ld='LD_LIBRARY_PATH';
-   # NB! this prepends to the current LD_LIBRARY_PATH -> unset
-   # $cmd="unset $ld ARCH; $matlab -nodesktop -nodisplay -n";
-   # inherit existing LD_LIBRARY_PATH e.g. with entries on gcc 
      $cmd="$matlab -nodesktop -nodisplay -n";
      my @ML=`$cmd`; my $e=$?; @ll=grep(/$ld/,@ML);
      if ($e || @ll!=1) { wbdie(
@@ -265,9 +214,8 @@
      $_=shift(@ll); s/.*$ld[\s=]*//; chomp; @ll=('.');
      foreach (split(/:/,$_)) {
       # NB! -LD option is relevant in the deployment of mcc sources only
-      # e.g. as also generated by mcc in run_*.sh // Wb,Nov24,21
         if (/$MLR.*$mar/ && !/cef|java/) { push(@ll,$_);  }
-     }; $LD=join(':',sort @ll); # mcc run_*.sh also has /sys/ last
+     }; $LD=join(':',sort @ll);
 
      if ($ldflag<=1) {
         s/:/\n     : /g; s/$MLR/\$MLR/g;
@@ -275,7 +223,6 @@
      }
      else { print("\n");
         export_plain($ld,$LD);
-      # adapted from mcc compiled run_*.sh script // Wb,Nov24,21
       # Preload glibc_shim in case of RHEL7 variants
         my $ldd='/usr/bin/ldd';
         if (-f $ldd) {
@@ -317,7 +264,7 @@
      my $n=$ENV{QSP_NUM_THREADS};
      if ($n) { 
         my $q_=int($q/$n);
-        if ($q_>1) { $q=$q_; } else { $n=$q; $q=1; } # $n=1;
+        if ($q_>1) { $q=$q_; } else { $n=$q; $q=1; }
      }
      else { $n=1; }
 
@@ -325,17 +272,15 @@
 
      export_plain('QSP_NUM_THREADS',$n);
 
-   # NB! MKL automatically goes serial if in parallel environement
      export_plain('OMP_NUM_THREADS',$q>1? $q:'-unset');
      export_plain('MKL_NUM_THREADS',$q>1? $q:'-unset');
 
-if (0) { # Wb,Nov25,21
+if (0) {
      if ($n>1 && $q>1) {
       # export_plain('OMP_NESTED','true'); // deprecated for OpenMP v5
-        my $na=10*($n>1? $n : 1)*($q>1? $q : 1);         # Wb,Nov24,21
+        my $na=10*($n>1? $n : 1)*($q>1? $q : 1);
       # NB! MAX_ACTIVE_LEVELS includes nesting!
-      # --> significantly increase $na, otherwise job runs mostly serial!
-        $na*=32; if ($na<4096) { $na=4096; }    # default is MAX_INT!
+        $na*=32; if ($na<4096) { $na=4096; }
         export_plain('OMP_MAX_ACTIVE_LEVELS',$na);
         export_plain('OMP_DYNAMIC','false');
 
@@ -354,12 +299,9 @@ if (0) { # Wb,Nov25,21
   if (@DEFS) {
      $_=join(' -D','',@DEFS); s/\s+//g;
      export_plain('WBDEFS',$_);
-   # print STDERR "WBDEFS = $_\n";
   }
 
-# NB! increase `ulimit -n' to at least 4096 // Wb,Jul01,19
   set_limit_aux('-n', 4096);
-# set_limit_aux('-s',65536);
 
 # -------------------------------------------------------------------- #
 # LD_PRELOAD shim.so as suggested by mathworks support
@@ -367,10 +309,10 @@ if (0) { # Wb,Nov25,21
 # outsourced // Wb,May13,22
 
 sub pre_load_shim {
-  
-   my $v=shift; # ldd glibc version
 
- # $MLR/bin/glnxa64/glibc-2.17_shim.so
+   my $v=shift;
+
+# $MLR/bin/glnxa64/glibc-2.17_shim.so
    my @ll=`ls $MLR/bin/glnxa64/glibc-*_shim.so 2>/dev/null`;
    foreach (@ll) {
       if (/$v/) { chomp;
@@ -426,10 +368,10 @@ sub export_chk {
 sub export_frc {
    if (@_!=2) { wbdie("export_frc() invalid usage",@_);  }
    my $v=$_[0]; my $q=$ENV{$v}; if ($q && $q eq $_[1]) 
-        { return export_plain($v,$q, 0); } # comment out
+        { return export_plain($v,$q, 0); }
    else { return export_plain($v,$_[1]); }
 };
 
 # -------------------------------------------------------------------- #
-1; # keep this
+1;  # keep this
 

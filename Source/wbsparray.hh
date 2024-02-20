@@ -269,7 +269,7 @@ class wbsparray {
     template<class T2>
     wbsparray& setRec(SPIDX_T i, SPIDX_T i1, SPIDX_T i2, const T2& x) {
        if (IDX.dim2!=2) wblog(FL,"ERR %s() "
-          "rank-2 array required (%d: %s)",FCT,SIZE.len,SSTR_(this));
+          "rank-2 tensor required (%d: %s)",FCT,SIZE.len,SSTR_(this));
        if (i>=D.len || IDX.dim1!=D.len) wblog(FL,"ERR %s() "
           "index out of bounds (%d/%d,%d)",FCT,i,IDX.dim1,D.len);
        SPIDX_T *I=IDX.rec(i);
@@ -616,7 +616,7 @@ class wbsparray {
     SPIDX_T nnz_diag() const {
        if (isDiag(FL)) return D.nnz();
        if (IDX.dim2!=2) wblog(FL,
-          "ERR %s() requires rank-2 object (S=%s)",FCT,SSTR_(this));
+          "ERR %s() requires rank-2 tensor (S=%s)",FCT,SSTR_(this));
        SPIDX_T i=0, n=0; const SPIDX_T *I=IDX.data;
        for (; i<IDX.dim1; ++i, I+=2) { if (I[0]==I[1] && D[i]!=0) ++n; }
        return n;
@@ -1380,7 +1380,7 @@ TD indexSparseRef<TD>::LContractVec(
 
    if (!A) wblog(FL,"ERR %s() got empty A !?",FCT);
    if (A->SIZE.len!=2 || M!=1) wblog(FL,"ERR %s() "
-      "only applies to rank-2 objects (%s; %d)",FCT,SSTR_(A),M);
+      "only applies to rank-2 tensors (%s; %d)",FCT,SSTR_(A),M);
    if (k+1>=JA.len) wblog(FL,
       "ERR %s() index out of bounds (%d/%d) !?",FCT,k,JA.len);
 

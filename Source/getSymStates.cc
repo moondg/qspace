@@ -266,7 +266,7 @@ int init_ops(const mxArray *a, wbvector<wbsparray<TD> > &X
       for (unsigned i=0; i<X.len; ++i) {
          const mxArray *c=mxGetCell(a,i);
          if (!Mx::IsDblMat(0,0,c)) { sprintf(str,
-            "%s cell array of matrizes or matrix expected",SHORT_FL);
+            "%s cell array of matrices or matrix expected",SHORT_FL);
             return 2; }
          X[i].init(FL,c);
       }

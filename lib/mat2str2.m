@@ -1,7 +1,9 @@
-function str = mat2str2(M, varargin)
+function [str,Iout] = mat2str2(M, varargin)
 % function s = mat2str2(M [,opts])
 %
-%    writes matrix M as string
+%    Writes matrix M as string
+%    also using simple representation of complex values where possible,
+%    like 1i instead of matlab's 0.0000 + 1.0000i, etc.
 %
 % Options
 %
@@ -17,6 +19,9 @@ function str = mat2str2(M, varargin)
 %   '-c'       return as cell array of strings, where the returned
 %              cell array has exactly the same dimensions as M
 %
+%   '-p'       print result (default, if no output argument is requested)
+%   '-p','..'  use string in '..' as name for the matrix shown
+%
 % See also existing MatLab routine mat2str().
 % Wb,Jul11,03
 
@@ -24,7 +29,7 @@ function str = mat2str2(M, varargin)
      helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
-  str=[];
+  str=[]; nstr='';
 
   getopt('init',varargin);
      fmt    = getopt('fmt',[]);
@@ -32,11 +37,17 @@ function str = mat2str2(M, varargin)
      rowsep = getopt('rowsep','\n');
      istr   = getopt('istr','');
      notiny = getopt('notiny');
-     pflag  = getopt('phase');
+     phflag = getopt('phase');
      fflag  = getopt('-f');
      cflag  = getopt('-c');
+     pflag  = getopt('-p');
      nofac  = getopt('nofac');
-  getopt('check_error');
+  if pflag
+     nstr=getopt('get_last',nstr);
+     if ~ischar(nstr), wbdie('invalid usage (string with pflag)'); end
+  else getopt('check_error'); end
+
+  if nargout>1, Iout=add2struct('-',fmt); end
 
   if cflag
      n=numel(M); if isempty(fmt), fmt='%g'; end
@@ -58,6 +69,8 @@ function str = mat2str2(M, varargin)
      end
   end
 
+  done=0;
+
   if r>2, wbdie('invalid usage (got rank-%g object)',r); end
   if ~fflag && n1==n2
      d=diag(M);
@@ -65,36 +78,37 @@ function str = mat2str2(M, varargin)
         if all(diff(d)==0)
              str=sprintf([fmt ' (eye; %gx%g)'],M(1),s);
         else str=sprintf('diag([%s])',vec2str(d,'fmt',fmt)); end
-        return
+        done=1;
      end
   end
 
+if ~done
   eps = 1E6 * abs(2-sqrt(2)^2) * abs(max(M(:)));
 
   if nofac
-     fact=1;
+     fac=1;
   else
-     fact = max (abs(M(:)));
-     if fact~=0, fact = floor(log10(fact)); end
-     if findstr(fmt, 'd'), fact=1; end
-     if abs(fact) > 3
-        fact = 10^fact;
-        M = M / fact;
+     fac = max (abs(M(:)));
+     if fac~=0, fac = floor(log10(fac)); end
+     if findstr(fmt, 'd'), fac=1; end
+     if abs(fac) > 3
+        fac = 10^fac;
+        M = M / fac;
      else
-        fact = 1;
+        fac = 1;
      end
   end
 
-  str=[];
+  if nargout>1
+     Iout=add2struct(Iout,fmt,eps,fac,sep,rowsep);
+  end
+
+  str=cell(n1,n2);
 
   if isreal(M)
      for i=1:n1
        for j=1:n2
-          if j==1
-             if i==1
-                  str = [ str sprintf([       fmt], M(i,j)) ];
-             else str = [ str sprintf([rowsep fmt], M(i,j)) ]; end
-          else    str = [ str sprintf([   sep fmt], M(i,j)) ]; end
+          str{i,j}=sprintf(fmt,M(i,j));
        end
      end
   else
@@ -113,20 +127,18 @@ function str = mat2str2(M, varargin)
       if  ~isempty(fm1), fm1 = str2num(fm1); else fm1=8; end
 
       if ~isempty(fm2)
-          fm2  = str2num(fm2);
-          fmtr = sprintf('%%.%dg', fm2);
-          fmtc = sprintf('%%+.%dg', fm2);
+         fm2 =str2num(fm2);
+         fmtr=sprintf('%%.%dg', fm2);
+         fmtc=sprintf('%%+.%dg', fm2);
       else
-          fm2 = [];
-          fmtr = '%g';
-          fmtc = '%+g';
+         fm2 = [];
+         fmtr='%g';
+         fmtc='%+g';
       end
 	  fmts = sprintf('%%%ds', fm1);
 
       for i=1:n1
-        for j=1:n2
-
-          mij = M(i,j);
+        for j=1:n2, mij=M(i,j);
           if notiny
              if abs(real(mij))<eps, mij = imag(mij); end
              if abs(imag(mij))<eps, mij = real(mij); end
@@ -134,37 +146,46 @@ function str = mat2str2(M, varargin)
 
           if real(mij)==0
              if imag(mij)==0
-                vstr = '0.';
-             else
-                vstr = sprintf([fmtr 'i'], imag(mij));
+                  vstr = '0 '; % align with 1i etc. // previously '0.'
+             else vstr = sprintf([fmtr 'i'], imag(mij));
              end
           else
              if imag(mij)==0
                 vstr = sprintf(fmtr, real(mij));
-             else
-                if ~pflag
-                vstr = sprintf([fmtr fmtc 'i'], real(mij), imag(mij));
-                else
-                vstr = sprintf([fmtr '|' fmtr], abs(mij), angle(mij)/pi);
-                end
+             elseif ~phflag
+                  vstr = sprintf([fmtr fmtc 'i'], real(mij), imag(mij));
+             else vstr = sprintf([fmtr '|' fmtr], abs(mij), angle(mij)/pi);
              end
           end
 
-          if j==1
-             if i==1
-                  str = [ str sprintf([       fmts], vstr) ];
-             else str = [ str sprintf([rowsep fmts], vstr) ]; end
-          else    str = [ str sprintf([   sep fmts], vstr) ]; end
+          str{i,j}=sprintf(fmts,vstr);
        end
      end
   end
 
+  rowsep=sprintf(rowsep);
+  sep=sprintf(sep);
+
+  for i=1:n1
+     for j=1:n2, s=str{i,j};
+        if abs(M(i,j))==0 && length(s)>=2 && isequal(s(end-1:end),'-0')
+           s(end-1:end)=' 0';
+        end
+        if     j>1, s = [    sep s];
+        elseif i>1, s = [ rowsep s];
+        end
+        str{i,j}=s;
+     end
+  end
+
+  str=str'; str=[str{:}];
+
   if ~isempty(istr) && isempty(find(istr=='='))
   istr=[istr ' = ']; end
 
-  if fact~=1 | ~isempty(istr)
-     if fact~=1, vstr = sprintf('%1.0E * ', fact);
-     else        vstr = ''; end
+  if fac~=1 | ~isempty(istr)
+     if fac~=1, vstr = sprintf('%1.0E * ', fac);
+     else       vstr = ''; end
 
      if size(M,1)>1 && (~isempty(findstr(rowsep,'\n')) | ~isempty(findstr(rowsep,10)))
          if     ~isempty(find(istr=='[')), bs='\n]';
@@ -174,6 +195,17 @@ function str = mat2str2(M, varargin)
          str = sprintf('%s%s[%s]',   istr, vstr, str);
      end
   end
+end
 
-return
+  if ~nargout || pflag
+     if isempty(nstr)
+        nstr=inputname(1); if isempty(nstr), nstr='ans'; end
+     end
+     fprintf(1,'\n   %s = \n\n',nstr);
+     if done==1, fprintf(1,'      '); end
+     disp(str); fprintf(1,'\n');
+     if ~nargout, clear str; end
+  end
+
+end
 

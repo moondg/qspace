@@ -94,6 +94,7 @@ function C=mtimes(A,B,ia,ib)
 
      C=class(C,'QSpace');
      if rC==4 && use_op, C=fuse_op_indices(C); end
+     if rC>=3, C.info.otype='operator'; end
   end
 
 end
