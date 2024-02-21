@@ -20,24 +20,26 @@
   P0=`dirname "$P0"`
 
 # script 'ml' starts form MYMATLAB
-# -> ensure that $MYMATLAB/startup.m is present;
-# you may change the default value here, based on the location
-# of this script, in the user-specific script called right below
+# to ensure that $MYMATLAB/startup.m is called.
+# You may change the default here based on the location
+# of this script in matlab_setup_user.sh called below
   export MYMATLAB="${P0//system/}"
 
-# Put your own setup into a separate file that is not part
-# of this git repository, so it does not get overwritten by
-# git updates; you may do this by defining an environmental
-# variable QS_CONFIG_ML_SH; by default, otherwise, this looks
-# for matlab_setup_user.sh in the same directory as this file
-# Wb,Feb14,24
+# You need to put your own setup into a separate file that is
+# not part of this git repository, so it does not get overwritten
+# by git updates; you may do this by defining an environmental
+# variable QS_CONFIG_ML_SH that points to script; otherwise,
+# by default, this looks for matlab_setup_user.sh in the same
+# directory as this file // Wb,Feb14,24
   if [ -z "$QS_CONFIG_ML_SH" ]; then
      msh="$P0/matlab_setup_user.sh"
      if [ -f "$msh" ]; then
         export QS_CONFIG_ML_SH="$msh"
-     else printf "\n \e[31m matlab_setup.sh:\n  %s\n  %s\n  %s\e[0m\n\n" \
-       "Please setup the system environment for QSpace first" \
-       "e.g., set environmental variable QS_CONFIG_ML_SH or use file" "$msh"
+   # else
+     # issue error in matlab_setup.pl script below
+     # printf "\n \e[31m matlab_setup.sh:\n  %s\n  %s\n  %s\e[0m\n\n" \
+     #  "Please setup the system environment for QSpace first" \
+     #  "e.g., set environmental variable QS_CONFIG_ML_SH or use file" "$msh"
      fi
   fi
 

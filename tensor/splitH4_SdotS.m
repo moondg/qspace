@@ -1,8 +1,9 @@
 function [X1,X2,Iout]=splitH4_SdotS(H4,varargin)
 % function [X1,X2,I]=splitH4_SdotS(H4 [,opts])
 %
-%    Split input H4 with index order (i,j;i',j'), i.e. 2-in, 2-out (')
-%    into an X1.X2' structure, i.e. X1 \cdot X2^\dagger.
+%    Split input H4 = <ij|H4|i'j'> with index order (i,j;i',j')
+%    and hence index directions ++--, i.e. 2-in, 2-out ('),
+%    into an X1.X2' structure, i.e. H4 = X1 \cdot X2^\dagger.
 %
 % Options
 %
@@ -17,6 +18,7 @@ function [X1,X2,Iout]=splitH4_SdotS(H4,varargin)
 
   getopt('init',varargin);
      vflag=getopt('-v');
+     kflag=getopt('-k');
      stol =getopt('stol',1E-12);
      istr =getopt('istr','H4' );
      notr =getopt('--notr');
@@ -27,23 +29,22 @@ function [X1,X2,Iout]=splitH4_SdotS(H4,varargin)
      wbdie('invalid input H4');
   end
 
-  H41=sum(QSpace(H4));
+  H4_=sum(QSpace(H4));
 
-  E1=QSpace(getIdentityQS(H41,[1 3])); Z1=QSpace(getIdentityQS(E1,1,'-0'));
-  E2=QSpace(getIdentityQS(H41,[2 4])); Z2=QSpace(getIdentityQS(E2,1,'-0'));
+  E1=getIdentity(H4_,[1 3]);  Z1=getIdentity(E1,1,'-0');
+  E2=getIdentity(H4_,[2 4]);  Z2=getIdentity(E2,1,'-0');
 
-  A1=QSpace(getIdentityQS(E1,Z1,2));
-  P1=QSpace(permuteQS(contractQS(A1,2,Z1,'2*'),'132'));
+  A1=getIdentity(E1,Z1,2);
+  P1=contract(A1,2,Z1,'2*',[1 3 2]);
 
   same12=isequal(E1,E2);
   if same12
-     A2=A1; A4=A1; P2=P1;
+     A2=A1; P2=P1;
   else
-     A2=QSpace(getIdentityQS(E2,Z2,2));
-     P2=QSpace(permuteQS(contractQS(A2,2,Z2,'2*'),'132'));
-
-     A4=QSpace(getIdentityQS(E1,E2));
+     A2=getIdentity(E2,Z2,2);
+     P2=contract(A2,2,Z2,'2*',[1 3 2]);
   end
+  A4=getIdentity(E1,E2);
 
   nH=numel(H4); tr4=[];
   Iout.stol=stol; Iout.Xb=QSpace; Iout.SS={};
@@ -114,6 +115,8 @@ function [X1,X2,Iout]=splitH4_SdotS(H4,varargin)
   elseif vflag
      wblog(' * ','got consistent %s [@ %.2g]',istr,e);
   end
+
+  if kflag, wbstop; end
 
 end
 

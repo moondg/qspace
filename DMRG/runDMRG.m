@@ -23,7 +23,13 @@ if isset('CONT') % CONTINUE_DMRG
 
 else % !CONTINUE_DMRG
 
-  setdef('wsys','Spin1-AKLT'); % AKLT (S=1) : open with end spins
+% setdef('wsys','Spin1-AKLT');
+  if ~isset('wsys')
+     wsys='Spin1-AKLT';   % by default, chain with open boundary
+     setdef('alpha',0.3); s=sprintf('(spin S=1 AKLT at alpha=%g)',alpha);
+     banner('box',['running DMRG for default model ' s]);
+  end
+
   isw1=1;
 
   ismcc=(ismcc || isdeployed);
@@ -99,14 +105,15 @@ else % !CONTINUE_DMRG
     case 'Spin1-AKLT'
   % ================================================================ %
 
-      setdef('qloc',2); % by default: use spin S=1 (2S=2)
+      setdef('qloc',2); % by default: use spin S=1 (qloc=2S=2)
 
-    % alpha=0  ; % plain Heisenberg Hamiltonian
-    % alpha=1/3; % AKLT Hamiltonian
-      if isset('ph1') && isset('ph2'), alpha=[];
+    % alpha is strength of biquadratic term
+    %    alpha=0     plain Heisenberg Hamiltonian
+    %    alpha=1/3   AKLT Hamiltonian with simple MPS ground state
+      if isset('ph1') && isset('ph2'), alpha=[]; % -> cos(ph), sin(ph)
       else
-       % setdef('alpha',1/3); % got exact ground state within first sweep
-         setdef('alpha',0.3);
+       % setdef('alpha',1/3); % exact ground state within first DMRG sweep
+         setdef('alpha',0.3); % slightly detuned from exact AKLT point
       end
 
       setdef('L',32,'nk1',2,'nk2',6);

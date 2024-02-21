@@ -1,5 +1,7 @@
 #!/usr/bin/perl -w
-# in case that the linux comman realpath is not available
+# simple perl script that wraps the perl function realpath
+# into a shell command in case that the linux command realpath
+# is not available there (e.g., used by matlab_setup.sh)
 # Wb,Jan10,19
 
   use Cwd 'realpath';

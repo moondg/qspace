@@ -9,11 +9,12 @@
 ## https://www.mathworks.com/support/requirements/supported-compilers-linux.html
 ## https://www.mathworks.com/support/requirements/previous-releases.html
 
-## define MATLAB_ROOT (e.g., required for MEX compilation etc.)
+## Define MATLAB_ROOT (e.g., required for MEX compilation etc.)
  # export MATLAB_ROOT="your-matlab-path (excluding ./bin)"
 
-## define C++ compiler to use (default in matlab_setup.pl: `which gcc')
- # export GCC="your-C++-compiler"
+## Define C++ compiler to use (default in matlab_setup.pl: `which gcc')
+## since supported and compatible compilers depend on the
+## matlab release version, please use 'mex -setup C++', instead.
 
 ## if MATLAB_ROOT is not yet set, the following chooses
 ## the module system as another way to define MATLAB_ROOT;
@@ -25,26 +26,24 @@
 
    if [ -z $MATLAB_ROOT ]; then
       if `type module >/dev/null 2>&1`; then
-       # module load matlab/2018b  # matlab/R2018 pairs with gcc/6.3.x
-       # module load gcc/6.3.0
- 
+       # e.g., for linux
        # module load matlab/2020b
        # module load gcc/8.4.0
  
-       # here for macOS
-       # matlab/2020b -> xcode/11.x
-       # matlab/2022b -> xcode/13.x
+       # e.g., for macOS
          module load matlab/2022b
          module load xcode/13.4
       fi
    fi
 
-## directory settings (please adapt to your environment)
+## further QSpace specific directory settings (adapt as necessary)
 
 ## see default value in matlab_setup.sh
+## therefore typically no need to change that value here
  # export MYMATLAB=$HOME/Matlab
 
 ## LMA = local matlab data directory (default for data storage)
+## used by lib/cto.m as in `cto lma' to change directory to $LMA
    if [ ! $LMA ]; then
       export LMA=/data/$USER/Data
    fi
@@ -55,10 +54,11 @@
   
 ## level of parallization of the MEX routines
 ## this overwrites the defaults chosen by matlab_setup.pl
- # export QSP_NUM_THREADS=2  #> QSpace
- # export OMP_NUM_THREADS=4  #> Intel MKL library
- # export MKL_NUM_THREADS=4  #> Intel MKL library
+ # export QSP_NUM_THREADS=2  # QSpace specific
+ # export OMP_NUM_THREADS=4  # Intel MKL library
+ # export MKL_NUM_THREADS=4  # Intel MKL library
  
-## used for parallelization of MEX compilation (see Makefile)
+## used for parallelization of MEX compilation
+## alternative to make -j $MSLOTS ... (see Source/Makefile)
  # export MSLOTS=12
 

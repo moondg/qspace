@@ -61,10 +61,29 @@
   }
 
   chomp($matlab=`which matlab 2>/dev/null`);
+  chomp($mex=`which mex 2>/dev/null`);
+
+  if (!$matlab || ($MLR && $matlab!~/$MLR/)) {
+  if (!$ENV{QS_CONFIG_ML_SH}) { $_="$P/matlab_setup_user.sh";
+     if (!-f $_) { $q='MYMATLAB';
+        if ($ENV{$q} && s/$ENV{$q}\/*/\$$q\//) 
+             { $q=" (having $q = ".repHome($ENV{$q}).')'; } 
+        else { $q=''; s/$ENV{HOME}/~/; }
+
+        print STDERR join('  ',"\n",
+        "system/matlab_setup.sh$q:\n\n\e[31m",
+        "    Please setup the QSpace system environment first\n",
+        "    i.e., create/edit file $_\n",
+        "    e.g., based on $_-template\n",
+        "    or set environmental variable QS_CONFIG_ML_SH.\e[0m\n\n",
+        "See QSpace documentation for more detailed information [App. B2].\n");
+        exit 1;
+     }
+  }}
+
   if (!$matlab) { ++$nerr; wblog(
      "ERR command 'matlab' not available on PATH (see matlab_setup*.sh)");
   }
-  chomp($mex=`which mex 2>/dev/null`);
   if (!$mex) { ++$nwrn; wblog(
      "WRN command 'mex' not available on PATH (see matlab_setup*.sh)");
   }
