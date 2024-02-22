@@ -1,6 +1,9 @@
 function C=tensor(varargin)
 % function C=tensor(A,B,...)
-% kron including merging of quantum numbers
+%
+%    Kronecker product of QSpace tensors
+%    which also fuses quantum numbers.
+%
 % Wb,Jul07,09
 
   if nargin==1 && numel(varargin{1})>1

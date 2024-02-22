@@ -1,5 +1,5 @@
 function [A,t]=deconj(A,idx)
-% Function [A,t]=deconj(A [,idx])
+% function [A,t]=deconj(A [,idx])
 %
 %    Unset "bra" (complex conjugate) label for specified dimensions
 %    (all if idx is not specified).

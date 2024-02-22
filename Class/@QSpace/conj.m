@@ -1,5 +1,5 @@
 function A=conj(A)
-% Function: A=conj(A)
+% function: A=conj(A)
 %
 %    get complex conjugate of operator in QSpace format;
 %    overloading the conj routine

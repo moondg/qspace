@@ -1,5 +1,5 @@
 function display(A,varargin)
-% Function display(A [,OPTS])
+% function display(A [,OPTS])
 % Options
 %
 %    -a, -f    show all record entries even if many (-f like full, force)
@@ -162,6 +162,10 @@ function i=is_empty(A)
 end
 
 % -------------------------------------------------------------------- %
+% calculate index zero based first, then convert
+% NB! ind2sub() would not return vector, but variable number
+% of output arguments ranging from 1 to length of s
+
 function kk = ind2sub_aux(s,k)
 
    if numel(s)<=2 && s(1)<2, kk=k; return; end
@@ -176,6 +180,8 @@ function kk = ind2sub_aux(s,k)
 end
 
 % -------------------------------------------------------------------- %
+% display info for full single QSpace
+
 function display_1(A,m,Eflag,use_tex,vflag,varargin)
 
   q=str2num(getenv('WB_VERBOSE'));
@@ -366,6 +372,8 @@ function display_1(A,m,Eflag,use_tex,vflag,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% Wb,Jun08,22
+
 function s=dim_to_str(sz,r)
 
    l=length(sz);

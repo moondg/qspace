@@ -1,5 +1,5 @@
 function A=imag(A)
-% Function: A=imag(A)
+% function: A=imag(A)
 %
 %    extract imaginary data of operator in QSpace format
 %

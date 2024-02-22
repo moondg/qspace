@@ -1,5 +1,5 @@
 function A=diag(A,varargin)
-% Function: A=diag(A [,OPTS])
+% function: A=diag(A [,OPTS])
 %
 %    Toggle that switches between diagonal formats similar to matlab's
 %    behavior of diag(): for full operator A, extract diagonal of A
@@ -40,6 +40,8 @@ function A=diag(A,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% outsourced // Wb,Jul31,20
+
 function A=diag_1(A,cflag,dflag,trans)
 
   nd=numel(A.data);

@@ -1,5 +1,5 @@
 function i=issingleton(A,kk)
-% Function i=issingleton(A,kk)
+% function i=issingleton(A,kk)
 % Wb,Apr24,08
 
   if nargin<2 || isequal(kk,'all'), kk=1:length(A.Q);

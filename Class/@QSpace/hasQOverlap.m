@@ -1,5 +1,5 @@
 function [i,I] = hasQOverlap(A,i1,B,i2,flag)
-% Function: [ss,qq] = hasQOverlap(A,i1,B,i2)
+% function: [ss,qq] = hasQOverlap(A,i1,B,i2)
 % check overlap in QIDX
 % Wb,Jun22,07
 

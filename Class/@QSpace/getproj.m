@@ -1,5 +1,5 @@
 function P=getproj(H,varargin)
-% Function P=getproj(H [,eps,opts])
+% function P=getproj(H [,eps,opts])
 %
 %    get projector with respect to H into ground state space
 %    (diagonalize if necessary); eps determines the window wrt.

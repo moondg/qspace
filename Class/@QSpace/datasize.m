@@ -1,5 +1,5 @@
 function dd=datasize(A,sflag)
-% Function [D,DD]=datasize(A [,'-s'])
+% function [D,DD]=datasize(A [,'-s'])
 %
 %    get full listing of size(data{}),
 %    except if option '-s' is specified which gives summary 

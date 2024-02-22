@@ -1,4 +1,10 @@
 function qs=toStr(A,varargin)
+% function qs=toStr(A,varargin)
+%
+%     This function returns summary of A in terms of a string.
+%     See also QSpace/disp.m
+%
+% Wb,Jan24,07
 
   sA=size(A); n=prod(sA); ii=1:n;
 
@@ -39,6 +45,9 @@ function qs=toStr(A,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% calculate index zero based first, then convert
+% NB! ind2sub() would not return vector, but set of arguments (#(@*@*!
+
 function kk = ind2sub_aux(s,k)
 
   k=k-1; kk=zeros(size(s));

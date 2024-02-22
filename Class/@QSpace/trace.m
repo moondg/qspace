@@ -1,5 +1,5 @@
 function x=trace(A,I,varargin)
-% Function x=trace(A,I [,opts])
+% function x=trace(A,I [,opts])
 %
 %   trace of QSpace operator
 %

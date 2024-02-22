@@ -1,5 +1,5 @@
 function qq=getQRange(A,k)
-% Function qq=getQRange(A,k)
+% function qq=getQRange(A,k)
 
 % [Q,I,d]=uniquerows(A.Q{k});
 % qq=I; n=length(I);

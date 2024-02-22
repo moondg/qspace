@@ -1,5 +1,8 @@
 function C=times(A,B,opt)
-% overloading .* operator
+% function C=times(A,B,opt)
+%
+%    This overloades the .* operator in Matlab.
+%
 % Options
 %
 %   --skip-cgc   C inherits CGC space of tensor A *as it is*

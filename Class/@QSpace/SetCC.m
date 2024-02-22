@@ -1,5 +1,5 @@
 function [A,t]=SetCC(A,idx)
-% Function [A,t]=SetCC(A [,idx])
+% function [A,t]=SetCC(A [,idx])
 %
 %    Set "dagger" for specified index-labels (all if idx is not specified).
 %    If any A.data{k} is complex, A.data will also be complex conjugated.

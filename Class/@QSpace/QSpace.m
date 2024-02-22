@@ -1,5 +1,5 @@
 function [A,varargout] = QSpace(varargin)
-% Function [A,varargout] = QSpace(...)
+% function [A,varargout] = QSpace(...)
 %
 %    Construct QSpace class object.
 %
@@ -164,6 +164,8 @@ function [A,varargout] = QSpace(varargin)
 end
 
 % -------------------------------------------------------------------- %
+% outsourced from usage #1 // Wb,Jan19,20
+
 function A=struct_to_QSpace(A)
 
   if ~isfield(A,'Q') || ~isfield(A,'data')
@@ -176,6 +178,8 @@ function A=struct_to_QSpace(A)
 end
 
 % -------------------------------------------------------------------- %
+% outsourced from end of main usage above // Wb,Jan19,20
+
 function check_QSpace(A)
 
   nA=numel(A);
@@ -391,6 +395,8 @@ function varargout = initQMap(varargin)
 end
 
 % -------------------------------------------------------------------- %
+% build identity operator from other operator basis
+
 function E = initQSpaceUnity(A)
 
   if ~nargin || ~isa(A,'QSpace') && (~isstruct(A) || ~isfield(A,'Q'))

@@ -1,5 +1,10 @@
 function A=transpose(A)
-% overloading the .' operator (element wise transpose)
+% function A=transpose(A)
+%
+%   This function overloads the .' operator in Matlab
+%   for `element wise transpose'.
+
+% Wb,Aug19,06
 
   if isempty(A) || numel(A)==1 && isempty(A.Q) && isempty(A.data)
      return

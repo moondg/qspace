@@ -1,5 +1,5 @@
 function qq=expandQ(A,k)
-% Function qq=expandQ(A,k)
+% function qq=expandQ(A,k)
 % deprecated: see getQRange.m
 
 % [Q,I,d]=uniquerows(A.Q{k});

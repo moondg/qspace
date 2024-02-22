@@ -62,16 +62,15 @@ void mexFunction(
 
    for (unsigned i=0; i<nargin; ++i) {
       if (!mxIsChar(argin[i])) { wblog(FL,
-         "WRN ignoring input argument (%s)",mxGetClassName(argin[i]));
+         "WRN ignoring input argument #%d (%s) expecting strings",
+          i+1,mxGetClassName(argin[i]));
          continue;
       }
       if (mxGetString(argin[i],str,24)) { wblog(FL,
          "WRN invalid option %d (string out of bounds)",i+1);
          continue;
       }
-      if (i) { PRINTF("\n"); }
-
-      if (!strcmp(str,"--check-hl")) {
+      if (!strcmp(str,"--check-hl")) { if (i) { PRINTF("\n"); }
          wblog(FL,"TST useCol = %d",Wb::useCol);
          wblog(FL,"NB! some message");
          wblog(FL,"WRN some message");
@@ -88,13 +87,13 @@ void mexFunction(
          wblog(FL,"XXY some message");
          wblog(FL,"XXB some message");
       }
-      else if (!strcmp(str,"--check-env")) {
+      else if (!strcmp(str,"--check-env")) { if (i) { PRINTF("\n"); }
          wblog(FL," *  envVRB = %d = %s",Wb::envVRB,BITS(Wb::envVRB));
          wblog(FL," *  envDKT = %d",Wb::envDKT);
          wblog(FL," *  useCol = %d",Wb::useCol);
          wblog(FL," *  envDBG = %d",Wb::envDBG);
       }
-      else { wblog(FL,"TST %s() %s",FCT,str); }
+      else { wblog(FL,"TST ignoring input '%s'",str); }
    }
 
 }  catch (Wb::LogException &e) { ExitMsg(e.istr); }

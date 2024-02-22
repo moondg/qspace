@@ -1,5 +1,5 @@
 function xx=getscalar(A)
-% Function x=getscalar(A)
+% function x=getscalar(A)
 % Wb,Aug28,08
 
   xx=zeros(size(A));

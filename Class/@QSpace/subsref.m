@@ -1,7 +1,8 @@
 function varargout=subsref(A,S)
 % function Aout=subsref(A,S)
 %
-%   Allow access to all fields in a QSpace tensor.
+%   This manages access to the fields
+%   in the underlying structure of QSpace A.
 %
 % AW (2012)
 

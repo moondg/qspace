@@ -1,5 +1,8 @@
 function A=skiprecs(A,ix)
 % function A=skiprecs(A,ix)
+%
+%    Remove QSpace records ix from QSpace A.
+%
 % Wb,Aug01,12
 
 % adapted from getrecs()

@@ -1,5 +1,5 @@
 function [A,I]=squeeze(A,varargin)
-% Function [A,I]=squeeze(A [,OPTS])
+% function [A,I]=squeeze(A [,OPTS])
 %
 %    remove singleton dimensions (similar to matlab's routine)
 %
@@ -22,6 +22,8 @@ function [A,I]=squeeze(A,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% only indizes with q=0 (scalars) are considered singletons
+
 function [A,ks]=squeeze_1(A,ks)
 
   Q=A.Q; r=numel(Q); qnrm=zeros(1,r);

@@ -1,5 +1,10 @@
 function S=sum(A,dim)
-% overloading the sum operator
+% function S=sum(A,dim)
+%
+%   This overloads the sum operator using plusQS().
+%   The second argument acts similar to Matlab's sum(A,dim) for array A.
+%
+% end
 
   if isempty(A), S=A; return; end
 

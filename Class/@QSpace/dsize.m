@@ -1,5 +1,5 @@
 function [D,DD]=dsize(A,varargin)
-% Function [D,[DD|I]]=dsize(A [,opts])
+% function [D,[DD|I]]=dsize(A [,opts])
 % get maximum D for every dimension of given MPS state
 %
 %     where D is a vector of length rank(A)
