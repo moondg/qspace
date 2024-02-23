@@ -78,17 +78,16 @@
       if length(op2)==3
       op1=[]; op2=op2(2:end); clear zflags; end
 
-    case {'2HAM','2HKM'} % 2-imppurity helical Anderson model // Wb,Aug11,21
+    case {'2HAM','2HKM'} % 2-imppurity helical Anderson model
+
       if isequal(wsys,'2HAM'), q=1; else q=0; end
-
       setdef('Uflag',q,'use_mem',1,'locRho',1,'nostore',1);
-    % setupHelical_old; NKEEP=4096;
       setupHelical
-
-    % Lambda=4
-    % - Etrunc=6 => stays below Nkeep ~ 2000
-    % - Etrunc=8 => reaches Nkeep>4096 (~5000?) at iteration k=2 only)
       setdef('Etrunc',6,'Nkeep',4096);
+
+    case {'SpK'} % symplectic Kondo
+      setdef('use_mem',1,'locRho',1,'nostore',1);
+      setupSpKondo
 
     case 'pgk' % pseud-gap Kondo
 
