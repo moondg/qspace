@@ -1,6 +1,9 @@
 function A=ctranspose(A)
-% overloading the hermitian conjugate operator '
-% accept hyper index
+% function A=ctranspose(A)
+%
+%    This overloads the hermitian conjugate operator '
+%    (accepts hyperindex)
+%
 % Wb,Nov30,09
 
   A = builtin('ctranspose', A);

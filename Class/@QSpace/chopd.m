@@ -1,9 +1,10 @@
 function A=chopd(A,aref)
 % function A=chopd(A [,aref])
 %
-%    apply chopd() to data
-%    => sets small matrix elements to zero
-%    => removes imaginary noise if any
+%    This `chops data' in A.data{} in the sense that it sets
+%    small matrix elements below threshold to zero, and removes
+%    imaginary noise if any. The numeric threshold used is based
+%    on eps = aref*1E-12 where by default aref=|A|.
 %
 % Wb,Oct17,11
 
