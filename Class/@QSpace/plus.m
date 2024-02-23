@@ -1,5 +1,9 @@
 function C=plus(A,B)
-% overloading the + operator
+% function C=plus(A,B)
+%
+%   This overloads the + operator in Matlab.
+%
+% Wb,Apr24,09
 
   if isnumeric(B) && isscalar(B)
    % adding single scalar = acts like diagonal operator

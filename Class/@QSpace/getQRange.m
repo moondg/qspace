@@ -1,5 +1,9 @@
 function qq=getQRange(A,k)
 % function qq=getQRange(A,k)
+%
+%    Get range of symmetry sectors in specified QSpace A.
+%
+% Wb,Feb24,08
 
 % [Q,I,d]=uniquerows(A.Q{k});
 % qq=I; n=length(I);

@@ -4,7 +4,7 @@ function varargout=subsref(A,S)
 %   This manages access to the fields
 %   in the underlying structure of QSpace A.
 %
-% AW (2012)
+% AW (2007, 2012)
 
 % NB! This routine is required to access fields within a QSpace tensor
 % outside this class environment. If not defined, matlab issues error:

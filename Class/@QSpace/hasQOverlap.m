@@ -1,6 +1,8 @@
 function [i,I] = hasQOverlap(A,i1,B,i2,flag)
-% function: [ss,qq] = hasQOverlap(A,i1,B,i2)
-% check overlap in QIDX
+% function [i,I] = hasQOverlap(A,i1,B,i2,flag)
+%
+%    Check overlap in QIDX space for specified legs in A and B.
+%
 % Wb,Jun22,07
 
   Q1=uniquerows(A.Q{i1});

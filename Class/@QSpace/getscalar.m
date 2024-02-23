@@ -1,5 +1,10 @@
 function xx=getscalar(A)
 % function x=getscalar(A)
+%
+%    Assuming that A is the result out of full contraction,
+%    this results in a scalar that can be extracted here
+%    with safety checks.
+%
 % Wb,Aug28,08
 
   xx=zeros(size(A));

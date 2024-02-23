@@ -2,12 +2,12 @@ function A=mapQ(A,varargin)
 % QM = Q map that transforms Q numbers to `rotated' set
 % Example: SIAM: (N1,N2) --> (Q,Sz)
 %
-%      QM      *  Q_old    + offset  =  Q_new
-%
-%    [ 1  1    *  [ N1     +  [-1    =  [ Q
+%      QM      *  Q_old   +  offset  =  Q_new
+%                           
+%    [ 1  1    *  [ N1    +   [-1    =  [ Q
 %      1 -1 ]       N2 ]        0 ]       Sz ]
 %
-% Wb,Aug10,6
+% Wb,Aug10,06
 
   if nargin<2 || nargin>3, eval(['help ' mfilename]); return; end
 

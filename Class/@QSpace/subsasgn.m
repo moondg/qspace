@@ -1,6 +1,12 @@
 function A=subsasgn(A,S,val)
-% SUBSASGN
+% function Aout=subsref(A,S)
 %
+%   This manages setting fields
+%   in the underlying structure of QSpace A.
+%
+% AW (2007, 2012)
+
+% SUBSASGN
 % Reference http://www.cs.ubc.ca/~murphyk/Software/matlabObjects.html
 % Classes and objects in matlab: the quick and dirty way
 % Kevin Murphy, 2005

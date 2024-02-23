@@ -1,5 +1,9 @@
 function C=minus(A,B)
-% overloading the - operator
+% function C=minus(A,B)
+%
+%   This overloads the - operator in Matlab.
+%
+% Wb,Apr24,09
 
   if isnumeric(B) && isscalar(B)
    % subtracting single scalar = acts like diagonal operator

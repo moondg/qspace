@@ -1,5 +1,10 @@
 function C=mrdivide(A,B)
-% overloading * operator
+% function C=mrdivide(A,B)
+%
+%    This overloads the right-devide operator.
+%    It is restricted to numbes B only, and hence permits
+%    the syntac A/x for QSpace A and x a numeric value.
+%
 % Wb,Sep28,12
 
   if nargin~=2 || ~isnumeric(B)

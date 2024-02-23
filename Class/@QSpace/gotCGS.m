@@ -1,5 +1,9 @@
 function [i,rsym] = gotCGS(A)
 % function [i,rsym] = gotCGS(A)
+%
+%    Whether got Clebsch-Gordan reference space (CGS)
+%    where rsym specifies the rank of the symmetries.
+%
 % Wb,May16,10
 
   i=0; rsym=[];
