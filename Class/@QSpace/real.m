@@ -1,5 +1,5 @@
 function A=real(A)
-% function: A=real(A)
+% function A=real(A)
 %
 %    extract real data of operator in QSpace format
 %

@@ -1,6 +1,9 @@
 function ie=isempty(A)
-% function ie=isempty(A)
-% Wb,May12,06;  Wb,Aug23,08
+% function i=isempty(A)
+%
+%    Check whether A is an empty QSpace (e.g. has no non-zero blocks).
+%
+% Wb,May12,06; Wb,Aug23,08
 
   ie=true; n=length(A);
   if ~builtin('isempty',A)

@@ -1,6 +1,9 @@
 function A=permute(A,varargin)
-% Usage: A=permute(A)
-% permute QSpace with given permutation
+% Usage: A=permute(A,p)
+%
+%    Permute legs of given QSpace with permutation p
+%    (simple wrapper to permuteQS).
+%
 % Wb,Sep08,06 ; Wb,Nov24,14
 
  % NB! need to be careful about CGRef data!

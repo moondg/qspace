@@ -1,5 +1,8 @@
 function ia =isAbelian(A,varargin)
 % function i=isAbelian(A [,opts])
+%
+%    Check whether A has Abelian symmetries only.
+%
 % Wb,Feb20,13
 
   getopt('init',varargin);
