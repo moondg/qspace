@@ -119,6 +119,14 @@
   % initial vector.
 
 % -------------------------------------------------------------------- %
+% may add first Wilson site later into H0 by hand
+% e.g. see 'n0add' in setupSIAM_SU2x2.m
+% this is required for the Kondo model only; here for the Anderson-
+% type setup (by using Gamma and U), this is options.
+
+% -------------------------------------------------------------------- %
+% setup required for rfdm.m later when computing correlation functions
+
   FC=FF;
   Z0=Z;
 

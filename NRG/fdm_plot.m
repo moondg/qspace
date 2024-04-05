@@ -18,13 +18,13 @@
     'afac?','sigma?','emin?','emax?','nlog?','reps?','eps?','skip?','keepA0?',...
     'xli?','yli?','adisp?','alpha?');
 
-  if ~exist('Idma','var')
-     Idma.rho=nan(1,2);
-     Idma.ver='';
-     Idma.T=nan;
+  if ~exist('Ifdm','var')
+     Ifdm.rho=nan(1,2);
+     Ifdm.ver='';
+     Ifdm.T=nan;
   end
 
-  [ox,ax,ah,Idma.smo] = rsmoothSpec(om, a0, Idma, osmo{:});
+  [ox,ax,ah,Ifdm.smo] = rsmoothSpec(om, a0, Ifdm, osmo{:});
 
   if isset('ac_cmd')
      try
@@ -40,7 +40,7 @@
            for t={'Spec01','Spec01i','Spec02'}
               h=findall(gcf,'type','axes','tag',t{:}); if isempty(h), continue; end
               set(gcf,'CurrentAxes',h(1)); hold on
-              h=addplot(ox,ac*Idma.smo.afac{1},lo{:});
+              h=addplot(ox,ac*Ifdm.smo.afac{1},lo{:});
               set(h(1),'Disp','A^{imp}(\omega)');
            end
         else 
@@ -85,11 +85,13 @@
 
   nrg_header; TK=TKondo;
 
-  if isfield(Idma,'vtag') s=Idma.vtag;
-  else s=Idma.ver;
+  if isfield(Ifdm,'vtag') s=Ifdm.vtag;
+  elseif isfield(Ifdm,'ver') s=Ifdm.ver;
+  else
+     s='(ver?)';
   end
 
-  s={sprintf('%s :: T=%.3g', s, Idma.T)};
+  s={sprintf('%s :: T=%.3g', s, Ifdm.T)};
   if exist('B','var') && B~=0
      if TK~=0
           s{end+1}=sprintf(', B=%.3gT_K', param.B/TK);
@@ -100,10 +102,16 @@
   addfinfo
 
 % --------------------------------------------------------------------- %
+% inset upper right
+% setax(ah(2,1));
+
+  if ~isfield(Ifdm,'rho'), return; end
+
   setax(ah(1,1));
+
   ah(2,2)=inset({'NW',[0 -.05]},'scale',[1.2 1],'tag','Spec01r'); 
 
-  dd=fliplr(Idma.rho);
+  dd=fliplr(Ifdm.rho);
   if norm(dd(:,end))==0
      h=plot(dd(:,1:end-1),'ko-','Disp','w_n^{(D)}');
   else

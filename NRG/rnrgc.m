@@ -69,7 +69,7 @@
    % NB! make sure job output data is not overwritten by other jobs!
      s=getenv('JOB_ID'); if ~isempty(s), fout=[fout '.' s]; end
      s=getenv('SGE_TASK_ID'); if ~isempty(s), fout=[fout '.' s]; end
-     user_fout=fout; % rdma and other routines will look for it!
+     user_fout=fout; % rfdm and other routines will look for it!
   end
 
 if calcflag || exist('TST_RNRG','var') && TST_RNRG

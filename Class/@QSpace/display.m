@@ -106,10 +106,10 @@ function display(A,varargin)
      if vflag && nA>n2, fprintf(1,'\n'); end
      ise=zeros(1,nA); ocr=zeros(1,nA); rr=zeros(1,nA); nl2=nl;
 
-     for i=1:nA
-        ocr(i)=all(getqdir(A(i))>0);
+     for i=1:nA, 
         ise(i)=is_empty(A(i));
-        rr(i)=numel(A(i).Q);
+        rr(i)=numel(A(i).Q); if rr(i)
+        ocr(i)=all(getqdir(A(i))>0); end
      end
      rmax=max(rr);
      if numel(find(ocr)>1), oc={'~oc'}; else oc={}; end

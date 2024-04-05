@@ -627,9 +627,11 @@ void NRG_Wilson(
        FG[k].init_tags(); 
     }
 
-    if (Nkeep>9999 && !fout && !fflag) {
-       fout="./NRG/NRG"; wblog(FL,
-       "WRN saving data to file for Nkeep=%d (/9999)", Nkeep);
+    if (Nkeep>12000 && !fout && !fflag) {
+       fout="./NRG/NRG"; 
+       wblog(FL,"WRN saving data to files %s since Nkeep=%d > 12000\n"
+       "(hint: use option -f to enforce usage of memory only)",
+       fout.data,Nkeep);
     }
     toFile = !fout.isEmpty();
 
@@ -705,8 +707,10 @@ void NRG_Wilson(
        if (vflag) printf("\n");
     }
     else if (fout.data && fout.data[0]) wblog(FL,
-       "WRN keeping data internally\nyet got fout='%s' !?",fout.data);
-    else wblog(FL,"<i> internal mode (no file I/O)");
+       "WRN keeping data internally\nyet got fout='%s'",fout.data);
+    else {
+       wblog(FL,"<i> internal mode (no file I/O)");
+    }
 
     { wbvector< wbMatrix<TQ> > qq(F1.len+FG.len);
       wbvector<widx_t> sz;

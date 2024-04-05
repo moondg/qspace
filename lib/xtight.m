@@ -1,22 +1,27 @@
 function xl=xtight(varargin)
-% xtight - set x axis tight to data
-% usage: xtight([fac, opts])
+% function xl=xtight([ah,][fac,][ opts])
 %
-%    fac = extra zoom (default fac=1, fac>1 introduces white margin)
+%    Set x-axis tight to data. Together with ytight(), this 
+%    represents a more controlled version to Matlab's 'axis tight'.
 %
 % Options
 %
-%   'view'   zoom to xlim within local ylim view
+%   fac      extra zoom (default fac=1, fac>1 zooms out)
+%   ah       uses specified axis handle instead of defaul (current axis)
+%
+%   'view'   zoom to xlim within local xlim view
 %   'x1',..  fixed xlim(1)
 %   'x2',..  fixed xlim(2)
 %
 % Wb,2002
 
-  if nargin && isaxis(varargin{1})
-       ah=varargin{1}; varargin(1)=[]; setax(ah);
-  else ah=gca; end
+  if nargin && isaxis(varargin{1}), l=2;
+     ah=varargin{1}; n=numel(ah);
+     if n~=1, wbdie('invalid usage (got %d axis handles)',n); end
+  else ah=gca; l=1;
+  end
 
-  getopt ('init', varargin);
+  getopt ('init', varargin(l:end));
      x1 = getopt('x1',[]);
      x2 = getopt('x2',[]);
      vw = getopt('view' );
@@ -31,7 +36,7 @@ function xl=xtight(varargin)
   end
 
   if vw
-     xl=getxlim('-view'); dx=diff(xl);
+     xl=getxlim(ah,'-view'); dx=diff(xl);
      if dx<=0
         s=sprintf('getxlim() returned [%s]',vec2str(xl));
         if dx<0, wbdie(s); else wblog('WRN',s); end
@@ -39,11 +44,11 @@ function xl=xtight(varargin)
         xl=xlim__(ah,xl);
      end
   elseif dflag
-     xl=xlim__(ah,getxlim('-data'));
+     xl=xlim__(ah,getxlim(ah,'-data'));
   else
      xopts={'YLim',get(ah,'YLim'),'YLimMode',get(ah,'YLimMode')};
-     axis tight;
-     xl=xlim__(ah,xlim,xopts{:});
+     axis(ah,'tight');
+     xl=xlim__(ah,xlim(ah),xopts{:});
   end
 
   if ~isempty(fac)
@@ -51,7 +56,7 @@ function xl=xtight(varargin)
         dx=(fac-1)/2*diff(xl);
         xl=xlim__(ah,[xl(1)-dx, xl(2)+dx]);
      else
-        if xl(1)==0, xl=getxlim('-data'); end
+        if xl(1)==0, xl=getxlim(ah,'-data'); end
         if all(xl~=0)
            fac=exp((fac-1)/2*diff(log(abs(xl))));
            if fac~=0 && ~any(isinf(xl)) && ~(isnan(fac) || isinf(fac))
@@ -59,17 +64,17 @@ function xl=xtight(varargin)
         end
      end
   elseif isequal(get(ah,'YScale'),'log') && xl(1)==0
-     xl=xlim__(ah,getxlim('-data','-pos'));
+     xl=xlim__(ah,getxlim(ah,'-data','-pos'));
   end
 
-  if ~isempty(x1) || ~isempty(x2), xl=xlim;
+  if ~isempty(x1) || ~isempty(x2), xl=xlim(ah);
      if ~isempty(x1), xl(1)=x1; end
      if ~isempty(x2), xl(2)=x2; end
      xl=xlim__(ah,xl);
   end
 
   if ~isempty(mh), setprops(mh,'-reset'); end
-  if nargout, xl=xlim; else clear xl; end
+  if nargout, xl=xlim(ah); else clear xl; end
 
 end
 

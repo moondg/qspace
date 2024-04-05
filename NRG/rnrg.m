@@ -173,7 +173,7 @@
      s=getenv('SGE_TASK_ID');
        if ~isempty(s) && isempty(findstr(s,'undef'))
        fout=[fout '.' s]; end
-     user_fout=fout; % rdma and other routines will look for it!
+     user_fout=fout; % rfdm and other routines will look for it!
   end
 
 if calcflag || isset('TST_RNRG')
@@ -230,7 +230,7 @@ if calcflag || isset('TST_RNRG')
      clear TST_RNRG; return
   end
 
-% NB! FC is the preferred operator within rdma.m
+% NB! FC is the preferred operator within rfdm.m
 % ==> keep FF as the preferred operator name for Wilson sites
 % Wb,Sep28,13
   if     exist('FF','var') && ~isempty(FF), o={FF(:),Z,onrg{:}};

@@ -62,6 +62,8 @@ function [Xk,e0]=updateHK(HAM,kc,kdir,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% using full MPO // Wb,Dec01,20
+
 function [Xk,e0]=updateHK_mpo_full(HAM,k,kdir,Xk,Xn)
 
    global gHSS
@@ -228,6 +230,8 @@ function [Xk,e0]=updateHK_mpo_full(HAM,k,kdir,Xk,Xn)
 end
 
 % -------------------------------------------------------------------- %
+% old version
+
 function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
 
    global gHSS
@@ -465,6 +469,8 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
    Xk.HK=H;
 
  % --------------------------------------------------------------------
+ % generate newly acquired operators
+
    if kdir>0
         [J,K,t]=find(permute(M(1,3:end,:),[2 3 1]));
    else [J,K,t]=find(permute(M(3:end,2,:),[1 3 2]));
@@ -554,7 +560,7 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
          save2tmp; rethrow(l)
       end
 
-      if size(Xk.OP)>=J(i) && ~isempty(Xk.OP(J(i)))
+      if length(Xk.OP)>=J(i) && ~isempty(Xk.OP(J(i)))
            Xk.OP(J(i)) = Xk.OP(J(i)) + Q;
       else Xk.OP(J(i)) = Q;
       end
@@ -581,6 +587,10 @@ function [Xk,e0]=updateHK_mpo_pseudo(HAM,kc,kdir,Xk,Xn)
 end
 
 % -------------------------------------------------------------------- %
+% energy contribution e0=tr(H*R) from particular Hamiltonian term H
+% in case of multiple targeted states, evaluate using density matrix
+% in (possibly degenerate) ground state subspace // Wb,Aug18,16
+
 function [e0,ex]=get_energies(H,R,Eg)
 
   rH=numel(H.Q);

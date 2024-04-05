@@ -62,8 +62,8 @@
     if ~isset('splitops') || ~nops
        setopts(odma,'cflags?','zflags?');
        if use_mem
-            [om,a0,Idma,NRG]=fdmNRG_QS(NRG,Inrg,op1,op2,Z0, odma{:});
-       else [om,a0,Idma    ]=fdmNRG_QS(NRG,     op1,op2,Z0, odma{:});
+            [om,a0,Ifdm,NRG]=fdmNRG_QS(NRG,Inrg,op1,op2,Z0, odma{:});
+       else [om,a0,Ifdm    ]=fdmNRG_QS(NRG,     op1,op2,Z0, odma{:});
        end
     else
        if ~isset('nostore')
@@ -90,7 +90,7 @@
          if isset('cflags'), Iops{2,4}=mat2cell(cflags,1,n); end
        Iops=struct(Iops{:});
 
-       m=numel(Iops); clear om a0 Idma
+       m=numel(Iops); clear om a0 Ifdm
        for k=1:m, i=Iops(k).iop;
           wblog('==>','using splitops (%d/%d) -> [%s ]',k,m,sprintf(' %d',i)); 
 
@@ -100,8 +100,8 @@
           q=Iops(k).zflags; if ~isempty(q), o=[o, {'zflags',q}]; end
 
           if use_mem
-               [om{k},a0{k},Idma(k),NRG]=fdmNRG_QS(NRG,Inrg,o{:}, odma{:});
-          else [om{k},a0{k},Idma(k)    ]=fdmNRG_QS(NRG,     o{:}, odma{:});
+               [om{k},a0{k},Ifdm(k),NRG]=fdmNRG_QS(NRG,Inrg,o{:}, odma{:});
+          else [om{k},a0{k},Ifdm(k)    ]=fdmNRG_QS(NRG,     o{:}, odma{:});
           end
 
           if k>1
@@ -113,27 +113,27 @@
        om=om{1}; n=numel(p);
        a0=cat(2,a0{:}); if n, a0=a0(:,p); end
 
-       Idma(1).finished=Idma(end).finished;
+       Ifdm(1).finished=Ifdm(end).finished;
 
-       q=[Idma.reA0];
+       q=[Ifdm.reA0];
           if n, q=reshape(q,2,[]); q=q(:,p); q=reshape(q,1,[]); end
-          Idma(1).reA0=q;
-       q=[Idma.a4];
+          Ifdm(1).reA0=q;
+       q=[Ifdm.a4];
           if n, q=reshape(q,4,[]); q=q(:,p); q=reshape(q,2,[]); end
-          Idma(1).a4=q;
-       Idma(1).symfac=[Idma.symfac];
+          Ifdm(1).a4=q;
+       Ifdm(1).symfac=[Ifdm.symfac];
 
-	   pp=[Idma.paras];
+	   pp=[Ifdm.paras];
 	   for f={'B','C','cflags','zflags'}, f=f{1};
 		  q=cell(1,m); for i=1:m, q{i}=getfield(pp(i),f); end
 		  q=cat(2,q{:}); if ~isempty(q) && ~isempty(p), q=q(:,p); end
 		  pp(1)=setfield(pp(1),f,q);
 	   end
-       Idma=Idma(1); Idma.paras=pp(1);
+       Ifdm=Ifdm(1); Ifdm.paras=pp(1);
 
-       Idma.Iops=Iops;
-       Idma.splitops=splitops;
-       Idma.p=p;
+       Ifdm.Iops=Iops;
+       Ifdm.splitops=splitops;
+       Ifdm.p=p;
 
        clear pp Iops
     end
@@ -142,9 +142,9 @@
 
     a=a0; a(find(isnan(a)))=0; a=sum(a); a={ vec2str(a), max(abs(a-1)) };
     fprintf(1,'\nSum raw spectral data: %s (%.3g)\n',a{:}); 
-    fprintf(1,'See structure Idma for more info.\n\n');
+    fprintf(1,'See structure Ifdm for more info.\n\n');
 
   end
 
 % -------------------------------------------------------------------- %
-  if plotflag && ~isempty(a0), dma_plot, end
+  if plotflag && ~isempty(a0), fdm_plot, end

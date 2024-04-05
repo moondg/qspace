@@ -5,7 +5,7 @@ function [oo,aa,ah,I] = rsmoothSpec(Om,Aa,varargin)
 %
 % Options:
 %
-%   Idma    if arg[3] is structure, T will be read out of it (if exists)
+%   Ifdm    if arg[3] is structure, T will be read out of it (if exists)
 %   'T',..  temperature (for plot only)
 %   'adisp',{..}  set of labels used as Disp in aa data
 %   'afac'  factor when plotting smooth spectral function (pi*Gamma)
@@ -26,10 +26,10 @@ function [oo,aa,ah,I] = rsmoothSpec(Om,Aa,varargin)
 
   if nargin<2, eval(['help ' mfilename]); return; end
 
-  Idma=[];
+  Ifdm=[];
   if length(varargin)>0
      if isstruct(varargin{1})
-     Idma=varargin{1}; varargin=varargin(2:end); end
+     Ifdm=varargin{1}; varargin=varargin(2:end); end
   end
 
   if ~isempty(param)
@@ -62,8 +62,8 @@ function [oo,aa,ah,I] = rsmoothSpec(Om,Aa,varargin)
 
   if length(xli)==1, xli=[-1 1]*xli; end
 
-  if isempty(T) && isfield(Idma,'T') && ~isnan(Idma.T)
-  T=Idma.T; end
+  if isempty(T) && isfield(Ifdm,'T') && ~isnan(Ifdm.T)
+  T=Ifdm.T; end
 
   if sigma<=0 && ~isempty(param) && isfield(param,'Lambda')
      if param.Lambda==2, sigma=0.6; else
@@ -83,6 +83,7 @@ function [oo,aa,ah,I] = rsmoothSpec(Om,Aa,varargin)
   if nfac~=1, Aa=Aa*(1/nfac); end
 
   [oo,aa,I] = getSmoothSpec(Om,Aa,varargin{:},o{:});
+
   if skip>0
      i=find(abs(oo)<skip);
      oo(i)=[]; aa(i,:)=[];

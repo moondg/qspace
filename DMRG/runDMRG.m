@@ -23,11 +23,10 @@ if isset('CONT') % CONTINUE_DMRG
 
 else % !CONTINUE_DMRG
 
-% setdef('wsys','Spin1-AKLT');
   if ~isset('wsys')
-     wsys='Spin1-AKLT';   % by default, chain with open boundary
-     setdef('alpha',0.3); s=sprintf('(spin S=1 AKLT at alpha=%g)',alpha);
-     banner('box',['running DMRG for default model ' s]);
+     wsys='Heisenberg';
+     setdef('J2',0.25); s=sprintf('%s @ J2=%g',wsys,J2);
+     banner('box',['running DMRG for default model: ' s]);
   end
 
   isw1=1;
@@ -75,22 +74,34 @@ else % !CONTINUE_DMRG
   % ================================================================ %
     case {'Heisenberg'}
   % ================================================================ %
+    % determine default value for L from J if specified
+      if ~isset('L') && isset('J'), l=length(J);
+         if l>4 % keep l<=4 reserved for different interpretation
+            if isset('perBC')
+                 L=l; oham{end+1}='-perBC';
+            else L=l+1; end
+         end
+      end
       setdef('L',32,'nk1',3,'Qtot',0);
       initNKEEP;
 
       setdef('qloc',1,'J',1);
       oham={L,'sym','SU2'}; setopts(oham,qloc);
 
+      if isset('perBC'), oham{end+1}='-perBC'; end
+
     % 2nd column in J specifies Jz
-      if isvar('Jz') && ~isempty(Jz) && Jz~=1
+      if isvar('Jz') && ~isempty(Jz) % && Jz~=1
          oham{3}='Spin'; % uses all-abelian
-         if size(J,2)==1, J(2)=Jz; 
+         if size(J,2)==1
+              J(:,2)=Jz; 
          else setopts(oham,Jz);
          end
       end
 
-      if isset('J'), setopts(oham,J); end
-      if isset('B'), setopts(oham,B); end
+      if isset('J'),  setopts(oham,J); end
+      if isset('B'),  setopts(oham,B); end
+      if isset('J2'), setopts(oham,J2); end
 
       ofout={'fout',[odir '/DMRG_' wsys]};
 
@@ -332,7 +343,13 @@ else % !CONTINUE_DMRG
       end
 
     otherwise
-    error('Wb:ERR','\n   ERR invalid switch'); 
+    % any other wsys assumes that setup was performed in calller
+    % e.g., by adapting one of the setups above in caller // Wb,Apr05,24
+      if ischar(wsys), q=['''' wsys '''']; else q=sprintf('%g',wsys); end
+      if isvar('HAM')
+           wblog(' * ','assuming user-defined setup (wsys=%s)',q); 
+      else wbdie('invalid switch (wsys=%s)',q); 
+      end
   end
 
 % ==================================================================== %

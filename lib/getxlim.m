@@ -1,39 +1,46 @@
 function xx=getxlim(varargin)
-% Function xx=getxlim([OPTS])
+% Function xx=getxlim([ah,][opts])
 % Options
 %
 %    '-view'   determine XLim fully shows all y-data in given view
 %    '-data'   default: xlim is full x-data range
 %
-% Wb,Jan10,08 - see also xtight.m Wb,2002.
+% Wb,2002; Wb,Jan10,08 - see also xtight.m
 
-% if nargin>1
-%    eval(['help ' mfilename]);
-%    if nargin || nargout, wbdie('invalid usage'), end, return
-% end
+  if nargin && isaxis(varargin{1}), l=2;
+     ah=varargin{1}; n=numel(ah);
+     if n~=1, wbdie('invalid usage (got %d axis handles)',n); end
+  else ah=gca; l=1;
+  end
 
-  o={}; if isempty(varargin), varargin{1}='-data'; end
+  if l>nargin, varargin{1}='-data';
+  elseif l<nargin
+     if ~helpthis(nargout,varargin{l:end}), wbdie('invalid usage'); end
+     return
+  end
 
-  switch varargin{1}
-    case '-pos',  o={'-pos'};
-    case '-view', xx=getXLimView;
-    case '-data', xx=getXLimData(o{:});
-    otherwise
-       eval(['help ' mfilename]);
-       wbdie('invalid usage')
+  switch varargin{l}
+    case '-pos',  xx=getXLimData(ah,varargin{l});
+    case '-view', xx=getXLimView(ah);
+    case '-data', xx=getXLimData(ah);
+    otherwise wbdie('invalid usage')
   end
 
 end
 
 % -------------------------------------------------------------------- %
-function xx=getXLimView()
+% determine xlim only within ylim view
+% skip line handles with viewer than 3 data points
+% since quite likely these are just markers
 
-  lh=findall(gca,'Type','Line','visible','on');
+function xx=getXLimView(ah)
+
+  lh=findall(ah,'Type','Line','visible','on');
   m=length(lh); xx=zeros(m,3);
 
   yl=ylim;
 
-  islog=isequal(get(gca,'XScale'),'log');
+  islog=isequal(get(ah,'XScale'),'log');
 
   for i=1:m
       yd=get(lh(i),'YData'); ii=find(yd>=yl(1) & yd<=yl(2));
@@ -50,19 +57,21 @@ function xx=getXLimView()
 
   if xx(1)==1E99
      wblog('WRN','failed to determine XLim for data within view');
-     xx=xlim;
+     xx=xlim(ah);
   end
 
 end
 
 % -------------------------------------------------------------------- %
-function xx=getXLimData(varargin)
+% NB! on log scale xlim(1) might be =0 even though data won't be plotted !!
 
-  if nargin
-     if ~isequal(varargin{1},'-pos'), wbdie('invalid usage'); end
+function xx=getXLimData(ah,pflag)
+
+  if nargin>1
+     if ~isequal(pflag,'-pos'), wbdie('invalid usage'); end
   pflag=1; else pflag=0; end
 
-  lh=findall(gca,'Type','Line','visible','on');
+  lh=findall(ah,'Type','Line','visible','on');
   m=length(lh);
 
   mark=zeros(size(lh));

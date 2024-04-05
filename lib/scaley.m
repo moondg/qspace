@@ -1,8 +1,9 @@
-function lh=scaley(sc,varargin)
-% scaley - change current units for y-axis
-% Usage: lh=scaley(sc, OPTS)
+function lh=scaley(varargin)
+% function lh=scaley([ah,] sc [,opts])
 %
-%    y -> y*sc (except if ulabel is specified: y->y/sc)
+%    change current units of y-axis y -> y*sc 
+%    (except if ulabel is specified, then y->y/sc)
+%    for axis ah (default: gca)
 %
 % Options:
 %
@@ -14,13 +15,22 @@ function lh=scaley(sc,varargin)
 %
 % Wb,Oct24,05
 
-  getopt ('init', varargin);
+  if nargin && isaxis(varargin{1}), l=2;
+     ah=varargin{1}; n=numel(ah);
+     if n~=1, wbdie('invalid usage (got %d axis handles)',n); end
+  else ah=gca; l=1;
+  end
+
+  if nargin>=l, sc=varargin{2}; l=l+1;
+  else wbdie('invalid usage'); end
+
+  getopt('init',varargin(l:end));
      grl  = getopt('glines', []);
      ylbl = getopt('ulabel',''); if isempty(ylbl)
      tfac = getopt('-top'); else tfac=0; end
   getopt('check_error');
 
-  h=findall(gca,'tag','scaley');
+  h=findall(ah,'tag','scaley');
   if ~isempty(h), if numel(h)>1, wbdie(...
      'got several scaley handles (%g)',numel(h)); end
      sc0=getuser(h(1),'sc'); if isempty(sc0), sc0=1; end
@@ -28,7 +38,7 @@ function lh=scaley(sc,varargin)
   else sc0=1; end
 
   if ~isempty(ylbl)
-     th=get(gca,'YLabel');
+     th=get(ah,'YLabel');
      set(th, 'String', sprintf('%s (%s)', get(th,'string'), ylbl))
      sc=1/sc;
   elseif tfac
@@ -37,17 +47,17 @@ function lh=scaley(sc,varargin)
      setuser(h,'sc',sc); sc=1/sc;
   end
 
-  if isequal(get(gca,'YTickMode'),'manual')
-     yt=get(gca,'YTick');
-     set(gca,'YTick',yt*sc);
+  if isequal(get(ah,'YTickMode'),'manual')
+     yt=get(ah,'YTick');
+     set(ah,'YTick',yt*sc);
   end
-  set(gca,'YLim',get(gca,'YLim')*sc);
+  set(ah,'YLim',get(ah,'YLim')*sc);
 
-  for lh=[ findall(gca,'type','line'); findall(gca,'type','patch') ]'
+  for lh=[ findall(ah,'type','line'); findall(ah,'type','patch') ]'
      set(lh,'YData', get(lh,'YData')*sc);
   end
 
-  for h=[ findall(gca,'type','text') ]'
+  for h=[ findall(ah,'type','text') ]'
      if ~isequal(get(h,'units'),'data') || islabel(h), continue, end
      p=get(h,'Position'); p(2)=p(2)*sc;
      set(h,'Position',p);

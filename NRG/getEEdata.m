@@ -155,7 +155,9 @@ function [EE,hh,iQ,Iout]=getEEdata(HK,varargin)
      q=0; if vflag, q=numel(i); if q<L/4, q=0; end, end
      for k=i
         if q, fprintf(1,'\r  %3d/%d ... \r',k,L); end
-        [ex,I]=eigQS(HK(k)); HK(k)=QSpace(I.EK) - min(ex(:,1));
+        [ex,I]=eigQS(HK(k)); 
+        Q=QSpace(I.EK); if ~ESflag, Q=Q-min(ex(:,1)); end
+        HK(k)=Q;
      end
      if q, fprintf(1,'\r%20s\r',''); end
   end
@@ -170,12 +172,17 @@ function [EE,hh,iQ,Iout]=getEEdata(HK,varargin)
      for k=i, HK(k)=HK(k)'; end
   end
 
-  if ESflag
+  if ESflag, err=0;
      for k=1:numel(HK), Hk=HK(k).data;
+        e=abs(1-trace(HK(k))); if e>1E-12, err=err+1; end
+
         for j=1:numel(Hk)
            Hk{j}=fliplr(-log10(Hk{j}(find(Hk{j}>1E-14))));
         end
         HK(k).data=Hk;
+     end
+     if err, wbdie(...
+       'got non-normalized density matrix as input (%d/%d)',err,L); 
      end
   end
 

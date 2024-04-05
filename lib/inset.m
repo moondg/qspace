@@ -1,12 +1,13 @@
 function h=inset(varargin)
 % Function h=inset([ah,] pos [,opts])
-% Position inset to current axes (or to ah's given)
+%
+%    Position inset to current axis (or to ah's given)
 %
 % Options
 %
 %    'scale',fac
 %    'dx',..  (in normalized units in current axis set)
-%    'ah',..  replicate given axis handle in inset
+%    'ah',..  duplicate data in specified axis handle in inset
 %
 %     remaining options are applied to axis object.
 %

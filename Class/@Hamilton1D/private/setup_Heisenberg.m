@@ -40,6 +40,8 @@ function [HAM]=setup_Heisenberg(varargin)
   end
 
 % -------------------------------------------------------------------- %
+% check L vs J specifications
+
   if length(L)>1
      if ~isempty(J), wbdie(['invalid usage ' ... 
         '(J specified twice, once implicitely through L)']); end
@@ -395,7 +397,7 @@ function [HAM]=setup_Heisenberg(varargin)
            [HAM.ops(1:2,2),Iy]=get_poly_ops(Se,J,'Send'); % ,'--notr'
            stype=ones(1,L); stype([1 end])=2;
         end
-        J=1; ncpl=-1; % ncpl below indiacates to include Sa.Sb' (!)
+        J=1; ncpl=-1; % ncpl below indicates to include Sa.Sb' (!)
      else
         HAM.ops(2:2+2*ncpl-1,1)=get_poly_ops(S,ncpl+1);
         if qend
@@ -429,8 +431,6 @@ function [HAM]=setup_Heisenberg(varargin)
 
      if gotJ2, wbdie('J2 not yet implemented for perBC'); end
      if gotJ3, wbdie('J3 not yet implemented for perBC'); end
-     if ncpl<=0 && nops~=1, wbdie(...
-       'got nops=%g with ncpl=%g and perBC !?',nops,ncpl); end
      if qend, wbdie( ...
        'end-spin (open right perBC) not yet implemented'); end
 
@@ -494,7 +494,9 @@ function [HAM]=setup_Heisenberg(varargin)
      if Sflag
         if size(HAM.ops,1)~=1, wbdie('invalid usage'); end
      elseif ~Ising || gotJz
-        if size(HAM.ops,1)~=2, wbdie('invalid usage'); end
+        if size(HAM.ops,1)~=2
+           wbdie('invalid usage');
+        end
         i=find(sum(HH(:,[2 4])-1,2)==0);
 
         H3=repmat(HH(i,:),1,1,2); HH(i,:)=[];
@@ -565,6 +567,8 @@ function J=adapt_Jformat(J)
 end
 
 % -------------------------------------------------------------------- %
+% Wb,Sep10,15
+
 function S=normalize_spin_operator(S,Sfac)
 
    S=skipzeros(QSpace(S));

@@ -16,9 +16,9 @@
      H0=QSpace(q.HK);
 
      if isfield(Inrg,'om') && isfield(Inrg,'a0') && isfield(Inrg,'rhoNorm')
-        Idma=getfields(Inrg,'om','a0','a4','ISpec','rhoT','rhoNorm','ops');
-        om=Idma.om;
-        a0=Idma.a0;
+        Ifdm=getfields(Inrg,'om','a0','a4','ISpec','rhoT','rhoNorm','ops');
+        om=Ifdm.om;
+        a0=Ifdm.a0;
      end
   elseif ~isvar('H0'), H0=QSpace(Inrg.HK(1));
   end
@@ -28,6 +28,9 @@
   end
 
 % --------------------------------------------------------------------- %
+% plot energy flow diagram
+% --------------------------------------------------------------------- %
+
 ah=smaxis(3,1,'tag',mfilename,'dy',0); addt2fig;
 
   setdef('param',struct); s={'',''};
@@ -39,7 +42,7 @@ ah=smaxis(3,1,'tag',mfilename,'dy',0); addt2fig;
         isfield(IS,'SOP') && isfield(IS,'E')
         if ~isequal(IS.E.info.qtype,s{2}), wblog('WRN',...
           'got sym-mismatch (IS.E,A): %s <> %s',IS.E.info.qtype,s{2});
-        else s{2}=['{ ' strhcat(IS.SOP.info,'sep',' * ') ' }'];
+        else s{2}=['{ ' strhcat(IS.SOP.info,'sep',' \otimes ') ' }'];
         end
      end
   end

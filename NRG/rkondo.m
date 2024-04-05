@@ -26,6 +26,9 @@ else
 
 % -------------------------------------------------------------------- %
 
+% wsys='KondoJ';  Nkeep=1024; N=50; NC=3;
+% wsys='KondoAM'; Nkeep=256;  N=50; NC=3;
+
   wsys='KondoAM';
 
   U=0; epsd=-U/2; Gamma=0.01; B=0; Lambda=2; J2=-0.008;
@@ -115,7 +118,7 @@ if tflag, keyboard, return; end
 
   if 0 && tstflag
      rnrg; save([mat '.mat']);
-     rdma; save([mat '.mat']);
+     rfdm; save([mat '.mat']);
      return;
   end
 
@@ -139,11 +142,11 @@ end
      for it=1:nT, T=TZ(it); eps=tfac*T;
         fprintf(1,'\n>> magn. suszeptibility: it=%d/%d ...\n\n',it,nT);
 
-        rdma
+        rfdm
 
-        TK = 1./((4/4)*sum(Idma.reA0(end-1:end)));
+        TK = 1./((4/4)*sum(Ifdm.reA0(end-1:end)));
 
-        ZDMA(it)=Idma;
+        ZDMA(it)=Ifdm;
         ZALL(it)=add2struct('-',om,a0,ox,ax,TK);
 
         save([fname '.mat']);
@@ -194,9 +197,9 @@ end
         op1=OPS{1}{iop};
         op2=OPS{2}{iop};
 
-        rdma, if ~exist('T','var'), T=Idma.T; end
+        rfdm, if ~exist('T','var'), T=Ifdm.T; end
 
-        IDMA(it,iop)=Idma;
+        IFDM(it,iop)=Ifdm;
         DOPS(it,iop)=add2struct('-',om,a0,ox,ax,op1,op2);
 
         if iop>1, if ~isequal(om,DOPS(it,1).om) || ~isequal(ox,DOPS(it,1).ox)
@@ -220,7 +223,7 @@ end
         [itc,iTc]=getDephasing(ox,gc,Gamma,T);
 
         if chiflag
-           TK = 1./((4/4)*sum(Idma.reA0(end-1:end)));
+           TK = 1./((4/4)*sum(Ifdm.reA0(end-1:end)));
         end
 
         IALL(it)=add2struct('-',om,a0,ox,ax,gc,...
@@ -237,6 +240,9 @@ end
   inl 1; disp(IALL(it).iT.')
 
 % -------------------------------------------------------------------- %
+% write all mat files used into a bash script
+% so SGE clearly knows which data to copy
+
   if isbatch % exist('user_fout','var')
      if kflag, o={}; else o={'rm',user_fout}; end
      sge_finish('fout',[mat '*'], o{:});

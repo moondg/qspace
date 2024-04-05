@@ -2,6 +2,9 @@
 % display host/jobid/mat as footer in lower-right corner of plot
 % Wb,Sep29,17
 
+% may also use // tags: param_to_headerSW
+% header('SW',param2str(param,'--nrg','-x','H0str','--tex'),{'FontSize',10});
+
 % save/restore current value of s
   if isvar('s'), s_old=s; else s_old=[]; end
 

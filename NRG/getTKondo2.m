@@ -66,9 +66,9 @@ function [TK,Itk]=getTKondo2(Simp,varargin)
   TK=0.25/mean(ch2);
 
   if dyn
-    [om,a0,Ich.Idma] = fdmNRG_QS(...
+    [om,a0,Ich.Ifdm] = fdmNRG_QS(...
         NRG,[],Simp,[],'calcRho','nostore','cflags',1);
-    TK0=0.25/sum(Ich.Idma.reA0);
+    TK0=0.25/sum(Ich.Ifdm.reA0);
     TK2=TK;
     TK=1/(1/TK0-2*(1/TK0-1/TK2));
     add2struct(Ich,TK0,TK2,TK); Ich.dTKrel=(TK-TK2)/TK2;

@@ -25,8 +25,6 @@ function varargout=fixScalarOp(varargin)
      wbdie('invalid usage (no QSpace specified)');
   end
 
-  mark=zeros(1,nargin);
-
   for i=nopt+1:nargin, n=numel(varargin{i});
      if ischar(varargin{i})
         wbdie('invalid usage (got intermediate option)');
@@ -36,9 +34,9 @@ function varargout=fixScalarOp(varargin)
         d=getDimQS(q); ok=0;
         if size(d,2)==3 && d(end,3)==1
            nrmQ=norm(q.Q{3});
-           if nrmQ && ~lflag
-              wblog('WRN','skipping scalar operator dim with non-zero Q-labels');
-              wbstack;
+           if nrmQ && ~lflag, wblog('WRN',...
+             'skipping scalar operator dim with non-zero Q-labels');
+              wbstack
            end
 
            if isempty(q.info), q.Q(3)=[]; ok=1;
@@ -67,7 +65,7 @@ function varargout=fixScalarOp(varargin)
      end
      varargout=varargin(nopt+1:end);
   else
-     for i=find(mark), n=inputname(i);
+     for i=nopt+1:nargin, n=inputname(i);
         if isempty(n), wbdie(...
          'invalid usage (failed to access name of input variable)'); end
         assignin('caller',n,varargin{i});

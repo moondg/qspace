@@ -1,36 +1,43 @@
 function xx=getylim(varargin)
-% Function xx=getylim([OPTS])
+% Function xx=getylim([ah,][opts])
 % Options
 %
 %    '-view'   determine YLim fully shows all y-data in given view
 %    '-data'   default: ylim is full y-data range
 %
-% Wb,Jan10,08 - see also ytight.m Wb,2002.
+% Wb,2002; Wb,Jan10,08 - see also ytight.m
 
-  if nargin>1
-     eval(['help ' mfilename]);
-     if nargin || nargout, wbdie('invalid usage'), end, return
+  if nargin && isaxis(varargin{1}), l=2;
+     ah=varargin{1}; n=numel(ah);
+     if n~=1, wbdie('invalid usage (got %d axis handles)',n); end
+  else ah=gca; l=1;
   end
 
-  if isempty(varargin), varargin{1}='-data'; end
+  if l>nargin, varargin{1}='-data';
+  elseif l<nargin
+     if ~helpthis(nargout,varargin{l:end}), wbdie('invalid usage'); end
+     return
+  end
 
-  switch varargin{1}
-    case '-view', xx=getYLimView;
-    case '-data', xx=getYLimData;
-    otherwise
-       eval(['help ' mfilename]);
-       wbdie('invalid usage')
+  switch varargin{l}
+    case '-view', xx=getYLimView(ah);
+    case '-data', xx=getYLimData(ah);
+    otherwise wbdie('invalid usage')
   end
 
 end
 
 % -------------------------------------------------------------------- %
-function yy=getYLimView()
+% determine ylim only within xlim view
+% skip line handles with viewer than 3 data points
+% since quite likely these are just markers
 
-  lh=findall(gca,'Type','Line','visible','on');
+function yy=getYLimView(ah)
+
+  lh=findall(ah,'Type','Line','visible','on');
   m=length(lh); if ~m, yy=[]; return; end
 
-  yy=nan(m,3); xl=xlim;
+  yy=nan(m,3); xl=xlim(ah);
 
   for i=1:m
       xd=get(lh(i),'XData'); ii=find(xd>=xl(1) & xd<=xl(2));
@@ -45,14 +52,16 @@ function yy=getYLimView()
 
   if yy(1)==1E99
      wblog('WRN','failed to determine YLim for data within view');
-     yy=ylim;
+     yy=ylim(ah);
   end
 end
 
 % -------------------------------------------------------------------- %
-function yy=getYLimData()
+% NB! on log scale ylim(1) might be =0 even though data won't be plotted !!
 
-  lh=findall(gca,'Type','Line','visible','on');
+function yy=getYLimData(ah)
+
+  lh=findall(ah,'Type','Line','visible','on');
   m=length(lh); yy=zeros(m,2);
 
   for i=1:m

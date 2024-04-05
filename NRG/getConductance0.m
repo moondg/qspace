@@ -40,8 +40,8 @@ function [g0,a0,g1]=getConductance0(om,a0,varargin)
   end
 
   if isempty(T)
-     getbase('Idma');
-     if isfield(Idma,'T'), T=Idma.T; else e=e+1; end
+     getbase('Ifdm');
+     if isfield(Ifdm,'T'), T=Ifdm.T; else e=e+1; end
   end
 
   if isempty(gfac)

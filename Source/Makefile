@@ -28,7 +28,7 @@
   ifdef issue_error
      $(info ------------ \
             ----------------------------------------------------------------)
-     $(warning source .setup_matlab.sh (or similar) to setup matlab environment)
+     $(warning source system/setup_matlab.sh (or similar) to setup matlab environment)
      $(error )
   endif
 

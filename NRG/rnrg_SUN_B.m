@@ -297,5 +297,5 @@
   Imain.finished=datestr(now);
   save([ mat '.mat'])
 
-  dma_plot ; if isbatch, mfig([ mat '_dma.pdf']), end
+  fdm_plot ; if isbatch, mfig([ mat '_dma.pdf']), end
 

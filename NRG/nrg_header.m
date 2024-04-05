@@ -70,6 +70,9 @@ function ah=nrg_header(varargin)
      sum(isfield(p,{'J','JH','Gamma'}))==1 && ~isfield(p,'U3')
 
    % -------------------------------------------------------------- %
+   % NB! passivate (missing extra/new fields in param) => take next %
+   % -------------------------------------------------------------- %
+
      global gTK; nTK='T_K';
      if ~isempty(gTK)
         if iscell(gTK)
@@ -203,8 +206,8 @@ function ah=nrg_header(varargin)
 
   if isfield(Imain,'finished')
      if ~isempty(findstr(Imain.finished,'not finished'))
-        if exist('Idma','var') && isfield(Idma,'finished')
-           Imain.finished=Idma.finished;
+        if exist('Ifdm','var') && isfield(Ifdm,'finished')
+           Imain.finished=Ifdm.finished;
         elseif exist('Inrg','var') && isfield(Inrg,'finished')
            Imain.finished=Inrg.finished;
         end

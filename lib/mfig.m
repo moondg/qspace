@@ -120,6 +120,8 @@ function mfig(varargin)
   if vflag, fprintf(1,'\n'); end
 
 % -------------------------------------------------------------------- %
+% set properties to original value
+
   set(fh,...
     'PaperOrientation',f0{1}, 'PaperType', f0{6},...
     'PaperUnits',f0{4}, 'PaperPosition', f0{2}   ...
@@ -148,17 +150,20 @@ function mfig_1(fh,fname,ppi,fext,force,vflag,tflag)
   if isempty(regexpi(fname,['.' fext '$'])), fname = [ fname '.' fext ]; end
   if isempty(fileparts(fname)), fname=['./' fname]; end
 
+  i=0;
   if ~force 
-     [i,fname]=fexist(fname,tflag);
-     if i, % disp(' huh? ')
-     return, end
+     [i,fname]=fexist(fname,'-w',tflag);
+     if i>0, return, end % don't overwrite
   end
 
   set(fh,'FileName',fname);
 
-  if vflag>1 || tflag
+  if vflag>1 || tflag, if i
+     fprintf(1,'\n %% overwriting exsting file\n'); end
      fprintf(1,'   saveas(fh,''%s'',''%s'');\n',fname,ffmt);
      if tflag, return; end
+  elseif i && vflag
+     fprintf(1,'   overwriting %s\n',fname);
   end
 
 % wblog('TST','saveas(%g,%s,%s) ...',fh,fname,ffmt);

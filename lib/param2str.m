@@ -10,18 +10,23 @@ function s=param2str(param,varargin)
 %
 %   '--tex'   escale some Greek letters and underscore
 %   '-x',..   exclude fields matching grep pattern
+%   '-m',..   only include fields that match given grep pattern
 %   'sep',..  field separator (', ')
 %   'fmt',..  format for numbers and vectors
 %
 % See also struct2str.m
 % Wb Jan 2007
 
+% Examples // see also mat_to_headerSE.m
+% header('SW',param2str(param,'--nrg','-x','H0str','--tex'),{'FontSize',10});
+
   getopt ('init', varargin);
      sep = getopt('sep',', ');
      fmt = getopt('fmt',  {});
 
-     tex = getopt('--tex'   );
-     xpat= getopt('-x',   {}); if ~iscell(xpat), xpat={xpat}; end
+     tex = getopt('--tex');
+     fpat= getopt('-m',{}); if ~iscell(fpat), fpat={fpat}; end
+     xpat= getopt('-x',{}); if ~iscell(xpat), xpat={xpat}; end
 
      nrgflag=getopt('--nrg');
      if nrgflag, xpat{end+1}='nrgIO|ALambda|wsys'; end
@@ -33,7 +38,7 @@ function s=param2str(param,varargin)
   fn=fieldnames(param)';
   istr='';
 
-  i=find(cellfun(@(x) ~isempty(x), regexpi(fn,'istr|info')));
+  i=find(~cellfun(@isempty, regexpi(fn,'istr|info')));
   if numel(i)==1
      if ~isempty(xpat) && isempty(regexp(fn{i},xpat))
         istr=getfield(param,fn{i});
@@ -41,7 +46,11 @@ function s=param2str(param,varargin)
      fn(i)=[];
   end
   if ~isempty(xpat)
-     i=find(cellfun(@(x) ~isempty(x), regexp(fn,strjoin(xpat,'|'))));
+     i=find(~cellfun(@isempty, regexp(fn,strjoin(xpat,'|'))));
+     fn(i)=[];
+  end
+  if ~isempty(fpat)
+     i=find( cellfun(@isempty, regexp(fn,strjoin(fpat,'|'))));
      fn(i)=[];
   end
 
@@ -79,6 +88,7 @@ function s=param2str(param,varargin)
   if istr, s=[istr ': ' s]; end
 
   if tex, s=str2tex(s);
+     s=regexprep(s,'(\d[\.\d])*[eE][+-]0*(\d+)','$1{\\cdot}10^{$2}');
      if nrgflag
         symstr = @(x) format_sym_str(x);
 

@@ -87,18 +87,19 @@ function save2(varargin)
   ftmp=[p '/.' f '-tmp' x];
   f=[p '/' f x];
 
-  xflag=exist(f,'file');
-  if xflag
-     if ~force && fexist(f), return; end
-  else
-     ftmp=f;
+  xflag=fexist(f);
+  if ~xflag, ftmp=f;
+  elseif ~force
+     xflag=fexist(f,'-w');
+     if xflag>0, return; end
   end
 
-  if vflag, s=repHome(basename(f));
-     if length(s)<40
-          wblog(1,'I/O','saving data to %s',s);
-     else wblog(1,'I/O','saving data to file\n%s',s);
-     end
+  if vflag, s={'',repHome(basename(f)) };
+     if xflag, s{1}='overwriting'; else s{1}='saving data to'; end
+     l=length(s);
+     if l<40,    wblog(1,'I/O','%s %s',s{:});
+     elseif l<58 wblog(1,'I/O','%s file\n%s',s{:});
+     else        wblog(1,'I/O','%s file\N   %s',s{:}); end
   end
 
   m=0; s=''; nx=0; sx='';

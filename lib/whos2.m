@@ -75,7 +75,7 @@ function [S,sz]=whos2(varargin)
      for i=1:nS
         s=S(i).size; if isempty(s), s='[]'; 
         elseif prod(s)==1, s='1';
-        else s=sprintf('x%g',s); s=s(2:end); end
+        else s=sprintf('x%d',s); s=s(2:end); end
 
         x=''; if S(i).global,     x=[x 'g']; end
               if S(i).sparse,     x=[x 's']; end
@@ -84,7 +84,8 @@ function [S,sz]=whos2(varargin)
         c=S(i).class;
         if isequal(c,'double'), c=''; end
 
-        fprintf(1,'%-3s%-12s %8s %9d  %s\n',x,S(i).name, s, S(i).bytes,c);
+        fprintf(1,'%-3s%-12s %8s %9s  %s\n',x,S(i).name,...
+        s, num2str2(S(i).bytes,'--bytes'), c);
      end
      fprintf(1,'\n'); if ~vflag, clear S, end
   end

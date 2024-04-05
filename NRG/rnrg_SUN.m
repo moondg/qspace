@@ -195,7 +195,7 @@ end % of TMPX
 
   if ~exist('tfac','var'), tfac=0.5; end
 
-% used by dma_plot
+% used by fdm_plot
   yli=[-0.1 1.2];
 
 if exist('TT','var'), P=PSet('T',TT); else P=PSet('T',-1); end
@@ -231,7 +231,7 @@ for ip=1:P.n, [p,pstr,tstr]=P(ip); structexp(p);
   wblog('TST','TK=%.3g',TK);
 
   IDMA(ip,1:numel(Idma))=Idma; Idma=Idma(1);
-  dma_plot
+  fdm_plot
 
   IALL(ip)=add2struct('-',om,a0,ox,ax,TK);
 
@@ -240,8 +240,8 @@ for ip=1:P.n, [p,pstr,tstr]=P(ip); structexp(p);
   save([ mat '.mat'])
 
   if size(a0,2)==3 && abs(sum(a0(:,3)))<1E-6
-     a0_=a0; a0=a0(:,1:2); % dma_plot without chi
-     dma_plot
+     a0_=a0; a0=a0(:,1:2); % fdm_plot without chi
+     fdm_plot
   end
 
   if isbatch || P.n>1
@@ -254,7 +254,7 @@ for ip=1:P.n, [p,pstr,tstr]=P(ip); structexp(p);
 
 end % of ip
 
-% rerun getrhoNRG_res to blend in data from dma_plot
+% rerun getrhoNRG_res to blend in data from fdm_plot
   II=getrhoNRG_resall(fout,'-v');
   if isbatch, mfig([mat '_rhores.pdf'],'-f'); end
   save([ mat '.mat']);

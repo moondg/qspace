@@ -36,7 +36,7 @@ function banner(varargin)
   elseif nargs, sout=varargin{1};
   else sout=''; end
 
-  L=getcols(); if L<60 || L>160, L=80; end
+  L=getcols(); if L<60 || L>160, L=85; end
 
   if isequal(wtype,5)
      nl=char(10); 

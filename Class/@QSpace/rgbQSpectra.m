@@ -32,8 +32,8 @@ function [cc,Iout]=rgbQSpectra(HH,varargin)
    else getopt('check_error');
    end
 
-   nH=numel(HH); w=0; e=0;
-   for k=1:nH, Hk=HH(k); if isempty(Hk), continue; end
+   nH=numel(HH); w=0; e=0; mQ=ones(1,nH);
+   for k=1:nH, Hk=HH(k); if isempty(Hk), mQ(k)=0; continue; end
       if isdiag(Hk,'-d')~=2, if vflag
          fprintf(1,'\r %4g/%g %s calling eig() ... \r',k,nH,mfilename); end
          [~,q]=eigQS(Hk); HH(k)=QSpace(q.EK); w=w+1;
@@ -50,6 +50,13 @@ function [cc,Iout]=rgbQSpectra(HH,varargin)
       s={'diagonalized',' input QSpace operator'};
       if nH>1, s{1}=[s{1} sprintf(' %g/%g',w,nH)]; s{2}(end+1)='s'; end
       wblog('WRN',[s{:}]);
+   end
+
+   if isempty(q3), n=4;
+      Q={}; for i=find(mQ,n,'last'), Q{end+1}=HH(i).Q; end
+      Q=[Q{:}]; Q=uniquerows(cat(1,Q{:}));
+      [q,i]=sort(sum(Q.^2,2));
+      q3=Q(i([2 1 3]),:);
    end
 
    cc=zeros(nH,3);

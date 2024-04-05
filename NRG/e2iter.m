@@ -10,7 +10,7 @@ function [n,istr]=e2iter(E,Lambda,z)
      global param
      if isfield(param,'Lambda')
         Lambda=param.Lambda;
-        if isfield(param,'z'), z=param.z; end
+        if isfield(param,'z') && ~isempty(param.z), z=param.z; end
      else
         getcaller Lambda z
         if isempty(z), z=0; end

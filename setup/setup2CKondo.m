@@ -99,6 +99,12 @@
   op1=[];
   op2=OX; op2(end+1)=FX(1);
 
+% add operator for impurity spin susceptibility
+% !! NB! chi(omega)->const for omega->0 (!)
+% !! i.e, there is a jump that is only broadened by T for T << TK
+% !! => the static susceptibility chi_0 diverges! This is in agreement
+% !!    with statement Alexei in discussion 02/28/2024]
+% op2(end+1)=contractQS(A0,'13*',contractQS(A0,3,SS(end),2),'13');
   op2(end+1)=contractQS(A0,'13*',contractQS(A0,1,s0(end),2),'32');
 
   for i=1:numel(op2)

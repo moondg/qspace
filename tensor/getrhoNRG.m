@@ -1,29 +1,46 @@
 function [R,Rf,I]=getrhoNRG(kk,varargin)
 % function [R,Rf,I]=getrhoNRG(kk [,opts])
 %
-%    get local reduced density matrix from NRG/NRG data space for given k-set.
-%    kk may also be one of the following: last, all
+%    get reduced density matrices R in local state space (s)
+%    from NRG/NRG data space for specified index set kk
+%    which alsomay  be one of the following: 'last', [] = 'all'
 %
 % Options
 %
-%   'T',..    effective temperature
 %   'NRG',..  NRG data space ('./NRG/NRG')
 %   'N',..    up to what length (default: full length)
+%
+% Usage #2: [RR,IR]=getrhoNRG(Inrg.HK[,opts])
+%
+%    Compute `reduced density matrices' ~ exp(-H/T) based on HK.
+%
+% Options for any usage
+%
+%   'T',..    effective temperature
 %   '-v'      verbose flag
 %
 % Examples: [R,Rf,I]=getrhoNRG('all','NRG','NRG_2CK/NRG','-v');
 %
-% See also getrhoNRG_red.m
 % Wb,Jun01,08
 
+% See also getrhoNRG_red.m
 % outsourced from nrgtangle.m
+
+  usage_2=isa(kk,'QSpace') || (isfield(kk,'Q') && isfield(kk,'data'));
 
   getopt('INIT',varargin);
      T     =getopt('T',[]);
      vflag =getopt('-v'); if ~vflag && getopt('-V'); vflag=2; end
-     nrg   =getopt('NRG','./NRG/NRG');
-     N     =getopt('N',[]);
+     if ~usage_2
+        nrg=getopt('NRG','./NRG/NRG');
+        N  =getopt('N',[]);
+     end
   getopt('check_error');
+
+  if usage_2
+    [R,Rf]=getrho_HK(kk,T,vflag); I=[];
+    return
+  end
 
   if isempty(findstr(pwd,'Data')), cto lma, end
   ff=dir2([nrg '_[0-9]*.mat']);
@@ -43,13 +60,14 @@ function [R,Rf,I]=getrhoNRG(kk,varargin)
      load(ff(N).name); A=AK; H=HK;
   end
 
-  if ischar(kk)
+  if isempty(kk), kk=1:N;
+  elseif ischar(kk)
      switch kk
         case {'last','end'}, kk=N;
         case 'all',  kk=1:N;
-        otherwise wbdie('invalid k specs.');
+        otherwise wbdie('invalid kk input');
      end
-  elseif any(kk>N), wbdie('invalid k-index set'); end
+  elseif any(kk>N), wbdie('invalid kk-index set'); end
 
   if ~isempty(T)
        beta=( Lambda^(-N/2) * (Lambda+1)/2 )/T;
@@ -60,6 +78,8 @@ function [R,Rf,I]=getrhoNRG(kk,varargin)
   X=R; se=nan(1,N);
 
 % -------------------------------------------------------------------- %
+% build reduced density matrix space
+
   R=QSpace(1,N); Rf=cell(1,N);
   kmin=max(1,min(kk));
 
@@ -83,7 +103,7 @@ function [R,Rf,I]=getrhoNRG(kk,varargin)
      se(k)=SEntropy(mpsFull2QS(X));
 
      if k==N, iN=i; elseif ~isequal(i,iN)
-     wblog('WRN','local QSpace changes (%g) !??',k); end
+        wblog('WRN','local QSpace changes (%g)',k); end
 
      if k<2, break; end
      load(ff(k-1).name,'AK'); A=AK;
@@ -98,4 +118,44 @@ function [R,Rf,I]=getrhoNRG(kk,varargin)
   else R=R(kk); Rf=Rf{kk}; end
 
 end
+
+% -------------------------------------------------------------------- %
+% get `reduced density matrices' based on Inrg.HK data
+% e.g., may use this to track changes in energy flow diagram
+% the points of strongest change are regurned in Iout.kpeak_ds
+% Wb,Feb26,24
+
+function [RR,Iout]=getrho_HK(HK,T,vflag)
+
+   if isempty(T), beta=1; else beta=1/T; end
+   if ~isfinite(beta) || beta<0, wbdie('invalid usage (T=%g)',T); end
+
+   L=numel(HK); if isempty(QSpace(HK(L))), L=L-1; end
+   RR=QSpace(1,L); 
+   Iflag=nargout>1; if Iflag, se=zeros(1,L); end
+
+   for k=1:L, Hk=QSpace(HK(k));
+      if ~Hk, wbdie('got empty HK at k=%d/%d',k,L); end
+      if k==1 && isdiag(Hk)<2
+         [ee,Ie]=eigQS(Hk);
+         Hk=QSpace(Ie.EK)-ee(1);
+      end
+
+      RR(k)=getrhoQS(Hk,beta); if ~Iflag, continue; end
+      se(k)=SEntropy(RR(k));
+   end
+
+   if Iflag
+      ds=abs(diff2(avgdata(se,2,'-l'),'len'));
+      [xp,yp,Ip]=findpeak(1:L,ds,'--max'); n=numel(xp);
+
+      Iout=add2struct('-',beta,se,ds);
+
+      Iout.kpeak_ds=xp; if ~n, xp=nan; end
+      Iout.k0=xp(end);
+   end
+
+end
+
+% -------------------------------------------------------------------- %
 

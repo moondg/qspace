@@ -769,9 +769,9 @@ void Spectral<TS>::detailedBalance(
    if (T==0) {
       for (i=0; i<n; i++) f1[i]=1;
    }
-   else {
-      double beta=1./T;
-      for (i=0; i<om.len; i++) f1[i]=1./(1.+exp(-beta*om[i]));
+   else {                
+      double beta=1./T;  
+      for (i=0; i<om.len; i++) f1[i]=1./(1.+exp(beta*om[i]));
    }
 
    f1.flip(f2);
@@ -779,10 +779,8 @@ void Spectral<TS>::detailedBalance(
    m=Ap.dim1; n=ar.dim2;
    aa.init(2*m,n);
 
-   for (i=0; i<m; i++) {
-      k1=2*i; k2=k1+1;
-
-      for (j=0; j<n; j++) {
+   for (i=0; i<m; ++i) { k1=2*i; k2=k1+1;
+      for (j=0; j<n; j++) {      
          aa(k1,j)=ar(i,j)*f2[j]; 
          aa(k2,j)=ar(i,j)*f1[j]; 
       }
@@ -906,7 +904,7 @@ void Spectral<TS>::getSmoothSpec(
 
        wblog(FL," *  "
          "%s() %g bins/dec (len=%d)\n"
-         "sigma=%g [eps=%.3g @ %.3g]\n" 
+         "sigma=%.3g [eps=%.3g @ %.3g]\n" 
          "|omega| range: %s",
           myname,fac/log10(M_E),Nom,sigma,eps,sigma2,str);
        if (fabs((w0-idx2om(0    ))/w0)>0.01 ||
