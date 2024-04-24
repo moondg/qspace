@@ -167,21 +167,37 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
   stol=sqrt(rtol);
 
   if e>reps
-     s=sprintf('Psi(%g:%g) not normalized @ %.3g / %.3g',k1,k2,e,reps);
-
-     if e>1E-6
+     s={ sprintf('Psi(%g:%g) ',k1,k2)
+         sprintf('normalized @ %.3g / %.3g',e,reps) };
+     if e<1E-6
+        if rpsi>2
+           Psi_=ortho_Psi3(Psi); q={ getDimQS(Psi), getDimQS(Psi_) };
+           if ~isequal(q{:})
+              wblog('WRN',[s{:}]);
+              disp(q{1}); disp(q{2}); wbdie('got size mismatch for Psi'); 
+           end
+           Psi=Psi_; clear Psi_
+           R=contract(Psi,oc,Psi);
+           e=normQS(getIdentityQS(R)-R);
+           wblog('WRN','%s%s -> %.2g',s{:},e);
+        else
+           wblog('WRN','%s%s !?',s{:});
+        end
+     else
         nrm2=normQS(Psi)^2 / NPsi2;
-        s={ s, sprintf('|Psi|^2 = %.3g @ NPsi=%d',nrm2,NPsi2) };
-        if e>0.25
-           banner(['ERR ',s{1}]);
+        s={ [s{1} 'not ' s{2}]
+            sprintf('|Psi|^2 = %.3g @ NPsi=%d',nrm2,NPsi2)
+        };
+        if e<0.25
+           wblog('WRN %s\n%s',s{:});
+        else
+           wblog('ERR',s{1});
            m=sprintf('./tmp_%s_%g_%g_%s_checkNorm.mat',...
              mfilename,k1,k2,iff(kdir>0,'lr','rl'));
            save2(m,'-f');
            wbdie('%s !?',s{2});
-        elseif e>1E-6, wblog('WRN %s\n%s',s{:});
         end
-
-     else wblog('WRN',s); end
+     end
   end
 
   E0=[]; H=[]; Ig=[]; converged=0; Psi0=Psi;
@@ -224,6 +240,8 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
       % dimension 2*ndav since after all what is used is H^n|psi>].
       % See also $MLAB/david.m // Wb,Aug10,16
 
+      % ---------------------------------------- %
+      % compute new search direction
       % ---------------------------------------- %
         HPsi=get_HPsi(HAM,Psi,X1,X2,oH{:});
         E=contract(Psi,oc,HPsi);
@@ -317,6 +335,9 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
         end
         l=idav+1; Ak(l)=Q;
 
+      % ----------------------------------------- %
+      % compute new ground state
+      % ----------------------------------------- %
         HPsi=get_HPsi(HAM,Ak(l),X1,X2,oH{:});
 
         for j=1:l
@@ -387,7 +408,7 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
   [U,B,Iout]=orthoQS(Psi,iff(kdir>0,1,2),oe{:});
 
   if NPsi && Iout.svd2tr>1E-32
-     B=ortho_Psi3(B,stol^2,NPsi1);
+     B=ortho_Psi3(B,stol^2,NPsi1,'-k');
   end
 
   if NPsi>1
@@ -558,6 +579,10 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% check whether symmetry space drops out
+% for testing purposes // Wb,Apr25,14
+% -------------------------------------------------------------------- %
+
 function e=check_Qmatch(A1,k1,A2,k2)
 
   [i1,i2,Im]=matchIndex(A1.Q{k1},A2.Q{k2}); e=0;

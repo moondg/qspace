@@ -33,7 +33,7 @@ function save2tmp(varargin)
      wbdie('invalid tid=%s',tid); end
   end
 
-  if dbflag
+  if dbflag || isbatch()
      s=dbstack; s=s(min([2, length(s)]));
      f=[ pwd '/' wbstamp('-l') sprintf('_%s_%04d_debug',s.name,getpid) '.mat' ];
   else

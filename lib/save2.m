@@ -104,7 +104,7 @@ function save2(varargin)
 
   m=0; s=''; nx=0; sx='';
 
-  if ~isempty(excl)
+  if ~isempty(excl) || ~isempty(EXCL)
      evalin('caller','setuser(groot,''whos'',whos);');
      vars=getuser(groot,'whos','-rm'); ix=[];
 
@@ -142,10 +142,10 @@ function save2(varargin)
      end
      fprintf(1,'   file: %s\n   path: %s\n\n', f, pwd);
   elseif vflag && nx
-     if nx==1,  wblog(1,'  - skipping variable%s',sx);
+     if nx==1,  wblog(1,'--- skipping variable%s',sx);
      elseif length(sx)>40, i=find(find(sx==' ')>24,1);
-          wblog(1,'  - skipping %d vars%s..',nx,sx(1:i));
-     else wblog(1,'  - skipping %d vars%s',nx,sx); end
+          wblog(1,'--- skipping %d vars%s..',nx,sx(1:i));
+     else wblog(1,'--- skipping %d vars%s',nx,sx); end
   end
 
   if isbatch

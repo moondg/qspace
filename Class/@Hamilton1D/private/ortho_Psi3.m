@@ -1,5 +1,5 @@
-function [Q,ns,nrm]=ortho_Psi3(Q,stol,NPsi)
-% function [Q,ns,nrm]=ortho_Psi3(Q,stol,NPsi)
+function [Q,ns,nrm]=ortho_Psi3(Q,stol,NPsi,kflag)
+% function [Q,ns,nrm]=ortho_Psi3(Q,stol,NPsi, [kflag])
 %
 %    Orthonormalize Q in g assuming lr[g] index order.
 %    i.e. orthonormalizes states in Q w.r.t to state index (#3)
@@ -17,6 +17,12 @@ function [Q,ns,nrm]=ortho_Psi3(Q,stol,NPsi)
 
   if nargin<2, stol=0; end
   if nargin<3, NPsi=get_NPsi_bond(Q); end
+
+  if nargin<4, kflag=0;
+  elseif isequal(kflag,'-k'), kflag=1; 
+  elseif isequal(kflag,'-K'), kflag=2; 
+  else kflag, wblog('WRN','got unexpected kflag (ignore)'); kflag=0;
+  end
 
   nrm=normQS(Q);
   if ~isobject(Q), Q=QSpace(Q); end
@@ -36,7 +42,26 @@ function [Q,ns,nrm]=ortho_Psi3(Q,stol,NPsi)
    % Q=contract(Q,QSpace(I.AK)*K);
 
      U=svdQS(Q,3,'stol',stol);
-     Q=QSpace(U);
+
+     if kflag<=0, Q=QSpace(U);
+     else 
+      % NB! SVD Q -> U does not stay close to the original basis
+      % => orthonormal basis needs to stay close // Wb,Apr16,24
+      %    e.g. for correpondence Eg <> Psi index in Rho
+      %    see MAT/matrices.tex -> Closest orthonormal basis
+      % 1) project to arbitrary but fixed orthonormal basis U*U' (see also 3)
+        X=contractQS(U,'!3*',Q); Q_=Q;
+        for i=1:numel(X.data)
+           [u,s,v]=svd(X.data{i});
+           X.data{i}=u*v';
+        end
+        Q=QSpace(contractQS(U,3,X,1));
+
+        e=norm(Q-Q_); if e>1E-4
+           wblog('WRN','basis change by %.3g',e);
+           if kflag>1, wbstop, end
+        end
+     end
 
      if Q, d=getDimQS(Q); ns=d(end);
      else ns=0; end

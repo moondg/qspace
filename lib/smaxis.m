@@ -127,9 +127,9 @@ function ah = smaxis (dim1, dim2, varargin)
 
       set(gcf,'tag',tag);
 
-      [i,s]=system('hostid.pl');
+    % [i,s]=system('hostid.pl'); // Wb,Apr24,24
       set(gcf,'NumberTitle','off');
-      s=sprintf('Fig.%g/%s',get(gcf,'Number'),s);
+      s=sprintf('Fig.%g/%s',get(gcf,'Number'),hostid);
 
       if isempty(findstr(s,tag))
          p=lower(dec2base(getpid,36));

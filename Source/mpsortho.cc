@@ -638,7 +638,7 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
    wbvector<double> Stot;
 
    double snorm, snorm2=0, s2t=0, sfac=1,
-        xtol2=(stol>0 ? stol*1E-14 : 0);
+        xtol2=(stol>0 ? stol*1e-14 : 0); 
    char cgflag=0;
 
    unsigned l=0, n=128; char istr[n]; istr[0]=0;
@@ -709,7 +709,7 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
        else {
           l+=snprintf(istr,n,"keeping all (stol=%g; Smin=%.3g, "
           "NK=%d (%d/%d/%li)",stol, SM(N,0), NK,Nkmin,Nkeep,SM.dim1);
-          xtol2=0;
+          xtol2=0; 
        }
    }
    else {
