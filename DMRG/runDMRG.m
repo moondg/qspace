@@ -95,8 +95,7 @@ else % !CONTINUE_DMRG
          oham{3}='Spin'; % uses all-abelian
        % don't set J(:,2)=Jz here instead since this may confuse with
        % BLBQ, as it would no longer know about Jz // fix Wb,Apr25,24
-         J(:,2)=Jz;
-        %setopts(oham,Jz);
+         setopts(oham,Jz);
       end
 
       if isset('J'),  setopts(oham,J); end
