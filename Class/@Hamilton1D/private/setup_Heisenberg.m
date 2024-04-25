@@ -140,7 +140,7 @@ function [HAM]=setup_Heisenberg(varargin)
   if ~isempty(regexp(sym,'^SU\d+')) && str2num(sym(3:end))>4, o={'-V'};
   else o={'-v'}; end
 
-  param=add2struct(L,J,J2,J3,Ising,B,perBC,qloc,ncpl,waklt);
+  param=add2struct(L,J,J2,J3,B,perBC,Ising,gotJz,Aflag,qloc,ncpl,waklt);
 
   HAM=struct(Hamilton1D);
 

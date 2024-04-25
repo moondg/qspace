@@ -166,6 +166,9 @@ function varargout=getLocalSpace(model,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% centralize initialization of qfac and jmap!
+% Wb,Apr04,14
+
 function q=init_qstruct(istr,sym,N)
 
    if nargin<2 || nargin>3 || ~ischar(sym) || ~ischar(istr)
@@ -236,6 +239,9 @@ function q=init_qstruct(istr,sym,N)
 end
 
 % -------------------------------------------------------------------- %
+% 'FermionS'
+% -------------------------------------------------------------------- %
+
 function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
 % function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym,varargin)
 % supported symmetries
@@ -587,6 +593,8 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
   end
 
 % --------------------------------------------------------------------
+% F-operators
+
   if Jflag>1
        oP={'-P'};
   else oP={}; end
@@ -631,6 +639,8 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
   F=setOpFlag(F);
 
 % --------------------------------------------------------------------
+% EZ-operators
+
   x=sum(NN(:));
   if norm(x,'-offdiag')>1E-12, wbdie('N-operator not diagonal'); end
   x=full(diag(x.op));
@@ -654,6 +664,8 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
   end
 
 % --------------------------------------------------------------------
+% spin-operators (for every channel and total)
+
   S=QSpace;
   if SONflag || chflag || phflag>10
      SS=sum(SS,1);
@@ -702,6 +714,8 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
   end
 
 % --------------------------------------------------------------------
+% operators for particle-hole symmetry
+
   if phflag
 
      n=numel(CZ); if phflag>10, n=1; end
@@ -826,6 +840,9 @@ function NC=check_NC(NC,Sym_)
 end
 
 % -------------------------------------------------------------------- %
+% allow split-up of channels into lower symmetry configuration
+% follow up to discussion with Fabian Kugler // Wb,Feb09,18
+
 function [NC,NCx,NCxs,NCsplit]=check_NC_vec(NC,sym)
 
   if isempty(NC) || ~isvector(NC) || any(NC<1) || any(NC~=round(NC))
@@ -913,6 +930,8 @@ function S=get_spin_ops(X,SOP,Is,NC,sym,Jflag)
 end
 
 % -------------------------------------------------------------------- %
+% tags: _spinless
+
 function [F,Z,Iout]=getLocalSpace_SpinlessFermions(Sym_,varargin)
 % function [F,Z,Iout]=getLocalSpace_SpinlessFermions(Sym,varargin)
 % supported symmetries
@@ -1104,6 +1123,9 @@ function [F,Z,Iout]=getLocalSpace_SpinlessFermions(Sym_,varargin)
   if nargout>1, Iout=add2struct('-',NC,SOP,'sym=Sym_',U,Is); end
 
 % -----------------------------------------------------------
+% F-operators
+% -----------------------------------------------------------
+
   X=FF;
 
   k=0; F=QSpace;
@@ -1133,6 +1155,9 @@ function [F,Z,Iout]=getLocalSpace_SpinlessFermions(Sym_,varargin)
   F=setOpFlag(F);
 
 % -----------------------------------------------------------
+% E,Q,Z-operators
+% -----------------------------------------------------------
+
   x=sum(NN(:));
   if norm(x,'-offdiag')>1E-12, wbdie('N-operator not diagonal'); end
   x=full(diag(x.op));
@@ -1208,8 +1233,9 @@ function [S,Iout]=getLocalSpace_Spin(qloc,varargin)
      SOP.info=sprintf('spin S=%s with Z2 parity only',rat2(qloc,'-s'));
 
      E=getIdentity(Z);
+     Z.info.otype='operator';
 
-     S=QSpace(3,1); Z.info.otype='operator';
+     S=QSpace(1,3);
      S(1)=makeIrop(Z/2); % = Sz = comm(S(2),S(2)')
      S(2)=F/sqrt(2);
      S(3)=-S(2)'; S(3).info.itags{end}='*';
@@ -1226,8 +1252,8 @@ function [S,Iout]=getLocalSpace_Spin(qloc,varargin)
 
      E=QSpace([0;0],eye(size(sx{1},1)),{'','*'});
      S=[
-        QSpace([0;0],full(sx{3}),{'','*'})
-        QSpace([0;0],full(sx{2}),{'','*'})
+        QSpace([0;0],full(sx{3}),{'','*'}) ...
+        QSpace([0;0],full(sx{2}),{'','*'}) ...
         QSpace([0;0],full(sx{1}),{'','*'})
      ];
 
@@ -1281,6 +1307,9 @@ function [S,Iout]=getLocalSpace_Spin(qloc,varargin)
   end
 
 % -----------------------------------------------------------
+% further operators: E
+% -----------------------------------------------------------
+
   oo={}; z=[SOP.qzvac];
   E=QSpace(compactQS(oc{:},sym, Is.QZ,Is.QZ,z, eye(D))); oo{end+1}='E';
 
@@ -1294,6 +1323,9 @@ function [S,Iout]=getLocalSpace_Spin(qloc,varargin)
   end
 
 % -----------------------------------------------------------
+% spin-operators
+% -----------------------------------------------------------
+
   k=0; S=QSpace; X=sum(SS,1); oo={};
 
   e=norm(comm(X(1),X(2))+X(3)); if e>1E-12
@@ -1523,6 +1555,10 @@ function [S,Iout]=getLocalSpace_SpinSUN(sym,qloc,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% get spin operator in the defining representation only
+% for a more generic setting, see getLocalSpace_SpinSUN.m above
+% -------------------------------------------------------------------- %
+
 function [S0,Iout]=getLocalSpace_SUN(N,varargin)
 % function [S0,Io]=getLocalSpace_SUN(N,varargin)
 %
@@ -1587,6 +1623,9 @@ function [S0,Iout]=getLocalSpace_SUN(N,varargin)
   wblog('<i>','setting up %s',istr); end
 
 % -----------------------------------------------------------
+% get operators
+% -----------------------------------------------------------
+
   oo={}; z=[SOP.qzvac];
   E=QSpace(compactQS(oc{:},sym, Is.QZ,Is.QZ,z, eye(D))); oo{end+1}='E';
 
@@ -1612,6 +1651,9 @@ function [S0,Iout]=getLocalSpace_SUN(N,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% get spin operator in given representation // Wb,Mar24,18
+% -------------------------------------------------------------------- %
+
 function [S,Iout]=getLocalSpace_SON(N,qloc,varargin)
 % function [S,Io]=getLocalSpace_SON(N,qloc,varargin)
 %
@@ -1688,6 +1730,9 @@ function [S,Iout]=getLocalSpace_SON(N,qloc,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% get spin operator in given representation // Wb,Mar24,18
+% -------------------------------------------------------------------- %
+
 function [S,Iout]=getLocalSpace_Sp2N(N,qloc,varargin)
 % function [S,Io]=getLocalSpace_Sp2N(N,qloc,varargin)
 %
@@ -1758,6 +1803,9 @@ function [S,Iout]=getLocalSpace_Sp2N(N,qloc,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% keep scalar operator dimension (3rd index)
+% if non-scalar operators exist within the same QSpace array
+
 function F=fixMixedScalar(F)
 
    if numel(F)<2, return; end
@@ -1856,6 +1904,8 @@ function SOP=strip4mex(SOP)
 end
 
 % -------------------------------------------------------------------- %
+% Wb,Dec03,11
+
 function G=mat2ops(G,psi)
 
   s=size(psi(1)); q0=sparse(s(1),s(2));
@@ -1885,6 +1935,10 @@ function Upsi=psi2psi(U,psi)
 end
 
 % -------------------------------------------------------------------- %
+% check all commutators for symmetry operations (within sparse still)
+% outsourced from getLocalSpace_SpinfullFermions()
+% Wb,Jul31,12
+
 function check_commrels(SOP)
 
   for i=1:numel(SOP)
@@ -1910,6 +1964,8 @@ function check_commrels(SOP)
 end
 
 % -------------------------------------------------------------------- %
+% Wb,Nov04,16
+
 function [SOP,qzvac]=set_qzvac(SOP)
 
   for i=1:numel(SOP)
