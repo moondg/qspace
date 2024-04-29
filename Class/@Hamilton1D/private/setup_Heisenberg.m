@@ -512,6 +512,7 @@ function [HAM]=setup_Heisenberg(varargin)
               if isempty(Jz), Jz=J(:,2); end
               H3(:,end,iz)=Jz;
            end
+        elseif gotJz, H3(:,end,iz)=Jz;
         end
 
         HH=[HH; reshape(permute(H3,[3 1 2]),[],size(H3,2)) ];
