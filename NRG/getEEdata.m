@@ -99,6 +99,9 @@ function [EE,hh,iQ,Iout]=getEEdata(HK,varargin)
      else isd(k)=-1; end
   end
 
+  k=find(isd>=0,1);
+  qfmt=getqfmt(HK(k));
+
   if ~isempty(k2x)
      if ~iscell(k2x) || numel(k2x)<2 || ~ischar(k2x{2})
         wbdie('invalid usage (k2x)');
@@ -386,8 +389,7 @@ function [EE,hh,iQ,Iout]=getEEdata(HK,varargin)
               if ~isempty(l)
                  iQ(iq,ih)=hl(l);
                  if ~isempty(ldisp) && ~bl
-                    s=sprintf('(%s)',sprintf('%g',Iq.Q));
-                    set(hl(l),'Disp',s);
+                    set(hl(l),'Disp',sprintf(qfmt,Iq.Q));
                  end
               end
            end
@@ -421,9 +423,22 @@ function [EE,hh,iQ,Iout]=getEEdata(HK,varargin)
   else set(ah,'YLim',yl);
   end
 
-  if ~isempty(ldisp)
-     if ~iscell(ldisp), ldisp={}; end
-     legdisp(ldisp{:});
+  if ~isempty(ldisp), n=-1;
+     if iscell(ldisp)
+        if isnumber(ldisp{1}), n=ldisp{1}; ldisp(1)=[]; end
+     elseif isnumber(ldisp), n=ldisp; ldisp={};
+     else
+        wblog('WRN','ignoring arguments to ldisp');
+        disp(ldisp); ldisp={};
+     end
+     if isempty(ldisp), ldisp={{'SE',[0,0]}}; end
+     if n>0, ldisp(end+1:end+2)={'nmax',n}; end
+
+     for i=1:numel(ah)
+        setax(ah(i));
+        [l,h]=legdisp(ldisp{:});
+        set(l,'Box','on'); set(l,'EdgeColor','none');
+     end
   end
 
   if nargout && nargout<3, EE=cat(2,EE{:}); end

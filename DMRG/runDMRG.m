@@ -82,7 +82,7 @@ else % !CONTINUE_DMRG
             else L=l+1; end
          end
       end
-      setdef('L',32,'nk1',3,'Qtot',0);
+      setdef('L',64,'nk1',3,'nk2',6,'Qtot',0);
       initNKEEP;
 
       setdef('qloc',1,'J',1);

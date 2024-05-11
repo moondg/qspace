@@ -89,7 +89,12 @@ ah=smaxis(3,1,'tag',mfilename,'dy',0); addt2fig;
 
   if isfield(Inrg,'HK') && ~isset('EEflag'), EEflag=0;
      o={'E0',Inrg.E0};
-     if isset('qsel_nrg'), o(end+(1:2))={'qsel',qsel_nrg}; end
+     if isset('qsel_nrg' ), o(end+(1:2))={'qsel',qsel_nrg}; end
+     if isset('nrg_qdisp')
+        if nrg_qdisp<=1
+             o{end+1}='-ldisp';
+        else o(end+1:end+2)={'ldisp',nrg_qdisp}; end
+     end
 
      if exist('A0','var') && isa(A0,'QSpace')
         q=getDimQS(A0); if max(q(:,1))>1, eo_flag=1;
@@ -129,6 +134,8 @@ ah=smaxis(3,1,'tag',mfilename,'dy',0); addt2fig;
         EE_=reduceEE(EE); % ,'eps',1E-2,'yl',yl(2));
      end
   end
+
+  set(ah(1:2),'Layer','bottom');
 
   if ~exist('savemat','var') && ...
     exist('Imain','var') && ~isfield(Imain,'mat') && exist('mat','var')
@@ -186,7 +193,7 @@ setax(ah(2));
 
   o={ 0.98, 0.95,'VerticalAl','top','HorizontalAlign','right', ...
      'Units','normalized','EdgeColor','k','Margin',5,...
-     'BackGroundColor','w','FontSize',10};
+     'BackGroundColor','w','FontSize',10,'Tag','postext'};
   text(o{1:2}, sprintf('ground state %s\\newlineE_g=%.8g',s,Inrg.phE0),o{3:end});
 
   show_deg(E2,ah(ih(2)));
@@ -218,9 +225,8 @@ setax(ah(3));
   xtight; ytight(1.1); % set(gca,'XTickLabel',[]);
   if exist('q','var'), ylim(q); end
 
-  ylabel('\DeltaE_0')
-  legdisp('Location','NorthWest','orientation','horiz','-detach',...
-    'dx',[0.03 0.01],'fs',8); % ,'xsc',0.8
+  ylabel('\DeltaE_0')    % ,'xsc',0.8
+  legdisp({'NW',[0.03 0.01]},'Orientation','horiz','detach','3','fs',8);
 
   set(gca,'tag','deltaE0');
 
@@ -255,8 +261,8 @@ setax(ah(4));
 
   sms(4); hold on
 
-  h=legdisp('Location','SouthWest','Orientation','horiz','-detach',...
-   'dx',[ 0.03 -0.01],'dy',-0.15,'fs',8,'xsc',0.8);
+  h=legdisp({'SW',[ 0.03 -0.01]},...
+   'Orientation','horiz','dy',-0.15,'fs',8,'xsc',0.8,'detach','4');
 
   set(gca,'tag','Etrunc');
 
@@ -265,21 +271,23 @@ setax(ah(5));
   q=max(Inrg.NK,[],1);
   n=size(Inrg.NK,2); if n==4, j=[1 3]; else j=1:n; end
 
+  if isAbelian(H0), Nstr='D'; else Nstr='D^{\ast}'; end
+
   h1=plot(xx,Inrg.NK(:,j(1))); y=ytight(1.1); hold on
   h2=plot(xx,Inrg.NK(:,j(2:end))); h=[h1;h2];
-  set(h(1),'Disp','N_K');  if n>1
-  set(h(2),'Disp','N_{tot}'); end
+  set(h(1),'Disp',[Nstr '_K']);  if n>1
+  set(h(2),'Disp',[Nstr '_{tot}']); end
 
   if n==4
      set(h(2),'Color',[0 .5 0]); set(h(2),'LineSt','--');
      s=num2cell(q); for i=1:numel(s), s{i}=int2str2(s{i}); end
      postext({'NE',[0.035 -0.2]},...
-     'N_K^{max}=%s (%s);  N_{tot}^{max}=%s (%s)', ...
+     ['max(' Nstr '_K)=%s (%s);  max(' Nstr '_{tot})=%s (%s)'], ...
        s{[1 2]}, s{[3 4]},{'FontSize',8});
   elseif n>1
-     postext({'NE',[0.02 -0.05]},'N_K^{max}=%d',q(1));
+     postext({'NE',[0.02 -0.05]},['max(' Nstr '_K)=%d'],q(1));
   else
-     set(h(1),'Disp',sprintf('N_K^{max}=%d',q(1)));
+     set(h(1),'Disp',sprintf(['max(' Nstr '_K)=%d'],q(1)));
   end
 
   if n>1
@@ -306,11 +314,10 @@ setax(ah(5));
   ylim(y);
 
   xlabel('Wilson shell (NRG iteration) k') %,'max(E_k)');
-  if isAbelian(H0),l='N_{kept}'; else l=['N_{kept}' 10 '(multiplets)']; end
-  ylabel(l); % 'Color',[0 .5 0] % mvlabel('y',-0.02);
+  ylabel([Nstr '_{K}']); % 'Color',[0 .5 0] % mvlabel('y',-0.02);
 
-  legdisp('Location','SouthWest','orientation','horiz','-detach', ...
-    'dx',[.04 -.005],'dy',-0.2,'xsc',0.8,'fs',8);
+  legdisp({'SW',[.04 -.005]},...
+    'Orientation','horiz','dy',-0.2,'xsc',0.8,'fs',8,'detach','5');
 
   set(gca,'tag','Nkept');
 

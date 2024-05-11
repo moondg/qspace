@@ -64,6 +64,8 @@ function info(A,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% print info in most compact form as one-liner
+
 function info_1line(A,vstr,cflag,ocflag,rmax)
 
   rk=length(A.Q); nd=numel(A.data); sx={};

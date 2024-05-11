@@ -18,6 +18,7 @@
   fi
 
   P0=`dirname "$P0"`
+  msh=''
 
 # script 'ml' starts form MYMATLAB
 # to ensure that $MYMATLAB/startup.m is called.
@@ -33,17 +34,29 @@
 # directory as this file // Wb,Feb14,24
   if [ -z "$QS_CONFIG_ML_SH" ]; then
      msh="$P0/matlab_setup_user.sh"
-     if [ -f "$msh" ]; then
-        export QS_CONFIG_ML_SH="$msh"
-   # else
-     # issue error in matlab_setup.pl script below
-     # printf "\n \e[31m matlab_setup.sh:\n  %s\n  %s\n  %s\e[0m\n\n" \
-     #  "Please setup the system environment for QSpace first" \
-     #  "e.g., set environmental variable QS_CONFIG_ML_SH or use file" "$msh"
+     if [ ! -f "$msh" ]; then
+        printf "\n  matlab_setup.sh:\n\e[31m  %s\n  %s\e[0m\n  %s\n\n"  \
+        "Please setup the system environment for QSpace in file" "$msh" \
+        "Hint: may use template system/matlab_setup_user.sh-template for this"
+        msh=''
+     fi
+
+  elif ! [[ "$QS_CONFIG_ML_SH" =~ '/' ]]; then
+     msh="$P0/$QS_CONFIG_ML_SH"  # assume ./system folder by default
+     if [ ! -f "$msh" ]; then
+        printf "\n  matlab_setup.sh:\n\e[31m  %s\n  %s\e[0m\n\n" \
+         "Configuration file in \$QS_CONFIG_ML_SH does not exist:" \
+         "$msh"
+        msh=''
      fi
   fi
 
-  if [ ! -z "$QS_CONFIG_ML_SH" ]; then
+  if [ -f "$msh" ]; then
+     export QS_CONFIG_ML_SH="$msh"
+# else issue error in matlab_setup.pl script below
+  fi
+
+  if [ -f "$QS_CONFIG_ML_SH" ]; then
      source $QS_CONFIG_ML_SH
   fi
 

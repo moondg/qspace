@@ -13,7 +13,7 @@
 %     '-a'      also return continued fraction sequence in I
 %     'nmax',.. maximimum number of iterations (6)
 %     'eps1',.. tolerance on continued fraction (1E-6)
-%     'eps2',.. rel. overall tolerance wrt. to in put number q (1E-12)
+%     'eps2',.. rel. overall tolerance wrt. to input number q (1E-12)
 %
 %  Output
 %

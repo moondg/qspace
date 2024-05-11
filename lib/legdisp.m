@@ -16,6 +16,8 @@ function [lg,ll,l2,t2]=legdisp(varargin)
 %                then pick is done on the flipped handle set!)
 %
 %     '-detach'  detach legend from axis (allows to create another legend)
+%     '--detach',xtag   add string xtag to axis tag as in 'leg:detached:<xtag>'
+%
 %     '-erase'   white background but no border
 %                in case grid lines are still through legend, use -detach
 %     '-eraset'  white background for text labels only
@@ -31,7 +33,7 @@ function [lg,ll,l2,t2]=legdisp(varargin)
 %     
 %     All remaining options will be handed over to legend(...,OPTS).
 %
-% Usage #2: funtion [m,ll]=legdisp('-count');
+% Usage #2: function [m,ll]=legdisp('-count');
 %
 %    Get count and handles of line objects with non-empty disp only.
 %
@@ -47,7 +49,7 @@ function [lg,ll,l2,t2]=legdisp(varargin)
   lg=[]; ll=[]; l2=[]; t2=[];
 
   if nargin==1
-     if isequal(varargin{1},'-count') || isequal(varargin{1},'-n')
+     if ischar (varargin{1}) && ~isempty(regexp(varargin{1},'-+(count|n)$'))
         ll=findall(gca,'type','line','-not','Disp','');
         l2=findall(gca,'type','patch','-not','Disp',''); ll=[ll;l2];
         lg=numel(ll); return
@@ -67,13 +69,21 @@ function [lg,ll,l2,t2]=legdisp(varargin)
   erase=0;
 
   getopt('init',varargin);
+     nmax   = getopt('nmax',[]);
      flip   = getopt('-flip'  );
+
      pick   = getopt('pick',{});
-
      pickE  = getopt('pickE',{});
-
      pickX  = getopt('~pick',{});
-     detach = getopt('-detach');
+
+     if getopt('-detach'), detach=1;
+     else
+        detach=getopt('detach','');
+        if isempty(detach), detach=0;
+        elseif ischar(detach), detag_=detach; detach=2;
+        else disp(detach), wbdie('invalid usage (detach)'); end
+     end
+
      rmold  = getopt('-rm');
      xsc    = getopt('xsc',[]);
      ysc    = getopt('ysc',[]);
@@ -129,6 +139,11 @@ function [lg,ll,l2,t2]=legdisp(varargin)
   elseif isnumeric(pick)
      i=find(pick<0);
      if ~isempty(i), pick(i)=(n+1)+pick(i); end
+  elseif ~isempty(nmax) && abs(nmax)<n,
+     if nmax>0
+          pick=n-nmax+1:n;
+     else pick=1:-nmax;
+     end
   end
 
   if ~isempty(pick)
@@ -188,6 +203,10 @@ function [lg,ll,l2,t2]=legdisp(varargin)
   end
 
 % -------------------------------------------------------------------- %
+% switch legend to axes handle // DETACH, detach, detag
+% since for matlab>2013a legend is a type of its own // Wb,Aug04,16
+% -------------------------------------------------------------------- %
+
   lg_=lg; t2=zeros(1,n);
   lg=axes('Position',get(lg_,'Position'));
 
@@ -219,18 +238,19 @@ function [lg,ll,l2,t2]=legdisp(varargin)
   setuser(lg,'Parent',ah);
   set(lg,'Layer','bottom');
 
-  if 0
-     t=sprintf(',%.2f',get(ah,'Position'));
-     t=sprintf('legdisp:ah[%s]',t(2:end));
+  tag='leg:detached';
 
-     h0=findall(groot,'Type','axes','Tag',t);
-     if ~isempty(h0), t
-        wblog('WRN','got %g user legend(s) for given axis set',numel(h0));
+  if detach==2, tag=[tag ':' detag_];
+  elseif detach<=0
+     tag=sprintf(',%.2f',get(ah,'Position'));
+     tag=sprintf('legdisp:ah[%s]',tag(2:end));
+
+     h0=findall(groot,'Type','axes','Tag',tag);
+     if ~isempty(h0), wblog('WRN',...
+        'got %g user legend(s) for tag ''%s''',numel(h0),tag);
      end
-     set(lg,'Tag',t);
-  else
-     set(lg,'Tag','leg:detached');
   end
+  set(lg,'Tag',tag);
 
   if bitand(erase,2)
      setax(lg); box on
