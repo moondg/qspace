@@ -1,7 +1,7 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-   Project: QSpace tensor library (v4.0 pre-release)
-   Copyright 2022 Andreas Weichselbaum
+   Project: QSpace tensor library (v4.0)
+   Copyright 2024 Andreas Weichselbaum
 
    All source code in this git repository  is licensed under the
    Apache License, Version 2.0 (the "License"); you may not use

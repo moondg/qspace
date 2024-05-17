@@ -6,27 +6,29 @@ tensor library that can handle arbitrary combinations of abelian
 and general non-abelian symmetries in tensor network states.
 As of version 4 this has been made open source [hence `qspace4u`
 (*for you*) in the hyperref link to the public repository]
-under the Apache 2.0 license (see LICENSE.txt and ./LICENSE).
+under the Apache 2.0 license (see
+<a href="LICENSE.txt">LICENSE.txt</a> or 
+<a href="LICENSE/LICENSE-detailed.txt">here</a> for detailed version).
 
-&copy; 2022 Andreas Weichselbaum
+&copy; 2024 Andreas Weichselbaum
 
 ### Essential references
 
 *Non-abelian symmetries in tensor networks: A quantum symmetry space
  approach*; A. Weichselbaum; 
- <a href=https://doi.org/10.1016/j.aop.2012.07.009>Annals of Physics
- **327**, 2972 (2012)</a>.
+ <a href="https://doi.org/10.1016/j.aop.2012.07.009">
+ Annals of Physics **327**, 2972 (2012)</a>.
 
 *X-symbols for non-Abelian symmetries in tensor networks*,<br>
  Andreas Weichselbaum;
- <a href=https://doi.org/10.1103/PhysRevResearch.2.023385>Phys. Rev.
- Research **2**, 023385 (2020)</a>.
+ <a href="https://doi.org/10.1103/PhysRevResearch.2.023385">
+ Phys. Rev.  Research **2**, 023385 (2020)</a>.
 
 *QSpace - An open-source tensor library for Abelian and non-Abelian symmetries*
- Andreas Weichselbaum; 
- <a href=https://arxiv.org/abs/2405.06632>arXiv:2405.06632</a>
- (2024)<br>
- An up-to-date PDF version is maintained in Docu/user-manual.pdf
+ Andreas Weichselbaum; <a href="https://arxiv.org/abs/2405.06632">
+ arXiv:2405.06632</a> (2024).<br>
+ An up-to-date PDF version is maintained in 
+ <a href="Docu/">Docu</a>/user-guide.pdf
 
 ### Acknowledgements
 
