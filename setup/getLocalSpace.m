@@ -1810,8 +1810,9 @@ function F=fixMixedScalar(F)
 
    if numel(F)<2, return; end
 
-   mark=zeros(size(F)); n=numel(F);
-   for i=1:n, r=numel(F(i).Q);
+   sF=size(F);
+   mark=zeros(sF); n=prod(sF); otype=cell(sF);
+   for i=1:n, r=numel(F(i).Q); otype{i}=F(i).info.otype;
       if r==3, q=norm(F(i).Q{3});
          if q>1E-12, mark(i)=1; else mark(i)=-1; end
       elseif r~=2
@@ -1821,8 +1822,15 @@ function F=fixMixedScalar(F)
 
    if any(mark(:)>0)
       I=find(mark==0); n=numel(I);
+      if n &&~isempty(otype), i=cellfun(@isempty,otype);
+         otype=unique(otype(find(~i))); i=numel(otype);
+         if     i==0, otype='';
+         elseif i==1, otype=otype{1};
+         else otype, wbdie('got mixed otype setting'); end
+      end
       for k=1:n, i=I(k);
           F(i)=makeIrop(F(i));
+          if otype, F(i).info.otype=otype; end
       end
    else
       I=find(mark<0); n=numel(I);

@@ -1,16 +1,19 @@
 function info(A,varargin)
-% function info(A [,istr,cflag,rmax])
+% function info(A [opts,][,istr,cflag,lmax])
 %
 %    short general info on QSpace
 %    e.g., used as QSpace header in display().
 %
 % Options
 %
+%   '-c'    compact mode (skip leading/trailing newlines)
+%   '-c'    compact mode (print 1-liner)
+%
 %    istr   info string
 %    cflag  whether to show info in compact form ('-c','-C')
-%    rmax   max. rank to consider (used to reserve space for itags
-%           so that entries line up over repeated callls e.g.
-%           for a QSpace array.
+%
+%    lmax   max. string length to reserve for itags, e.g., to
+%           line up entries over repeated calls for a QSpace array.
 %
 % Wb,Mar01,08
 
@@ -25,8 +28,8 @@ function info(A,varargin)
   args=getopt('get_remaining'); nargs=numel(args);
 
   if nargs && isnumeric(args{end})
-       rmax=args{end}; nargs=nargs-1;
-  else rmax=0; end
+       lmax=args{end}; nargs=nargs-1;
+  else lmax=0; end
 
   vstr='';
   if nargs==1, vstr=args{1};
@@ -57,7 +60,7 @@ function info(A,varargin)
              fprintf(1,[nl '  %s (empty QSpace)\n'],vstr);
         else fprintf(1,[nl '  (empty QSpace)\n']); end
      elseif cflag>1
-          info_1line(A(k),vstr,cflag,ocflag,rmax);
+          info_1line(A(k),vstr,cflag,ocflag,lmax);
      else info_1(A(k),vstr,cflag,use_tex); end
   end
 
@@ -66,11 +69,11 @@ end
 % -------------------------------------------------------------------- %
 % print info in most compact form as one-liner
 
-function info_1line(A,vstr,cflag,ocflag,rmax)
+function info_1line(A,vstr,cflag,ocflag,lmax)
 
   rk=length(A.Q); nd=numel(A.data); sx={};
 
-  if isempty(vstr), s0='';
+  if isempty(vstr), s0=repmat(' ',1,7);
   else s0=sprintf('%-6s ',vstr); end
 
   if ~isfield(A.info,'qtype') || isempty(A.info.qtype)
@@ -84,8 +87,16 @@ function info_1line(A,vstr,cflag,ocflag,rmax)
      stags=itags_to_str(A.info.itags,'QS:info');
   end
 
-  if isfield(A.info,'otype') && ~isempty(A.info.otype)
-     sx{end+1}=A.info.otype;
+  if isfield(A.info,'otype'), q=A.info.otype;
+     if ~isempty(q)
+        if isequal(q,'operator') && numel(A.Q)==3
+           qop=uniquerows(A.Q{3});
+           if size(qop,1)==1
+              q=['irop [' sprintf(getqfmt(A),qop) ']'];
+           end
+        end
+        sx{end+1}=q;
+     end
   end
 
   s=A.data; s=whos('s'); sbytes=num2str2(s.bytes,'-b');
@@ -135,20 +146,18 @@ function info_1line(A,vstr,cflag,ocflag,rmax)
      end
   end
 
-  e1=''; em=''; 
+  e1=''; em=''; l=max(10,lmax+2);
   if wblog('--hl-check')
      if ocflag
         e1=[char(27) '[38;5;12m'];
         em=[char(27) '[0m'];
      end
 
-     l=4+6*max(3,rmax);
      q=regexprep(stags,'\x1B\[[\d;]+m','');
      q=diff([length(q), l]);
      if q>0, stags = [stags, repmat(' ',1,q)]; end
   else
-     l=4+7*max(3,rmax);
-     q=diff([length(stags), l]);
+     q=diff([length(stags), l+2]);
      if q>0, stags = [stags, repmat(' ',1,q)]; end
   end
 

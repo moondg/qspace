@@ -1,9 +1,15 @@
 function display(A,varargin)
 % function display(A [,OPTS])
+%
+%    This function is called by default when displaying
+%    a QSpace object on the Matlab prompt. When explicitly
+%    called by name, additional options can be provided.
+%
 % Options
 %
 %    -a, -f    show all record entries even if many (-f like full, force)
 %    -c        compact mode (e.g, shows combined CGS dimensions only)
+%    -C        compact mode (print 1-linesr for each QSpace element)
 %    -v        verbose flag (in case of QSpace array, show detailed content 
 %              for all entries
 %
@@ -104,14 +110,17 @@ function display(A,varargin)
   elseif nA>1
      n2=2;
      if vflag && nA>n2, fprintf(1,'\n'); end
-     ise=zeros(1,nA); ocr=zeros(1,nA); rr=zeros(1,nA); nl2=nl;
+     ise=zeros(1,nA); ocr=zeros(1,nA); rr=zeros(nA,2); nl2=nl;
 
      for i=1:nA, 
         ise(i)=is_empty(A(i));
         rr(i)=numel(A(i).Q); if rr(i)
-        ocr(i)=all(getqdir(A(i))>0); end
+           ocr(i)=all(getqdir(A(i))>0);
+           rr(i,2)=length([A(i).info.itags{:}]);
+        end
      end
-     rmax=max(rr);
+     lmax=(max(rr(:,1))-1) + max(rr(:,2));
+
      if numel(find(ocr)>1), oc={'~oc'}; else oc={}; end
 
      for i=1:nA
@@ -126,14 +135,17 @@ function display(A,varargin)
         elseif l==1,      s=sprintf(nm,i );
         else
            s=sprintf(fmt,iA);
-           if ~bitand(vflag,4) || isempty(nm), s=[s '. '];
+           if isempty(nm), s=[s '. '];
+           elseif ~bitand(vflag,4), if numel(iA)==1
+                s=regexprep(s,'^ ',''); end
+                s=[nm '(' s ') '];
            else s=[nm '(' s ') = ']; end
         end
         if ~ise(i)
            if cflag<2 && ...
                (bitand(vflag,2+4) || vflag && nA<=n2)
                 display_1(A(i),m,Eflag,use_tex,vflag,s);
-           else info(A(i),s,'-C',oc{:},rmax); end
+           else info(A(i),s,'-C',oc{:},lmax); end
         else fprintf(1,[nl2 '%s(empty)\n'],s); end
      end
   else
