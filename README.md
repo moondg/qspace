@@ -18,7 +18,9 @@ under the Apache 2.0 license (see LICENSE.txt and ./LICENSE).
 *X-symbols for non-Abelian symmetries in tensor networks*,
  Andreas Weichselbaum; Phys. Rev. Research **2**, 023385 (2020).
 
-More detailed tutorial paper in preparation.
+*QSpace - An open-source tensor library for Abelian and non-Abelian symmetries*
+ Andreas Weichselbaum; https://arxiv.org/abs/2405.06632
+ A copy of this is also found in Docu/user-manual.pdf
 
 ### Acknowledgements
 
