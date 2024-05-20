@@ -1,11 +1,12 @@
 function echo_c(varargin)
 % function echo_c([opts,] infostring1, infostring2,...)
 %
-%    Prints command in this or next non-empty line
-%    in calling function or script.
+%    Echo (print) command in this or next non-empty line in
+%    calling function or script.
 %   
-%    (auxilliary logging routine that is a more elaborate
-%    alternative to matlab's echo on/off command).
+%    Auxilliary logging routine that is a more elaborate
+%    alternative to matlab's echo on/off command;
+%    uses auxiliary Perl script.
 %
 % Options
 %
@@ -49,16 +50,19 @@ function echo_c(varargin)
   l=S(2).line; L=num2str(l); sout=''; e=0;
 
 % auxilliary Perl script to search around current source line caller
-  if vflag>1 && ~hflag, cmd = [
-    'open(FH,''<'',''' F ''') or die "' f ': $!"; my $l=' L '; ' ...
+  if vflag>1 && ~hflag, this = mfilename; cmd = [
+    'open(FH,''<'',''' F ''') or die "' f ': $!"; ' ... 
+    'my $l=' L '; my $cstr=""; ' ...
     'while (<FH>) { if ($. == ' L ') { while ($_) { ' ...
-       'if (!s/[,;\s]*if.*echo_c.*\bend\b[,;\s]*//) { ' ...
-       'if (!s/[,;\s]*echo_c\(''[^'']*''\)[,;\s]*//) { ' ...
-       'if (!s/[,;\s]*echo_c\(\[[^\]]*\]\)[,;\s]*//) { ' ...
-            's/[,;\s]*echo_c[,;\s]*//; }}} ' ...
-       'if (/^\s*$/) { $_=<FH>; } else { $l=$.; last; }' ... % skip empty lines
+       'if (!s/[,;\s]*if.*' this '.*\bend\b[,;\s]*//) { ' ...
+       'if (!s/[,;\s]*' this '\(''[^'']*''\)[,;\s]*//) { ' ...
+       'if (!s/[,;\s]*' this '\(\[[^\]]*\]\)[,;\s]*//) { ' ...
+            's/[,;\s]*' this '[,;\s]*//; }}} ' ...
+       'if (/^\s*$/) { $_=<FH>; } ' ... 
+       'elsif (/^\s*\%\s*/) { chomp($cstr=$''); $_=<FH>; }' ...
+       'else { $l=$.; last; }' ... % skip empty lines
     '}; last; }}; close FH; ' ...
-    'if ($_) { chomp; s/^\s*//; print "$l: $_"; }' ]; ...
+    'if ($_) { chomp; s/^\s*//; print "$l\n$cstr\n$_"; }' ]; ...
    % or { die; } // accept echo_c at end of function or script
 
      [e,sout]=system([ 'perl -we ''' regexprep(cmd,'''','''\\''''') '''']);
@@ -90,11 +94,27 @@ function echo_c(varargin)
   end
 
   if ~e && ~isempty(sout)
-     sout=regexprep(sout,'^(\d+): *(?@L=$1;)',''); cstr='';
-     sout=regexprep(sout,' *%\s+(.*)(?@cstr=$1;)',''); % strip comment
-     if ~isempty(cstr) && isempty(regexp(cstr,'^\s*$'))
+     i=find(sout==char(10)); cstr={'',''};
+     if numel(i)==2 % should always be the case
+        L=sout(1:i(1)-1);
+        cstr{1}=sout(i(1)+1:i(2)-1);
+     elseif isempty(i), i=0;
+     end
+     sout=sout(i(end)+1:end);
+
+   % strip comment
+     sout=regexprep(sout,' *%\s+(.*)(?@cstr{2}=$1;)','');
+     for i=1:2 % skip empty comments
+        if ~isempty(regexp(cstr{i},'^\s*$')), cstr{i}=''; end
+     end
+     if ~isempty(cstr{1})
+      % print comment with echo_c *before* command
+        fprintf(1,[e1 '' e2 '%%  %s' em '\n'],cstr{1});
+     end
+     if ~isempty(cstr{2})
+      % print comment with command *after* command
         fprintf(1,[e1 '>> %-40s ' e2 '%% %s:%s\n' e2 '%%  %s' em '\n'],...
-        sout,f,L,cstr);
+        sout,f,L,cstr{2});
      else
         fprintf(1,[e1 '>> %-40s ' e2 '%% %s:%s' em '\n'],sout,f,L);
      end

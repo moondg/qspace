@@ -1,11 +1,15 @@
+% -------------------------------------------------------------------- %
+% Simple operations on single spin-half site                           %
+% [Sec. 4.4 in documentation]                                          %
+% Wb,May10,24                                                          %
+% -------------------------------------------------------------------- %
 
 % select what to do / show by setting task (string)
-  setdef('task','SU2');
 %    'SU2'    spin-half with U1 symmetry
 %    'U1'     spin-half with U1 symmetry
 %    'Z2'     spin-half with Z2 symmetry
 %    'nosym'  spin-half with no symmetry
-% Wb,May10,24
+  setdef('task','SU2');
 
   nfin=0; % number of tasks finished
 

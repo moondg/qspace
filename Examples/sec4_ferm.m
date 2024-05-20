@@ -1,6 +1,10 @@
+% -------------------------------------------------------------------- %
+% Simple operations on single spinfull fermionic level                 %
+% [Sec. 4 in documentation]                                            %
+% Wb,May10,24                                                          %
+% -------------------------------------------------------------------- %
 
 % select what to do / show by setting task (string)
-  setdef('task','overview');
 %    'overview'  selected output
 %    'struct'    detailed display of data structure of F
 %    'noise'     check difference of QSpace tensors w.r.t. numerical noise
@@ -9,8 +13,7 @@
 %    'perm'      permuting indices of legs and conjugate tensors
 %    '1j'        1j tensors
 %    '*'         choose all
-% Wb,May10,24
-
+  setdef('task','overview');
 
 % get set of operators that describe the local state space of a
 % single spinful site, using U(1) charge and SU(2) spin symmetries
