@@ -80,7 +80,7 @@ function [Htot,Iout]=runED(HAM,varargin)
 
    Htot=getIdentity(ALR,2); Htot.data=repmat({0},size(Htot.data));
    if ~isequal(Htot.Q{1},Qtot), wbdie('Htot not sorted in QIDX !?'); end
-   if vflag, qfmt=getqfmt(Htot,'-b'); end
+   if vflag, qfmt=['(' getqfmt(Htot) ')']; end
 
    nQ=size(Qtot,1);
    for k=1:nQ

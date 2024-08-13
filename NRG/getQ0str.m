@@ -19,7 +19,7 @@ function Qs=getQ0str(H,varargin)
      [ee,H]=eig(H);
   end
 
-  qf=getqfmt(H,'sep',', ');
+  qf=getqfmt(H);
 
   dd=H.data; e0=min(cat(2,dd{:}))+eps; n=numel(dd); Qs={};
   for i=1:n
