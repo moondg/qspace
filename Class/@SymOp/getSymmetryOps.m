@@ -40,6 +40,7 @@ function [FS,Io,FX]=getSymmetryOps(F,SOP,varargin)
 
    getopt('INIT',varargin);
       vflag=getopt('-v');
+      tflag=getopt('-t');
       Pflag=getopt('-P');
    FF=getopt('get_last',{});
 
@@ -49,8 +50,8 @@ function [FS,Io,FX]=getSymmetryOps(F,SOP,varargin)
    end
 
    nS=numel(SOP); D=[]; dz=zeros(1,nS); cr=cell(1,nS);
-   for i=1:nS
-      cr{i}=checkSpSz(SOP(i).Sp,SOP(i).Sz,SOP(i).type);
+   for i=1:nS, if ~tflag
+      cr{i}=checkSpSz(SOP(i).Sp,SOP(i).Sz,SOP(i).type); end
       dz(i)=numel(SOP(i).Sz);
    end
 
@@ -278,6 +279,9 @@ function [FS,Io,FX]=getSymmetryOps(F,SOP,varargin)
 end
 
 % ------------------------------------------------------------------- %
+% get unitary symmetry for discrete symmetry operation
+% Wb,Aug30,16
+
 function G=get_disc_unitary(t,Z)
 
    if isequal(t,'P'), G=Z;
@@ -307,6 +311,7 @@ end
 
 % ------------------------------------------------------------------- %
 
+% get quantum labels for operator
 function qq=get_symmetries_op(F,SOP)
 
    if nargin~=2, wbdie('invalid usage'); end
@@ -341,6 +346,8 @@ function qq=get_symmetries_op(F,SOP)
 end
 
 % ------------------------------------------------------------------- %
+% get full irop multiplet
+
 function [F,qz]=get_multiplet(F,SOP,vflag)
 
    if nargin<2 || nargin>3, wbdie('invalid usage'); end

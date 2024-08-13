@@ -1,40 +1,68 @@
-function fmt=getqfmt(A,varargin)
-% function fmt=getqfmt(A [,opts])
+function [qfmt,Q3]=getqfmt(A)
+% function [qfmt,Q3]=getqfmt(A)
 %
-%    get format string for a single Q{i}(j,:)
+%    Get format string to print q-labels in A.Q{l}.
+%    This uses compact notation for SU(N), Sp(2n), etc
+%    as along as q-labels stay with in hexadecimal range (q<16),
+%    and extend number format otherwise.
 %
-% Wb,Dec14,15
+% Wb,Apr02,15
 
-% see also display -> get_q_fmt(qtype,r,m)
+% merged with private/get_q_fmt.m // Wb,Aug13,24
 
-  if isempty(A), fmt=''; return; end
-  getopt('init',varargin);
-     sep  =getopt('sep',' ');
-     bflag=getopt('-b');
-  getopt('check_error');
+  if ~isempty(A.info), qtype=A.info.qtype;
+  elseif isempty(A.Q), qfmt=''; return
+  else qtype=''; end
 
-  d=0; fmt=reshape(getsym(A,'-c'),1,[]);
+  rA=numel(A.Q);
+  if rA, nQ=size(A.Q{1},2); else nQ=0; end
 
-  Q=abs(cat(1,A.Q{:}));
+  sym=strread(qtype,'%s','delimiter',',;')';
+  if isempty(sym)
+     qfmt=strjoin(repmat({'%2g'},1,nQ),' ');  if rA>1
+     qfmt=strjoin(repmat({qfmt},1,rA),' ;');  end
+     return
+  end
 
-  for i=1:numel(fmt), s=fmt{i};
-     if ~ischar(s), wbdie('got invalid symmetry (string required) !?'); end
-     if regexp(s,'^SU\d+$')
-        r=str2num(s(3:end))-1; d=d+r;
-        fmt{i}=repmat('%X',1,r);
-     elseif regexp(s,'^Sp\d+$')
-        r=str2num(s(3:end))/2; d=d+r;
-        fmt{i}=repmat('%X',1,r);
-     else
-        d=d+1;
-        if any(Q(:,d)>10), fmt{i}='%3g'; else fmt{i}='%2g'; end
+  QQ=cat(1,A.Q{:}); gotQ=~isempty(QQ); l=0; r=1; ext=0;
+  Qmin=min(QQ,[],1);
+  Qmax=max(QQ,[],1);
+
+  nsym=numel(sym);
+  qfmt=repmat({''},2,nsym);
+
+  for j=1:nsym, l=l+r; r=1; compact=0;
+     i=regexp(sym{j},'\d+$');
+     if ~isempty(i)
+        w=sym{j}(1:i-1); n=str2num(sym{j}(i:end));
+        switch w
+           case 'SU', compact=1; r=n-1;
+           case 'Sp', compact=1; r=n/2;
+           case 'SO', compact=1; r=floor(n/2); 
+           case {'Z','P'},       r=1;
+           otherwise wbdie('unexpected symmetry %s',sym{j});
+        end
+     end
+     if compact
+        if all(Qmax(l:l+r-1)<16)
+             qfmt{1,j}=repmat('%X',1,r);
+        else qfmt{1,j}=strjoin(repmat({'%2g'},1,r),' '); ext=1;
+        end
+     elseif Qmax(l)<10  && Qmin(l)>=0,  qfmt{1,j}='%2g';
+     elseif Qmax(l)<100 && Qmin(l)>-10, qfmt{1,j}='%3g';
+     else                               qfmt{1,j}='%4g';
      end
   end
 
-  if d~=size(Q,2), wbdie('qset mismatch (len=%g/%g)',d,size(Q,2)); end
+  if l~=nQ, wbdie('qset mismatch (nQ=%g/%g)',l,nQ); end
 
-  fmt(2,1:end-1)={sep};
-  fmt=[fmt{:}]; if bflag, fmt=['(' fmt ')']; end
+  if ext, qfmt(2,1:nsym-1)={', '}; else qfmt(2,1:nsym-1)={' '}; end
+  qfmt=[qfmt{:}];
+
+  if nargout>1
+     Q3=permute(cat(3,A.Q{:}),[3 2 1]);
+     qfmt=strjoin(repmat({qfmt},1,rA),' ; ');
+  end
 
 end
 

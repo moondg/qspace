@@ -1271,7 +1271,7 @@ function [S,Iout]=getLocalSpace_Spin(qloc,varargin)
   if Z2
      q=init_qstruct('total spin Z2','Z2');
      q.Sz=2*sum(SS(:,3));
-     wbstop xxx
+     wbstop
   elseif Aflag 
      q=init_qstruct('total spin U(1)','A');
      q.Sz=2*sum(SS(:,3));
@@ -1745,8 +1745,17 @@ function [S,Iout]=getLocalSpace_Sp2N(N,qloc,varargin)
 
   qadj=['2' repmat('0',1,(N-1))];
 
-  sym=sprintf('Sp%g',2*N);
-  if isnumeric(qloc), qloc=sprintf('%g',qloc); end
+  sym=sprintf('Sp%g',2*N); tflag=0;
+  if isnumeric(qloc), qloc=sprintf('%g',qloc);
+  elseif ischar(qloc)
+     if regexp(qloc,'--*test-*(.*)(?@tflag=$1;)')
+        qloc=['1' repmat('0',1,N-1)];
+        if isempty(tflag), tflag=1; end
+     end
+  end
+  if isempty(regexp(qloc,'^[0-9A-Z]+$'))
+     qloc, wbdie('invalid usage (qloc)');
+  end
 
   [q2,i2]=sort({qloc,qadj});
   c=SymStore(sym,'-C',[q2{1} ',' q2{2} ';' qloc]);
@@ -1793,13 +1802,57 @@ function [S,Iout]=getLocalSpace_Sp2N(N,qloc,varargin)
   x=f*normQS(S)^2/normQS(ar);
   S=x*S;
 
-  Iout.istr=sprintf('%s in (%s) [a=%s]',sym,qloc,qadj);
+  Iout.istr=sprintf('%s in (%s) [qadj=%s]',sym,qloc,qadj);
   Iout.qloc=S.Q{1};
   Iout.sym=sym;
   Iout.E=QSpace(getIdentityQS(S,1));
   Iout.SOP.info='';
   Iout.SOP.type='';
 
+  if ~tflag, return; end
+
+  sp=[0 1; 0 0];   s1=diag([1 0]); ir2=1/sqrt(2);
+  sz=diag([1 -1]); s2=diag([0 1]);
+
+  SOP=init_qstruct('TST symplectic root space','Sp',2*N);
+  SOP.Sz=SymOp(1,N);
+  SOP.Sp=SymOp(1,N);
+
+  for i=1:N
+     z=zeros(1,N); z(i)=ir2;
+     SOP.Sz(i)=SymOp(getOpName('Sz',i),mkron(diag(z),sz));
+
+     if i>1
+        q = mkron(sparse(i,i-1,ir2,N,N),s1) ...
+          - mkron(sparse(i-1,i,ir2,N,N),s2);
+     else
+        q = mkron(diag([1 repmat(0,1,N-1)]),sp);
+     end
+     SOP.Sp(i)=SymOp(getOpName('Sp',i),q);
+  end
+
+  check_commrels(SOP);
+  Iout.SOP=set_qzvac(SOP);
+
+  [x,Io]=getSymmetryOps(SOP.Sp(1),SOP,'-t');
+  Iout.TT=x;
+  Iout.IT=Io;
+
+  if isequal(tflag,'fig') && (N==2 || N==3)
+     ah=smaxis(1,1,'tag',mfilename); addt2fig Wb
+     header('%M');
+
+     qz=Io.qz{1}; s=size(qz);
+     qz(:,:,2)=0;
+     qz(:,:,3)=nan;
+     dd=reshape(permute(qz,[3 1 2]),3*s(1),s(2));
+
+     if N==2
+          plot (dd(:,1),dd(:,2),        'o-');
+     else plot3(dd(:,1),dd(:,2),dd(:,3),'o-');
+     end
+     sms(6); axis equal
+  end
 end
 
 % -------------------------------------------------------------------- %
@@ -1866,6 +1919,10 @@ function s=getOpName(tag,varargin)
             otherwise s, wbdie('invalid spin');
          end
          s=sprintf('S%g(%s)',i,s);
+
+      case { 'Sp', 'Sz' }
+         if numel(varargin)~=1, wbdie('invalid usage (%s)',tag); end
+         s=[tag '_' num2str(varargin{1})];
 
       otherwise, tag, wbdie('invalid tag'); 
    end

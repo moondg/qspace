@@ -51,6 +51,8 @@ function cr=checkSpSz(Sp,Sz,sym)
 end
 
 % -------------------------------------------------------------------- %
+% outsourced from above // Wb,May07,21
+
 function check_SU(N,Sp,Sz,cr,sym)
 
    r=N-1; e=-1;
@@ -76,6 +78,9 @@ function check_SU(N,Sp,Sz,cr,sym)
 end
 
 % -------------------------------------------------------------------- %
+% Wb,Nov29,11 % Sp4: Wb,Apr13,12
+% outsourced from above // Wb,May07,21
+
 function check_Sp(N,Sp,Sz,cr,sym)
 
    r=N/2;
@@ -89,7 +94,7 @@ function check_Sp(N,Sp,Sz,cr,sym)
    elseif r==4
       e=norm(cr - [2 -1 0 0; 0 3 -2 0; 0 0 4 -6; 0 0 0 2],'fro');
    else e=-1; end
-   if abs(e)>1E-12, wberr('invalid %s operators',sym); end
+   if abs(e)>1E-12, wberr('invalid %s operators (e=%g)',sym,e); end
 
    S3=comm(Sp(1),Sp(2)); e=trace(S3);
    if abs(e)>1E-12

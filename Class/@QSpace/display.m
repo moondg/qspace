@@ -238,10 +238,8 @@ function display_1(A,m,Eflag,use_tex,vflag,varargin)
   if lfmt, fstr{1}='%16.13g'; end
 
   if ~isempty(A.Q)
-     QQ=permute(cat(3,A.Q{:}),[3 2 1]);
-     if ~isempty(A.info), t=A.info.qtype; else t=''; end
-     qfmt=get_q_fmt(t,numel(A.Q),size(A.Q{1},2));
-  else QQ=[]; end
+     [qfmt,Q3]=getqfmt(A);
+  else Q3=[]; end
 
   ov2s={'-f','nofac','sep'};
 
@@ -315,8 +313,8 @@ function display_1(A,m,Eflag,use_tex,vflag,varargin)
         sout{l}=sprintf(sfmt, sprintf('%6d.  %s',i,s1));
      end
 
-     if ~isempty(QQ)
-          sout{l+1}=[' [ ' sprintf(qfmt,QQ(:,:,i)') ' ]']; l=l+1;
+     if ~isempty(Q3)
+          sout{l+1}=[' [ ' sprintf(qfmt,Q3(:,:,i)') ' ]']; l=l+1;
      else sout{l+1}= ' [ ]'; end
      l=l+2;
 
