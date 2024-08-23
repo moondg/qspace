@@ -24,7 +24,7 @@ function [qfmt,Q3]=getqfmt(A)
      return
   end
 
-  QQ=cat(1,A.Q{:}); gotQ=~isempty(QQ); l=0; r=1; ext=0;
+  QQ=cat(1,A.Q{:}); gotQ=~isempty(QQ); l=1; r=0; ext=0;
   Qmin=min(QQ,[],1);
   Qmax=max(QQ,[],1);
 
@@ -54,7 +54,7 @@ function [qfmt,Q3]=getqfmt(A)
      end
   end
 
-  if l~=nQ, wbdie('qset mismatch (nQ=%g/%g)',l,nQ); end
+  if l+r-1~=nQ, wbdie('qset mismatch (nQ=%g/%g)',l,nQ); end
 
   if ext, qfmt(2,1:nsym-1)={', '}; else qfmt(2,1:nsym-1)={' '}; end
   qfmt=[qfmt{:}];
