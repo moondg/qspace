@@ -11,8 +11,14 @@ function [qfmt,Q3]=getqfmt(A)
 % merged with private/get_q_fmt.m // Wb,Aug13,24
 
   if ~isempty(A.info), qtype=A.info.qtype;
-  elseif isempty(A.Q), qfmt=''; return
+  elseif isempty(A.Q), qfmt=''; Q3=[]; return
   else qtype=''; end
+
+  if nargout>1
+     if ~isempty(A.Q)
+          Q3=permute(cat(3,A.Q{:}),[3 2 1]);
+     else Q3=[]; end
+  end
 
   rA=numel(A.Q);
   if rA, nQ=size(A.Q{1},2); else nQ=0; end
@@ -20,7 +26,7 @@ function [qfmt,Q3]=getqfmt(A)
   sym=strread(qtype,'%s','delimiter',',;')';
   if isempty(sym)
      qfmt=strjoin(repmat({'%2g'},1,nQ),' ');  if rA>1
-     qfmt=strjoin(repmat({qfmt},1,rA),' ;');  end
+     qfmt=strjoin(repmat({qfmt},1,rA),'; ');  end
      return
   end
 
@@ -60,7 +66,6 @@ function [qfmt,Q3]=getqfmt(A)
   qfmt=[qfmt{:}];
 
   if nargout>1
-     Q3=permute(cat(3,A.Q{:}),[3 2 1]);
      qfmt=strjoin(repmat({qfmt},1,rA),' ; ');
   end
 
