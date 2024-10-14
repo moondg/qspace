@@ -24,9 +24,12 @@ function wbdie(varargin)
      end
   end
 
+  if vflag || ~isempty(msg)
+     use_col=wblog('--hl-check');
+  end
+
   if ~isempty(msg)
      msg=[ regexprep([10 msg],[' *' 10],[10 '   ERR ']), 10];
-     use_col=wblog('--hl-check');
      if use_col
         msg=regexprep(msg,'(ERR|WRN|invalid usage)([^\n\r]*)',...
         [char(27) '[31m$1' char(27) '[38;5;9m$2' char(27) '[0m']);

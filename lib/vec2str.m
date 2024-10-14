@@ -50,7 +50,8 @@ function sout=vec2str(v, varargin)
 
   bL=''; bR='';
   if isempty(fmt)
-     if isempty(sep), sep=' '; end
+     if isempty(sep), sep=' ';
+     elseif ~isequal(sep,' '), fflag=fflag+10; end
      fmt='%.5g';
   else
      fmt=regexprep(fmt,'^([^%]+)(?@bL=$1;)','');
@@ -173,6 +174,8 @@ function sout=vec2str(v, varargin)
 end
 
 % -------------------------------------------------------------------- %
+% adapted from num2str2() // Wb,Dec07,20
+
 function s=sprintf_1(z,fmt,vflag)
 
   if numel(z)~=1, wbdie('invalid usage'); end

@@ -17,6 +17,7 @@
   setopts(osmo,...
     'afac?','sigma?','emin?','emax?','nlog?','reps?','eps?','skip?','keepA0?',...
     'xli?','yli?','adisp?','alpha?');
+  if isset('nofig'), osmo{end+1}='nofig'; end
 
   if ~exist('Ifdm','var')
      Ifdm.rho=nan(1,2);
@@ -34,7 +35,7 @@
         fprintf(1,'\n  %s\n\n  msg: %s',ac_cmd,e.message);
         dispstack(dbstack); fprintf(1,'\n');
      end
-     if isempty(e)
+     if isempty(e) && ~isset('nofig')
         if exist('ac','var') && size(ac,1)==length(ox) && isreal(ac)
            lo={'Color',[0 0 .4],'tag','Aimp'};
            for t={'Spec01','Spec01i','Spec02'}
@@ -75,6 +76,9 @@
      end
   end
 
+  TK=TKondo;
+  if isset('nofig'), return; end
+
   if isset('xl_dma12')
     h=findall(gcf,'Type','axes','tag','Spec01i');
     if ~isempty(h)
@@ -83,7 +87,7 @@
     end
   end
 
-  nrg_header; TK=TKondo;
+  nrg_header;
 
   if isfield(Ifdm,'vtag') s=Ifdm.vtag;
   elseif isfield(Ifdm,'ver') s=Ifdm.ver;

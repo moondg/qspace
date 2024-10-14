@@ -216,7 +216,7 @@ function info_1(A,s,cflag,use_tex)
 
   s={s,''};
 
-  if ~cflag && isfield(A.info,'ctime')
+  if ~cflag && isfield(A.info,'ctime') && A.info.ctime
      if getenvb('QS_DEBUG')
         [cts,q]=ctime(A.info.ctime,'-s');
         if abs(q)>1, s{2}=['    ' cts]; end

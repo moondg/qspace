@@ -107,6 +107,7 @@ void mexFunction(
    }}
 
    A.NormCGW();
+   A.ctime=Wb::getTimeNow(); 
 
    argout[0]=A.toMx(); 
 

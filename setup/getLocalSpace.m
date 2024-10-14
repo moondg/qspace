@@ -71,15 +71,21 @@ function varargout=getLocalSpace(model,varargin)
 %
 % Examples with flavor groups / split channels // Wb,Feb16,18
 %
-%    [FF,Z,SS,IS]=getLocalSpace('FermionS','SU2spin,Acharge,SUNchannel','NC',[2 1],'-v');
+%    Flavor groups NC(i) preserve their respective number of particles.
+%    Hence this also splits the 'Acharge' symmetry, accordingly.
+%    An SUNchannel subsymmetry is added only for every NC(i)>1 then.
 %
+%    [FF,Z,SS,IS]=getLocalSpace('FermionS','SU2spin,Acharge,SUNchannel','NC',[2 1],'-v');
 %    [FF,Z,IS]=getLocalSpace('Fermion','Acharge,SUNchannel','NC',[2 1],'-v');
 %
-%    note that in the spinless case for an odd number of flavors,
-%    their total charge label is taken to half-filling;
-%    therefor if a group in NC has odd number nc of flavors,x
-%    then the total charge labels are given by (2*nc-1).
+% Comment on symmetry label for U(1) charge:
+%
+%    The total charge label is always taken relative to half-filling.
+%    Therefore in the spinless case if NC (or a group therein) has
+%    an odd number n of flavors, then the total charge labels are
+%    given by q=(2*n-1) to maintain integer q-labels.
 %    getLocalSpace issues a NB/WRN in that respect.
+%    This is similar to SU(2) or U(1) spin labels.
 %
 % Wb,Jul09,11 ; Wb,Jul30,12
 
@@ -820,22 +826,29 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% Wb,Apr04,18
 
-function NC=check_NC(NC,Sym_)
+function NC=check_NC(NC,Sym)
 
-   ss={'SU','Sp','SO'};
+   ss={'SU','Sp','SO'}; Sym_=Sym; q=[]; 
    for i=1:numel(ss), n=0; 
-      Sym_=regexprep(Sym_,[ss{i} '(\d+)channel(?@n=str2num($1);)'],'');
+      Sym=regexprep(Sym,[ss{i} '(\d+)channel(?@n=str2num($1);)'],'');
       if n, if i==2, n=n/2; end
-         NC(end+1)=n;
+         q(end+1)=n;
       end
    end
 
-   if ~isempty(NC)
-      if any(diff(NC)), wbdie('invalid NC=[%s ]',sprintf(' %g',NC)); end
-      NC=NC(1);
-      if norm(NC-round(NC)) || NC<1, wbdie('invalid NC=%d',NC); end
-   else NC=1;
+   if numel(NC)<=1, q=[q NC]; e=0;
+      if isempty(q), NC=1;
+      elseif norm(q-round(q)) || any(q<1), e=1;
+      elseif any(diff(q)), e=2; end
+      if e, wbdie('invalid NC = %s (e=%d)',vec2str(q,'sep',' / '),e); end
+      NC=q(1);
+   elseif ~isempty(q)
+      wbdie(['invalid usage (ambiguous Nchannel symmetry)\n' ... 
+      'having ''%s'' vs. NC=[ %s ]'],Sym_,vec2str(NC,'-f'));
+   elseif norm(NC-round(NC)) || any(NC<1)
+      wbdie('invalid NC=[ %s ]',vec2str(NC,'-f'));
    end
 end
 
