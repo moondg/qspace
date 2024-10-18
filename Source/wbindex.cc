@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace index routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,11 +31,11 @@ int wbindex::extend2Perm(widx_t N, wbperm &P, char toend) const {
     wbvector<char> mark(N);
 
     for (i=0; i<len; ++i) {
-       if (data[i]>=N) { sprintf(str,
+       if (data[i]>=N) { sprintf_str(
           "%s:%d %s() index out of bounds (%ld/%ld)",FLF,data[i],N);
           return 1;
        }
-       if (mark[data[i]]++) { sprintf(str,
+       if (mark[data[i]]++) { sprintf_str(
           "%s:%d %s() index not unique",FLF);
           return 1;
        }
@@ -266,11 +266,11 @@ int ctrIdx::extend2Perm(widx_t N, wbperm &P, char toend) const {
     wbvector<char> mark(N);
 
     for (i=0; i<len; ++i) {
-       if (data[i]>=N) { sprintf(str,
+       if (data[i]>=N) { sprintf_str(
           "%s:%d %s() index out of bounds (%d/%ld)",FLF,data[i],N);
           return 1;
        }
-       if (mark[data[i]]++) { sprintf(str,
+       if (mark[data[i]]++) { sprintf_str(
           "%s:%d %s() index not unique",FLF);
           return 1;
        }
@@ -459,8 +459,8 @@ itag_& itag_::init(const char* F, int L, const char *s, unsigned n) {
 
    if (i<n && s[i]) {
       if (i>=n_)
-           sprintf(str,"invalid itag `%s' (len=%li/%d)",s,strlen(s),n);
-      else sprintf(str,"invalid itag `%s' (len=%li/%d; i=%d)",s,strlen(s),n,i);
+           sprintf_str("invalid itag `%s' (len=%li/%d)",s,strlen(s),n);
+      else sprintf_str("invalid itag `%s' (len=%li/%d; i=%d)",s,strlen(s),n,i);
       if (F) wblog(FL,"ERR %s",str); else wblog(F_L,"WRN %s",str);
       t=0; return *this;
    }
@@ -1304,7 +1304,7 @@ int iTags::UpdateItagsCtr(const char *F, int L,
    if (s>=0) { e|=(1<<8); }
 
    if (e && (F || L)) {
-      sprintf(str,"'%s' @ %s / '%s' @ %s (e=%d)",
+      sprintf_str("'%s' @ %s / '%s' @ %s (e=%d)",
           STR_(this), STR(ia), STR(B), STR(ib), e);
       if (e&15) wblog(F_L,"ERR %s() itag mismatch %s",FCT,str);
       else if (unsigned((e>>=4)&15) + 1 >= ia.len)

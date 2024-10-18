@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : clebsch (for abelian and non-abelian symmetries)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -524,7 +524,7 @@ int Symmetry::getInnerMultFT(
 
    if (l<=1) { return m; }
 
-   unsigned i,k, ip=0, np=M.SIZE[1];
+   unsigned i, ip=0, np=M.SIZE[1];
    qset<TQ> ap,qk; const TQ *md=M.data;
 
    double P=0, Q=0;
@@ -538,9 +538,9 @@ int Symmetry::getInnerMultFT(
       ap.init(n); qk=qs;
       for (i=0; i<n; ++i) { if (md[i]) { ap.Plus(A.rec(i),md[i]); }}
       if (vflag>1) printf("  ip=%d/%d, a=[%s]: ",ip+1,np,STR(ap));
-      for (k=0;; ++k) {
+      while (1) { 
          qk.Plus(ap.data);
-         if (!(mk=Get(qk,R.W,vflag))) break;
+         if (!(mk=Get(qk,R.W,vflag))) { break; }
          for (i=0; i<n; ++i) {
             P+=mk*qk[i]*md[i]*n2[i]; 
          }
@@ -664,8 +664,9 @@ template <class TQ>
 void Weights<TQ>::print(
    const char *F, int L, const QType &q, char vflag) const {
 
+   const unsigned flen=64;
    size_t n=W.size(); int l, isn;
-   char fmt[64];
+   char fmt[flen];
    unsigned mtot=0, merr=0, ndom=0;
 
    map<int,   
@@ -690,12 +691,12 @@ void Weights<TQ>::print(
          merr ? ", incomplete!":"");
       if (!merr) wblog(FL," *  %s",s); else wblog(FL,"WRN %s",s);
    }
-   else printf("\n");
+   else PRINTF("\n");
 
    if (n) { n=3*W.begin()->first.len; 
-      sprintf(fmt,"\n  level  %%-%ds %%-%ds     m    # weights",n+3,n+3);
-      printf(fmt,"dcoeffs","pcoeffs"); 
-      sprintf(fmt,"\n  %%5d%%1s (%%%ds ) [%%%ds ] %%5d",n,n);
+      snprintf(fmt,flen,"\n  level  %%-%ds %%-%ds     m    # weights",n+3,n+3);
+      PRINTF(fmt,"dcoeffs","pcoeffs"); 
+      snprintf(fmt,flen,"\n  %%5d%%1s (%%%ds ) [%%%ds ] %%5d",n,n);
    }
    else fmt[0]=0;
 
@@ -706,16 +707,16 @@ void Weights<TQ>::print(
       for (auto I2=M2.begin(); I2!=M2.end(); ++I2) {
          const weight_info<TQ> &w=*I2->second;
 
-         printf(fmt, Il->first,
+         PRINTF(fmt, Il->first,
             X.find(I2->first)==X.end() ? "" : "*",
             I2->first.wbvector<TQ>::toStr(2).data,
             w.p.wbvector<TQ>::toStr(2).data, w.m
          );
 
-         if (++i==1) printf("   %4d",n);
+         if (++i==1) { PRINTF("   %4d",n); }
       }
    }
-   printf("\n\n");
+   PRINTF("\n\n");
 };
 
 }; 
@@ -7099,7 +7100,7 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::SetupSym(
 
       if (e.type) { ep+=100; e.init(); }
       if (ep) {
-         sprintf(str,"%s() for %s [e=%d]",FCT,STR(q),ep);
+         sprintf_str("%s() for %s [e=%d]",FCT,STR(q),ep);
 
          if (Wb::SigHandler::check911_()) wblog(FL, 
             "WRN initial RCStore population interrupted\n%s",FCT,str);

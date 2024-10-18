@@ -256,16 +256,16 @@ void mexFunction(
 template <class TD>
 int init_ops(const mxArray *a, wbvector<wbsparray<TD> > &X
 ){
-   if (!a) { sprintf(str,"%s got empy array",SHORT_FL); return -1; }
+   if (!a) { sprintf_str("%s got empy array",SHORT_FL); return -1; }
 
    if (Mx::IsDblMat(0,0,a)) { X.init(1); X[0].init(FL,a); }
    else {
-      if (!mxIsCell(a)) { sprintf(str,
+      if (!mxIsCell(a)) { sprintf_str(
          "%s cell array or matrix expected",SHORT_FL); return 1; }
       X.init(mxGetNumberOfElements(a));
       for (unsigned i=0; i<X.len; ++i) {
          const mxArray *c=mxGetCell(a,i);
-         if (!Mx::IsDblMat(0,0,c)) { sprintf(str,
+         if (!Mx::IsDblMat(0,0,c)) { sprintf_str(
             "%s cell array of matrices or matrix expected",SHORT_FL);
             return 2; }
          X[i].init(FL,c);

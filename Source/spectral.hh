@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace NRG routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -899,8 +899,8 @@ void Spectral<TS>::getSmoothSpec(
     if (vflag) {
        double w1=omega.min(), w2=omega.max(), w0=omega.aMin();
        if (w1==-w2)
-            sprintf(str,        "%.3g .. %.3g",   w0,w2);
-       else sprintf(str,"%.3g .. %.3g .. %.3g",w1,w0,w2);
+            sprintf_str(        "%.3g .. %.3g",   w0,w2);
+       else sprintf_str("%.3g .. %.3g .. %.3g",w1,w0,w2);
 
        wblog(FL," *  "
          "%s() %g bins/dec (len=%d)\n"
@@ -1592,12 +1592,12 @@ void TDSpectral<TS>::getSmoothSpec_t(
        dom[0] = 0.5*( om[0] + om[1] ); 
 
        if (i1) { if (vflag) {
-          sprintf(str,"(%.1g <) |om| < %.1g (%.0f%%)",om[i0],om[i1],
+          sprintf_str("(%.1g <) |om| < %.1g (%.0f%%)",om[i0],om[i1],
              100*((i1-i0)/double(om.len)));
           wblog(FL,"--> Gaussian broadening for %s",str);
        }}
        else {
-          i1=om.len-1; sprintf(str,"(%.3g; eps=%.3g)",om[i1],eps);
+          i1=om.len-1; sprintf_str("(%.3g; eps=%.3g)",om[i1],eps);
           wblog(FL,"WRN Gaussian broadening for all omega %s",str);
        }
 

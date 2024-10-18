@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : wbMatrix (matrix class, row-major)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1471,7 +1471,8 @@ void getSortPerm_OMP(
       return;
    }
 
-   int id=0, i,l, im=0, mp=MIN(
+   int id=0, i,l; 
+   int mp=MIN(
       1 << unsigned(floor(log2(double(A.dim1)))-6), 
       omp_get_max_threads()
    );
@@ -1489,7 +1490,7 @@ void getSortPerm_OMP(
       id=MAX(id,omp_get_thread_num());
    }
 
-   while (idx.len>2) { int m2=mp/2; P.swap(PX); ++im;
+   while (idx.len>2) { int m2=mp/2; P.swap(PX); 
 
 #pragma omp parallel for 
       for (i=0; i<m2; ++i) { 
@@ -1541,7 +1542,7 @@ wbMatrix<T>& wbMatrix<T>::SortRecs(
       (dim1>(1<<28) && CG_VERBOSE>8) );
 
    if (isLarge) {
-      if (use_omp>0) sprintf(str,
+      if (use_omp>0) sprintf_str(
          "(parallel mode @ %d; %d)",omp_get_max_threads(),use_omp);
       else strcpy (str,"(serial mode)");
       wblog(FL,"TST %s() got %.3g x %d entries %s",

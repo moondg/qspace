@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace MEX routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,7 +141,7 @@ class Array {
     wbstring toStrT(char vflag=0) const;
 
     void init_xstr() {
-       sprintf(str,"Mx::Array<%s>",sTSTR(T));
+       sprintf_str("Mx::Array<%s>",sTSTR(T));
        xstr=str;
     };
 

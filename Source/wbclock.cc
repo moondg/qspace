@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace clock routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -243,25 +243,27 @@ void Wb::save_and_clear_Profiling() {
       mxAddField2Scalar(FL,S,I->first.c_str(),M.SortRecs().toMx());
    }
 
-   unsigned i=0, l=0,n=128; char fout[n]; fout[0]=fout[n-1]=0;
+   const unsigned flen=128;
+   unsigned i=0, l=0; char fout[flen]; fout[0]=fout[flen-1]=0;
    const char *s;
 
    s=getenv("Wb_PROFILE_FOUT");
    if (s && s[0])
-        { l=snprintf(fout,n,"%s",s); }
+        { l=snprintf(fout,flen,"%s",s); }
    else {
       const mxArray *a=mexGetVariablePtr("caller","profile_fout");
-      if (a && mxGetString(a,fout,n-1)) { l=-1; }
+      if (a && mxGetString(a,fout,flen-1)) { l=-1; }
    }
-   if (l>=n) { fout[n-1]=0; wblog(FL,
-      "WRN %s() string out of bounds (%d/%d) !?\ncheck %s",FCT,l,n,
-      int(n)>0? "variable `profile_fout'":"env `WB_PROFILE_FOUT'");
+   if (l>=flen) { fout[flen-1]=0; wblog(FL,
+      "WRN %s() string out of bounds (%d/%d) !?\ncheck %s",FCT,l,flen,
+      int(l)>0? "variable `profile_fout'":"env `WB_PROFILE_FOUT'");
       fprintf(stdout,"\n%s (%ld)\n",fout,strlen(fout)); fout[0]=0;
    }
 
    if (fout[0]) { Wb::matFile F;
       if (F.open(FL,fout,"w",0)) { 
-         for (n=mxGetNumberOfFields(S), i=0; i<n; ++i) {
+         unsigned n=mxGetNumberOfFields(S);
+         for (i=0; i<n; ++i) {
             F.put(FL, 
                mxGetFieldNameByNumber(S,i),
                mxGetFieldByNumber(S,0,i)
@@ -278,7 +280,7 @@ void Wb::save_and_clear_Profiling() {
    static int ncall=0;
 
    if (1 || ++ncall==1) { strcpy(fout,"Iprof"); }
-   else { sprintf(fout,"Iprof%02d",ncall); }
+   else { snprintf(fout,flen,"Iprof%02d",ncall); }
 
    mxPutAndDestroy(FL,S,fout,"base"); 
 };

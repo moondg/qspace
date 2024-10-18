@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace NRG routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,7 +141,7 @@ void checkRho (const char *F, int L,
           printf("\n\n");
           MXPut(FL).add(Rho,"Rho").add(rr,"rr").add(traceRho,"t");
        }
-       sprintf(str,"%s tr(rho) inconsistency !?\n"
+       sprintf_str("%s tr(rho) inconsistency !?\n"
          "%.4g / %.4g @ %.3g (%.2g; %.2g; %.2g)", e ? "ERR":"WRN",
           rsum,traceRho,rsum-traceRho,DEPS,DEPS2,EPS); printf("\n");
        wblog(F,L,str);

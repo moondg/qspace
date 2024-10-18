@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace memory routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -177,8 +177,8 @@ class WbListMTRACK {
      char* totStr(char mflag=0) { size_t n=16, l=0;
 
         if (mflag) { char s1[n], s2[n];
-           memsize2Str(totsize,s1);
-           memsize2Str(maxsize,s2); l=snprintf(sbuf,32,"%s (%s)",s1,s2);
+           memsize2Str(totsize,s1,n);
+           memsize2Str(maxsize,s2,n); l=snprintf(sbuf,32,"%s (%s)",s1,s2);
         }
         else {
            memsize2Str(totsize,sbuf); l=strlen(sbuf);
@@ -296,7 +296,7 @@ int MemCheck(const char *F="", int L=0,
        wblog(F,L,
          "MTR %d entries (%+d) using %s (%s%s; %lld)",
           l, l-len, gML.totStr(), s>=0 ? "+":"",
-          memsize2Str(s,ss), gML.idx
+          memsize2Str(s,ss,16), gML.idx
        );
     }
     else if (!strcasecmp(task,"LIST")) {

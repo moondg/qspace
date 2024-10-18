@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace MPFR routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,7 @@ mpfr__<P>& mpfr__<P>::init(const char *F, int L, double val,
 
    double q=::exp10(6-std::floor(std::log10(std::fabs(val)))), x=val*q;
    if (std::fabs(::round(x)-x)<1E-7) {
-      char s[20], l=sprintf(s,"%.12g",val);
+      char s[20], l=snprintf(s,20,"%.12g",val);
          if (l>14) wblog(FL,"WRN %s() s=%s",FCT,s);
       init_s(FL,s); return *this;
    }

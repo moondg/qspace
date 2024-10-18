@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace additional routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -334,7 +334,7 @@ int Wb::charGetNumber(const char *F, int L, const char *s, T &x) {
     int i;
 
     if (!s) {
-       sprintf(str,"cannot read number from empty string");
+       sprintf_str("cannot read number from empty string");
        return 1;
     }
 
@@ -342,7 +342,7 @@ int Wb::charGetNumber(const char *F, int L, const char *s, T &x) {
     x=(T)fl;
 
     if (!i || fl!=(float)x) {
-       sprintf(str,"invalid input for type `%s' (%g, %d)",
+       sprintf_str("invalid input for type `%s' (%g, %d)",
        TSTR(T), fl, i); return 1;
     }
 
@@ -850,7 +850,9 @@ template <class T> inline
 char* defaultFmt(char *fmt,
 const T &x __attribute__ ((unused)), int m, int p, char t) {
 
-   const size_t n=16; size_t l=0;
+   const unsigned n=16;
+   unsigned l=0, flen=n;
+
    char dd[n]; dd[0]=0; fmt[0]=0;
 
    if (m>0) {
@@ -860,34 +862,36 @@ const T &x __attribute__ ((unused)), int m, int p, char t) {
    }
    else if (p>=0) l=snprintf(dd,n,".%d",p);
 
-   if (l>=n) wblog(FL,"ERR %s() string out of bounds (%d/%d)",FCT,l,n);
+   if (l>=n) wblog(FL,
+      "ERR %s() string out of bounds (%d/%d)",FCT,l,n);
 
    if (typeid(T)==typeid(double) || typeid(T)==typeid(float)) {
-      if (!t) t='g';
-      sprintf(fmt,"%%%s%c",dd,t);
+      if (!t) { t='g'; }
+      l=snprintf(fmt,flen,"%%%s%c",dd,t);
    }
    else if (typeid(T)==typeid(wbcomplex)) {
-      if (!t) t='g';
-      sprintf(fmt,"%%%s%c%%+%s%ci",dd,t,dd,t);
+      if (!t) { t='g'; }
+      l=snprintf(fmt,flen+=n,"%%%s%c%%+%s%ci",dd,t,dd,t);
    }
    else if (
       typeid(T)==typeid(int) || typeid(T)==typeid(char) ||
       typeid(T)==typeid(unsigned)
     ){
-      if (p>=0) wblog(FL,"WRN %s() got format *.%d* for type '%s'",
-          FCT, p, TSTR(T));
-      if (!t) t='d';
-      sprintf(fmt,"%%%s%c",dd,t);
+      if (p>=0) wblog(FL,
+         "WRN %s() got format *.%d* for type '%s'",FCT,p,TSTR(T));
+      if (!t) { t='d'; }
+      l=snprintf(fmt,flen,"%%%s%c",dd,t);
    }
    else if (typeid(T)==typeid(char*)) {
-       if (t && t!='s') wblog(FL,
-          "ERR %s() got format type '%c'<%d> for type '%s'",
-           FCT,t,t,TSTR(T)
-       );
-       sprintf(fmt,"%%%ss",dd);
+      if (t && t!='s') wblog(FL,"ERR %s() "
+         "got format type '%c'<%d> for type '%s'",FCT,t,t,TSTR(T));
+      l=snprintf(fmt,flen,"%%%ss",dd);
    }
    else wblog(FL,
-     "ERR %s() unsupported type '%s'",FCT,TSTR(T));
+      "ERR %s() unsupported type '%s'",FCT,TSTR(T));
+
+   if (l>=flen) wblog(FL, 
+      "WRN %s() string out of bounds ('%s', l=%d/%d)",FCT,fmt,l,flen);
 
    return fmt;
 };
@@ -1275,7 +1279,7 @@ void Wb::cpyRange(double* a, const wbcomplex* b, size_t n, char tcheck) {
    }
 
    if (i2) {
-      sprintf(str,"%s() got |Im(b)|^2 = %.3g",FCT,i2);
+      sprintf_str("%s() got |Im(b)|^2 = %.3g",FCT,i2);
       wblog(FL,tcheck? "ERR %s":"WRN %s",str);
    }
 };

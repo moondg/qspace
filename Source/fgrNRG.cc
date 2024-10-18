@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace NRG routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -392,7 +392,7 @@ void MEX_FUNCTION(
    }
 
    str[0]=0;
-   if (disp) sprintf(str," disp=%d", disp);
+   if (disp) sprintf_str(" disp=%d", disp);
    if (!store ) strcat(str," nostore");
    if (calcOps) strcat(str," calcOps");
    if (locRho ) strcat(str," locRho" );
@@ -561,7 +561,7 @@ void MEX_FUNCTION(
    ){
       str[0]=0;
       if (locRho && !RHO.MX) {
-         sprintf(str," internally (locRho=%d)",locRho);
+         sprintf_str(" internally (locRho=%d)",locRho);
          RHO.MX=mxCreateStructMatrix(1,NRG_N,0,NULL);
          RHO.locMX=1; locRho=99;
       }

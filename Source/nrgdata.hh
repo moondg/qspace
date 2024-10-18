@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace NRG routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -807,7 +807,7 @@ void NRGData<TQ,TD>::updateOp(
          }
          else if (nrgIdx[j].tag.isEmpty()) {
             if (!X.len) {
-               sprintf(str,"%s%s", name.data, tags[i]);
+               sprintf_str("%s%s", name.data, tags[i]);
                mxInitQSpaceVecR23(F,L,getMxData(str,iter),X);
 
                if (k>=int(X.len)) { wblog(FL,
@@ -823,7 +823,7 @@ void NRGData<TQ,TD>::updateOp(
          }
          else {
             if (!X2.len) {
-               sprintf(str,"%s%s", nrgIdx[j].tag.data, tags[i]);
+               sprintf_str("%s%s", nrgIdx[j].tag.data, tags[i]);
                mxInitQSpaceVecR23(F,L, getMxData(str,iter),X2);
             }
             if (k>=(int)X2.len) wblog(FL, 
@@ -1080,7 +1080,7 @@ void matchH12(
 template<class TQ, class TD>
 void NRGData<TQ,TD>::unsetAllRefs() {
 
-   unsigned i,j,m=0;
+   unsigned i,j; 
    const char* tags[4] = { "KK","KD","DK","DD" };
 
    for (i=0; i<4; ++i) {
@@ -1088,7 +1088,7 @@ void NRGData<TQ,TD>::unsetAllRefs() {
 
       for (j=0; j<C.len; ++j) {
          if (nrgIdx[j].idx<0 || !C[j].isref) continue;
-         C[j].init(); ++m;
+         C[j].init(); 
       }
    }
 
@@ -1155,7 +1155,7 @@ void NRGData<TQ,TD>::saveOp(
    if (store && (!n || nrefs<n)) { i=0;  
       if (m==3) { i=1; m=4; } 
      #if 0
-      if (WBLOG_IO) { sprintf(str,
+      if (WBLOG_IO) { sprintf_str(
            "%s() iter=%2d: store=%d, nrefs=%d/%ld, i=%d/%d ",
             FCT, iter, store, nrefs,nrgIdx.len, i,m);
          wblog(FL, MX? "MX: %s":"MAT %s",str);
@@ -1169,7 +1169,7 @@ template<class TQ, class TD>
 void NRGData<TQ,TD>::updatePara(
    const char *F, int L, const char *tag, mxArray *a, int iter) const {
 
-   sprintf(str,"%s%s", name.data, tag);
+   sprintf_str("%s%s", name.data, tag);
    if (!str[0]) wblog(F,L,"ERR invalid name (empty)");
 
    if (iter<0) iter=NRG_ITER;
@@ -1216,7 +1216,7 @@ void NRGData<TQ,TD>::updatePara(const char *F, int L,
    else { e|=4; }
    if (e) wblog(FL,"ERR invalid tag `%s'",tag);
 
-   sprintf(str,"%s%s", name.data, tag2 && tag2[0] ? tag2 : tag);
+   sprintf_str("%s%s", name.data, tag2 && tag2[0] ? tag2 : tag);
    if (!str[0] || !name.isName()) wblog(F,L,"ERR invalid name `%s'",str);
 
    if (iter<0) iter=NRG_ITER;
@@ -1293,7 +1293,7 @@ void NRGData<TQ,TD>::updateInfop(const char *F, int L,
    if (!name.data || !name.data[0]) wblog(F,L,
    "WRN update info `%s' of unnamed operator", vtag);
 
-   sprintf(str,"%s%s",
+   sprintf_str("%s%s",
       name.data ? name.data : "",
       vtag ? vtag : ""
    );
@@ -1309,12 +1309,12 @@ bool NRGData<TQ,TD>::opExists(char tflag) {
       const char* tag[3] = { "KK","KD","DK" };
 
       for (i=0; i<3; ++i) {
-         sprintf(str,"%s%s",name.data,tag[i]);
+         sprintf_str("%s%s",name.data,tag[i]);
          if (!isQSpaceVec(str,k)) return 0;
       }
    }
    else {
-      sprintf(str,"%sKK",name.data);
+      sprintf_str("%sKK",name.data);
       return isQSpaceVec(str,0);
    }
 
@@ -1340,7 +1340,7 @@ bool NRGData<TQ,TD>::initOp(const char *F, int L,
       init(1); return 0;
    }
 
-   if (istr && istr[0]) sprintf(str,"%s ",istr); else str[0]=0;
+   if (istr && istr[0]) sprintf_str("%s ",istr); else str[0]=0;
 
    if (!name.isName(99)) wblog(F,L, 
       "ERR invalid name for %soperator (%d,`%s')",
@@ -1378,7 +1378,7 @@ bool NRGData<TQ,TD>::initOp(const char *F, int L,
             break;
          }
       }
-      sprintf(str,"%s%s",CR->name.data,"KK_");
+      sprintf_str("%s%s",CR->name.data,"KK_");
       a=getMxData(str,0);
       if (a && mxIsQSpaceVecR23(FL,a)) { 
          mxInitQSpaceVecR23(F,L,a,NRG); m=NRG.len;
@@ -1402,17 +1402,17 @@ bool NRGData<TQ,TD>::initOp(const char *F, int L,
    if (tflag) {  
       iter=(NRG_N>2 ? NRG_N-2 : 0);
       for (i=0; i<ntag; ++i) {
-         sprintf(str,"%s%s",name.data,tag[i]);
+         sprintf_str("%s%s",name.data,tag[i]);
          if (!isQSpaceVec(str,iter)) { ++e; break; }
       }
    }
 
    iter=0; 
 
-   sprintf(str,"%s%s",name.data,"KK");
+   sprintf_str("%s%s",name.data,"KK");
    if (!isQSpaceVec(str,iter)) ++e;
 
-   sprintf(str,"%s%s",name.data,"KK_");
+   sprintf_str("%s%s",name.data,"KK_");
    a=getMxData(str,iter); if (!a || !mxIsQSpaceVecR23(FL,a)) ++e;
 
    if (e) {
@@ -1458,7 +1458,7 @@ bool NRGData<TQ,TD>::initOp(const char *F, int L,
    }
 
    if (istr && istr[0])
-   sprintf(str,"%s ",istr); else str[0]=0;
+   sprintf_str("%s ",istr); else str[0]=0;
 
    if (!name.isName(99)) wblog(F,L, 
       "ERR invalid name for %soperator (%d,`%s')",
@@ -1510,7 +1510,7 @@ bool NRGData<TQ,TD>::initOp(const char *F, int L,
          }
       }
 
-      sprintf(str,"%s%s",CR->name.data,"CI_");
+      sprintf_str("%s%s",CR->name.data,"CI_");
       a=getMxInfo(str);
       if (a) { if (mxIsQSpaceVecVec(a,2)) {
          mxInitQSpaceVecVec(F,L,a,NRG); m=NRG.len;
@@ -1532,16 +1532,16 @@ bool NRGData<TQ,TD>::initOp(const char *F, int L,
    if (tflag && NRG_N>2) {
       iter=NRG_N-2;
       for (i=0; i<ntag; ++i) {
-         sprintf(str,"%s%s",name.data,tag[i]);
+         sprintf_str("%s%s",name.data,tag[i]);
          if (!isQSpaceVec(str,iter)) { ++e; break; }
       }
    }
 
    iter=0;
-   sprintf(str,"%s%s",name.data,"KK");
+   sprintf_str("%s%s",name.data,"KK");
    if (!isQSpaceVec(str,iter)) ++e;
 
-   sprintf(str,"%s%s",name.data,"CI_");
+   sprintf_str("%s%s",name.data,"CI_");
    a=getMxData(str,iter); if (!a || !mxIsQSpaceVec(FL,a)) ++e;
 
    if (e) { calc=store=1;
@@ -1744,14 +1744,14 @@ bool NRGData<TQ,TD>::checkVecVec(const char *XX, unsigned R) {
    if (MX) {
       fid=mxGetFieldNumber(MX,nm);
       if (fid<0) {
-         sprintf(str, "%s:%d field `%s' could not be found.",
+         sprintf_str( "%s:%d field `%s' could not be found.",
          FL,nm); return 1;
       }
 
       if (!NRG_N) {
          const size_t *s=mxGetDimensions(MX);
          const int n=mxGetNumberOfDimensions(MX);
-         if (n!=2 || (s[0]!=1 && s[1]!=1)) { sprintf(str,
+         if (n!=2 || (s[0]!=1 && s[1]!=1)) { sprintf_str(
             "%s:%d NRG data must be row structure vector (%d,%d)",
              FL, (int)s[0], (int)s[1]); return 1;
          }
@@ -1765,7 +1765,7 @@ bool NRGData<TQ,TD>::checkVecVec(const char *XX, unsigned R) {
       if (i<0) return 1;
       if (!NRG_N) NRG_N=i;
       if (i!=(int)NRG_N) {
-         sprintf(str,"%s:%d size mismatch (%d,%d)",
+         sprintf_str("%s:%d size mismatch (%d,%d)",
          FL, i, NRG_N); return 1;
       }
    }
@@ -1844,8 +1844,8 @@ mxArray* NRGData<TQ,TD>::toMx() const {
 template<class TQ, class TD>
 void NRGData<TQ,TD>::info(const char *vstr) const {
 
-    unsigned i,nl=0;
-    char sx[nrgIdx.len+1], s_[128];
+    unsigned i, nl=0, n_=128;
+    char sx[nrgIdx.len+1], s_[n_];
 
     for (i=0; i<nrgIdx.len; ++i) {
        if ( nrgIdx[i].idx<0) sx[i]='C';
@@ -1855,56 +1855,56 @@ void NRGData<TQ,TD>::info(const char *vstr) const {
        else sx[i]='2'; 
     }; sx[i]=0;
 
-    snprintf(s_,128,"%d/%d; calc=%d (%s; %d); store=%d",
+    snprintf(s_,n_,"%d/%d; calc=%d (%s; %d); store=%d",
     NRG_ITER+1, NRG_N, calc, sx, nrgIdx.len, store);
 
     if (MX) {
-       printf("\n%s Structure `%s' (0x%lX), %s\n",
+       PRINTF("\n%s Structure `%s' (0x%lX), %s\n",
        vstr && vstr[0] ? vstr : (name.data ? name.data : "ans"),
        NAME.data ? NAME.data : "",MX,s_);
     }
     else {
-       printf("\n%s File structure `%s', %s\n",
+       PRINTF("\n%s File structure `%s', %s\n",
        vstr && vstr[0] ? vstr : (name.data ? name.data : "ans"),
        NAME.data ? NAME.data : "",s_);
     }
 
     if (!KK.isEmpty()) {
-       if (!nl) { printf("\n"); ++nl; }
+       if (!nl) { PRINTF("\n"); ++nl; }
        for (i=0; i<KK.len; ++i) {
-          sprintf(s_,"KK[%d]", i);
+          snprintf(s_,n_,"KK[%d]", i); 
           KK[i].info(s_);
        }
     }
 
     if (!KD.isEmpty()) {
-       if (!nl) { printf("\n"); ++nl; }
+       if (!nl) { PRINTF("\n"); ++nl; }
        for (i=0; i<KD.len; ++i) {
-          sprintf(s_,"KD[%d]", i);
+          snprintf(s_,n_,"KD[%d]", i);
           KD[i].info(s_);
        }
     }
     if (!DK.isEmpty()) {
-       if (!nl) { printf("\n"); ++nl; }
+       if (!nl) { PRINTF("\n"); ++nl; }
        for (i=0; i<DK.len; ++i) {
-          sprintf(s_,"DK[%d]", i);
+          snprintf(s_,n_,"DK[%d]", i);
           DK[i].info(s_);
        }
     }
     if (!DD.isEmpty()) {
-       if (!nl) { printf("\n"); ++nl; }
+       if (!nl) { PRINTF("\n"); ++nl; }
        for (i=0; i<DD.len; ++i) {
-          sprintf(s_,"DD[%d]", i);
+          snprintf(s_,n_,"DD[%d]", i);
           DD[i].info(s_);
        }
     }
 
     nl=0;
 
-    if (!K.isEmpty()) { if (!nl) { printf("\n"); ++nl; }; K.info("K"); }
-    if (!D.isEmpty()) { if (!nl) { printf("\n"); ++nl; }; D.info("D"); }
+    if (!K.isEmpty()) { if (!nl) { PRINTF("\n"); ++nl; }; K.info("K"); }
+    if (!D.isEmpty()) { if (!nl) { PRINTF("\n"); ++nl; }; D.info("D"); }
 
-    if (nl) printf("\n");
+    if (nl) PRINTF("\n");
 };
 
 template <class TQ, class TD>
@@ -1931,16 +1931,16 @@ void NRGData<TQ,TD>::dispIdx(const char *F, int L) const {
 template <class TQ, class TD>
 void NRGData<TQ,TD>::info(const char *F, int L, const char *istr) const {
 
-   unsigned i, nt1=0, nt2=0, nx1=0, nx2=0, nc=0;
+   unsigned i, nc=0; 
    wbstring mark(nrgIdx.len+1);
    wbstring S(128);
 
    for (i=0; i<nrgIdx.len; ++i) {
 
-      if (nrgIdx[i].nrg && nrgIdx[i].nrg!=this) { ++nx1; mark[i]='x'; } else
-      if (!nrgIdx[i].tag.isEmpty()) { ++nx2; mark[i]='X'; } else
-      if (nrgIdx[i].nrg==this) { ++nt1; mark[i]='r'; } else
-      if (nrgIdx[i].idx>=0) { ++nt2; mark[i]='R'; }
+      if (nrgIdx[i].nrg && nrgIdx[i].nrg!=this) { mark[i]='x'; } 
+      else if (!nrgIdx[i].tag.isEmpty()) { mark[i]='X'; }        
+      else if (nrgIdx[i].nrg==this) { mark[i]='r'; } 
+      else if (nrgIdx[i].idx>=0) { mark[i]='R'; }    
       else { ++nc; mark[i]='*'; }
    }
 
@@ -2394,10 +2394,11 @@ int Wb::updateOp(const char *F, int L,
             tag,mark.data);
          }
          else if (i==nop && !m) { 
-            char ostr[32];
+            const unsigned slen=32;
+            char ostr[slen];
             if (nop>1)
-                 sprintf(ostr,"all %d spectral ops",nop);
-            else sprintf(ostr,"spectral operator");
+                 { snprintf(ostr,slen,"all %d spectral ops",nop); }
+            else { snprintf(ostr,slen,"spectral operator"); }
 
             if (mark[0]!='R') wblog(FL,
                "%s contracting %s onto %c",tag,ostr,mark[0]);

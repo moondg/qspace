@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : wbsparray (sparse array of arbitary dimension)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -725,7 +725,7 @@ bool wbsparray<TD>::isSym_aux(
    checkSize(FL,"A: "); if (&B!=this) checkSize(FL,"B: ");
 
    if (IDX.dim2!=B.IDX.dim2 || IDX.dim2%2) {
-      if (lflag) sprintf(str,
+      if (lflag) sprintf_str(
          "%s %s() only applies to even-rank objects (%ld;%ld).",
           shortFL(F,L),fct, SIZE.len, B.SIZE.len);
       return 0;
@@ -1117,7 +1117,7 @@ wbsparray<TD>& wbsparray<TD>::QRdecomp(const char *F, int L,
                );
             }
             if (NORM2(rk)<=eps2) {
-               sprintf(str,"got R(%ld,%ld)=%.4g",k-1,k_,double(rk));
+               sprintf_str("got R(%ld,%ld)=%.4g",k-1,k_,double(rk));
                if (rk) wblog(FL,"WRN %s() %s",FCT,str);
                else wblog(FL,"ERR %s() %s",FCT,str);
             }
@@ -1225,10 +1225,10 @@ wbsparray<TD>& wbsparray<TD>::OrthoNormalizeColsQR(
          if (id[l]>lmax) { 
             if (id[l]==lmax+1) { lmax=id[l];
                if (dd[l]<0) { e=1;
-                  sprintf(str,"dd[%ld]=%.3g",l,double(dd[l]));
+                  sprintf_str("dd[%ld]=%.3g",l,double(dd[l]));
                }
             }
-            else { e=2; sprintf(str,"%ld: %d -> %d",l,lmax,id[l]); }
+            else { e=2; sprintf_str("%ld: %d -> %d",l,lmax,id[l]); }
          }
       }
 

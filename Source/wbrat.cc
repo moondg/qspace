@@ -86,14 +86,14 @@ void mexFunction(
           A[i]=a; P[i]=p; Q[i]=q;
           if (sflag) {
              if (q==1)
-                  { sprintf(str,"%ld",p); }
-             else { sprintf(str,"%ld/%ld",p,q); }
+                  { sprintf_str("%ld",p); }
+             else { sprintf_str("%ld/%ld",p,q); }
              ss[i]=str;
           }
           continue;
        }
        if (e2) { 
-          if (sflag) { sprintf(str,"%.6g",A[i]); ss[i]=str; }
+          if (sflag) { sprintf_str("%.6g",A[i]); ss[i]=str; }
           ee[i]=1; continue;
        }
 
@@ -110,19 +110,19 @@ void mexFunction(
        if (!sflag) { continue; }
        else { str[0]=0; }
 
-       if (q2==1) { sprintf(str,"%ssqrt(%ld)",  a<0 ? "-":"",p2); } else
-       if (p2==1) { sprintf(str,"%s1/sqrt(%ld)",a<0 ? "-":"",q2); }
+       if (q2==1) { sprintf_str("%ssqrt(%ld)",  a<0 ? "-":"",p2); } else
+       if (p2==1) { sprintf_str("%s1/sqrt(%ld)",a<0 ? "-":"",q2); }
 
        if (!str[0]) { x=sqrt(double(p2));
           if (fabs(x-round(x))<1E-14) {
-          sprintf(str,"%s%ld/sqrt(%ld)",a<0 ? "-":"",long(x),q2);
+          sprintf_str("%s%ld/sqrt(%ld)",a<0 ? "-":"",long(x),q2);
        }}
        if (!str[0]) { x=sqrt(double(q2));
           if (fabs(x-round(x))<1E-14) {
-          sprintf(str,"%ssqrt(%ld)/%ld",a<0 ? "-":"",p2,long(x));
+          sprintf_str("%ssqrt(%ld)/%ld",a<0 ? "-":"",p2,long(x));
        }}
        if (!str[0]) {
-          sprintf(str,"%ssqrt(%ld/%ld)",a<0 ? "-":"",p2,q2);
+          sprintf_str("%ssqrt(%ld/%ld)",a<0 ? "-":"",p2,q2);
        }
        ss[i]=str;
    }

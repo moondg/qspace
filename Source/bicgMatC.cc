@@ -761,7 +761,7 @@ void mexFunction(
 
    for (i=0; i<sx.D.len; i++)
    if (sx.D[i].R.dim1!=d || sx.D[i].R.dim2!=d || sx.D[i].I.data) {
-       sprintf(str, "3d cell array of %s%dx%d matrices",
+       sprintf_str( "3d cell array of %s%dx%d matrices",
        sx.D[i].I.data ? "REAL " : "", d, d);
        if (sx.D[i].R.dim1!=d || sx.D[i].R.dim2!=d)
                            wblog(FL,"ERR sx must be %s.",   str);

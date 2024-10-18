@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace NRG routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -475,7 +475,7 @@ void FDM_NRG(
    if (vflag) {
       strcpy(str,myname);
       wblog(FL,"=== %s",Wb::strpad(str,'=',48)); str[0]=0;
-      if ((vflag &0xf) !=1) sprintf(str,", vflag=%d", vflag);
+      if ((vflag &0xf) !=1) sprintf_str(", vflag=%d", vflag);
       if (!store )    strcat(str,", nostore");
       if (locRho )    strcat(str,", locRho");
       if (calcOps)    strcat(str,", calcOps");
@@ -549,7 +549,7 @@ void FDM_NRG(
    else if (T<0) T=0;
 
    if (vflag) {
-      str[0]=0; if (Delta!=0) sprintf(str,", binOffset=%g",Delta);
+      str[0]=0; if (Delta!=0) sprintf_str(", binOffset=%g",Delta);
       wblog(FL,"\b *  %48R\n"
       " *  method      : %s\n"
       " *  temperature : %.4g (= %.4g TN)\n"
@@ -830,10 +830,10 @@ void FDM_NRG(
 
          if (!lflag) {
             if (RHO.K.isEmpty()) {
-               sprintf(str,"%s: (EMPTY RHO)",itag);
+               sprintf_str("%s: (EMPTY RHO)",itag);
             }
             else {
-               sprintf(str,"%s: (RHO)",itag);
+               sprintf_str("%s: (RHO)",itag);
                ++lflag;
             }
 
@@ -860,7 +860,7 @@ void FDM_NRG(
             ASpec.crossAddBuf(2, iter<NRho && version);
          }
          else {
-            sprintf(str,
+            sprintf_str(
             "%s: skipped (%s)", itag, keven ? "keep even" : "keep odd");
             if (vflag &12)
                  wblog(FL,"%s",str);

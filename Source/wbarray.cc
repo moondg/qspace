@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : wbarray (array class, col-major)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -387,7 +387,7 @@ void wbarray<T>::getMatSize(const ctrIdx &ic,
       r=SIZE.len;
    }
    else if (r>SIZE.len) {
-      sprintf(str,"%s() rank out of bounds (r=%d/%ld)",FCT,r,SIZE.len);
+      sprintf_str("%s() rank out of bounds (r=%d/%ld)",FCT,r,SIZE.len);
       wblog(FL,dom ? "ERR %s":"WRN %s", str);
       r=SIZE.len;
    }
@@ -702,7 +702,7 @@ wbarray<T>& wbarray<T>::Symmetrize(
 #ifdef MATLAB_MEX_FILE
          this->put(FL,"M_");
 #endif
-            sprintf(str,"%s() non-symmetric operator (%d)\n"
+            sprintf_str("%s() non-symmetric operator (%d)\n"
               "eps=%.3g/%.3g @ dmax=%.3g",FCT,cflag,e,*delta,dmax);
 
             if (fflag) wblog(F,L,"ERR %s",str);
@@ -1448,7 +1448,7 @@ bool wbarray<T>::isSym_aux(
    wbarray<T> A2,B2;
 
    if (r%2 || r!=B.SIZE.len) {
-      if (lflag) sprintf(str,
+      if (lflag) sprintf_str(
          "%s %s() only applies to even-rank objects (%ld;%ld)",
           shortFL(F,L),fct, r, B.SIZE.len);
       return 0;
@@ -1458,7 +1458,7 @@ bool wbarray<T>::isSym_aux(
    dim1=dim2=1;
    for (i=0; i<r2; i++) { j=i+r2; dim1*=SIZE[i]; dim2*=SIZE[j];
       if (SIZE[i]!=B.SIZE[j] || SIZE[j]!=B.SIZE[i]) {
-         if (lflag) sprintf(str, 
+         if (lflag) sprintf_str( 
            "%s %s() size mismatch [%s; %s].", SHORT_FL, fct,
             SSTR_(this), SSTR(B));
          return 0;
@@ -1908,7 +1908,7 @@ double wbarray<T>::maxDiff (const wbarray<T> &B) const {
    double dmax=0;
 
    if (SIZE!=B.SIZE) {
-      sprintf(str,"%s:%d data SIZE mismatch ([%s, %s])",
+      sprintf_str("%s:%d data SIZE mismatch ([%s, %s])",
          FL,SSTR_(this),SSTR(B));
       return NAN;
    }

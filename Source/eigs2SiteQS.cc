@@ -301,7 +301,7 @@ mxArray* RunEigs(
    ritz.init(ncv, X.data+(ipntr[7]-1)); 
    res .init(ncv-1, X.data+(ipntr[8]-1));
 
-   sprintf(str,"EIGS w/mode `%s' %sconverged %d/%d (%d)",
+   sprintf_str("EIGS w/mode `%s' %sconverged %d/%d (%d)",
    task,iparam[4]!=(int)nev ? "NOT ":"",iparam[4],nev,N);
 
    } 

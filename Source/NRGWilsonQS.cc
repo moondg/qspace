@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace NRG routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -400,7 +400,7 @@ void NRG_Wilson(
 
        FX.init2DiffOp(AK,1,H0,0); 
        if (!FX.isEmpty()) { m=FX.DATA.len;
-          FX.Append2AndDestroy(FL,H0); sprintf(str," *  "
+          FX.Append2AndDestroy(FL,H0); sprintf_str(" *  "
             "increased H0 by %d diagonal zero-block%s (%ld->%ld)",
              m, m!=1 ? "s":"", H0.DATA.len-m, H0.DATA.len);
           wblogBuf.push(FL,str);
@@ -657,17 +657,17 @@ void NRG_Wilson(
 
     if (vflag) {
        wblog(FL,"--- %48R","-");
-       l=sprintf(str,"Lambda=%g, L=%d",Lambda,N);
-       if (Etrunc>0)
-            { l+=sprintf(str+l,", Etrunc=%.3g (@%d)",Etrunc,Nkeep); }
-       else { l+=sprintf(str+l,", Nkeep=%d",Nkeep); }
+       l=sprintf_str("Lambda=%g, L=%d",Lambda,N);
+       if (Etrunc>0) 
+            { l+=snprintf(str+l,64,", Etrunc=%.3g (@%d)",Etrunc,Nkeep); }
+       else { l+=snprintf(str+l,64,", Nkeep=%d",Nkeep); }
        if (!toFile)
-            { l+=sprintf(str+l,", internal"); }
+            { l+=snprintf(str+l,16,", internal"); }
        wblog(FL," *  %s\nsym=%s",str,STR2(A0.qtype,'V'));
 
        str[0]=0; l=0;
-       if (vflag &14) l+=sprintf(str+l," vflag=%d",vflag); 
-       if (nostore) l+=sprintf(str+l," %s",toFile? "NOSTORE":"noStore");
+       if (vflag &14) l+=snprintf(str+l,16," vflag=%d",vflag); 
+       if (nostore) l+=snprintf(str+l,16," %s",toFile? "NOSTORE":"noStore");
        if (l) wblog(FL," *  flags:%s",str);
 
        if (WbUtil<TD>::isComplex()) {
@@ -687,7 +687,7 @@ void NRG_Wilson(
        if (nostore) wblog(FL,"NB! saving info only");
        else {
           for (iter=0; iter<1024; ++iter) {
-              sprintf(str, "%s_%02d.mat", fout.data, iter);
+              sprintf_str( "%s_%02d.mat", fout.data, iter);
               if (remove(str)) break;
           }   if (iter>1000) wblog(FL,"WRN iter=%d !?", iter);
        }
@@ -695,10 +695,10 @@ void NRG_Wilson(
        char *s1=str, *s2=str+32; s2[0]=0;
 
        if (nostore)
-            strcpy (s1,"info");
-       else sprintf(s1,"{0-%d}",N);
+            { strcpy (s1,"info"); }
+       else { snprintf(s1,16,"{0-%d}",N); }
 
-       if (iter) sprintf(s2," (%d files removed)",iter);
+       if (iter) snprintf(s2,32," (%d files removed)",iter);
 
        if (vflag) printf("\n");
        printf("   pwd: %s\n"
@@ -977,7 +977,7 @@ void NRG_Wilson(
           if (toFile) {
              Wb::Clock clio_("NRG:I/O",0,0,&nrgClocks,&clio);
 
-             sprintf(str, "%s_%02d.mat", fout.data, iter);
+             sprintf_str( "%s_%02d.mat", fout.data, iter);
              if (vflag &4) wblog(FL,"\nI/O writing %s",Wb::basename(str));
 
              Wb::matFile F(FL,str,"w");
@@ -1003,26 +1003,26 @@ void NRG_Wilson(
 
     m=NK.colMax(0,i);
     n=NK.colMax(NK.dim2>3? 2:1,j);
-    l=sprintf(str,"NK=%s / %s",I2STR(m),I2STR(n));
-    if (NK.dim2>3) {
-       l+=sprintf(str+l," (%s / %s)",I2STR(NK(i,1)),I2STR(NK(j,3))); }
+    l=sprintf_str("NK=%s / %s",I2STR(m),I2STR(n));
+    if (NK.dim2>3) { 
+       l+=snprintf(str+l,64," (%s / %s)",I2STR(NK(i,1)),I2STR(NK(j,3))); }
 
     for (dbl=1E99, i=0; i<EK.dim1; ++i) {
        if (!ISNAN(EK(i,1)) && EK(i,1)>EK(i,0)) {
-       if (dbl>EK(i,1)) dbl=EK(i,1); }
+       if (dbl>EK(i,1)) { dbl=EK(i,1); }}
     }
 
-    l+=sprintf(str+l," @ Etr=%.4g",dbl);
-    if (Etrunc>0) l+=sprintf(str+l," / %g",Etrunc);
+    l+=snprintf(str+l,32," @ Etr=%.4g",dbl);
+    if (Etrunc>0) { l+=snprintf(str+l,32," / %g",Etrunc); }
 
     if (dbl>0.9*Etrunc)
-         wblog(FL,"==> %s",str);
-    else wblog(FL,"WRN %s",str);
+         { wblog(FL,"==> %s",str); }
+    else { wblog(FL,"WRN %s",str); }
 
     if (!toFile || (toFile && nargout>1))
     argout[0] = S; 
 
-    sprintf(str,"NRG data obtained using %s",myname);
+    sprintf_str("NRG data obtained using %s",myname);
     wbstring ver(str);
 
     MXPut Iout(0,0,"Inrg"); clt_.done();
@@ -1077,7 +1077,7 @@ void NRG_Wilson(
 
     if (toFile) {
        i=0; n=mxGetNumberOfFields(S);
-       sprintf(str,"%s_info.mat",fout.data);
+       sprintf_str("%s_info.mat",fout.data);
 
        if (vflag &14) wblog(FL,
           "I/O saving info data to `%s'",Wb::basename(str));
@@ -1382,8 +1382,8 @@ void nrgDispIter(
 
     n=nn.sum();
     if (n!=E4.len)
-         sprintf(str,"NK=%d/%ld, EK=%.2f",n, E4.len, EK);
-    else sprintf(str,"NK=%d (EK=%.2f)",n, EK);
+         sprintf_str("NK=%d/%ld, EK=%.2f",n, E4.len, EK);
+    else sprintf_str("NK=%d (EK=%.2f)",n, EK);
 
     wblog(FL,"NRG %02d: Q=[%s : %s]; %s %s",
        iter, STR(qmin), STR(qmax), str, i? "":"\r\\");

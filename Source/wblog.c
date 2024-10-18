@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : wblog (logging routines)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -471,18 +471,20 @@ void init_header(
    char *hstr, unsigned hlen, 
    const char *F, int L,
    const char *time_stamp, const char *tag, int xcol,
-   unsigned lenFL=21
+   unsigned lenFL=21 
 ){
    unsigned i,k=0,n; 
 
-   if (xcol && hlen>12) {
+   if (xcol && hlen>12) { 
       i=Wb::termcolor::ID("hdr");
       if (int(i)>0) {
          if (i<8)
               { i=snprintf(hstr,hlen,"\e[3%dm",i); }
          else { i=snprintf(hstr,hlen,"\e[38;5;%dm",i); } 
       }
-      if (!i || i>=hlen) { i=sprintf(hstr,"\e[0m"); }
+      else {
+         i=snprintf(hstr,hlen,"\e[0m");
+      }
       hstr+=i; hlen-=i;
    }
 
@@ -504,26 +506,35 @@ void init_header(
           hstr[i]=0;
       }
    }
-   else { sprintf(hstr,"(null):%d", L); }
+   else { i=snprintf(hstr,hlen,"(null):%d", L); }
 
    i=strlen(hstr); for (; i<lenFL; ++i) { hstr[i]=' '; }
 
-   n=strlen(time_stamp+17); if (n>32) n=32; 
-   memcpy(hstr+i,time_stamp+17,n); i+=n;
-   hstr[i++]=' '; hstr[i]=0;
+   n=strlen(time_stamp+17); if (n>32) { n=32; } 
+   if (i+n+12<hlen) { 
+      memcpy(hstr+i,time_stamp+17,n); i+=n;
+      hstr[i]=' '; hstr[++i]=0;
+      hstr+=i; hlen-=i; i=0;
+   }
+   else wblog(FL,"ERR %s() "
+     "string out of bounds (%d/%d)%N%N`%s'",FCT,i,hlen,hstr);
 
    if (xcol) {
       if (xcol>0) {
-         if (xcol<8)
-              { i+=sprintf(hstr+i,"\e[3%dm",xcol); }
-         else { i+=sprintf(hstr+i,"\e[38;5;%dm",xcol); } 
+         if (xcol<8) 
+              { i=snprintf(hstr,hlen,"\e[3%dm",xcol); }
+         else { i=snprintf(hstr,hlen,"\e[38;5;%dm",xcol); }
       }
-      else if (xcol<0) { i+=sprintf(hstr+i,"\e[0m"); }
+      else if (xcol<0) { i=snprintf(hstr,hlen,"\e[0m"); }
    }
 
-   if (tag && tag[0])
-        { i+=sprintf(hstr+i, " %s ",tag); }
-   else { hstr[i]=' '; hstr[i+1]=0; } 
+   if (i<hlen) {
+      if (tag && tag[0])
+           { i+=snprintf(hstr+i,hlen-i," %s ",tag); }
+      else { hstr[i]=' '; hstr[++i]=0; } 
+   }
+   if (i>=hlen) wblog(FL,"ERR %s() "
+     "string out of bounds (%d/%d)%N%N`%s'",FCT,i,hlen,hstr);
 };
 
 int check_update_header(
@@ -598,7 +609,7 @@ int wblogf(FILE *fid,
 
    if (e.type) { throw(e); } else
    if (l<-10) { 
-      sprintf(str,"ERR wblog.h:%d encountered l=%d !?",__LINE__,l);
+      sprintf_str("ERR wblog.h:%d encountered l=%d !?",__LINE__,l);
       ExitMsg(str);
    }
 
@@ -622,7 +633,7 @@ int wblog1(const char* file, int line, const char *fmt, ...) {
 
    if (e.type) { throw(e); } else
    if (l<-10) { 
-      sprintf(str,"ERR wblog.h:%d encountered l=%d !?",__LINE__,l);
+      sprintf_str("ERR wblog.h:%d encountered l=%d !?",__LINE__,l);
       ExitMsg(str);
    }
 
@@ -638,14 +649,14 @@ int wblogs(
     static int log_level=1;
     static int then=0;
 
-    int rval=0, hlen=128, xcol=0;
+    int rval=0, xcol=0;
 
-    unsigned i,j,k,l,m, nesc=0;
+    unsigned i,j,k,l,m, nesc=0, hlen=128, flen=128;
     const unsigned nt=32;
 
     char isfmt=0, hflag=1, bflag=0, iflag=0, eflag=0, wflag=0, fwd=0;
 
-    char fstr[128];  
+    char fstr[flen];  
     char time_stamp[nt], tag[8];
 
     char c, *cp, cb, log_header[hlen];
@@ -894,21 +905,23 @@ int wblogs(
       else if (c=='R') {
          k=i; fstr[--i]=0; 
 
-         for (; int(i)>=0; --i) { if (fstr[i]=='%') break; }
+         for (; i<flen; --i) { if (fstr[i]=='%') break; }
 
-         if (int(i)<0)
-         Sb.catf("%s:%d ERR Invalid format >%s<\n", FLINE, fmt-k);
-         else {
-            fstr[i] = 0;
-            Sb.catf("%s",fstr);
-
-            sscanf(fstr+i+1, "%d", &k);
-
-            sprintf(fstr, "%s", va_arg(args, char *));
-
-            for (; k>0; k--)
-            Sb.catf("%s", fstr);
+         if (i>=flen) {
+            Sb.catf("%s:%d ERR invalid format '%s'\n", FLINE, fmt-k);
          }
+         else {
+            fstr[i]=0; Sb.catf("%s",fstr);
+
+            if (sscanf(fstr+i+1,"%d",&k)<=0) {
+               Sb.catf("%s:%d ERR invalid format '%s'\n", FLINE, fmt-k);
+            }
+            else {
+               snprintf(fstr,flen,"%s",va_arg(args, char *));
+               for (; k>0; --k) { Sb.catf("%s",fstr); }
+            }
+         }
+
          i=isfmt=0;
       }
       else if (c=='B') {

@@ -83,7 +83,9 @@ void mexFunction(
    double TN,dbl, emin, emax=10., wx=0., T=-1;
    double alpha=0, sigma=0;
 
-   char vstr[64], vtag[4], itag[16];
+   const unsigned vlen=64; 
+
+   char vstr[vlen], vtag[4], itag[16];
    mxArray *S, *a, *ar=NULL;
    const mxArray *ac, *bc=NULL;
 
@@ -291,7 +293,7 @@ void mexFunction(
    else if (T<0) T=0;
 
    if (NRho) {
-       sprintf(vstr,"tDM-NRG (single shell NRho=%d)", NRho);
+       snprintf(vstr,vlen,"tDM-NRG (single shell NRho=%d)", NRho);
        strcpy(vtag,"tDK");
    }
    else {
@@ -300,7 +302,7 @@ void mexFunction(
    }
 
    str[0]=0;
-   if (disp) sprintf(str," disp=%d", disp);
+   if (disp   ) sprintf_str(" disp=%d", disp);
    if (!store ) strcat(str, " nostore");
    if (locRho ) strcat(str, " locRho" );
    if (calcOps) strcat(str, " calcOps");

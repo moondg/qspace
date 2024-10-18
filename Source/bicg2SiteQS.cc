@@ -265,7 +265,7 @@ mxArray* RunBiCG(
    }
 
    if (idat.flag) {
-      sprintf(str, "ERR @ %d/%d iterations (%s)", iter, maxit, istr);
+      sprintf_str( "ERR @ %d/%d iterations (%s)", iter, maxit, istr);
    }
    else str[0]=0;
 
@@ -275,7 +275,7 @@ mxArray* RunBiCG(
    CP.HZTimes(X,XX); alpha=XX.scalarProd(X);
    wblog(FL,"TST aHa = %.8g %+.8gi", alpha.r, alpha.i);
 
-   sprintf(str, "%s %3d/%d iterations @ res=%10.4g (%d), |G|=%8.3g",
+   sprintf_str( "%s %3d/%d iterations @ res=%10.4g (%d), |G|=%8.3g",
          idat.flag ? "ERR" : "TST",
          iter, maxit, idat.relres, idat.flag, gi.abs());
    printf("%s:%d %s\n", FL, str);

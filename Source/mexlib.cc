@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace MEX routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ void mxPutAndDestroy(
           unsigned j=0, k=0; 
           for (; ws[j]; ++j) { if (ws[j]=='.') { k=j+1; }}
           if (!k || strcasecmp(ws+k,"mat")) {
-             tmp.init(k+6); sprintf(tmp.data,"%s.mat",ws);
+             tmp.init(k+6); snprintf(tmp.data,tmp.len,"%s.mat",ws);
              ws=tmp.data;
           }
        }
@@ -111,7 +111,7 @@ int Mx::IsNumArray(
    if (type=='d') {
       if (!(rval & 2)) { 
          if (L) {
-            sprintf(str,"got data of type %s",mxGetClassName(a));
+            sprintf_str("got data of type %s",mxGetClassName(a));
             if (F) wblog(F,L,"ERR %s() %s",FCT,str);
          }
          return (rval=-129);
@@ -120,7 +120,7 @@ int Mx::IsNumArray(
    else if (type=='*') { 
       if (!(rval & 58)) { 
          if (L) {
-            sprintf(str,"got data of type %s",mxGetClassName(a));
+            sprintf_str("got data of type %s",mxGetClassName(a));
             if (F) wblog(F,L,"ERR %s() %s",FCT,str);
          }
          return (rval=-130);
@@ -153,7 +153,7 @@ int Mx::IsNumArray(
          }
          if (ra>r) { 
             if (L) {
-               sprintf(str,"got invalid rank (r=%d/%d)",ra,r);
+               sprintf_str("got invalid rank (r=%d/%d)",ra,r);
                if (F) wblog(F,L,"ERR %s() %s",FCT,str);
             }
             return (rval=-ra); 
@@ -576,7 +576,7 @@ int mxGetNumber(const mxArray *a, T &d, const char qflag) {
 
 inline int mxGetString(const mxArray *a, char *s) {
    if (mxGetString(a,s,127)) {
-      sprintf(str,"%s:%d ERR could not read string (%s) !?", FL, s);
+      sprintf_str("%s:%d ERR could not read string (%s) !?", FL, s);
       return 1;
    }
    return 0;
@@ -585,7 +585,7 @@ inline int mxGetString(const mxArray *a, char *s) {
 inline int mxGetString(const mxArray *a, wbstring &s) {
    char istr[128]; istr[0]=0;
    if (mxGetString(a,istr,127)) {
-      sprintf(str,"%s:%d ERR could not read string (%s) !?", FL, istr);
+      sprintf_str("%s:%d ERR could not read string (%s) !?", FL, istr);
       return 1;
    }
    s=istr; return 0;
@@ -609,7 +609,7 @@ wbstring mxTypeSize2Str(const mxArray *a) {
    size_t n=64; char s[n];
    if (!a) { strcpy(s,"(null)"); return s; }
 
-   size_t l=sprintf(s,"%s: ",mxGetClassName(a));
+   size_t l=snprintf(s,n,"%s: ",mxGetClassName(a));
    int r=mxGetNumberOfDimensions(a);
    const size_t *S=mxGetDimensions(a);
 

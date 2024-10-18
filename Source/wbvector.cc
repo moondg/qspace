@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : wbvector (template vector class)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1122,7 +1122,7 @@ inline int wbvector<T>::set2Group(
 
       for (j=1; j<d; j++) if (S0[P[l+j]]!=data[i]) {
          e++; if (iflag)
-         sprintf(str,"%g/%g", (double)data[i], (double)S0[P[l+j]]);
+         sprintf_str("%g/%g", (double)data[i], (double)S0[P[l+j]]);
       }
    }
 
@@ -1252,8 +1252,8 @@ wbstring wbvector<wbcomplex>::toStrf(
    unsigned w,i=0; char fmt[16], s1[32], flag=1;
 
    snprintf(fmt,16,"%s",fmt_ && fmt_[0] ? fmt_ : "%.4g");
-   w=2 + sprintf(str,fmt, sqrt(2.))
-       + sprintf(str,fmt,-sqrt(2.)*1e-20);
+   w=2 + sprintf_str(fmt, sqrt(2.))
+       + sprintf_str(fmt,-sqrt(2.)*1e-20);
 
    s.init(32+(4+i)*len); 
 

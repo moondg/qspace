@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : wblog (logging routines)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,10 +130,10 @@ void WbPrintMatrixC (
 
     int rflag, iflag;
 
-    printf ("%s%s", istr, istr[0] ? "\n" : "");
+    PRINTF("%s%s", istr, istr[0] ? "\n" : "");
 
-    if (space<1) sprintf (sfmt, " %%s");
-    else         sprintf (sfmt, " %%%ds", space);
+    if (space<1) snprintf(sfmt,n," %%s");
+    else         snprintf(sfmt,n," %%%ds", space);
 
     for (i=0; i<M.dim1; i++) {
         for (j=0; j<M.dim2; j++) {
@@ -169,11 +169,11 @@ void WbPrintMatrixC (
                    else l=snprintf(dstr,n,"%ci",  iflag==1? ' ':'-');
                 else {  l=snprintf(dstr,n,"%g", M(i,j).r); }
             }
-            printf(sfmt,dstr);
+            PRINTF(sfmt,dstr);
         }
-        printf ("\n");
+        PRINTF("\n");
     }
-    printf ("\n");
+    PRINTF("\n");
 };
 
 template<class T>

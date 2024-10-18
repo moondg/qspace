@@ -177,7 +177,7 @@ void mexFunction(
       mxArray *S=mxCreateStructMatrix(1,1,0,NULL);
       x0.init(ncv, X.data+ipntr[8]);
 
-      sprintf(str,"EIGS w/mode `%s' %sconverged %d/%d (%d)",
+      sprintf_str("EIGS w/mode `%s' %sconverged %d/%d (%d)",
       task,iparam[4]!=(int)nev ? "NOT ":"",iparam[4],nev,N);
 
       mxAddField2Scalar(FL,S, "info",  mxCreateString(str));

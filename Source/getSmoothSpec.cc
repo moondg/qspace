@@ -101,8 +101,8 @@ void GET_SMOOTH_SPEC(
        "ERR %s() size mismatch (a0 vs. om: %d/%d !?)",myname,om.len,N);
     if (vflag) {
        if (aa.dim1==1)
-            { sprintf(str,"one data set"); }
-       else { sprintf(str,"%ld data sets",aa.dim1); }
+            { sprintf_str("one data set"); }
+       else { sprintf_str("%ld data sets",aa.dim1); }
        wblog(FL,"<i> %s() %s @ %d pts",myname,str,N);
     }
 

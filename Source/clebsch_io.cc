@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : clebsch (for abelian and non-abelian symmetries)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -408,7 +408,7 @@ int RCStore::load_CData(
 
    if (B.qs && (B.qs!=Q.qs)) { str[0]=0;  
      #if __APPLE__
-      if (B.qs.anyGE(36) || Q.qs.anyGE(36)) { sprintf(str,"\n\n"
+      if (B.qs.anyGE(36) || Q.qs.anyGE(36)) { sprintf_str("\n\n"
          "hint: copied RCStore from linux?\n"
          "macOS has issues with case sensitive files"); }
      #endif

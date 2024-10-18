@@ -18,10 +18,10 @@ void mexFunction(
     int nargin, const mxArray *argin[]
 ){ Wb::CleanUp aclu; try { 
 
-    unsigned i,k,K,M,N, disc, func, vflag=1, r=0, nlog=100; int e;
+    unsigned i,k,K,M,N, disc, func, vflag=1, r=0, nlog=100, slen=128; int e;
     double eps=1E-8, sigma=-1, alpha=0., Lambda=-1, emin=1E-8, emax=10.;
     TDSpectral<double> tdmData;
-    char rawflag=0, istr[128]; istr[0]=0;
+    char rawflag=0, istr[slen]; istr[0]=0;
 
     wbvector<double> tt,om;
     wbvector<unsigned> D;
@@ -130,7 +130,7 @@ void mexFunction(
     tdmData.getSpecData(om,a0);
 
     if (sigma>0) {
-       sprintf(istr,"frequency broadened TDM data (sigma=%.4g)",sigma);
+       snprintf(istr,slen,"frequency broadened TDM data (sigma=%.4g)",sigma);
        if (vflag) wblog(FL,"<i> %s",istr);
 
        tdmData.getSmoothSpec_t(sigma,eps,LOG_GAUSS_BRD,vflag);
@@ -138,13 +138,13 @@ void mexFunction(
     }
     else if (alpha>0) {
        if (Lambda<=1) wblog(FL,"ERR alpha requires Lambda (%.4g)",Lambda);
-       sprintf(istr,"time-domain broadened TDM data (alpha=%.4g)",alpha);
+       snprintf(istr,slen,"time-domain broadened TDM data (alpha=%.4g)",alpha);
        if (vflag) wblog(FL,"<i> %s",istr);
 
        tdmData.Fourier(om,az,alpha,Lambda,vflag);
     }
     else {
-       sprintf(istr,"plain Fourier transformed data (no broadening)");
+       snprintf(istr,slen,"plain Fourier transformed data (no broadening)");
        if (vflag) wblog(FL,"<i> %s",istr);
 
        Wb::Fourier(om,a0,tt,az, func? 'f': 0); 

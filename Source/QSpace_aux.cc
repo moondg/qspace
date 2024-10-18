@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -288,7 +288,7 @@ double contractDATA_group(const char *F, int L,
       xflag = (q<0 ? 0 : q&8);
 
      #ifdef DBG_CONTRACT
-      static int iout=0; sprintf(str,"I%02d",++iout);
+      static int iout=0; sprintf_str("I%02d",++iout);
       MXPut Ix(FL,str,"base");
       Ix.add(Ck,"Ck_").add(cfac,"cfac").add(Ci,"Ci").add(ic,"ic").add(C,"C");
      #endif
@@ -472,15 +472,15 @@ int mxIsQSpace(
    int fidQ,fidD, vflag=(L || (i?1:0));
 
    if (F) { vflag+=2; }
-   if (vflag) { str[0]=0; if ((vflag>1 && i) || int(k)>=0) {
+   if (vflag) { sp[0]=0; if ((vflag>1 && i) || int(k)>=0) {
       if (int(k)>=0)
-           { sp+=snprintf(str,256,"%s(%d): ", i ? istr:"A", k+1); }
-      else if (i>24) { sp+=snprintf(str,256,"%s\n",istr); }
-      else { sp+=snprintf(str,256,"%s: ", i ? istr : "A"); }
+           { sp+=snprintf(sp,256,"%s(%d): ", i ? istr:"A", k+1); }
+      else if (i>24) { sp+=snprintf(sp,256,"%s\n",istr); }
+      else { sp+=snprintf(sp,256,"%s: ", i ? istr : "A"); }
    }}
 
    if (!A || !mxIsStruct(A) || !Mx::IsVector(A)) {
-      if (vflag) { sprintf(sp,
+      if (vflag) { snprintf(sp,256,
          "invalid QSpace object (%s)",mxTypeSize2Str(A).data);
       if (vflag>1) wblog(F_L,"ERR %s",str); }
       return -1;
@@ -488,7 +488,7 @@ int mxIsQSpace(
 
    nA=nA_=mxGetNumberOfElements(A);
    if (int(k)>=int(nA)) {
-      if (vflag) { sprintf(sp,"structure index out of bounds "
+      if (vflag) { snprintf(sp,256,"structure index out of bounds "
          "(%s <> %d)",mxTypeSize2Str(A).data,int(k)+1);
       if (vflag>1) wblog(F_L,"ERR %s",str); }
       return -2;
@@ -496,7 +496,7 @@ int mxIsQSpace(
 
    if (int(k)==-1 && nA>1) { 
       if (vflag) {
-         sprintf(sp,"expecting single QSpace (got %d)",nA);
+         snprintf(sp,256,"expecting single QSpace (got %d)",nA);
       if (vflag>1) wblog(F_L,"ERR %s",str); }
       return -3;
    }
@@ -535,7 +535,7 @@ int mxIsQSpace(
       if (Q) { r=mxGetNumberOfElements(Q); } else { r=0; }
       if (r) {
          if (!Mx::IsVector(Q) || !mxIsCell(Q)) {
-            if (vflag) { sprintf(sp,
+            if (vflag) { snprintf(sp,256,
                "Q-field not a vector cell (%s)",mxTypeSize2Str(Q).data);
             if (vflag>1) wblog(F_L,"ERR %s",str); }
             return -6;
@@ -548,7 +548,7 @@ int mxIsQSpace(
          "ERR %s() invalid rank range [%d %d] !?)",FCT,r1,r2);
       }
       else if (r<r1 || r>r2) {
-         if (vflag) { sprintf(sp,
+         if (vflag) { snprintf(sp,256,
             "rank r=%d not in range [%d %d])",r,r1,r2);
          if (vflag>1) wblog(F_L,"ERR %s",str); }
          return -7;
@@ -569,7 +569,7 @@ int mxIsQSpace(
          if ((i && (M!=mxGetM(a) || N!=mxGetN(a))) ||
              mxGetNumberOfDimensions(a)>2
           ){
-            if (vflag) { sprintf(sp,"dimension mismatch in Q{%d} !?",i+1);
+            if (vflag) { snprintf(sp,256,"dimension mismatch in Q{%d}",i+1);
             if (vflag>1) wblog(F_L,"ERR %s",str); }
             return -9;
          }
@@ -586,7 +586,7 @@ int mxIsQSpace(
          l=mxGetNumberOfElements(D);
 
          if (l!=M && (M || l!=1)) {
-            if (vflag) { sprintf(sp,
+            if (vflag) { snprintf(sp,256,
                "QSpace inconsistency data: %d/%s",M,mxSize2Str(D).data);
             if (vflag>1) wblog(F_L,"ERR %s",str); }
             return -11;
@@ -594,7 +594,7 @@ int mxIsQSpace(
          if (!l) continue;
 
          if (!Mx::IsVector(D) || !mxIsCell(D)) {
-            if (vflag) { sprintf(sp,
+            if (vflag) { snprintf(sp,256,
                "data field not a cell vector (%s)",mxTypeSize2Str(D).data);
             if (vflag>1) wblog(F_L,"ERR %s",str); }
             return -12;
@@ -712,13 +712,13 @@ bool mxIsQSpaceArr(
     if (L) str[0]=0;
 
     if (!m || !n) {
-       if (L) { sprintf(str,"%s() received empty array (%dx%d)",FCT,m,n); }
+       if (L) { sprintf_str("%s() received empty array (%dx%d)",FCT,m,n); }
        if (F) { wblog(F,L,"WRN %s",str); }
        return 1; 
     }
 
     if (!mxIsStruct(S) || mxGetNumberOfDimensions(S)!=2) {
-       if (L) { sprintf(str,
+       if (L) { sprintf_str(
           "invalid structure array (%s)", mxTypeSize2Str(S).data); }
        if (F) { wblog(F,L,"ERR %s",str); }
        return 0;
@@ -729,7 +729,7 @@ bool mxIsQSpaceArr(
        case 1: if (m!=1 && n!=1) e++; break;
     }
     if (e) {
-       if (L) sprintf(str,
+       if (L) sprintf_str(
           "invalid QSpace %s (%dx%d)",arrdim==0 ? "scalar":"vector",m,n);
        if (F) { wblog(F,L,"ERR %s",str); }
        return 0;
@@ -776,13 +776,13 @@ bool mxsIsQSpaceVec(const mxArray *S, int fid, unsigned rank, char cflag) {
     mxArray *a;
 
     if ((m!=1 && n!=1) || !mxIsStruct(S) || mxGetNumberOfDimensions(S)!=2) {
-       sprintf(str, "%s:%d need vector structure (%dx%d)", FL,m,n);
+       sprintf_str( "%s:%d need vector structure (%dx%d)", FL,m,n);
        return 0;
     }
 
     n*=m;
 
-    if (!n || fid<0) { sprintf(str,
+    if (!n || fid<0) { sprintf_str(
       "%s:%d invalid or empty data set (%d;%d)", FL, n, fid);
        return 0;
     }
@@ -803,14 +803,14 @@ bool mxsIsQSpaceVEC(
     mxArray *a;
 
     if ((m!=1 && n!=1) || !mxIsStruct(S) ||
-        mxGetNumberOfDimensions(S)!=2) { sprintf(str,
+        mxGetNumberOfDimensions(S)!=2) { sprintf_str(
       "%s:%d need vector structure of QSpace vectors \n"
       "containing {Q,data,...} structures (%d)", FL, m); return 0;
     }
 
     n*=m;
 
-    if (!n || fid<0) { sprintf(str,
+    if (!n || fid<0) { sprintf_str(
       "%s:%d invalid or empty data set (%d;%d)", FL, n, fid);
        return 0;
     }
@@ -823,7 +823,7 @@ bool mxsIsQSpaceVEC(
        if (d==0) d=m*k;
 
        if ((m!=1 && k!=1) || n!=d || mxGetNumberOfDimensions(a)!=2 ||
-          !mxIsCell(a)) { sprintf(str,
+          !mxIsCell(a)) { sprintf_str(
           "%s:%d field must be %d-dim QSpace vector structure (%dx%d)",
            FL, d, m, k); return 0;
        }
@@ -1064,7 +1064,7 @@ void mxInitQSpaceVecVec(const char *F, int L,
        if (mxIsQSpaceVec(FL,a))
           mxInitQSpaceVec(F,L,a,FF[i],ref);
        else {
-          wbstring istr(str); sprintf(str,
+          wbstring istr(str); sprintf_str(
             "invalid QSpace cell vector (%d: %s)",i+1,mxGetClassName(C));
           wblog(F,L,"%s\n%s",str,istr.data);
        }
@@ -1087,7 +1087,7 @@ void mxInitQSpaceMat(const char *F, int L,
    if (m==0 && n==0) { FF.init(); return; } 
 
    if (!mxIsQSpaceMat(FL,S)) { wbstring istr(str);
-      sprintf(str,"invalid QSpace (%s)", mxGetClassName(S));
+      sprintf_str("invalid QSpace (%s)", mxGetClassName(S));
       wblog(F,L,"%s\n%s",str,istr.data);
    }
 
@@ -1124,7 +1124,7 @@ void mxcInitQSpaceMat(const char *F, int L,
 
       if (i>0) {
          if (n!=mxGetNumberOfElements(a)) { wbstring istr(str);
-            sprintf(str,"cell QSpace dimensions mismatch (%d/%d)",
+            sprintf_str("cell QSpace dimensions mismatch (%d/%d)",
             n,mxGetNumberOfElements(a));
             wblog(F,L,"%s\n%s",str,istr.data);
             wblog(FL,"ERR");

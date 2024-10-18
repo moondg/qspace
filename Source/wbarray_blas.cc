@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : wbarray (array class, col-major)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -693,7 +693,7 @@ void wbEigen_CS_regen(
    if (!V.isRank(2) || E.len!=V.SIZE[1] || V.SIZE[0]!=V.SIZE[1])
    wblog(FL,"ERR invalid usage (%s; %d)",V.sizeStr().data,E.len);
 
-   unsigned i,i0=0, n=E.len, count=0;
+   unsigned i,i0=0, n=E.len; 
    WBINDEX S(2); S[0]=n;
    double a, eps=1E-8, nmin=0, nmax=0;
 
@@ -737,7 +737,6 @@ wblog(FL,"TST fixing degenerate block: %d:%d (%d)  \r\\",i0+1,i,n);
          memcpy(U.data,X.data,sizeof(T)*X.numel());
 
          U.OrthoNormalizeCols(FL,'T',T(1E-14),2);
-         count++;
       }
       i0=i;
    }

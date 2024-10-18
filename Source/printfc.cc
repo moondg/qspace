@@ -107,12 +107,12 @@ void mexFunction(
        }
        str[j]=0; l=j;
 
-    if (w) { char t[32];
-       if ((w&3) && !kflag) {
-          if (w&1) sprintf(t,"   \e[31m%s\e[0m ",tag); 
-          else     sprintf(t,"   \e[35m%s\e[0m ",tag); 
+    if (w) { const unsigned tlen=32; char t[tlen];
+       if ((w&3) && !kflag) { 
+          if (w&1) { snprintf(t,tlen,"   \e[31m%s\e[0m ",tag); } 
+          else     { snprintf(t,tlen,"   \e[35m%s\e[0m ",tag); } 
        }
-       else { sprintf(t,"   %s ",tag); }
+       else { snprintf(t,tlen,"   %s ",tag); }
 
        if (w&1) { printf("\n"); }
 

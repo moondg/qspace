@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : wbstring
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,25 +23,17 @@
 // ----------------------------------------------------------------- //
 // tags: filesize fsize kB MB GB
 
-char* Wb::memsize2Str(double x, char *s, unsigned l) {
-    if (int(l)<0) {
-       if (x<5E3) sprintf(s,"%g bytes",x);        else
-       if (x<1E6) sprintf(s,"%.3g kB",x/(1<<10)); else
-       if (x<1E9) sprintf(s,"%.3gM",x/(1<<20));   else
-                  sprintf(s,"%.3gG",x/(1<<30));
+char* Wb::memsize2Str(double x, char *s, unsigned l_) {
+    unsigned i=0, l=(int(l_)<0 ? 16 : l_);
+    if (!s) wblog(FL,"ERR %s() got null string (%d)",FCT,l);
+    if (l) { 
+       if (x<5E3) { i=snprintf(s,l,"%g bytes",x        ); } else
+       if (x<1E6) { i=snprintf(s,l,"%.3g kB", x/(1<<10)); } else
+       if (x<1E9) { i=snprintf(s,l,"%.3gM",   x/(1<<20)); } else
+                  { i=snprintf(s,l,"%.3gG",   x/(1<<30)); }
     }
-    else {
-       unsigned i=0; if (l) {
-       if (x<5E3) i=snprintf(s,l,"%g bytes",x);        else
-       if (x<1E6) i=snprintf(s,l,"%.3g kB",x/(1<<10)); else
-       if (x<1E9) i=snprintf(s,l,"%.3gM",x/(1<<20));   else
-                  i=snprintf(s,l,"%.3gG",x/(1<<30));
-       }
-       if (i>=l) wblog(FL,
-         "WRN %s() string out of bounds (%s; %d/%d)",
-          FCT,s,strlen(s),l
-       );
-    }
+    if (i>=l) wblog(FL,
+       "WRN %s() string out of bounds ('%s', %d/%d)",FCT,s,strlen(s),l);
     return s;
 };
 

@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : wbvector (template vector class)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1357,7 +1357,7 @@ bool wbvector<T>::checkSameLength(
 
    bool i=(len==a.len);
    if (!i && F) { 
-      if (istr && istr[0]) sprintf(str,"%s() - ",istr); else str[0]=0;
+      if (istr && istr[0]) sprintf_str("%s() - ",istr); else str[0]=0;
       wblog(F,L, "ERR %svector length mismatch (%d/%d)",str,len,a.len);
    }
    return i;
@@ -1372,7 +1372,7 @@ bool wbvector<T>::checkSameLength(
 
    bool i=(len==a.len && len==b.len);
    if (!i && F) { 
-      if (istr && istr[0]) sprintf(str,"%s() - ",istr); else str[0]=0;
+      if (istr && istr[0]) sprintf_str("%s() - ",istr); else str[0]=0;
       wblog(F,L,"ERR %svector length mismatch (%d,%d/%d)",str,a.len,b.len,len);
    }
    return i;

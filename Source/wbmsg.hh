@@ -133,7 +133,7 @@ int wbMsg::Rec (
         return -i;
     }
 
-    sprintf(str,"%s", ctime(&rbuf.time));
+    sprintf_str("%s", ctime(&rbuf.time));
     str[strlen(str)-1] = 0;
 
     wblog (file,line,"%NNB! RECEIVED MESSAGE %s (%d; 0x%lX %d)\n\n"
@@ -169,7 +169,7 @@ int wbMsg::Snd (
         return -1;
     }
 
-    sprintf(str,"%s", ctime(&sbuf.time));
+    sprintf_str("%s", ctime(&sbuf.time));
     str[strlen(str)-1] = 0;
 
     wblog (file,line,
@@ -209,7 +209,7 @@ int WbMSGSnd (
         return -1;
     }
 
-    sprintf (str, "%s", ctime(&sbuf.time));
+    sprintf_str("%s", ctime(&sbuf.time));
     str[strlen(str)-1] = 0;
 
     wblog(file,line,

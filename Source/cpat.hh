@@ -236,7 +236,7 @@ int CPAT_Set<TQ,TD>::init(
    mxArray *a; str[0]=0;
 
    if (ic1>=r1 || ic2>=r2) {
-      sprintf(str, "%s:%d ERR Invalid input (%d/%d; %d/%d (%d))",
+      sprintf_str( "%s:%d ERR Invalid input (%d/%d; %d/%d (%d))",
       FL, ic1+1, r1, ic2+1, r2, twoSite);
       return 1;
    }
@@ -253,12 +253,12 @@ int CPAT_Set<TQ,TD>::init(
       A[0].init(FL,a,'r');
 
       if (!A[0].isConsistent_r(2)) {
-         sprintf(str,"%s:%d rank-2 tensor required (arg #1; %s)",FL,_CP);
+         sprintf_str("%s:%d rank-2 tensor required (arg #1; %s)",FL,_CP);
          return 1;
       }
    }
    else { 
-      if (mxIsQSpaceVec(a,2,isC)) { sprintf(str,
+      if (mxIsQSpaceVec(a,2,isC)) { sprintf_str(
          "%s:%d rank-2 QSpace (vector) required (arg #1; %s)",FL,_CP);
           return 1;
       }
@@ -271,7 +271,7 @@ int CPAT_Set<TQ,TD>::init(
       k=w;
 
       if (w<1 || w>2) {
-         sprintf(str,"%s:%d Either arg #2 or #3 in CPAT %s",FL,_CP);
+         sprintf_str("%s:%d Either arg #2 or #3 in CPAT %s",FL,_CP);
          return 1;
       }
    }
@@ -279,7 +279,7 @@ int CPAT_Set<TQ,TD>::init(
       k=1; w=(ldir>0 ? 1 : 2);
 
       if (mxIsEmpty(mxGetCell(C,k))) {
-         sprintf(str,"%s:%d Invalid arg #%d in CPAT %s",FL,k,CP1);
+         sprintf_str("%s:%d Invalid arg #%d in CPAT %s",FL,k,CP1);
          return 1;
       }
    }
@@ -322,11 +322,11 @@ int CPAT_Set<TQ,TD>::init(
    if (k<N) {
       a=mxGetCell(C,k);
 
-      if (mxGetNumber(a,opA)) { sprintf(str,
+      if (mxGetNumber(a,opA)) { sprintf_str(
          "%s:%d Invalid arg #%d in CPAT %s", FL, 3+twoSite, _CP);
           return 1;
       }
-      if (N>k+1) { sprintf(str, 
+      if (N>k+1) { sprintf_str( 
          "%s:%d Too many arguments for CPAT %s", FL, _CP);
           return 1;
       }
@@ -334,7 +334,7 @@ int CPAT_Set<TQ,TD>::init(
 
    opA=toupper(opA); if (!opA || opA==' ') opA='N';
 
-   if (!Wb::strchri("NTC*",opA)) { sprintf(str,
+   if (!Wb::strchri("NTC*",opA)) { sprintf_str(
      "%s:%d ERR invalid opA=%c<%d> in CPAT %s", FL, opA, opA, _CP);
       return 1;
    }
@@ -700,7 +700,7 @@ inline void QSpace<TQ,TD>::ExpandQ(
       for (j=0; j<n; j++) mark[p2[l+j]] |= OLDSYM;
    }
 
-   if (disp>9) sprintf(str,
+   if (disp>9) sprintf_str(
    "Psi having %d/%d symmetry sector(s)", Q1.dim1, Q2.dim1);
 
    xflag.find(0,I); if (!I.isEmpty()) {
@@ -1165,19 +1165,19 @@ int isCPattern(const mxArray *C) {
    mxArray *a;
 
    if (!C || !mxIsCell(C)) {
-      sprintf(str,"%s:%d invalid CP",FL);
+      sprintf_str("%s:%d invalid CP",FL);
       return 0;
    }
 
    n=mxGetNumberOfElements(C);
    if (n<2 || n>4) {
-      sprintf(str,"%s:%d invalid CP (%d entries)",FL,n);
+      sprintf_str("%s:%d invalid CP (%d entries)",FL,n);
       return 0;
    }
 
    a=mxGetCell(C,0);
    if (!mxIsStruct(a) || mxIsCell(a)) {
-      sprintf(str,"%s:%d invalid arg #1",FL);
+      sprintf_str("%s:%d invalid arg #1",FL);
       return 0;
    }
 
@@ -1185,14 +1185,14 @@ int isCPattern(const mxArray *C) {
    hasOp=mxIsChar(a);
 
    if (hasOp) if (mxGetNumberOfElements(a)!=1) {
-      sprintf(str,"%s:%d arg #%d not a flag (char)",FL,n);
+      sprintf_str("%s:%d arg #%d not a flag (char)",FL,n);
       return 0;
    }
 
    k=n-hasOp;
    if (k==2) twoSite=0; else
    if (k==3) twoSite=1; else {
-      sprintf(str,"%s:%d invalid CP (k=%d)",FL,k);
+      sprintf_str("%s:%d invalid CP (k=%d)",FL,k);
       return 0;
    }
 
@@ -1200,7 +1200,7 @@ int isCPattern(const mxArray *C) {
       w = (mxIsEmpty(mxGetCell(C,1)) ? 0 : 1) +
           (mxIsEmpty(mxGetCell(C,2)) ? 0 : 2);
       if (w<1 || w>2) {
-         sprintf(str, "%s:%d either arg #2 or #3",FL);
+         sprintf_str( "%s:%d either arg #2 or #3",FL);
          return 0;
       }
    }
@@ -1208,7 +1208,7 @@ int isCPattern(const mxArray *C) {
 
    a=mxGetCell(C,w);
    if (!Mx::IsNumber(a)) {
-      sprintf(str,"%s:%d arg #%d not a number",FL,w+1);
+      sprintf_str("%s:%d arg #%d not a number",FL,w+1);
       return 0;
    }
 

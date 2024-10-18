@@ -389,8 +389,8 @@ void mexFunction(
 
        if (!nQS) {
           if (i<(unsigned)nargin)
-               { sprintf(str,"arg #%d",i+1); }
-          else { sprintf(str,"QSpace/cell pair required; n=%d",nQS); }
+               { sprintf_str("arg #%d",i+1); }
+          else { sprintf_str("QSpace/cell pair required; n=%d",nQS); }
           wblog(FL,"ERR %s() invalid usage (%s)",myname,str);
        }
 
@@ -855,8 +855,8 @@ int contractRC(
    int nargin, const mxArray *argin[]
 ){
 
-   int i,l,n=256,n1=256,n2=384,i0, nc=nargin/4;
-   char sbuf[2*n];
+   int i,l, n=256, n1=256, n2=384, slen=2*n, i0, nc=nargin/4;
+   char sbuf[slen];
 
    if ((nargin-1)%4) wblog(FL,"ERR %s() "
       "invalid usage [nargin: (%d-1)%%4] !?",FCT,nargin);
@@ -872,7 +872,7 @@ int contractRC(
 
    QType t(FL,argin[0]); 
 
-   memset(sbuf,0,2*n);
+   memset(sbuf,0,slen);
    mxGetString(argin[0],sbuf,n); l=strlen(sbuf); sbuf[l]=' '; sbuf[++l]=0;
 
    if (nc!=1)
@@ -885,8 +885,9 @@ int contractRC(
       mxGetString(argin[i0+2],sbuf+l,n); Qb.init_str(FL,sbuf); ib.init(FL,argin[i0+3]);
 
       if (nc>1) {
-         if (nc>9) sprintf(sbuf+n,"%2d)",i+1);
-         else  sprintf(sbuf+n,"%d/%d",i+1,nc);
+         if (nc>9)
+              { snprintf(sbuf+n,32,"%2d)", i+1   ); }
+         else { snprintf(sbuf+n,32,"%d/%d",i+1,nc); }
       }
       else strcat(sbuf+n,"-->");
 

@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -3022,7 +3022,7 @@ void QSpace<TQ,TD>::print(const char *vname, char vflag) const {
             if (l<nstr) { l+=qt.print_qset(FL,qs,qstr+l,nstr-l); }
             else { break; }
          }
-      } else { sprintf(qstr,"!?"); }
+      } else { strcpy(qstr,"!?"); }
 
       PRINTF("%5d. [ %s ]  %-*s ", i+1, qstr, lsz,
          i<DATA.len ? DATA[i]->sizeStr(r," @").data : "!?");

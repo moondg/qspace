@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -129,7 +129,7 @@ void getPerm(
 
     if (!A.len) { P.init(); return; }
     if (A.len!=m0) {
-        sprintf(str,"permuation dimension mismatch (%ld,%d)",A.len,m0);
+        sprintf_str("permuation dimension mismatch (%ld,%d)",A.len,m0);
         usage(FLINE, str);
     }
 

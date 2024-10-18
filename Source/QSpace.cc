@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -587,17 +587,17 @@ bool QSpace<TQ,TD>::sameType(
    if ((void*)this==(void*)&B) { if (r<0) return 1; }
    else {
       if (QIDX.dim2!=B.QIDX.dim2 || QDIM!=B.QDIM) {
-         if (istr) sprintf(str,"%s: %s QIDX: %d/%d, QDIM: %d/%d",
+         if (istr) sprintf_str("%s: %s QIDX: %d/%d, QDIM: %d/%d",
          SHORT_FL, istr, QIDX.dim2, B.QIDX.dim2, QDIM, B.QDIM);
          return 0;
       }
       if (!qtype.sameType(B.qtype)) { 
-         if (istr) sprintf(str,"%s: %s qtype: %s/%s",
+         if (istr) sprintf_str("%s: %s qtype: %s/%s",
          SHORT_FL,istr, qStr().data, B.qStr().data);
          return 0;
       }
       if (QDIM!=qtype.Qlen()) { 
-         if (istr) { sprintf(str,"%s: %s QDIM/qtype: %d/%d",
+         if (istr) { sprintf_str("%s: %s QDIM/qtype: %d/%d",
              SHORT_FL,istr,QDIM,qtype.Qlen());
              return 0;
          }
@@ -609,14 +609,14 @@ bool QSpace<TQ,TD>::sameType(
    if (r<0) return 1;
 
    if (r==0) {
-      if (QIDX.dim2) { if (istr) sprintf(str,
+      if (QIDX.dim2) { if (istr) sprintf_str(
          "%s: %s rank = %d/0",SHORT_FL,istr,QIDX.dim2);
           return 0;
       }
       else return 1; 
    }
    else if (QDIM==0 || QIDX.dim2/QDIM!=(unsigned)r) {
-      if (istr) sprintf(str,"%s: %s rank = %d/%d",
+      if (istr) sprintf_str("%s: %s rank = %d/%d",
           SHORT_FL,istr,QIDX.dim2/QDIM,r);
       return 0;
    }
@@ -914,7 +914,7 @@ void getQDimGen(wbvector< const QSpace<TQ,TD>* > &A,
       if (cgflag) SC_->recSetP(i,SC.ref(i1));
       for (j=1; j<d; ++j, ++l) { i2=P[l];
          if (S0.recCompare(i1,i2)) {
-            sprintf(str,
+            sprintf_str(
               "%s() data{} block size inconsistency (SC=%d)\n"
               "A(%ld) @%ld <> A(%ld) @%ld: Q=[%s] D = %s / %s !?",FCT,cgflag,
                II(i1,0)+1, II(i1,1)+1,
@@ -1351,14 +1351,14 @@ bool QSpace<TQ,TD>::isConsistent(
     if (int(r)<0) wblog(FL,"ERR %s() r=%d",FCT,r); 
 
     if (int(r0)<0) { r0=r; } else
-    if (r0!=r && (r0!=2 || r!=1)) { sprintf(str,
+    if (r0!=r && (r0!=2 || r!=1)) { sprintf_str(
        "rank mismatch (is %d, should be %d)",r,r0);
        if (F) wblog(F,L,"ERR %s",str);
        return 0;
     }
 
     if (itags.len && itags.len!=r) {
-       sprintf(str,"QSpace::itags inconsistency (%ldx%ld/%d, %ld/%d)",
+       sprintf_str("QSpace::itags inconsistency (%ldx%ld/%d, %ld/%d)",
           QIDX.dim1, QIDX.dim2, QDIM, itags.len,r);
        if (F) wblog(F,L,"ERR %s",str);
        return 0;
@@ -1378,7 +1378,7 @@ bool QSpace<TQ,TD>::isConsistent(
     for (i=0; i<qtype.len; ++i) { if (qtype[i].permitsOM(r)) { ++m; }}
 
     for (i=0; i<DATA.len; ++i) {
-       if (!DATA[i]) { sprintf(str,"QSpace got null space DATA[%d]",i+1);
+       if (!DATA[i]) { sprintf_str("QSpace got null space DATA[%d]",i+1);
            if (F) wblog(F,L,"ERR %s",str);
            return 0;
        }
@@ -1386,7 +1386,7 @@ bool QSpace<TQ,TD>::isConsistent(
        if (!DATA[i]->isRankM(r,m)) {
           if ((l=DATA[i]->SIZE.len)==1 && !r) { continue; }
 
-          sprintf(str,"QSpace inconsistency (%s)\nDATA[%d] has rank "
+          sprintf_str("QSpace inconsistency (%s)\nDATA[%d] has rank "
              "%d / %d (%s)",SHORT_FL, i+1, l, r0, SSTR_(DATA[i]));
           if (F) wblog(F,L,"ERR %s",str);
           return 0;
@@ -1395,13 +1395,13 @@ bool QSpace<TQ,TD>::isConsistent(
 
        if ((r0==1 && (DATA[i]->SIZE[0]!=1 && DATA[i]->SIZE[1]!=1)) ||
            (r0==0 && (DATA[i]->SIZE[0]!=1 || DATA[i]->SIZE[1]!=1)) ) {
-           sprintf(str,"invalid size %s for rank-%d object",
+           sprintf_str("invalid size %s for rank-%d object",
            DATA[i]->sizeStr().data, r0);
            if (F) wblog(F,L,"ERR %s",str);
            return 0;
        }
 
-       if (r0==0 && i) { sprintf(str,
+       if (r0==0 && i) { sprintf_str(
           "rank-%d object can only have max 1 element (%d)", r0, i+1);
            if (F) wblog(F,L,"ERR %s",str);
            return 0;
@@ -1633,9 +1633,9 @@ bool QSpace<TQ,TD>::isHConj(
 
       if (r<2 || (r!=3 && !isQSym(F,L)) || (r==3 && getDIM(2)>1)) {
          if (vflag || F) {
-            if (r<2 || r==3) { sprintf(str,"%s got rank-%d QSpace (%s)",
+            if (r<2 || r==3) { sprintf_str("%s got rank-%d QSpace (%s)",
                SHORT_FL,r, sizeStr('v').data); }
-            else { sprintf(str,
+            else { sprintf_str(
                "%s got non-symmetry Q data (r=%d)", SHORT_FL,r); }
             if (F) wblog(F_L,"ERR %s() %s",FCT,str);
          }
@@ -1667,7 +1667,7 @@ bool QSpace<TQ,TD>::isHConj(
       if (e>eps) { double q=norm(); if (q>1) eps*=q;
          if (e>eps) {
             if (vflag || F) {
-               sprintf(str,"%s got non-symmetric data (%g)",SHORT_FL,e);
+               sprintf_str("%s got non-symmetric data (%g)",SHORT_FL,e);
                if (F) wblog(F,L,"ERR %s() %s",FCT);
             }
             return 0;
@@ -1725,7 +1725,7 @@ bool QSpace<TQ,TD>::isSym_aux(
     str[0]=0; isConsistent(FL,r);
 
     if (r%2) {
-       sprintf(str,"%s() requires even-rank (%d)",fct,r);
+       sprintf_str("%s() requires even-rank (%d)",fct,r);
        if (F) wblog(F,L,"ERR %s",str);
        return 0;
     }
@@ -1738,12 +1738,12 @@ bool QSpace<TQ,TD>::isSym_aux(
     QIDX.blockPermute(P,Q2); Q2.SortRecs(P2);
 
     if (Q1!=Q2) {
-       sprintf(str,"QIDX[:,1] does not match QIDX[:,2]");
+       sprintf_str("QIDX[:,1] does not match QIDX[:,2]");
        if (F || vflag) wblog(F_L,"ERR %s",str);
        return 0;
     }
     if (!Q1.isUniqueSorted()) {
-       sprintf(str,"WRN QIDX is not unique!");
+       sprintf_str("WRN QIDX is not unique!");
        if (F || vflag) wblog(F_L,"ERR %s",str);
        return 0;
     }
@@ -1856,7 +1856,7 @@ bool QSpace<TQ,TD>::isQSym(const char *F, int L, char dflag) const {
     str[0]=0; isConsistent(FL,r);
 
     if (r%2) {
-       sprintf(str,"%s() requires even-rank (%d)",FCT,r);
+       sprintf_str("%s() requires even-rank (%d)",FCT,r);
        if (F) wblog(F,L,"ERR %s",str);
        return 0;
     }
@@ -1869,12 +1869,12 @@ bool QSpace<TQ,TD>::isQSym(const char *F, int L, char dflag) const {
     QIDX.blockPermute(P,Q2); Q2.SortRecs(P2);
 
     if (Q1!=Q2) {
-       sprintf(str,"QIDX[:,1] does not match QIDX[:,2]");
+       sprintf_str("QIDX[:,1] does not match QIDX[:,2]");
        if (F) wblog(F,L,"ERR %s",str);
        return 0;
     }
     if (!Q1.isUniqueSorted()) {
-       sprintf(str,"WRN QIDX is not unique!");
+       sprintf_str("WRN QIDX is not unique!");
        if (F) wblog(F,L,"ERR %s",str);
        return 0;
     }
@@ -1894,14 +1894,14 @@ bool QSpace<TQ,TD>::isQSym(const char *F, int L, char dflag) const {
        if (!dflag) {
           for (l=0; l<r2; ++l)
           if (si[l]!=sj[l+r2] || si[l+r2]!=sj[l]) {
-              sprintf(str,"data skew dimensional (%d,%d: %s vs. %s)",
+              sprintf_str("data skew dimensional (%d,%d: %s vs. %s)",
                  i+1,j+1, SSTR(si), SSTR(sj));
               return 0;
           }
        }
        else
        if (i!=j || (dflag=='r' && si[0]!=1) || (dflag!='r' && si[1]!=1)) {
-           sprintf(str,"data expected to be diagonal (%s) "
+           sprintf_str("data expected to be diagonal (%s) "
            "\n(%d,%d: %s vs. %s)",cSTR(dflag),i+1,j+1,STR(si),STR(sj));
            return 0;
        }
@@ -1929,7 +1929,7 @@ bool QSpace<TQ,TD>::isQSym(const char *F, int L, char dflag) const {
 
           for (l=0; l<r2; ++l) {
           if (sa[l]!=sb[l+r2] || sa[l+r2]!=sb[l]) {
-             sprintf(str,"data skew dimensional (%d,%d; %d): %s / %s",
+             sprintf_str("data skew dimensional (%d,%d; %d): %s / %s",
                 i+1,j+1,k+1, SSTR(sa), SSTR(sb));
              if (F) wblog(F,L,"ERR %s",FCT,str);
              return 0;
@@ -2259,7 +2259,7 @@ void QSpace<TQ,TD>::initOpZ_WET(const char *F, int L,
    const wbarray<TD> &D3,
    const double eps1, const double eps2
 ){
-   unsigned d,i,j,k,l,id,nd, k1,k2, is,i0, r=0, im, got_omult=0;
+   unsigned d,i,j,k,l,id,nd, k1,k2, is,i0, r=0, im; 
    unsigned i1,i2,i3, j1,j2,j3, l1,l2,l3, N1,N2,N3, n1,n2,n3;
    unsigned qdimz, qdimz3, dz;
 
@@ -2550,7 +2550,6 @@ void QSpace<TQ,TD>::initOpZ_WET(const char *F, int L,
          if (fabs(w*cc[im])<1E-12) wblog(FL,"WRN %s() "
             "got w = %g * %g = %g (im=%d)",FCT,w,cc[im],w*cc[im],im);
 
-         if (im) ++got_omult;
       }
    }}}
 
@@ -3115,7 +3114,7 @@ int QSpace<TQ,TD>::Append2AndDestroy(
    }
 
    if (unique && A.hasQOverlap(*this)) { ++e;
-      sprintf(str,"%s ERR objects have QIDX overlap", shortFL(F,L));
+      sprintf_str("%s ERR objects have QIDX overlap", shortFL(F,L));
    }
 
    A.QIDX.appendRows(QIDX.dim1, QIDX.data);
@@ -3575,13 +3574,13 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::plus_plain(
 
    if (cgflag) { C.setupCGR(); str[0]=0; j=CGR.dim2;
       if (B.CGR.dim2!=j || C.CGR.dim2!=j)
-         sprintf(str,"CGR.dim2: %d/%ld/%ld",j,B.CGR.dim2,C.CGR.dim2); else
+         sprintf_str("CGR.dim2: %d/%ld/%ld",j,B.CGR.dim2,C.CGR.dim2); else
       if (CGR.dim1 && CGR.dim1!=QIDX.dim1)
-         sprintf(str,"A.CGR.dim1: %ld/%ld", CGR.dim1, QIDX.dim1); else
+         sprintf_str("A.CGR.dim1: %ld/%ld", CGR.dim1, QIDX.dim1); else
       if (B.CGR.dim1!=B.QIDX.dim1)
-         sprintf(str,"B.CGR.dim1: %ld/%ld",B.CGR.dim1,B.QIDX.dim1); else
+         sprintf_str("B.CGR.dim1: %ld/%ld",B.CGR.dim1,B.QIDX.dim1); else
       if (C.CGR.dim1!=C.QIDX.dim1)
-         sprintf(str,"C.CGR.dim1: %ld/%ld",C.CGR.dim1,C.QIDX.dim1);
+         sprintf_str("C.CGR.dim1: %ld/%ld",C.CGR.dim1,C.QIDX.dim1);
       if (str[0]) wblog(FL,"ERR plus() CGR inconsistency (%s)",str);
 
       bfc.init2val(B.DATA.len,bfac);
@@ -3891,7 +3890,7 @@ double QSpace<TQ,TD>::maxDiff(const QSpace<TQ,TD> &B) const {
    double dmax=0, d=0;
 
    if (QDIM!=B.QDIM || QIDX.dim2!=B.QIDX.dim2) {
-      sprintf(str,"%s:%d QDIM mismatch (%d,%d; %ld,%ld)", FL,
+      sprintf_str("%s:%d QDIM mismatch (%d,%d; %ld,%ld)", FL,
       QDIM, B.QDIM, QIDX.dim2, B.QIDX.dim2); return NAN;
    }
 

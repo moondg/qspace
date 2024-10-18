@@ -111,6 +111,8 @@
 #define STRLEN  1023
    char str[STRLEN+1];
 
+#define sprintf_str(...) snprintf(str,STRLEN,__VA_ARGS__)
+
 #define MX_CHECK_HELPER_NARGS(n1,n2,m) \
    if (nargin>0 && \
        checkHelpVersion(argin[0], nargout ? argout : NULL)) { return; }; \
@@ -123,7 +125,7 @@
       if (nargin || nargout) wblog(FL,str); else usage(FL,str); \
    }; \
    if (m>=0 && nargout>m) { \
-      sprintf(str,"ERR invalid number of output args (%d)",nargout); \
+      sprintf_str("ERR invalid number of output args (%d)",nargout); \
       if (nargin || nargout) wblog(FL,str); else usage(FL,str); \
    }
 

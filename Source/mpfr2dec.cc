@@ -69,7 +69,7 @@ void mexFunction(
       argout[0]=C;
    }
    else {
-      sprintf(str,"expecting (cell of) "
+      sprintf_str("expecting (cell of) "
          "strings as input #1 (%s)", mxGetClassName(argin[0]));
       usage(FL,str);
    }

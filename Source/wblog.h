@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : wblog (logging routines)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -194,7 +194,7 @@ class SBUF {
        if (sbuf) { delete [] sbuf; sbuf=NULL; }
        if ((slen=l0)) {
           sbuf = new char[slen];
-          if (!sbuf) { sprintf(str,"ERR %s() "
+          if (!sbuf) { sprintf_str("ERR %s() "
              "failed to allocate sbuf (l=%d)",__FUNCTION__,slen);
              ExitMsg(str);
           }
