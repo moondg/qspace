@@ -18,7 +18,7 @@ function mpdf(varargin)
 
   if numel(varargin)
      fname=varargin{1};
-     if isempty(findstr(fname,'.pdf')), fname = [ fname '.pdf' ]; end
+     if isempty(strfind(fname,'.pdf')), fname = [ fname '.pdf' ]; end
   else
      fname=getfigname(gcf); % get(gcf,'Name');
      fname=regexprep(fname,'.*\/\/','');

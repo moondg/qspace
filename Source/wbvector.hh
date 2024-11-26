@@ -1986,7 +1986,7 @@ inline void getIPerm(const WBPERM &P, WBPERM &iP) {
   #ifdef __WBDEBUG__
 
     if (!validPerm(P))
-    wbdie(FLINE,"Invalid permutation.");
+    wbdie(FLINE,"invalid permutation.");
 
   #endif
 

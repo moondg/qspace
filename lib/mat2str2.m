@@ -90,7 +90,7 @@ if ~done
   else
      fac = max (abs(M(:)));
      if fac~=0, fac = floor(log10(fac)); end
-     if findstr(fmt, 'd'), fac=1; end
+     if strfind(fmt, 'd'), fac=1; end
      if abs(fac) > 3
         fac = 10^fac;
         M = M / fac;
@@ -116,9 +116,9 @@ if ~done
       [fm2,r] =  strtok(r,   '%.gefGEF');
       [fmc,r] =  strtok(fmt, '%+-.0123456789');
 
-      pdot = findstr(fmt,'.');
+      pdot = strfind(fmt,'.');
       if ~isempty(fm1) && ~isempty(pdot)
-          if pdot<findstr(fmt,fm1)
+          if pdot<strfind(fmt,fm1)
              fm2 = fm1;
              fm1 = '';
           end
@@ -187,7 +187,7 @@ if ~done
      if fac~=1, vstr = sprintf('%1.0E * ', fac);
      else       vstr = ''; end
 
-     if size(M,1)>1 && (~isempty(findstr(rowsep,'\n')) | ~isempty(findstr(rowsep,10)))
+     if size(M,1)>1 && (~isempty(strfind(rowsep,'\n')) | ~isempty(strfind(rowsep,10)))
          if     ~isempty(find(istr=='[')), bs='\n]';
          elseif ~isempty(find(istr=='{')), bs='\n}'; else bs=''; end
          str = sprintf(['%s%s\n\n%s' bs], istr, vstr, str);

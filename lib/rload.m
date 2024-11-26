@@ -28,7 +28,7 @@ function rload(varargin)
   if length(fname)>4 && ~isequal(fname(end-3:end),'.mat')
   fname=[fname '.mat']; end
 
-  ii=findstr(fname,'/');
+  ii=strfind(fname,'/');
   if isempty(ii)
      floc=[lma rhost(1:3) '_' fname];
      fname=[lma fname];

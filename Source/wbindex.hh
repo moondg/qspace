@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace index routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -260,9 +260,9 @@ class wbIndex : public wbvector<widx_t> {
        return *this;
     };
 
-    wbIndex& init(const wbvector<widx_t> &S, char pp=1) {
+    wbIndex& init(const wbvector<widx_t> &S, bool pp=1) {
        const widx_t* const &s=S.data;
-       for (widx_t k=0; k<S.len; k++) if (!s[k]) {
+       for (widx_t k=0; k<S.len; ++k) if (!s[k]) {
           wbvector<widx_t>::init(); SIZE.init();
           return *this;
        }
@@ -270,7 +270,7 @@ class wbIndex : public wbvector<widx_t> {
        wbvector<widx_t>::init(S.len); SIZE=S;
 
        if (len) {
-          if (pp)
+          if (pp) 
                { --data[0]; }               
           else { data[len-1]=SIZE[len-1]; } 
        }
@@ -278,18 +278,31 @@ class wbIndex : public wbvector<widx_t> {
     };
 
     template<class TI>
-    wbIndex& init(unsigned n, const TI *S) {
-       for (unsigned k=0; k<n; ++k) if (!S[k]) {
+    wbIndex& init(unsigned n, const TI *S, bool pp=1) {
+
+       unsigned k=0; for (; k<n; ++k) { if (!S[k]) { break; }}
+       if (k<n || (!n && !S)) {
           wbvector<widx_t>::init(); SIZE.init();
           return *this;
        }
-       wbvector<widx_t>::init(n); SIZE.initT(n,S);
-       if (len) { --data[0]; } 
+
+       if (n) {
+          wbvector<widx_t>::init(n); SIZE.initT(n,S);
+          if (!S) { wblog(FL,"ERR %s() got n=%d with null S",FCT,n); }
+       }
+       else { 
+          wbvector<widx_t>::init(1);  
+          SIZE.init(1); SIZE[0]=1;    
+       }
+
+       if (pp)
+            { --data[0]; }               
+       else { data[len-1]=SIZE[len-1]; } 
 
        return *this;
     };
 
-    wbIndex& reset(char pp=1) {
+    wbIndex& reset(bool pp=1) {
        if (len!=SIZE.len) wblog(FL,
           "ERR %s() severe size mismatch (%d/%d)",FCT,len,SIZE.len);
 
@@ -315,7 +328,7 @@ class wbIndex : public wbvector<widx_t> {
 
     bool isValid() const {
        if (len!=SIZE.len) return 0;
-       for (widx_t i=0; i<len; ++i) if (data[i]>=SIZE.data[i]) return 0;
+       for (widx_t i=0; i<len; ++i) { if (data[i]>=SIZE.data[i]) return 0; }
        return 1;
     };
 
@@ -392,12 +405,20 @@ class wbIndex : public wbvector<widx_t> {
 
     widx_t numel() const { return  SIZE.prod(0); };
 
-    widx_t serial(const widx_t *S_=NULL) {
+    widx_t serial() {
        widx_t l, k=len-1;
-       const widx_t *s=(S_ ? S_ : SIZE.data);
+       const widx_t *s=SIZE.data;
 
-       if (!len) wblog(FL,"ERR wbIndex::%s() is empty",FCT);
-       for (l=data[k--]; k<len; --k) { l = l*s[k] + data[k]; }
+       if (!len) wblog(FL,"ERR wbIndex::%s() got empty object",FCT);
+       for (l=data[k--]; k<len; --k) { l = l*s[k] + data[k]; } 
+       return l;
+    };
+
+    widx_t serial(const widx_t *stride) {
+       widx_t l=0;
+          if (!len   ) wblog(FL,"ERR wbIndex::%s() got empty object",FCT);
+          if (!stride) wblog(FL,"ERR wbIndex::%s() got null strides",FCT);
+       for (unsigned k=0; k<len; ++k) { l += data[k]*stride[k]; }
        return l;
     };
 

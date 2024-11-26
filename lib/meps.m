@@ -9,11 +9,13 @@ function meps(fname)
 % when called like 'meps fname' then all the input args are strings!
 
   if ~nargin, fname=getfigname(gcf); end
-  if isempty(findstr(fname,'.eps')), fname=[fname '.eps']; end
+  if isempty(strfind(fname,'.eps')), fname=[fname '.eps']; end
 
   cdir = pwd;
 
 % ----------------------------------------------------------------------
+% cd /home/weichsel/public_html/ML
+
   if 0
      d = dir('./');
      ii = find(cat(2,d.isdir)); d = d(ii);

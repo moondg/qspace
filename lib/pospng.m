@@ -41,7 +41,7 @@ function h=pospng(fname,x,varargin)
      latex2png(texs,fname,o{:}); % '-v'
   end
 
-  if isempty(findstr(fname,'.png')), fname=[fname '.png']; end
+  if isempty(strfind(fname,'.png')), fname=[fname '.png']; end
 
   ah=gca; fh=gcf; u=get(ah,'Units');
   set(ah,'Units','pixels'); p=get(ah,'Position');

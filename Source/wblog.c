@@ -35,12 +35,13 @@ void usage(const char *F, int L, const char* estr) {
        const char *f=mexFunctionName();
        if (f && f[0]) {
           char cmd[256]; l=snprintf(cmd,256,
-             "if exist('%s.m','file')==2, fprintf(1,'\\n'); help %s; "
-             "else fprintf(1,'   NB! usage has been outsourced to m-file"
-             " => checkout %s.m\\n'); end",f,f,f);
+             "if exist('%s.m','file')==2, fprintf(1,'\\n'); help %s;\n"
+             "else fprintf(1,'"
+             "   ERR failed to find help %s.m file for mex function %s()\\n'); "
+             "end", f,f,f,f);
 
           if (l<256) {
-             if (F && F[0]) { mexPrintf("\n   %s\n",shortFL(F,L)); }
+             if (F && F[0]) { mexPrintf("\n   usage %s\n",shortFL(F,L)); }
              mexEvalString(cmd);
           }
           else wblog(FL,"WRN %s() got f=%s (l=%d/256) !?",FCT,f,l);

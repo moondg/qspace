@@ -42,7 +42,7 @@ function structexp(S,varargin)
         x=getfield(S,ff{k});
         if ~ischar(x), i=1; else i=0;
            for l=1:length(xpatv)
-              if ~isempty(findstr(x,xpatv{l}))
+              if ~isempty(strfind(x,xpatv{l}))
               i=1; break; end
            end
         end

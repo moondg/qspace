@@ -69,11 +69,18 @@ function C=oplus(A,B,varargin)
            S.subs=matcell(s); S.subs{l}=s(l)+sb; 
            A.data{j}=subsasgn(a,S,0);
         end
-        [p,ip]=initperm(r,'--2front',l);
-        for j=Ib{ib(i)}
-           b=permute(B.data{j},p); s=size(b); s2=prod(s(2:end));
+        [p,ip]=initperm(r,'--2front',l); px=[];
+        for j=Ib{ib(i)}, r_=ndims(B.data{j});
+         % bear in mind trailing OM index [email Changkai Zhang 11/26/2024]
+           if r_<=r, p_=p; ip_=ip;
+           elseif r_==r+1
+              if isempty(px), [px,ipx]=initperm(r_,'--2front',l); end
+              p_=px; ip_=ipx;
+           else wbdie('unexpected rank r_=%d/%d',r_,r); end
+
+           b=permute(B.data{j},p_); s=size(b); s2=prod(s(2:end));
            b=[ zeros(sa,s2); reshape(b,s(1),s2) ]; s(1)=s(1)+sa;
-           B.data{j}=permute(reshape(b,s),ip);
+           B.data{j}=permute(reshape(b,s),ip_);
         end
      end
   end

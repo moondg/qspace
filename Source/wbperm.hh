@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : wbvector (template vector class)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ class wbperm : public wbvector<wperm_t> {
        const char *F, int L, const char *s, wperm_t offset=1);
 
     wbperm& init(const wbperm &P, char iflag=0, unsigned r=-1);
-    wbperm& Extend(wperm_t r); 
+    wbperm& Extend(wperm_t r);
 
     wbperm& init_trafo(const wbperm &p1_, const wbperm &p2_);
 

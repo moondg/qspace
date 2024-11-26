@@ -79,7 +79,7 @@ function [i,fname]=fexist(fname,varargin)
     '   overwrite? { [1y]|0n| new filename } '], repHome(fname));
 
   if tflag
-     fprintf(1,'%s\n',q(1:findstr(q,'s.')+2));
+     fprintf(1,'%s\n',q(1:strfind(q,'s.')+2));
      return
   end
 

@@ -100,7 +100,7 @@ function rval=wblog(varargin)
      else
         l=regexp(varargin{1},'\s');
         if ~isempty(l) && l(1)<8, l=l(1); q=varargin{1}(1:l-1);
-           if isempty(findstr(q,'%'))
+           if isempty(strfind(q,'%'))
               [i,j,x]=regexp(q,'^(WRN|ERR|LL\d|NB!|CST|Error|Warning)');
               if ~isempty(i), x=x{1};
                  tag=q(x(1):x(2));
@@ -213,6 +213,7 @@ function rval=wblog(varargin)
   if ~werr, return; end
 
 % -------------------------------------------------------------------- %
+% also respond to dbwrn and dberr // Wb,May31,19
   q=werr;
   if q
      if     (q&1) && ~isset(getuser(0,'dbstop_if_WRN')), q=0;
@@ -248,6 +249,9 @@ function rval=wblog(varargin)
 end
 
 % -------------------------------------------------------------------- %
+% NB! since wblog() is called within getopt avoid
+% wblog() to use routines with varargin calling getopt()
+
 function line = lineno_aux(id)
 
   [stack,index]=dbstack;
@@ -260,6 +264,9 @@ function line = lineno_aux(id)
 end
 
 % -------------------------------------------------------------------- %
+% check whether to use colored output
+% outsourced from main // Wb,Jul13,23
+
 function [q,iterm]=wblog_hl_check()
    q=0;
 
@@ -275,6 +282,8 @@ function [q,iterm]=wblog_hl_check()
 end
 
 % -------------------------------------------------------------------- %
+% check day of last log
+
 function llday=check_nextday(llday,fid)
 
   d=datevec(now); d=d(3);

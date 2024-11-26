@@ -28,8 +28,8 @@ mxArray* PERMUTE_QS(
    const char *F, int L,
    const QSpace<gTQ,TD> &A, wbperm &P, char conj=0
 ){
-   QSpace<gTQ,TD> B;
    unsigned r=A.rank(F_L);
+   QSpace<gTQ,TD> B; B.mt=Wb::MEX_RETURN; 
 
    if (P.len && r) {
       if (r>P.len) { P.Extend(r); } 

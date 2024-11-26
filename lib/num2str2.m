@@ -42,7 +42,7 @@ function s=num2str2(val,varargin)
      if isempty(fmt), fmt='%.4g'; end
      if isreal(val)
         s=sprintf(fmt,val);
-        if isempty(findstr(s,'.'))
+        if isempty(strfind(s,'.'))
            s=regexprep(s,'[eE][+0]*','E');
         else
            q=regexprep(s,'.*\.\d[eE][+0]*([1-9]+)','$1');
@@ -63,6 +63,9 @@ function s=num2str2(val,varargin)
   end
 
 % -------------------------------------------------------------------- %
+% usage2
+% -------------------------------------------------------------------- %
+
   if isequal(val,'-n'), nset=1;
   elseif isequal(val,'-n0'), nset=2; else nset=0; end
 
@@ -89,6 +92,10 @@ function s=num2str2(val,varargin)
   end
 
 % -------------------------------------------------------------------- %
+% usage 3
+% show number limited by given (absolute) accuracy
+% -------------------------------------------------------------------- %
+
   if ~bflag && narg && isnumeric(varargin{1}) && isscalar(varargin{1})
      dval=varargin{1};
 
@@ -170,6 +177,9 @@ function s=num2str2(val,varargin)
   end
 
 % -------------------------------------------------------------------- %
+% default usage
+% -------------------------------------------------------------------- %
+
   if bflag
      if ~narg
         varargin={ 5E3, 1,    ''

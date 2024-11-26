@@ -165,14 +165,14 @@ function save2(varargin)
   tag=regexprep(wsz,'.*:','');
 
   [msg,id]=lastwarn;
-  if ~isempty(findstr(id,tag)), lastwarn(''); end
+  if ~isempty(strfind(id,tag)), lastwarn(''); end
 
   % ====================== %
     warning('off',wsz);
     evalin ('caller',cmd); 
     warning('on',wsz);
   [msg,id]=lastwarn;
-  if ~isempty(findstr(id,tag))
+  if ~isempty(strfind(id,tag))
      try
         s=dbstack(1);
         if ~isempty(s)
@@ -183,7 +183,7 @@ function save2(varargin)
           s,regexprep(msg,'cannot be saved.*','cannot be saved'),cmd);
 
         v=regexprep(msg,'.*Variable ''(.*)''.*',' $1'); fprintf(1,'\n');
-        if isempty(findstr(sv,'-struct'))
+        if isempty(strfind(sv,'-struct'))
            evalin('caller', ['whos ' v]);
         else
            evalin('caller', ['whos2(''' args{2} ''')']);

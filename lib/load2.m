@@ -38,10 +38,10 @@ function S=load2(varargin)
   if ~isempty(dstr), ldir=pwd;
      if exist(dstr,'dir'), cd(dstr);
      else cto(dstr,'nolog'); end
-     if isempty(findstr(fname,'./')), fname=['./' fname]; end
+     if isempty(strfind(fname,'./')), fname=['./' fname]; end
   end
 
-  if ~exist(fname,'file') && ~isempty(findstr(fname,'*'))
+  if ~exist(fname,'file') && ~isempty(strfind(fname,'*'))
      q=dir(fname); nq=numel(q); fname_=fname;
      if nq==1
         fname=q.name;

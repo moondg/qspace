@@ -38,6 +38,8 @@ function  [th,ah] = header(varargin)
   if nargin<1, eval(['help ' mfilename]), return, end
 
 % -------------------------------------------------------------------- %
+% find frame
+
   ah0=gca;
 
   ah = findall(gcf,'tag','frame');
@@ -65,6 +67,8 @@ function  [th,ah] = header(varargin)
   set(gcf,'CurrentAxes',ah);
 
 % -------------------------------------------------------------------- %
+% find text handle
+
   pos=[]; geth=0;
   if iscell(varargin{1})
      n=numel(varargin{1});
@@ -129,7 +133,7 @@ function  [th,ah] = header(varargin)
 
   s=varargin{1}; varargin(1)=[]; narg=numel(varargin);
 
-  i=findstr(s,'%MM'); if ~isempty(i)
+  i=strfind(s,'%MM'); if ~isempty(i)
     q=lineno('all','-s','nx',1); q=strrep(strrep(q,'.m',''),'_','\_');
     q=regexprep(q,' *-> *','::');
     s=strrep(s,'%MM',q);
@@ -143,7 +147,7 @@ function  [th,ah] = header(varargin)
   if narg
      s=regexprep(s,'\\+','\\\\');
      s=sprintf(s,varargin{:});
-  elseif ~isempty(findstr(s,'%'))
+  elseif ~isempty(strfind(s,'%'))
      wbdie('invalid remaining format specifiers');
   end
   str=s;

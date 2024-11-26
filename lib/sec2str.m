@@ -20,7 +20,7 @@ function ss = sec2str(tt,varargin)
      if t<60
         if t==round(t)
              ss{i}=sprintf('%g secs',t);
-        else ss{i}=sprintf('%.1f secs',t);
+        else ss{i}=sprintf('%.2f secs',t);
         end
      else
         t=round(t); s=mod(t,60); m=(t-s)/60;

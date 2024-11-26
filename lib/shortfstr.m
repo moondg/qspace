@@ -4,13 +4,13 @@ function str = shortfstr(str, len)
   if length(str)>len
      if len<6, str=str(1:len); return; end
 
-     i3 = findstr(str,':'); if ~isempty(i3), i3=i3(end); else i3=length(str)+1; end
+     i3 = strfind(str,':'); if ~isempty(i3), i3=i3(end); else i3=length(str)+1; end
      s3 = str(i3:end);
 
-     i2 = findstr(str,'>');
+     i2 = strfind(str,'>');
      if ~isempty(i2), i2=i2(end);
      else
-        i2 = findstr(str,'_');
+        i2 = strfind(str,'_');
         if ~isempty(i2), i2=i2(end)+1; else i2=i3; end
      end
      s2 = str(i2:i3-1);

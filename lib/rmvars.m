@@ -101,7 +101,7 @@ function rmvars(fls,varargin)
     warning('on',WSZ);
 
     [msg,id]=lastwarn;
-    if ~isempty(findstr(id,wsz))
+    if ~isempty(strfind(id,wsz))
         if vflag, fprintf(1,...
         '%6s large variables encountered; using %s\n','...',v73); end
         save(F2,'-struct','X',v(ik).name,v73);

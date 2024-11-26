@@ -37,14 +37,14 @@ function s=num2tex(x,varargin)
   end
 
   if ~iscell(sep), sep={sep}; end
-  if ~isempty(findstr(sep{1},'\')), sep{1}=sprintf(sep{1}); end
+  if ~isempty(strfind(sep{1},'\')), sep{1}=sprintf(sep{1}); end
 
   if n==1, s=s{1};
   elseif n>1 && numel(find(size(x)>1))==1
      s=join_to_string(s,sep{1});
   else
      if numel(sep)==1, sep={sep{:},'\n'}; end
-     if ~isempty(findstr(sep{2},'\')), sep{2}=sprintf(sep{2}); end
+     if ~isempty(strfind(sep{2},'\')), sep{2}=sprintf(sep{2}); end
      for i=1:size(x)
         s{i}=join_to_string(s(i,:),sep{1});
      end

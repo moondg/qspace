@@ -57,6 +57,9 @@ function [rval,found] = getopt(varargin)
 %
 % Wb,Nov05 ; Wb,Jan09,08
 
+% See also matlab `arguments .. end' block construct (since R2022b)!
+% Wb,Nov06,24
+
   persistent args errcount chkcase
 
   i=find(cellfun(@ischar,varargin)); if ~isempty(i)
@@ -117,12 +120,12 @@ function [rval,found] = getopt(varargin)
            wblog('WRN','interfering other concurrent getopt scan !?'); 
            dispstack(1); disp(args)
         end
-        args=varargin{2}; errcount=0; chkcase=0;
+        args=string_to_char(varargin{2}); errcount=0; chkcase=0;
         return
 
      elseif isequal(o,'INIT')
         if numel(varargin)>2, wbdie('invalid usage'); end
-        args=varargin{2}; errcount=0; chkcase=1;
+        args=string_to_char(varargin{2}); errcount=0; chkcase=1;
         return
      end
   end
@@ -238,4 +241,25 @@ function [rval,found] = getopt(varargin)
   end
 
 end
+
+% -------------------------------------------------------------------- %
+% NB! Since matlab/2022
+%    permit options such as tst_function(z = some_value)
+%    which is equivalent to tst_function("z",some_value)
+% Wb,Nov06,24
+
+function args=string_to_char(args)
+
+  if ~isempty(args)
+     if ~iscell(args), wbdie('invalid usage'); end
+     for i=1:numel(args)
+        if isstring(args{i})
+           args{i}=char(args{i});
+        end
+     end
+  end
+
+end
+
+% -------------------------------------------------------------------- %
 
