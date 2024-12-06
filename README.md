@@ -15,18 +15,22 @@ under the Apache 2.0 license (see
 ### Essential references
 
 *Non-abelian symmetries in tensor networks: A quantum symmetry space
- approach*; A. Weichselbaum; 
+ approach* <br> A. Weichselbaum; 
  <a href="https://doi.org/10.1016/j.aop.2012.07.009">
  Annals of Physics **327**, 2972 (2012)</a>.
 
 *X-symbols for non-Abelian symmetries in tensor networks*,<br>
- Andreas Weichselbaum;
+ A. Weichselbaum;
  <a href="https://doi.org/10.1103/PhysRevResearch.2.023385">
  Phys. Rev.  Research **2**, 023385 (2020)</a>.
 
+Official documentation of QSpace v4.0 <br>
 *QSpace - An open-source tensor library for Abelian and non-Abelian symmetries*
- Andreas Weichselbaum; <a href="https://arxiv.org/abs/2405.06632">
- arXiv:2405.06632</a> (2024).<br>
+ <br>A. Weichselbaum; <a href="https://scipost.org/10.21468/SciPostPhysCodeb.40-r4.0">
+ SciPost Phys. Codebases 40-r4.0 (2024)</a> 
+ [<a href=https://arxiv.org/abs/2405.06632>arXiv</a>]<br>
+ bundled with Codebase release
+ (snapshot of this repository at time of publication)<br>
  An up-to-date PDF version is maintained in 
  <a href="Docu/">Docu</a>/user-guide.pdf
 
