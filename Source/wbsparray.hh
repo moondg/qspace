@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : wbsparray (sparse array of arbitary dimension)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -537,8 +537,8 @@ class wbsparray {
        if (eps) {
           Wb::scale_eps(eps,D.data,D.len); 
           for (i=0; i<D.len; ++i) {
-             if (ABS(D[i])>eps) { if (l<i) { setRec(l,i); }; ++l; }
-             else { e2+=NORM2(D[i]); }
+             if (Wb::abs(D[i])>eps) { if (l<i) { setRec(l,i); }; ++l; }
+             else { e2+=Wb::norm2(D[i]); }
           }
        }
        else {
@@ -604,7 +604,7 @@ class wbsparray {
     SPIDX_T nnz(const TD eps1, const TD eps2=1E9) const {
        SPIDX_T i=0, n=0; TD a,e=0;
        for (i=0; i<D.len; ++i) {
-          a=ABS(D[i]); if (a>eps1) ++n;
+          a=Wb::abs(D[i]); if (a>eps1) ++n;
           else if (a>eps2 && e<a) e=a;
        }
        if (e) wblog(FL,
@@ -627,7 +627,7 @@ class wbsparray {
     };
 
     TD norm(char tnorm=0) const {
-       return SQRT(Wb::overlap(D.data,D.data,D.len,1,tnorm));
+       return Wb::sqrt(Wb::overlap(D.data,D.data,D.len,1,tnorm));
     };
 
     template<class T2>
@@ -1402,7 +1402,7 @@ TD indexSparseRef<TD>::LContractVec(
       if (I[i ]<J[jr]) { ++i;        } else
       if (J[jr]<I[i ]) { ++j; jr+=r; } else {
          if (cflag)
-              { x+=CONJ(b[i])*a[j]; }
+              { x+=Wb::CONJ(b[i])*a[j]; }
          else { x+=     b[i] *a[j]; }
 
          ++i; ++j; jr+=r;

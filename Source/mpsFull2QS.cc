@@ -25,7 +25,7 @@ Wb,Sep05,06                                                \n\
 
 #define PROG_TAG "fl2"  // full operator of rank 2
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #include "wblib.h"
 
 void mexFunction(

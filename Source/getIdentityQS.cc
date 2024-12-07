@@ -25,7 +25,7 @@ char USAGE[]=""; // outsourced to getIdentityQS.m // Wb,Jan12,19
    #define PROG "getIdentityQS"
 #endif
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #include "wblib.h"
 
 int getIdentityCD(

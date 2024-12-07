@@ -882,24 +882,44 @@ size_t wbsys::getMemTot()  { return Mac::getMemSize("total"); };
 size_t wbsys::getMemFree() { return Mac::getMemSize("free" ); };
 
 int wbsys::getNumCores() {
-   int n=1; 
+   int n=-1; 
 
    size_t l=4; 
    int e=sysctlbyname("hw.physicalcpu",&n,&l,NULL,0);
 
    if (e || n<1) { wblog(FL,
-      "ERR %s() sysctl returned e=%d (n=%d)\n(%s)",
+      "ERR %s() sysctl returned e=%d (n=%d)\n%s",
+      FCT,e,n, e? strerror(errno):"''");
+   }
+   return n;
+};
+
+int wbsys::getCacheLineSize() {
+   size_t n=-1; 
+   size_t l=sizeof(n); 
+   int e=sysctlbyname("hw.cachelinesize",&n,&l,NULL,0);
+
+   if (e || n<1) { wblog(FL,
+      "ERR %s() sysctl returned e=%d (n=%d)\n%s",
       FCT,e,n, e? strerror(errno):"''");
    }
    return n;
 };
 
 #else
+
 size_t wbsys::getMemTot()   { return Wb::getProcSize("MemTotal" ); };
 size_t wbsys::getMemFree()  { return Wb::getProcSize("MemFree"  ); };
 size_t wbsys::getSwapTot()  { return Wb::getProcSize("SwapTotal"); };
 size_t wbsys::getSwapFree() { return Wb::getProcSize("SwapFree" ); };
 int    wbsys::getNumCores() { return Wb::getCpuInfo("processor" ); };
+
+int wbsys::getCacheLineSize() { 
+   int n=sysconf(_SC_LEVEL1_DCACHE_LINESIZE); 
+   if (n<8) { wblog(FL,"ERR %s() got L1d cache-linesize ls=%d !?",FCT,n); }
+   return n;
+}
+
 #endif
 
 void Wb::ResSummary(const char *F, int L, const char *istr) {

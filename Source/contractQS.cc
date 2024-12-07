@@ -49,7 +49,7 @@ char USAGE[]="";
 
 #define PROG_TAG "ctr"
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #include "wblib.h"
 
 template<class TA, class TB, class TC>

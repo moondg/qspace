@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace MPFR routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -458,28 +458,28 @@ int isnumber(const mpfr__<P> &a) { return a.isnumber(); };
 template <unsigned P> inline
 int isfinite(const mpfr__<P> &a) { return a.isfinite(); };
 
-template <unsigned P>
+template <unsigned P> inline
 mpfr__<P> fabs (const mpfr__<P> &x) { return x.fabs(); };
 
-template <unsigned P>
+template <unsigned P> inline
 mpfr__<P> sqrt (const mpfr__<P> &x) { return x.sqrt(); };
 
-template <unsigned P>
+template <unsigned P> inline
 mpfr__<P> exp  (const mpfr__<P> &x) { return x.exp();  }
 
-template <unsigned P>
+template <unsigned P> inline
 mpfr__<P> log  (const mpfr__<P> &x) { return x.log();  }
 
-template <unsigned P>
+template <unsigned P> inline
 mpfr__<P> log2 (const mpfr__<P> &x) { return x.log2(); }
 
-template <unsigned P>
+template <unsigned P> inline
 mpfr__<P> atan (const mpfr__<P> &x) { return x.atan(); }
 
-template <unsigned P>
+template <unsigned P> inline
 mpfr__<P> log10(const mpfr__<P> &x) { return x.log10(); }
 
-template <unsigned P>
+template <unsigned P> inline
 mpfr__<P> round(const mpfr__<P> &x) { return x.round(); }
 
 class cc_quad {

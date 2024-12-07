@@ -209,7 +209,7 @@ Wb::VersionInfo& Wb::VersionInfo::init() {
    __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 #endif
 
-#ifdef LOAD_CGC_QSPACE
+#ifdef LD_CLEBSCH_QS
    n=sizeof(qspace);
    l=snprintf(qspace,n,"%.1f",double(QS_VERSION));
 
@@ -235,7 +235,7 @@ Wb::VersionInfo& Wb::VersionInfo::init() {
    i=l; m=0;
    l+=snprintf(flags+l,n-l," using");
 
-#ifdef LOAD_CGC_QSPACE
+#ifdef LD_CLEBSCH_QS
    if (l<n) { l+=snprintf(flags+l,n-l," QS"  ); }; ++m;
 #endif
 #ifdef QS_USING_OMP

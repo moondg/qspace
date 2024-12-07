@@ -17,7 +17,12 @@ function s=sizestr(s,varargin)
      q=varargin{i}; if ischar(q), sep=q; else len=q; end
   end
 
-  n=numel(s); s=matcell(reshape(s,1,[]));
+  n=numel(s); 
+  if n>16
+     s=size(s); n=numel(s);
+  end
+
+  s=matcell(reshape(s,1,[]));
   for i=1:n, s{i}=num2str(s{i}); end
 
   s(2,1:end-1)={sep}; s=[s{:}];

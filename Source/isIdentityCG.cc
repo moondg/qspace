@@ -10,7 +10,7 @@ char USAGE[]=""; // outsourced to isIdentityCG.m // Wb,Jan12,19
    #define PROG "isIdentityCG"
 #endif
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #include "wblib.h"
 
 void mexFunction(

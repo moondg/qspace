@@ -243,7 +243,8 @@ function [lg,ll,l2,t2]=legdisp(varargin)
   if detach==2, tag=[tag ':' detag_];
   elseif detach<=0
      tag=sprintf(',%.2f',get(ah,'Position'));
-     tag=sprintf('legdisp:ah[%s]',tag(2:end));
+     tag={ get(get(ah,'Parent'),'Number'), tag(2:end) };
+     tag=sprintf('legdisp:Fig%d:ah[%s]',tag{:});
 
      h0=findall(groot,'Type','axes','Tag',tag);
      if ~isempty(h0), wblog('WRN',...

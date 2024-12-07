@@ -37,7 +37,7 @@ char USAGE[]=""; // outsourced to NRGWilsonQS.m // Wb,Jan12,19
    #define PROG "NRGWilsonQS"
 #endif
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #include "wblib.h"
 
    Wb::ClockSet nrgClocks;
@@ -957,7 +957,7 @@ void NRG_Wilson(
        EK(iter,1)=(     n<E4.len ? E4[n  ] : NAN);       
        EK(iter,2)=E4.last();
 
-       dbl = !ISNAN(EK(iter,1)) ? EK(iter,1) :  EK(iter,0);
+       dbl = !Wb::isnan(EK(iter,1)) ? EK(iter,1) :  EK(iter,0);
        nrgDispIter(iter,N,E4, dbl, HK, vflag ?
          (vflag &14 ? vflag : (Etrunc<=0 ? 0 : (dbl>=0.8*Etrunc ? -1 : +1)))
           : -1
@@ -1008,7 +1008,7 @@ void NRG_Wilson(
        l+=snprintf(str+l,64," (%s / %s)",I2STR(NK(i,1)),I2STR(NK(j,3))); }
 
     for (dbl=1E99, i=0; i<EK.dim1; ++i) {
-       if (!ISNAN(EK(i,1)) && EK(i,1)>EK(i,0)) {
+       if (!Wb::isnan(EK(i,1)) && EK(i,1)>EK(i,0)) {
        if (dbl>EK(i,1)) { dbl=EK(i,1); }}
     }
 
@@ -1227,12 +1227,12 @@ void nrgBuildH4_cg(
       Wb::gML.printSize(FL,'l'); 
    #endif
 
-   #ifdef LOAD_CGC_QSPACE
+   #ifdef LD_CLEBSCH_QS
    #endif
 
    A4.contract("13*",AX,"13",H4);
 
-   #ifdef LOAD_CGC_QSPACE
+   #ifdef LD_CLEBSCH_QS
    #endif
 
    #ifdef __WB_MEM_CHECK__
@@ -1265,7 +1265,7 @@ void nrgBuildH4_cg(
          Wb::gML.printSize(FL,'l');
       #endif
 
-      #ifdef LOAD_CGC_QSPACE
+      #ifdef LD_CLEBSCH_QS
       #endif
 
       try {
@@ -1280,7 +1280,7 @@ void nrgBuildH4_cg(
          Wb::gML.printSize(FL,'l');
       #endif
 
-      #ifdef LOAD_CGC_QSPACE
+      #ifdef LD_CLEBSCH_QS
       #endif
 
       if (addHC) { QSpace<TQ,TD> HY;
@@ -1302,7 +1302,7 @@ void nrgBuildH4_cg(
    HX.init2DiffOp(A4,1,H4,0); 
    HX.Append2AndDestroy(FL,H4);
 
-#ifdef LOAD_CGC_QSPACE
+#ifdef LD_CLEBSCH_QS
 #endif
 
 };
@@ -1409,7 +1409,7 @@ void checkGSDeg(const wbvector<double> &E4) {
    unsigned i,n;
    double dE=E4.aMin(1);
 
-   for (n=i=0; i<E4.len; ++i) if (ABS(E4[i])<1E-10) ++n;
+   for (n=i=0; i<E4.len; ++i) if (Wb::abs(E4[i])<1E-10) ++n;
 
    if (n==1)
             wblog(FL, " *  ground state is unique (%g).", dE); else

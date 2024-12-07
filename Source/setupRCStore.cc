@@ -12,7 +12,7 @@ char USAGE[]="";
    #define PROG "setupRCStore"
 #endif
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #include "wblib.h"
 
 void mexFunction(

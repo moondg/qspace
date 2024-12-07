@@ -1486,7 +1486,7 @@ CRef<TQ>& CRef<TQ>::init(
             PRINTF("  %2d: %9.5g %9.5g\n",i+1,dd[i],double(Cb.cgd.D[i])); }
 
             wblog(FL,"ERR %s() cgt[%d/%d] inconsisteny @ "
-            "e2=%.3g\nQ: %s\nC: %s",FCT,i,n,SQRT(e2),STR(Q),STR(Cb));
+            "e2=%.3g\nQ: %s\nC: %s",FCT,i,n,Wb::sqrt(e2),STR(Q),STR(Cb));
          }
 
          if (dd.len>Cb.cgd.D.len) {

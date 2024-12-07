@@ -35,7 +35,7 @@ function [Rho,sout]=reduce_rho_q0(AK,varargin)
      return
   end
 
-  if nargin==3  % usage #1
+  if nargin==3
      [sc,H0]=deal(varargin{:}); Rho=QSpace;
      if ischar(sc) 
         if ~isempty(regexp(sc,'^\d+$'))

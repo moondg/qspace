@@ -10,7 +10,7 @@ char USAGE[]=""; // outsourced to makeUniqueQS.m // Wb,Jan12,19
    #define PROG "mpsMakeUnique"
 #endif
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #include "wblib.h"
 
 void mexFunction(

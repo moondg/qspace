@@ -52,7 +52,7 @@ double wbarray<T>::SkipTiny(double eps_) {
    T zero=T(0), x2=zero, eps=T(eps_);
    if (eps!=zero) { size_t i=0, n=numel(); T a;
       for (; i<n; ++i) { if (data[i]!=zero) {
-         a=ABS(data[i]); if (a<eps) { x2+=NORM2(a); data[i]=zero; }
+         a=Wb::abs(data[i]); if (a<eps) { x2+=Wb::norm2(a); data[i]=zero; }
       }}
    }
    return double(x2); 
@@ -97,7 +97,7 @@ wbvector<T>& wbarray<T>::normDim2(unsigned id, wbvector<T> &xk) const {
    n=SIZE[id]; xk.init(n); x2=xk.data;
 
    for (i=0; i<N; ++i) {
-      x2[I[id]] += NORM2(data[i]);
+      x2[I[id]] += Wb::norm2(data[i]);
 
       k=0; ++I[0];  
       while (I[k]>=s[k] && k<l) { I[k]=0; ++I[++k]; }
@@ -155,19 +155,19 @@ T wbarray<T>::normDiff2(const wbarray<T> &B, char sflag) const {
 
    for (j=0; j<D2; ++j) { 
       if (j<d2) {
-         for (i=0; i<d1; ++i) { x2+=NORM2(a[i]-b[i]); }
+         for (i=0; i<d1; ++i) { x2+=Wb::norm2(a[i]-b[i]); }
          if (b1)
-              { for (; i<D1; ++i) { x2+=NORM2(b[i]); }}
-         else { for (; i<D1; ++i) { x2+=NORM2(a[i]); }}
+              { for (; i<D1; ++i) { x2+=Wb::norm2(b[i]); }}
+         else { for (; i<D1; ++i) { x2+=Wb::norm2(a[i]); }}
          a+=SIZE[0]; b+=B.SIZE[0]; 
       }
       else if (b2) {
          if (j==d2) { D1=B.SIZE[0]; }
-         for (i=0; i<D1; ++i) { x2+=NORM2(b[i]); }; b+=D1;
+         for (i=0; i<D1; ++i) { x2+=Wb::norm2(b[i]); }; b+=D1;
       }
       else {
          if (j==d2) { D1=SIZE[0]; }
-         for (i=0; i<D1; ++i) { x2+=NORM2(a[i]); }; a+=D1;
+         for (i=0; i<D1; ++i) { x2+=Wb::norm2(a[i]); }; a+=D1;
       }
    }
    return x2;
@@ -271,12 +271,12 @@ char wbarray<T>::sameUptoFac(
       if (a==0 || B.aMax(&i)>eps) { if (fac_) (*fac_)=0; return 0; }
       else return 1;
    }
-   if (ABS(B.data[i])<=eps) return 2;
+   if (Wb::abs(B.data[i])<=eps) return 2;
 
    fac=data[i]/B.data[i]; if (fac_) (*fac_)=fac;
 
    for (i=0; i<n; ++i) {
-      a=ABS(data[i]-fac*B.data[i]);
+      a=Wb::abs(data[i]-fac*B.data[i]);
       if (a>eps) return 3;
    }
    return 0;
@@ -289,7 +289,7 @@ bool wbarray<T>::sameAs(const wbarray &B, double eps) const {
       if (data!=B.data) {
          if (eps) {
             for (size_t i=0, n=numel(); i<n; ++i) {
-            if (ABS(data[i]-B.data[i])>eps) { return 0; }}
+            if (Wb::abs(data[i]-B.data[i])>eps) { return 0; }}
          }
          else { return (!memcmp(data, B.data, numel()*sizeof(T))); }
       }
@@ -530,7 +530,7 @@ bool wbarray<T>::equal (
     size_t i,s=numel(); double d;
 
     for (maxdiff=0, i=0; i<s; i++) {
-        d = ABS( data[i] - B.data[i] );
+        d = Wb::abs( data[i] - B.data[i] );
         if (maxdiff<d) maxdiff=d;
     }
 
@@ -558,10 +558,10 @@ bool wbarray<T>::isDiag_aux(const T eps, const char* task) const {
 
    while (++I) {
        if (!I.isdiag()) {
-          if (ABS(data[i])>eps) return 0;
+          if (Wb::abs(data[i])>eps) return 0;
        }
        else {
-          if (isIdty && (ABS(data[i]-T(1)))>eps) return 0;
+          if (isIdty && (Wb::abs(data[i]-T(1)))>eps) return 0;
        }
        ++i;
    }
@@ -585,11 +585,11 @@ bool wbarray<T>::isDiag_aux(double *epsp, const char* task) const {
    "ERR %s only appies to rank-2 tensors (%s).",task,SSTR_(this)); }
 
    for (i=0; i<s; i++) {
-       if (I[0]!=I[1]) { a=ABS(data[i]);
+       if (I[0]!=I[1]) { a=Wb::abs(data[i]);
           if (is && eref<a) is=0;
           if (eps<a) eps=a;
        }
-       else if (isIdty) { a=ABS(data[i]-T(1));
+       else if (isIdty) { a=Wb::abs(data[i]-T(1));
           if (is && eref<a) is=0;
           if (eps<a) eps=a;
        }
@@ -615,8 +615,8 @@ bool wbarray<T>::isProptoId(T &x, const T eps) const {
 
    while (++I) {
       if (!I.isdiag())
-           { if (ABS(data[i]  )>eps) return 0; }
-      else { if (ABS(data[i]-x)>eps) return 0; }; ++i;
+           { if (Wb::abs(data[i]  )>eps) return 0; }
+      else { if (Wb::abs(data[i]-x)>eps) return 0; }; ++i;
    }
 
    if (i && !data) wblog(FL,
@@ -657,7 +657,7 @@ wbarray<T>& wbarray<T>::balanceOp(
 
    for (l=i=0; i<n; i++)
    for (j=0; j<n; j++, l++) { if (i==j) data[l]-=dref;
-       dscale += ABS2(data[l]);
+       dscale += Wb::abs2(data[l]);
    }
    dscale = std::sqrt(dscale)/n;
 
@@ -686,9 +686,9 @@ wbarray<T>& wbarray<T>::Symmetrize(
 
    for (i=0; i<n; i++)
    for (j=i; j<n; j++) { d1=data[i+j*n]; d2=data[j+i*n];
-      dmax=MAX(MAX(dmax,ABS(d1)),ABS(d2));
+      dmax=MAX(MAX(dmax,Wb::abs(d1)),Wb::abs(d2));
       if (i!=j) {
-         e=(cflag ? ABS(d1-CONJ(d2)) : ABS(d1-d2));
+         e=(cflag ? Wb::abs(d1-Wb::CONJ(d2)) : Wb::abs(d1-d2));
          E=MAX(E,e);
       }
    }
@@ -717,8 +717,8 @@ wbarray<T>& wbarray<T>::Symmetrize(
       if (cflag) {
          for (i=0; i<n; i++)
          for (j=i+1; j<n; j++) {
-            d1=0.5*(data[i+j*n]+CONJ(data[j+i*n]));
-            data[i+j*n]=d1; data[j+i*n] = CONJ(d1);
+            d1=0.5*(data[i+j*n]+Wb::CONJ(data[j+i*n]));
+            data[i+j*n]=d1; data[j+i*n] = Wb::CONJ(d1);
          }
       }
       else {
@@ -859,7 +859,7 @@ wbvector<T>& wbarray<T>::colNorm2(wbvector<T> &a) const {
 
    a.init(dim2);
    for (j=0; j<dim2; j++, d0+=dim1) { 
-      for (x2=T(), i=0; i<dim1; i++) x2+=(CONJ(d0[i])*d0[i]);
+      for (x2=T(), i=0; i<dim1; i++) x2+=(Wb::CONJ(d0[i])*d0[i]);
       a[j]=x2;
    }
    return a;
@@ -877,7 +877,7 @@ T wbarray<T>::colNorm2(size_t k) const {
    if (k>=dim2) wblog(FL,
       "ERR %s() index out of bounds (%d/%d; %s)",FCT,k,dim2,SSTR_(this));
 
-   for (; j<dim2; ++j) { a+=CONJ(d[j])*d[j]; }
+   for (; j<dim2; ++j) { a+=Wb::CONJ(d[j])*d[j]; }
    return a;
 };
 
@@ -892,7 +892,7 @@ T wbarray<T>::NormalizeCol(size_t k, char tnorm, char qflag) {
       "ERR %s() index out of bounds (%d/%d)",FCT,k,dim2);
 
    T *d=data+dim1*k, x2=Wb::overlap(d,d,dim1,1,tnorm); 
-   x2=SQRT(x2);
+   x2=Wb::sqrt(x2);
 
    if (x2!=0) Wb::timesRange(d,1/x2,dim1);
    else if (!qflag) wblog(FL,"ERR %s() got vector with norm 0!",FCT);
@@ -935,7 +935,7 @@ bool wbarray<T>::isOrthogonalCol(size_t k0, char tnorm) const {
    T nrm2=Wb::overlap(d0,d0,dim1,1,tnorm);
 
    for (size_t k=0; k<dim2; k++, d+=dim1) { 
-      if (k!=k0 && ABS(Wb::overlap(d,d0,dim1,1,tnorm)/nrm2)>1E-10)
+      if (k!=k0 && Wb::abs(Wb::overlap(d,d0,dim1,1,tnorm)/nrm2)>1E-10)
       return 0;
    }
 
@@ -1020,7 +1020,7 @@ if (!R.isFinite() || !U.isFinite()) wblog(FL,"ERR %s() ",FCT);
 
    x=Q.data;
    for (j=0; j<n; ++j, x+=dim1) { 
-      for (i=0; i<dim1; ++i) { if (ABS(x[i])>eps) {
+      for (i=0; i<dim1; ++i) { if (Wb::abs(x[i])>eps) {
          if (x[i]<zero) { T *y=R.data+j;
             for (i=0; i<dim1; ++i) { x[i]=-x[i]; }
             for (k=0; k<dim2; ++k, y+=n) { y[0]=-y[0]; }
@@ -1057,13 +1057,13 @@ int wbarray<T>::Householder(
 
       for (x=data, j=0; j<dim2; ++j, x+=dim1) { 
          if (!(P->data[j])) {
-            for (x2=0., i=k; i<dim1; ++i) { x2 += (CONJ(x[i])*x[i]); }
+            for (x2=0., i=k; i<dim1; ++i) { x2 += (Wb::CONJ(x[i])*x[i]); }
             if (x2max<x2) { x2max=x2; k2=j; }
          }
          else {
             if (P->data[j]>k) wblog(FL, 
                "ERR %s() invalid P=[%s] (%d/%d/%d)",FCT,STR_(P),j,k,dim2);
-            if (x0max<(x2=ABS(x[P->data[j]-1]))) { x0max=x2; }
+            if (x0max<(x2=Wb::abs(x[P->data[j]-1]))) { x0max=x2; }
          }
       }; x2=x2max;
 
@@ -1074,16 +1074,16 @@ int wbarray<T>::Householder(
    else {
       for (x=data, j=0; j<k; ++j, x+=dim1) {
          if (x[j]<0) wblog(FL,"ERR %s() x[%d]=%d",FCT,j,x[j]);
-         if (x0max<(x2=ABS(x[j]))) { x0max=x2; }
+         if (x0max<(x2=Wb::abs(x[j]))) { x0max=x2; }
       }
       for (x2=0., i=k; i<dim1; ++i) { u[i]=x[i];
-         x2+=(CONJ(x[i])*x[i]);
+         x2+=(Wb::CONJ(x[i])*x[i]);
       }
    }
 
    eps*=(x0max<x2 ? x2 : x0max);
 
-   nrm=SQRT(x2); if (nrm<=eps) { 
+   nrm=Wb::sqrt(x2); if (nrm<=eps) { 
      if (!P && k+1<dim2) wblog(FL,
        "ERR %s() check cols (%d/%d)",FCT,k,dim2);
      return -1;
@@ -1091,7 +1091,7 @@ int wbarray<T>::Householder(
 
    u[k] += (x[k]>0 ? +nrm : -nrm);
 
-   nrm=T(1)/SQRT( x2 - CONJ(x[k])*x[k] + CONJ(u[k])*u[k] );
+   nrm=T(1)/Wb::sqrt( x2 - Wb::CONJ(x[k])*x[k] + Wb::CONJ(u[k])*u[k] );
    if (!isfinite(nrm)) wblog(FL,"ERR %s() nrm=%g",FCT,nrm); 
 
    for (i=k; i<dim1; ++i) { u[i]*=nrm; }
@@ -1116,12 +1116,12 @@ template<class T> inline
 void Wb::householder(const T *u, T *a, size_t n, const T& eps) {
 
     size_t i=0;
-    T ua=0.; for (; i<n; ++i) { ua += (CONJ(u[i])*a[i]); }
+    T ua=0.; for (; i<n; ++i) { ua += (Wb::CONJ(u[i])*a[i]); }
 
     if (ua) { ua*=2.;
        for (i=0; i<n; ++i) { a[i] -= (u[i]*ua); } 
        if (eps>0.) { ua=0.; 
-          for (i=0; i<n; ++i) ua += CONJ(a[i])*a[i];
+          for (i=0; i<n; ++i) ua += Wb::CONJ(a[i])*a[i];
           if (ua<eps) { for (i=0; i<n; ++i) a[i]=0.; }
        }
     }
@@ -1149,10 +1149,10 @@ unsigned wbarray<T>::eigTriDiag(
    T s,r,p,g,f,da,ea,c,b, *d=d_.data, *e=e_.data;
 
    for (l=D-1, i=0; i<l; ++i) {
-      if (ABS(data[(i+1)+i*D] - data[i+(i+1)*D])>eps) wblog(F_L,
+      if (Wb::abs(data[(i+1)+i*D] - data[i+(i+1)*D])>eps) wblog(F_L,
          "ERR %s() got non-symmetric matrix\nM(%d,%d+1): %.4g / %.4g !?",
          FCT,i+1,i+2, double(data[(i+1)+i*D]), double(data[i+(i+1)*D]));
-      if (i>1 && (ABS(data[i])>eps || ABS(data[i*D])>eps)) wblog(F_L,
+      if (i>1 && (Wb::abs(data[i])>eps || Wb::abs(data[i*D])>eps)) wblog(F_L,
          "ERR %s() got non-triangular matrix\nM(%d,1): %.4g !?",
          FCT,i+1, double(data[i]));
 
@@ -1162,7 +1162,7 @@ unsigned wbarray<T>::eigTriDiag(
    for (l=0; l<int(D); ++l) { iter=0;
       do {
          for (m=l; m<int(D-1); ++m) {
-            ea=ABS(e[m]); da=ABS(d[m]) + ABS(d[m+1]);
+            ea=Wb::abs(e[m]); da=Wb::abs(d[m]) + Wb::abs(d[m+1]);
             if (T(ea+da)==da) break;
          }
          if (m!=l) {
@@ -1310,9 +1310,9 @@ wbarray<T>& wbarray<T>::NormalizeCols(
    nn.init(m);
 
    for (j=0; j<m; j++, d+=n, z=0) {
-      z=Wb::overlap(d,d,n,1,tnorm); z=SQRT(z);
+      z=Wb::overlap(d,d,n,1,tnorm); z=Wb::sqrt(z);
 
-      a=ABS(z); if (a==0) { 
+      a=Wb::abs(z); if (a==0) { 
          wblog(F,L,"ERR |sum^2| of column returns %.3g!%s",a,
          tnorm && (typeid(T)==typeid(wbcomplex)) ? " (using t-norm)":"");
       }
@@ -1366,9 +1366,9 @@ wbarray<T>& wbarray<T>::OrthoNormalizeCols(
       }
 
       z=Wb::overlap(v,v,n,1,tnorm);
-      a=ABS(z);
+      a=Wb::abs(z);
 
-      if (a>eps) { a=SQRT(1/a);
+      if (a>eps) { a=Wb::sqrt(1/a);
          if (xflag && l<k)
               { for (i=0; i<n; ++i) d[i]=v[i]*a; }
          else { for (i=0; i<n; ++i) v[i]*=a; }
@@ -1409,7 +1409,7 @@ T wbarray<T>::norm2Cols(long j1, long j2) const {
       "ERR %s() index out of bounds (%ld,%ld/%ld)",FCT,j1,j2,dim2);
 
    for (j=j1; j<=j2; ++j)
-   for (i=0; i<dim1; ++i) { x2+=NORM2(data[i+j*dim1]); } 
+   for (i=0; i<dim1; ++i) { x2+=Wb::norm2(data[i+j*dim1]); } 
    return x2;
 };
 
@@ -1427,7 +1427,7 @@ T wbarray<T>::norm2Recs(long i1, long i2) const {
       "ERR %s() index out of bounds (%ld,%ld/%ld)",FCT,i1,i2,dim1);
 
    for (j=0; j<dim2; ++j)
-   for (i=i1; i<=i2; ++i) { x2+=NORM2(data[i+j*dim1]); } 
+   for (i=i1; i<=i2; ++i) { x2+=Wb::norm2(data[i+j*dim1]); } 
    return x2;
 };
 
@@ -1477,9 +1477,9 @@ bool wbarray<T>::isSym_aux(
       if (eps==0) {
          for (i=0; i<dim1; i++) { k = (issame ? i : 0);
          for (j=k; j<dim2; j++) {
-            if (A2(i,j)!=CONJ(B2(j,i))) {
+            if (A2(i,j)!=Wb::CONJ(B2(j,i))) {
                if (xref) {
-                  x=ABS(A2(i,j)-CONJ(B2(j,i)));
+                  x=Wb::abs(A2(i,j)-Wb::CONJ(B2(j,i)));
                   *xref = MAX(*xref,x);
                }
                else return 0;
@@ -1489,7 +1489,7 @@ bool wbarray<T>::isSym_aux(
       else {
          for (i=0; i<dim1; i++) { k = (issame ? i : 0);
          for (j=k; j<dim2; j++) {
-            x=ABS(A2(i,j)-CONJ(B2(j,i)));
+            x=Wb::abs(A2(i,j)-Wb::CONJ(B2(j,i)));
             if (xref) *xref=MAX(*xref,x); else if (x>eps) return 0;
          }}
       }
@@ -1498,9 +1498,9 @@ bool wbarray<T>::isSym_aux(
       if (eps==0) {
          for (i=0; i<dim1; i++) { k = (issame ? i : 0);
          for (j=k; j<dim2; j++) {
-            if (A2(i,j)!=-CONJ(B2(j,i))) {
+            if (A2(i,j)!=-Wb::CONJ(B2(j,i))) {
                if (xref) {
-                  x = ABS(A2(i,j) + CONJ(B2(j,i)));
+                  x = Wb::abs(A2(i,j) + Wb::CONJ(B2(j,i)));
                   *xref = MAX(*xref,x);
                }
                else return 0;
@@ -1510,7 +1510,7 @@ bool wbarray<T>::isSym_aux(
       else {
          for (i=0; i<dim1; i++) { k = (issame ? i : 0);
          for (j=k; j<dim2; j++) {
-            x = ABS(A2(i,j) + CONJ(B2(j,i)));
+            x = Wb::abs(A2(i,j) + Wb::CONJ(B2(j,i)));
             if (x>eps) { if (xref) *xref=MAX(*xref,x); else return 0; }
          }}
       }
@@ -1559,11 +1559,11 @@ bool wbarray<T>::isZero(double eps, char bflag) const {
       if (bflag) {
          double e2=eps*eps, n2=0.;
          for (i=0; i<s; ++i) {
-            n2+=NORM2(data[i]); if (n2>e2) { return 0; }
+            n2+=Wb::norm2(data[i]); if (n2>e2) { return 0; }
          }
       }
       else {
-         for (i=0; i<s; ++i) { if (ABS(data[i])>eps) { return 0; }}
+         for (i=0; i<s; ++i) { if (Wb::abs(data[i])>eps) { return 0; }}
       }
    }
 
@@ -1862,7 +1862,7 @@ template<class TI> inline
 int wbarray<T>::aMax(T &x, TI &k) const {
    int e=0; size_t n=numel(); x=0; k=0; 
    if (n) { size_t i=0; T a;
-      for (; i<n; ++i) { if (x<(a=ABS(data[i]))) { x=a; k=i; }}
+      for (; i<n; ++i) { if (x<(a=Wb::abs(data[i]))) { x=a; k=i; }}
    }
    else { k=-1; e=1; }
    return e;
@@ -1892,8 +1892,8 @@ T wbarray<T>::aMax(TI &i_, TI &j_, const wbarray *B) const {
    if (n && m) { T a, b;
       for (i=0; i<n; ++i) {
       for (j=0; j<m; ++j) {
-         a=ABS(   data[i+j*na]); 
-         b=ABS(B->data[i+j*nb]); if (a<b) { a=b; }
+         a=Wb::abs(   data[i+j*na]); 
+         b=Wb::abs(B->data[i+j*nb]); if (a<b) { a=b; }
          if (x<a) { x=a; i_=i; j_=j; }
       }}
    }
@@ -1914,7 +1914,7 @@ double wbarray<T>::maxDiff (const wbarray<T> &B) const {
    }
 
    for (i=0; i<s; i++)
-   dmax=MAX(dmax, ABS(data[i]-B.data[i]));
+   dmax=MAX(dmax, Wb::abs(data[i]-B.data[i]));
 
    return dmax;
 };
@@ -2003,7 +2003,7 @@ T wbarray<T>::weightedAvg(const wbarray<T> &B) const {
    if (!sameSize(B)) wblog(FL,
       "ERR %s() size mismatch: %s <> %s",FCT,SSTR_(this),SSTR(B));
 
-   for (i=0; i<s; i++) { w=B.data[i]; x+=(data[i]*w); n2+=w*CONJ(w); }
+   for (i=0; i<s; i++) { w=B.data[i]; x+=(data[i]*w); n2+=w*Wb::CONJ(w); }
 
    if (n2<=0) wblog(FL,
       "ERR weighted avg with total weight %.4g",n2);
@@ -2147,7 +2147,7 @@ wbarray<T>& wbarray<T>::Cat(
        data[i]=ap[q]->data[j];
 
        k=0; I[0]++; 
-       while(I[k]>=SIZE[k] && k<l) { I[k]=0; ++I[++k]; }
+       while (I[k]>=SIZE[k] && k<l) { I[k]=0; ++I[++k]; }
    }
 
    return *this;
@@ -2289,7 +2289,7 @@ T wbarray<T>::norm2block(
    if (m && n) {
       size_t i,j; const T* d = data + i0 + j0*dim1; 
       for (j=0; j<m; ++j, d+=dim1) {
-      for (i=0; i<n; ++i) { x2+=NORM2(d[i]); }}
+      for (i=0; i<n; ++i) { x2+=Wb::norm2(d[i]); }}
    }
 
    return x2;
@@ -2645,10 +2645,7 @@ wbarray<T>& wbarray<T>::permute(
        return permute(X,P0,iflag).save2(A);
     }
 
-    size_t i, j, k, *Sp, *S, r=SIZE.len, l=r-1, s;
-    wbvector<size_t> Sp_;
-    WBINDEX I_; widx_t *I;
-    wbperm P; wperm_t *p;
+    wbperm P;
 
 #ifdef WB_CLOCK
    Wb::Clock clk("arr:permute",0); 
@@ -2664,22 +2661,19 @@ wbarray<T>& wbarray<T>::permute(
         return A;
     }
 
-    p=P.data;
+#ifdef QS_USING_OMP
+   int np=MAX(OMP_NUM_THREADS,QSP_NUM_THREADS);
+#else
+   int np=0;
+#endif
 
-    SIZE.select(P,Sp_); A.init(Sp_); Sp=Sp_.data; s=numel();
-    I_.init(SIZE.len); I=I_.data; S=SIZE.data;
+    A.init_bare(SIZE); 
+    SIZE.permute(A.SIZE,P);
 
-    for (i=0; i<s; ++i) {
-        for (j=I[p[l]],k=l-1; k<r; --k) j = j*Sp[k] + I[p[k]];
-
-        A.data[j]=data[i];
-
-        k=0; ++I[0]; 
-        while(I[k]>=S[k] && k<l) { I[k]=0; ++I[++k]; }
-    }
+    wbarray_permute__(A.data,*this,P,np);
 
     return A;
-}
+};
 
 template<class T>
 wbarray<T>& wbarray<T>::select0(
@@ -2716,7 +2710,7 @@ wbarray<T>& wbarray<T>::select0(
         A.data[i]=data[j];
 
         k=0; ip[0]++; 
-        while(ip[k]>=s[k] && k<l) { ip[k]=0; ++ip[++k]; }
+        while (ip[k]>=s[k] && k<l) { ip[k]=0; ++ip[++k]; }
     }
 
     return A;
@@ -2758,7 +2752,7 @@ wbarray<T>& wbarray<T>::selectSqueeze(
         A.data[i]=data[j];
 
         k=0; I[0]++; 
-        while(I[k]>=S[k] && k<l) { I[k]=0; ++I[++k]; }
+        while (I[k]>=S[k] && k<l) { I[k]=0; ++I[++k]; }
     }
 
     for (i=dim+1; i<S.len; i++) A.SIZE[i-1]=A.SIZE[i];
@@ -2811,7 +2805,7 @@ void wbarray<T>::setBlock(
         data[j]=A.data[i];
 
         k=0; I[0]++;
-        while(I[k]>=I2[k] && k<l) { I[k]=I1[k]; ++I[++k]; }
+        while (I[k]>=I2[k] && k<l) { I[k]=I1[k]; ++I[++k]; }
     }
 }
 
@@ -2843,7 +2837,7 @@ void wbarray<T>::addBlock(
        data[j] += A.data[i];
 
        k=0; I[0]++;
-       while(I[k]>=S[k] && k<la) { I[k]=0; ++I[++k]; }
+       while (I[k]>=S[k] && k<la) { I[k]=0; ++I[++k]; }
     }
 };
 
@@ -2888,17 +2882,17 @@ T wbarray<T>::aMin(char zflag, size_t *k_) const {
    }
 
    if (zflag==0) { 
-      x=ABS(data[i++]); k=0; if (x!=0) {
-         for (; i<n; ++i) { a=ABS(data[i]); if (x>a) {
+      x=Wb::abs(data[i++]); k=0; if (x!=0) {
+         for (; i<n; ++i) { a=Wb::abs(data[i]); if (x>a) {
             x=a; k=i; if (x==0) break;
          }}
       }
    }
    else {
       for (; i<n; ++i) {
-         a=ABS(data[i]); if (a) { x=a; k=i; break; }
+         a=Wb::abs(data[i]); if (a) { x=a; k=i; break; }
       }
-      for (; i<n; ++i) { a=ABS(data[i]);
+      for (; i<n; ++i) { a=Wb::abs(data[i]);
          if (a && x>a) { x=a; k=i; }
       }
    }
@@ -2923,6 +2917,40 @@ wbstring wbarray<T>::toStr() const {
    if (l>=s.len) wblog(FL,
       "WRN %s() string out of bounds (%d/%d)",FCT,l,s.len);
    return s;
+};
+
+template<class T>
+wbstring Wb::sizeStrM( 
+   unsigned r, const T* sd,
+   unsigned m, const T* sm, const char *sep, const char *sepM
+) {
+   unsigned i=0, j, l=0, n=0, ndims=r+m;
+   char *s; size_t x;
+   wbstring sout;
+
+   if (r>1 || m>1)
+          { n+=(ndims-(r && m ? 2 : 1))*(sep ? strlen(sep) : 1); }
+   if (m) { n+=(sepM ? strlen(sepM) : 1); }
+
+   for (; i<ndims; ++i) {
+      x=(i<r ? sd[i] : sm[i-r]); if (x<0) { x=-x; ++n; } 
+      for (j=0; j<64; ++j) { if (!(x>>1)) break; }
+      n+=(1+ceil(3*(double(i)/10))); 
+   }; if (n<8) n=8;
+
+   sout.init(n); s=sout.data;
+
+   for (i=0; i<r && l<n; ++i) {
+      l+=snprintf(s+l,n-l,"%s%ld",i? (sep? sep:" "):"", long(sd[i]));
+   }
+   for (i=0; i<m && l<n; ++i) {
+      l+=snprintf(s+l,n-l,"%s%ld", i? (sep? sep:" ") : (sepM? sepM:"|"),
+      long(sm[i]));
+   }
+
+   if (l>=n) wblog(FL,
+      "WRN %s() string out of bounds (%d/%d)\n'%s'",FCT,l,n,s);
+   return sout;
 };
 
 template<class T>
@@ -3066,7 +3094,7 @@ int wbarray<T>::printdata(
             printf(fmt.data,A.data[i]);
 
             k=0; I[0]++;  
-            while(I[k]>=A.SIZE[k] && k<l) { I[k]=0; ++I[++k]; }
+            while (I[k]>=A.SIZE[k] && k<l) { I[k]=0; ++I[++k]; }
          }
          printf("\n];\n");
       }
@@ -3117,7 +3145,7 @@ int wbarray<wbcomplex>::printdata(
             printf(fmt.data,A.data[i].r,A.data[i].i);
 
             k=0; I[0]++;  
-            while(I[k]>=A.SIZE[k] && k<l) { I[k]=0; ++I[++k]; }
+            while (I[k]>=A.SIZE[k] && k<l) { I[k]=0; ++I[++k]; }
          }
          printf("\n];\n");
       }
@@ -3433,7 +3461,7 @@ wbarray<T>& wbarray<T>::trace(
        }
 
        k=0; I[0]++;
-       while(I[k]>=S[k] && k<l) { I[k]=0; ++I[++k]; }
+       while (I[k]>=S[k] && k<l) { I[k]=0; ++I[++k]; }
    }
 
    return C;
@@ -3572,19 +3600,19 @@ return A;
 
                if (J.len>0) {
                    q=0; J[0]++; 
-                   while(J[q]>=Sj[q] && q<lj) { J[q]=0; ++J[++q]; }
+                   while (J[q]>=Sj[q] && q<lj) { J[q]=0; ++J[++q]; }
                }
            }
            C(Ic) = dbl;
 
            if (K.len>0) {
                q=0; K[0]++; 
-               while(K[q]>=Sk[q] && q<lk) { K[q]=0; ++K[++q]; }
+               while (K[q]>=Sk[q] && q<lk) { K[q]=0; ++K[++q]; }
            }
        }
        if (I.len>0) {
            q=0; I[0]++; 
-           while(I[q]>=Si[q] && q<li) { I[q]=0; ++I[++q]; }
+           while (I[q]>=Si[q] && q<li) { I[q]=0; ++I[++q]; }
        }
    }
 
@@ -4240,6 +4268,139 @@ void wbarray<wbcomplex>::set(
       for (; i<n; ++i) { data[i].set(0.,I[i]); }
    }
    else { init(); }
+};
+
+template <typename T> 
+  void wbperm_helper<T>::permute(const T *src, T *dest, int np
+) const {
+
+   if (rk<2) {
+      if (rk==1) { std::copy_n (src, sz[0], dest); }
+      return;
+   }
+
+   widx_t m=2*m_blk, m2=m*m; 
+
+   if (!src || !dest) wblog(FL,
+      "ERR %s() got null input (s=%p, d=%p; rk=%d)",FCT,src,dest,rk);
+
+   if (numel<8192) { 
+      widx_t idest=-1;
+      wbIndex I(rk, sz);
+      while (++I) { dest[++idest]=src[I.serial(stride)]; }
+      return;
+   }
+
+   if (l1 && (l1>1 || stride[0]!=1)) wblog(FL,
+      "ERR %s() unexpected l1=%d with stride %d (l2=%d, rk=%d)",
+      FCT,l1,stride[0],l2,rk);
+
+   if (np<1) { np=1; }
+
+   if (l1) {
+      const unsigned k=2;  
+
+      widx_t idest=-1, isrc=0, len=sz[k-1], step=stride[k-1];
+      wbIndex I(rk-k, sz+k); 
+
+      if (rk<3) wblog(FL, 
+         "ERR %s() got rk=%d with l1=%d, l2=%d !?",FCT,rk,l1,l2);
+      if (sz[0]<2) wblog(FL,"ERR %s() unexpected sz[0]=%d",FCT,sz[0]);
+
+      if (np>1) { np=std::min(4,np); if (len<4*np) { np=1; }}
+
+      while (++I) { ++idest;
+         isrc = I.serial(stride+k);
+         #pragma omp parallel for num_threads(np)
+         for (widx_t i=0; i<len; ++i) {
+            std::copy_n( 
+            src+isrc+i*step, sz[0], dest+(i+idest*len)*sz[0]);
+         }
+      }
+      return;
+   }
+
+   unsigned i, l=0;
+   int r_=rk-(l1+2); if (r_<1) { r_=1; }
+
+   widx_t isrc, idest;
+   widx_t sz_[3*r_], *stride_s = sz_+r_, *stride_d = sz_+2*r_;
+
+   widx_t N_=0, M_;
+   widx_t M=sz[l2], N=sz[l1]; 
+
+   for (idest=1, i=0; i<=l1; ++i) { idest*=sz[i]; } 
+   for (; i<rk; ++i) {
+      if (i!=l2) { sz_[l] = sz[i];
+         stride_s[l] = stride[i];
+         stride_d[l] = idest;
+         ++l;
+      }
+      else {
+         N_=idest;  
+      }
+      idest*=sz[i]; 
+   }
+
+   M_=stride[l1];   
+   if (!N_) wblog(FL,"ERR %s() failed to set N_",FCT);
+
+   if (np>1) {  
+      if (M*N > (1>>14) && M>=2*m) { 
+         int np_=M/m; if (np>np_) { np=np_; }
+      }
+   }
+
+   wbarray<T> Blk(m2,np);
+   wbIndex I_(l,sz_);
+
+   while (++I_) {
+      isrc  = I_.serial(stride_s);
+      idest = I_.serial(stride_d);
+
+      #pragma omp parallel for num_threads(np)
+      for (widx_t I=0; I<M; I+=m) {
+         const T* s_; T* d_, *blk = Blk.data;
+        #ifdef QS_USING_OMP
+         blk += omp_get_thread_num()*m2;
+        #endif
+
+         widx_t i,j,J,jM_,n_,m_ = std::min(m,M-I); 
+      for (J=0; J<N; J+=m) { n_ = std::min(m,N-J); 
+         s_ = src + isrc + J*M_ + I;  
+         for (j=0; j<n_; ++j) { jM_=j*M_;
+         for (i=0; i<m_; ++i) { blk[j*m+i] = s_[jM_+i]; }}
+
+         d_ = dest + idest + I*N_ + J;
+         for (i=0; i<m_; ++i) { 
+         for (j=0; j<n_; ++j) { d_[i*N_+j] = blk[j*m+i]; }}
+      }}
+   }
+};
+
+template <typename T>
+mxArray* wbperm_helper<T>::toMx() const {
+
+   const char *fields[] = { "rk","numel","sz","stride","blk" };
+   mxArray *S=mxCreateStructMatrix(1,1,5,fields);
+   wbvector<double> x(MAX(3U,rk));
+
+   x.len=2; x[0]=rk; x[1]=rk_;
+   mxSetFieldByNumber(S,0,0,x.toMx()); 
+
+   x.len=1; x[0]=numel;
+   mxSetFieldByNumber(S,0,1,x.toMx()); 
+
+   if (rk) {
+      x.len=rk;  
+      Wb::cpyRange(x.data,sz,    rk); mxSetFieldByNumber(S,0,2,x.toMx());
+      Wb::cpyRange(x.data,stride,rk); mxSetFieldByNumber(S,0,3,x.toMx());
+   }
+
+   x.len=3; x[0]=l1; x[1]=l2; x[2]=m_blk; 
+   mxSetFieldByNumber(S,0,4,x.toMx());    
+
+   return S;
 };
 
 #endif

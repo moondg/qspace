@@ -535,7 +535,7 @@ int Wb::GetNumThreads(const char *F, int L, int &n, const char *name) {
        if (!GetEnv(0,0,"ML_DEBUG",i) && i<1) { q=0; } else
        if (!GetEnv(0,0,"DEBUG",   i) && i<1) { q=0; } else
        if (F && ((Wb::envVRB &12) 
-          #ifdef LOAD_CGC_QSPACE
+          #ifdef LD_CLEBSCH_QS
            || CG_VERBOSE>6
           #endif        
        )) wblog1(PF_L," *  using %-20s = %d -> %g",name,n,q);
@@ -1001,7 +1001,7 @@ template <class T>
 T Wb::getdscale(const T* data, size_t n) {
 
    if (n) { T d,x=0;
-      for (size_t i=0; i<n; ++i) { d=ABS(data[i]); if (x<d) x=d; }
+      for (size_t i=0; i<n; ++i) { d=Wb::abs(data[i]); if (x<d) x=d; }
       return x;
    }
    return 0;
@@ -1019,7 +1019,7 @@ void Wb::update_range_stride(size_t &n, const size_t stride) {
 template <class T> inline
 T Wb::addRange2(const T* d, size_t n, const size_t stride) {
    T s=0; Wb::update_range_stride(n,stride);
-   for (size_t i=0; i<n; i+=stride) { s+=ABS2(d[i]); }
+   for (size_t i=0; i<n; i+=stride) { s+=Wb::abs2(d[i]); }
    return s;
 };
 
@@ -1083,7 +1083,7 @@ T Wb::rangeNormDiff2(
    T x2, x2sum=0;
 
    for (size_t i=0; i<n; ++i) {
-      x2=d1[i]-d2[i]; x2*=CONJ(x2);
+      x2=d1[i]-d2[i]; x2*=Wb::CONJ(x2);
       x2sum+=x2;
    }
 
@@ -1101,13 +1101,13 @@ T Wb::rangeNormDiff2(
 
    if (k) { T x2max=0;
       for (size_t i=0; i<n; ++i) {
-         x2=d1[i]-fac*d2[i]; x2*=CONJ(x2);
+         x2=d1[i]-fac*d2[i]; x2*=Wb::CONJ(x2);
          x2sum+=x2; if (x2>x2max) { x2max=x2; (*k)=i; }
       }
    }
    else {
       for (size_t i=0; i<n; ++i) {
-         x2=d1[i]-fac*d2[i]; x2*=CONJ(x2);
+         x2=d1[i]-fac*d2[i]; x2*=Wb::CONJ(x2);
          x2sum+=x2;
       }
    }
@@ -1125,12 +1125,12 @@ T Wb::rangeNorm2(const T* d, size_t n, size_t *k
       T x2, x2max=0; (*k)=0;
 
       for (size_t i=0; i<n; ++i) {
-         x2=CONJ(d[i])*d[i]; if (x2>x2max) { x2max=x2; (*k)=i; }
+         x2=Wb::CONJ(d[i])*d[i]; if (x2>x2max) { x2max=x2; (*k)=i; }
          x2sum+=x2;
       }
    }
    else {
-      for (size_t i=0; i<n; ++i) { x2sum+=CONJ(d[i])*d[i]; }
+      for (size_t i=0; i<n; ++i) { x2sum+=Wb::CONJ(d[i])*d[i]; }
    }
 
    return x2sum;
@@ -1146,7 +1146,7 @@ T Wb::rangeMaxDiff(const T* d1, const T* d2, size_t n, size_t *k) {
    }
 
    for (; i<n; i++) {
-      x=ABS(d1[i]-d2[i]); if (x>xmax) { xmax=x; imax=i; }
+      x=Wb::abs(d1[i]-d2[i]); if (x>xmax) { xmax=x; imax=i; }
    }
 
    if (k) (*k)=imax;
@@ -1377,8 +1377,8 @@ T Wb::dotProd(const T* a, const T* b, size_t n, T x, char conj) {
 
       if (check_conj_flag(b,conj)) { 
          if (conj==1)
-              { for (; i<n; ++i) x+=CONJ(a[i])*b[i]; }
-         else { for (; i<n; ++i) x+=a[i]*CONJ(b[i]); }
+              { for (; i<n; ++i) x+=Wb::CONJ(a[i])*b[i]; }
+         else { for (; i<n; ++i) x+=a[i]*Wb::CONJ(b[i]); }
       }
       else { for (; i<n; ++i) x+=(a[i]*b[i]); }
    }
@@ -1407,8 +1407,8 @@ void Wb::TimesElRange(T* a, const T* b, size_t n, char conj) {
 
    if (check_conj_flag(b,conj)) {
       if (conj==1)
-           { for (size_t i=0; i<n; ++i) a[i]=CONJ(a[i])*b[i]; }
-      else { for (size_t i=0; i<n; ++i) a[i]*=CONJ(b[i]); }
+           { for (size_t i=0; i<n; ++i) a[i]=Wb::CONJ(a[i])*b[i]; }
+      else { for (size_t i=0; i<n; ++i) a[i]*=Wb::CONJ(b[i]); }
    }
    else { for (size_t i=0; i<n; ++i) a[i]*=b[i]; }
 };
@@ -1423,8 +1423,8 @@ void Wb::timesElRange(T* c, const T* a, const T* b, size_t n, char conj) {
 
    if (check_conj_flag(b,conj)) {
       if (conj==1)
-           { for (; i<n; ++i) { c[i] = CONJ(a[i]) *b [i]; }}
-      else { for (; i<n; ++i) { c[i] = a[i] * CONJ(b[i]); }}
+           { for (; i<n; ++i) { c[i] = Wb::CONJ(a[i]) *b [i]; }}
+      else { for (; i<n; ++i) { c[i] = a[i] * Wb::CONJ(b[i]); }}
    }
    else { for (; i<n; ++i) { c[i] = a[i]*b[i]; }}
 };
@@ -1441,14 +1441,14 @@ void Wb::timesElRange_add(
 
    if (check_conj_flag(b,conj)) {
       if (conj==1) {
-         if (bfac==T(+1)) { for (; i<n; ++i) c[i]+=CONJ(a[i])*b[i]; } else
-         if (bfac==T(-1)) { for (; i<n; ++i) c[i]-=CONJ(a[i])*b[i]; }
-         else             { for (; i<n; ++i) c[i]+=CONJ(a[i])*b[i]*bfac; }
+         if (bfac==T(+1)) { for (; i<n; ++i) c[i]+=Wb::CONJ(a[i])*b[i]; } else
+         if (bfac==T(-1)) { for (; i<n; ++i) c[i]-=Wb::CONJ(a[i])*b[i]; }
+         else             { for (; i<n; ++i) c[i]+=Wb::CONJ(a[i])*b[i]*bfac; }
       }
       else { 
-         if (bfac==T(+1)) { for (; i<n; ++i) c[i]+=a[i]*CONJ(b[i]); } else
-         if (bfac==T(-1)) { for (; i<n; ++i) c[i]-=a[i]*CONJ(b[i]); }
-         else             { for (; i<n; ++i) c[i]+=a[i]*CONJ(b[i])*bfac; }
+         if (bfac==T(+1)) { for (; i<n; ++i) c[i]+=a[i]*Wb::CONJ(b[i]); } else
+         if (bfac==T(-1)) { for (; i<n; ++i) c[i]-=a[i]*Wb::CONJ(b[i]); }
+         else             { for (; i<n; ++i) c[i]+=a[i]*Wb::CONJ(b[i])*bfac; }
       }
    }
    else {if (bfac==T(+1)) { for (; i<n; ++i) c[i]+=a[i]*b[i]; } else
@@ -1475,15 +1475,15 @@ void Wb::timesElRange_OM(T* c,
          if (!conj)
               { for (; i<N; ++i) { c[i] += a[i]*b[i]; }} else
          if (conj==1)
-              { for (; i<N; ++i) { c[i] += CONJ(a[i]) *b[i];  }}
-         else { for (; i<N; ++i) { c[i] += a[i] * CONJ(b[i]); }}
+              { for (; i<N; ++i) { c[i] += Wb::CONJ(a[i]) *b[i];  }}
+         else { for (; i<N; ++i) { c[i] += a[i] * Wb::CONJ(b[i]); }}
       }
       else {
          if (!conj)
               { for (; i<N; ++i) { c[i]  = a[i]*b[i]; }} else
          if (conj==1)
-              { for (; i<N; ++i) { c[i]  = CONJ(a[i]) *b[i];  }}
-         else { for (; i<N; ++i) { c[i]  = a[i] * CONJ(b[i]); }}
+              { for (; i<N; ++i) { c[i]  = Wb::CONJ(a[i]) *b[i];  }}
+         else { for (; i<N; ++i) { c[i]  = a[i] * Wb::CONJ(b[i]); }}
       }
    }
 };
@@ -1498,7 +1498,7 @@ T Wb::overlap(
    if (n) {
       Wb::update_range_stride(n,stride);
       if (!a || !b) wblog(FL,"ERR %s() got null (%p, %p)",FCT,a,b);
-      for (size_t i=0; i<n; i+=stride) { x2+=CONJ(a[i])*b[i]; }
+      for (size_t i=0; i<n; i+=stride) { x2+=Wb::CONJ(a[i])*b[i]; }
    }
    return x2;
 };
@@ -1547,9 +1547,9 @@ size_t Wb::replRange(T* a, size_t n, T x, T v) {
 
    size_t i,m=0;
 
-   if (!ISNAN(x))
+   if (!Wb::isnan(x))
         { for (i=0; i<n; ++i) if (a[i]==x)     { a[i]=v; ++m; }}
-   else { for (i=0; i<n; ++i) if (ISNAN(a[i])) { a[i]=v; ++m; }}
+   else { for (i=0; i<n; ++i) if (Wb::isnan(a[i])) { a[i]=v; ++m; }}
 
    return m;
 }
@@ -1739,9 +1739,9 @@ void markSet(
    if (eps>0) {
       unsigned i0=0;
 
-      eps *= ABS(E.last()-E[0]); 
+      eps *= Wb::abs(E.last()-E[0]); 
       for (i=1; i<=N; i++) {
-         if (i==N || ABS(E[i]-E[i-1])>eps) {
+         if (i==N || Wb::abs(E[i]-E[i-1])>eps) {
             d=i-i0; if (d>1)
             Wb::setRange2avg(E.data+i0,d);
             i0=i;

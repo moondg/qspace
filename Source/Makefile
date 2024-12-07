@@ -84,6 +84,9 @@
   XFLAGS = -Wall # goes into CXXFLAGS
   LFLAGS = # goes into LDFLAGS
 
+  I = -I. 
+  L = -L. 
+
 # using GFLAG=1 with make for debugging purposes
 # e.g. more detaild stack backtrace in case of error // Wb,Jun26,20
   ifdef GFLAG
@@ -121,6 +124,20 @@
      DEFS += -DDBSTOP
   endif
 
+# QSpace now permits to link against the high-performance
+# tensor transpose (HPTT) library -lhptt
+# This library needs to be installed separatly.
+# In order to use it, simply define the environmental
+# variable HPTT_ROOT to point to the root directory 
+# of its installation prior to calling this Makefile
+# Wb,Dec06,24
+  ifdef HPTT_ROOT
+      DEFS += -DQS_USING_HPTT
+      I += -I$(HPTT_ROOT)/include
+      L += -L$(HPTT_ROOT)/lib
+      CLIBS += -lhptt
+  endif
+
 # NB! make.pl checks whether DBSTOP is defined
   DEFS := $(shell make.pl -v --make-defs $(DEFS) "MEX_CXX_FLAGS=$(XFLAGS)")
 
@@ -138,9 +155,9 @@
      endif
   endif
 
-  I = -I. -I$(MATLAB_ROOT)/extern/include
-# I = -I. -I/usr/include/x86_64-linux-gnu -I$(MATLAB_ROOT)/extern/include
-  L = -L. -L$(MATLAB_ROOT)/bin/$(ARCH)
+  I += -I$(MATLAB_ROOT)/extern/include
+# I += -I/usr/include/x86_64-linux-gnu -I$(MATLAB_ROOT)/extern/include
+  L += -L$(MATLAB_ROOT)/bin/$(ARCH)
 
   ifeq ($(ismac),1)
      I += -I/usr/local/include  # required for gmp.h // Wb,Sep19,19

@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : clebsch (for abelian and non-abelian symmetries)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -736,7 +736,7 @@ wblog(FL,"ERR %s() check this",FCT);
             }
          }
 
-         a=ABS(c); if (a<eps1) { --k; 
+         a=Wb::abs(c); if (a<eps1) { --k; 
             if (a>eps2) wblog(FL,"WRN %s() got small CGC data "
               "(%.3g; %g %g)",FCT,c,eps1,eps2);
          }
@@ -947,7 +947,7 @@ const CDATA_TQ& CStore<TQ>::getIdentityC(
    );
 
    if (C.cgd.isEmpty() && C.QSet<TQ>::isEmpty()) {
-      RTD nrm=SQRT(RTD(1)/RTD(dim)); 
+      RTD nrm=Wb::sqrt(RTD(1)/RTD(dim)); 
 
       C.t=t; C.qs=Q.qs; C.qdir.init_iout(FL,2,2);
       C.cgd.initIdentity(t,dim,nrm);
@@ -2308,7 +2308,7 @@ int x3map<TQ,TD>::initCtr(const char *F, int L,
 
          while (B.getCG_set(FL,IB,bj)) { ++ib; ia=-1; IA.init();
 
-           #ifdef LOAD_CGC_QSPACE
+           #ifdef LD_CLEBSCH_QS
             if (largeD & 8) {
                Wb::MemStat(FL,'m');
                wblog(FL,"om: ib=%2d | m=(%d,%d,%d)",ib+1,ma,mb,mc);
@@ -3322,7 +3322,7 @@ CRef<TQ>& X3Map<TQ,TD>::contractDegQ(const char *F, int L,
 
          for (k=0; k<d3; ++k)
          for (j=0; j<d2; ++j)
-         for (i=0; i<d1; ++i) e3+=NORM2(double(x3_(i,j,k) - Cm.x3(i,j,k)));
+         for (i=0; i<d1; ++i) e3+=Wb::norm2(double(x3_(i,j,k) - Cm.x3(i,j,k)));
 
          if ((e3=sqrt(e3))>1E-12) {
             wblog(FL,"ERR %s() got x3 data mismatch @ %.3g",FCT,e3);
@@ -3369,7 +3369,7 @@ CRef<TQ>& X3Map<TQ,TD>::contractDegQ(const char *F, int L,
          "ERR %s() got small A.cgw (%.3g)",FCT,x[0]);
 
       if (B.cgw.isOrthoCols(x+1,0,CG_SKIP_DEPS1)) {
-         e=ABS(x[1]-x[0])/MAX3(double(1),x[0],x[1]);
+         e=Wb::abs(x[1]-x[0])/MAX3(double(1),x[0],x[1]);
 
          if (e<CG_SKIP_DEPS1) {
             if (e>CG_SKIP_DEPS2) wblog(FL,"WRN %s() "

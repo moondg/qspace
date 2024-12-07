@@ -12,7 +12,7 @@ char USAGE[]=""; // outsourced to normQS.m // Wb,Jan12,19
    #define PROG "normQS"
 #endif
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #include "wblib.h"
 
 void mexFunction(

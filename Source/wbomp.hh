@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace OMP routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,10 @@
 #define __WB_OMP_HH__
 
 #ifdef QS_USING_OMP
+
+   int OMP_NUM_THREADS=0; 
+
+   int QSP_NUM_THREADS=0; 
 
 namespace Wb {
 
@@ -77,7 +81,7 @@ class ompNLock {
     ompNLock(const ompNLock &);
     void operator=(const ompNLock &);
 
-#ifdef LOAD_CGC_QSPACE
+#ifdef LD_CLEBSCH_QS
     wbstring check_BUF_size() const;
 #endif
 };

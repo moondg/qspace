@@ -344,16 +344,16 @@ char wbsparray<TD>::sameUptoFac(
    }
 
    if (a0<=eps) {
-      if (fac_) { (*fac_)=((a0==0 && b0) || ABS(b0)>eps ? 0. : 1.); }
-      return (ABS(b0)>eps ? 0 : 3);
+      if (fac_) { (*fac_)=((a0==0 && b0) || Wb::abs(b0)>eps ? 0. : 1.); }
+      return (Wb::abs(b0)>eps ? 0 : 3);
    }
-   if (ABS(b0)<=eps) { return 4; }
+   if (Wb::abs(b0)<=eps) { return 4; }
 
    fac=a[i]/b0; if (fac_) (*fac_)=fac;
 
    if (sab>=10) { 
       if (iA && iB) {
-         for (i=0; i<D.len; ++i) { if (ABS(a[i]-fac*b[i])>eps) return 11; }
+         for (i=0; i<D.len; ++i) { if (Wb::abs(a[i]-fac*b[i])>eps) return 11; }
          return 0;
       }
       else if (iA) {
@@ -362,11 +362,11 @@ char wbsparray<TD>::sameUptoFac(
             "ERR %s() %dx%d !?",FCT,B.IDX.dim1,B.IDX.dim2);
          for (i=0; i<B.D.len; ++i, I+=2) {
             if (I[0]==I[1]) { mark.el(I[0])=1;
-                 if (ABS(a[I[0]]-fac*b[i])>eps) return 12; }
-            else if (ABS(b[i])>eps) return 13;
+                 if (Wb::abs(a[I[0]]-fac*b[i])>eps) return 12; }
+            else if (Wb::abs(b[i])>eps) return 13;
          }
          for (i=0; i<D.len; ++i) {
-            if (!mark[i] && ABS(a[i])>eps) return 14;
+            if (!mark[i] && Wb::abs(a[i])>eps) return 14;
          }
          return 0;
       }
@@ -376,11 +376,11 @@ char wbsparray<TD>::sameUptoFac(
             "ERR %s() %dx%d !?",FCT,IDX.dim1,IDX.dim2);
          for (i=0; i<D.len; ++i, I+=2) {
             if (I[0]==I[1]) { mark.el(I[0])=1;
-                 if (ABS(a[i]-fac*b[I[0]])>eps) return 21; }
-            else if (ABS(a[i])>eps) return 22;
+                 if (Wb::abs(a[i]-fac*b[I[0]])>eps) return 21; }
+            else if (Wb::abs(a[i])>eps) return 22;
          }
          for (i=0; i<B.D.len; ++i) {
-            if (!mark[i] && ABS(b[i])>eps) return 23;
+            if (!mark[i] && Wb::abs(b[i])>eps) return 23;
          }
          return 0;
       }
@@ -388,14 +388,14 @@ char wbsparray<TD>::sameUptoFac(
 
    matchSortedIdxU(FL,IDX,B.IDX,Ia,Ib,-1,lex);
    for (n=Ia.len, i=0; i<n; ++i) {
-      if (ABS(a[Ia[i]]-fac*b[Ib[i]])>eps) return 31;
+      if (Wb::abs(a[Ia[i]]-fac*b[Ib[i]])>eps) return 31;
    }
 
    Ia.Invert(  IDX.dim1,'u');
-   for (i=0; i<Ia.len; ++i) { if (ABS(a[Ia[i]])>eps) return 32; }
+   for (i=0; i<Ia.len; ++i) { if (Wb::abs(a[Ia[i]])>eps) return 32; }
 
    Ib.Invert(B.IDX.dim1,'u');
-   for (i=0; i<Ib.len; ++i) { if (ABS(b[Ib[i]])>eps) return 33; }
+   for (i=0; i<Ib.len; ++i) { if (Wb::abs(b[Ib[i]])>eps) return 33; }
 
    return 0;
 };
@@ -413,7 +413,7 @@ bool wbsparray<TD>::isZero(TD eps, char bflag) const {
       if (bflag) { return (D.norm()<eps); }
       else {
          for (SPIDX_T i=0; i<D.len; ++i) {
-         if (ABS(D[i])>eps) return 0; }
+         if (Wb::abs(D[i])>eps) return 0; }
       }
    }
 
@@ -438,7 +438,7 @@ bool wbsparray<TD>::isDiagMatrix(TD eps) const {
       }
       else {
          for (; i<IDX.dim1; ++i, id+=2) if (id[0]!=id[1]) {
-            if (ABS(D[i])>eps) return 0;
+            if (Wb::abs(D[i])>eps) return 0;
          }
       }
    }
@@ -549,7 +549,7 @@ bool wbsparray<TD>::isProptoId(TD &q, TD eps) const {
    if (!D.len) return 0;
    if (isDiag(FL)) { 
       if (q==0) q=D[0];
-      for (SPIDX_T i=1; i<D.len; ++i) { if (ABS(D[i]-q)>eps) return 0; }
+      for (SPIDX_T i=1; i<D.len; ++i) { if (Wb::abs(D[i]-q)>eps) return 0; }
       return 1;
    }
 
@@ -568,7 +568,7 @@ bool wbsparray<TD>::isProptoId(TD &q, TD eps) const {
       if (D.len!=d) return 0;
       for (; i<IDX.dim1; ++i, id+=r) {
          for (j=0; j<r2; ++j) { if (id[j]!=id[j+r2]) return 0; }
-         if (i || q!=0) { if (ABS(D[i]-q)>eps) return 0; }
+         if (i || q!=0) { if (Wb::abs(D[i]-q)>eps) return 0; }
          else q=D[i];
       }
    }
@@ -576,11 +576,11 @@ bool wbsparray<TD>::isProptoId(TD &q, TD eps) const {
       SPIDX_T n=0;
       for (; i<IDX.dim1; ++i, id+=r) {
          for (j=0; j<r2; ++j) { if (id[j]!=id[j+r2]) {
-            if (ABS(D[i])>eps) return 0;
+            if (Wb::abs(D[i])>eps) return 0;
             else break;
          }}
          if (j==r2) {
-            if ((++n)!=1 || q!=0) { if (ABS(D[i]-q)>eps) return 0; }
+            if ((++n)!=1 || q!=0) { if (Wb::abs(D[i]-q)>eps) return 0; }
             else q=D[i];
          }
       }
@@ -595,7 +595,7 @@ char wbsparray<TD>::isIdentity(TD eps) const {
 
    if (!D.len) return 1;
    if (isDiag(FL)) { 
-      for (SPIDX_T i=1; i<D.len; ++i) { if (ABS(D[i]-1)>eps) return 2; }
+      for (SPIDX_T i=1; i<D.len; ++i) { if (Wb::abs(D[i]-1)>eps) return 2; }
       return 0;
    }
 
@@ -614,18 +614,18 @@ char wbsparray<TD>::isIdentity(TD eps) const {
       if (D.len!=d) return 5;
       for (; i<IDX.dim1; ++i, id+=r) {
          for (j=0; j<r2; ++j) { if (id[j]!=id[j+r2]) return 6; }
-         if (ABS(D[i]-1)>eps) return 7;
+         if (Wb::abs(D[i]-1)>eps) return 7;
       }
    }
    else {
       SPIDX_T n=0;
       for (; i<IDX.dim1; ++i, id+=r) {
          for (j=0; j<r2; ++j) { if (id[j]!=id[j+r2]) {
-            if (ABS(D[i])>eps) return 8;
+            if (Wb::abs(D[i])>eps) return 8;
             else break;
          }}
          if (j==r2) { ++n;
-            if (ABS(D[i]-1)>eps) return 9;
+            if (Wb::abs(D[i]-1)>eps) return 9;
          }
       }
       if (!n || n!=d) return 10;
@@ -643,7 +643,7 @@ char wbsparray<TD>::isIdentity(
    if (!D.len) return 1;
    if (isDiag(FL)) { 
       if (dval_) { (*dval_)=dval=D.avg(); eps*=dval; }
-      for (SPIDX_T i=1; i<D.len; ++i) { if (ABS(D[i]-dval)>eps) return 2; }
+      for (SPIDX_T i=1; i<D.len; ++i) { if (Wb::abs(D[i]-dval)>eps) return 2; }
       return 0;
    }
 
@@ -692,15 +692,15 @@ char wbsparray<TD>::isIdentity(
    if (eps<=TD(0)) { if (D.len!=SIZE[j1]) return 8;
       for (SPIDX_T i=0; i<IDX.dim1; ++i, id+=r) {
          if (id[j1]!=id[j2])     return 12; 
-         if (ABS(D[i]-dval)>eps) return 11; 
+         if (Wb::abs(D[i]-dval)>eps) return 11; 
       }
    }
    else {
       SPIDX_T i=0, l=0;
       for (; i<IDX.dim1; ++i, id+=r) {
          if (id[j1]==id[j2]) { ++l;
-                if (ABS(D[i]-dval)>eps) return 11;  }
-         else { if (ABS(D[i])     >eps) return 12; }
+                if (Wb::abs(D[i]-dval)>eps) return 11;  }
+         else { if (Wb::abs(D[i])     >eps) return 12; }
       }
       if (!l || l!=SIZE[j1]) return 7; 
    }
@@ -743,7 +743,7 @@ bool wbsparray<TD>::isSym_aux(
          if ((++Ja[r])>1 || (++Jb[s])>1) { 
             wblog(FL,"ERR %s()",FCT);
          }
-         x=ABS(D[r]-CONJ(B.D[s])); if (xref) *xref=MAX(*xref,x);
+         x=Wb::abs(D[r]-Wb::CONJ(B.D[s])); if (xref) *xref=MAX(*xref,x);
          if (x>eps) return 0;
       }
    }
@@ -752,16 +752,16 @@ bool wbsparray<TD>::isSym_aux(
          if ((++Ja[r])>1 || (++Jb[s])>1) { 
             wblog(FL,"ERR %s()",FCT);
          }
-         x=ABS(D[r]+CONJ(B.D[s])); if (xref) *xref=MAX(*xref,x);
+         x=Wb::abs(D[r]+Wb::CONJ(B.D[s])); if (xref) *xref=MAX(*xref,x);
          if (x>eps) return 0;
       }
    }
    else wblog(FL,"ERR invalid symflag=%c<%d>",symflag,symflag);
 
-   for (i=0; i<Ja.len; ++i) { if (!Ja[i] && ABS(  D[i])>eps) return 0; }
+   for (i=0; i<Ja.len; ++i) { if (!Ja[i] && Wb::abs(  D[i])>eps) return 0; }
 
    if (&B0!=this)
-   for (i=0; i<Jb.len; ++i) { if (!Jb[i] && ABS(B.D[i])>eps) return 0; }
+   for (i=0; i<Jb.len; ++i) { if (!Jb[i] && Wb::abs(B.D[i])>eps) return 0; }
 
    return 1;
 };
@@ -784,7 +784,7 @@ TD wbsparray<TD>::dotProd(
       if (iA && iB) {    
          const TD *a=D.data, *b=B.D.data; SPIDX_T i=0;
          if (cflag)
-              { for (; i<D.len; ++i) x+=CONJ(a[i])*b[i]; }
+              { for (; i<D.len; ++i) x+=Wb::CONJ(a[i])*b[i]; }
          else { for (; i<D.len; ++i) x+=     a[i] *b[i]; }
       }
       else if (iA)
@@ -799,7 +799,7 @@ TD wbsparray<TD>::dotProd(
    if (!SIZE.len) { return x; }
 
    SPIDX_T ia=0, ib=0, na=IDX.dim1, nb=B.IDX.dim1, l=0, lnext=0; 
-   const SPIDX_T *Ia=IDX.data, *Ib=B.IDX.data, Davg=SQRT(SIZE.prod());
+   const SPIDX_T *Ia=IDX.data, *Ib=B.IDX.data, Davg=Wb::sqrt(SIZE.prod());
    const TD *a=D.data, *b=B.D.data;
    unsigned m=SIZE.len;
    char q=0, lex=0; 
@@ -810,7 +810,7 @@ TD wbsparray<TD>::dotProd(
       if (q<0) { ++ia; Ia+=m; } else
       if (q>0) { ++ib; Ib+=m; } else {
          if (cflag)
-              { x+=CONJ(a[ia])*b[ib]; }
+              { x+=Wb::CONJ(a[ia])*b[ib]; }
          else { x+=     a[ia] *b[ib]; }
          ++ia; ++ib; Ia+=m; Ib+=m;
 
@@ -848,12 +848,12 @@ TD wbsparray<TD>::dotProd_full_diag(const wbsparray<TD> &B, char cflag
    }
    else if (cflag==1) {
       for (SPIDX_T i=0; i<D.len; ++i, I+=2) {
-         if (I[0]==I[1]) { x += CONJ(a[i]) * b[I[0]]; }
+         if (I[0]==I[1]) { x += Wb::CONJ(a[i]) * b[I[0]]; }
       }
    }
    else if (cflag==2) {
       for (SPIDX_T i=0; i<D.len; ++i, I+=2) {
-         if (I[0]==I[1]) { x += a[i] * CONJ(b[I[0]]); }
+         if (I[0]==I[1]) { x += a[i] * Wb::CONJ(b[I[0]]); }
       }
    }
    else wblog(FL,"ERR %s() invalid cflag=%d",FCT,cflag);
@@ -880,7 +880,7 @@ wbsparray<TD>& wbsparray<TD>::TimesEl(
          SPIDX_T i=0; const TD *a=D.data; TD *x;
          X=B; x=X.D.data;
          if (cflag)
-              { for (; i<D.len; ++i) x[i]*=CONJ(a[i]); }
+              { for (; i<D.len; ++i) x[i]*=Wb::CONJ(a[i]); }
          else { for (; i<D.len; ++i) x[i]*=     a[i] ; }
       }
       else if (iA)
@@ -900,7 +900,7 @@ wbsparray<TD>& wbsparray<TD>::TimesEl(
 
       for (i=0; i<Ia.len; ++i) { X.IDX.recSetP(i, IDX.rec(Ia[i])); }
       if (cflag)
-           { for (i=0; i<Ia.len; ++i) { x[i]=CONJ(a[Ia[i]])*b[Ib[i]]; }}
+           { for (i=0; i<Ia.len; ++i) { x[i]=Wb::CONJ(a[Ia[i]])*b[Ib[i]]; }}
       else { for (i=0; i<Ia.len; ++i) { x[i]=     a[Ia[i]] *b[Ib[i]]; }}
 
       X.save2(*this).Compress();
@@ -931,12 +931,12 @@ wbsparray<TD>& wbsparray<TD>::timesEl_full_diag(
    }
    else if (cflag==1) {
       for (SPIDX_T i=0; i<IDX.dim1; ++i, I+=2) { if (I[0]==I[1]) {
-         x[I[0]]=CONJ(a[i])*b[I[0]];
+         x[I[0]]=Wb::CONJ(a[i])*b[I[0]];
       }}
    }
    else if (cflag==2) {
       for (SPIDX_T i=0; i<IDX.dim1; ++i, I+=2) { if (I[0]==I[1]) {
-         x[I[0]]=a[i]*CONJ(b[I[0]]);
+         x[I[0]]=a[i]*Wb::CONJ(b[I[0]]);
       }}
    }
    else wblog(FL,"ERR %s() invalid cflag=%d",FCT,cflag);
@@ -1001,9 +1001,9 @@ wbsparray<TD>& wbsparray<TD>::setCol(
 
 template <class TD> inline
 TD wbsparray<TD>::Normalize(char tnorm, char qflag){
-   TD x = SQRT(Wb::overlap(D.data,D.data,D.len,1,tnorm));
+   TD x = Wb::sqrt(Wb::overlap(D.data,D.data,D.len,1,tnorm));
 
-   if (ABS(x)>TD(1E-15)) Wb::timesRange(D.data,TD(1)/x,D.len);
+   if (Wb::abs(x)>TD(1E-15)) Wb::timesRange(D.data,TD(1)/x,D.len);
    else if (!qflag) {
       wblog(FL,"ERR %s() got vector with norm %.3g !?",FCT,double(x));
    }
@@ -1025,11 +1025,11 @@ TD wbsparray<TD>::NormalizeCol(SPIDX_T k, char tnorm, char qflag){
    TD x=0;
 
    if (xflags.conj())
-        { for (; i<n; ++i, I2+=2) if ((*I2)==k) { x+=CONJ(D[i])*D[i]; }}
+        { for (; i<n; ++i, I2+=2) if ((*I2)==k) { x+=Wb::CONJ(D[i])*D[i]; }}
    else { for (; i<n; ++i, I2+=2) if ((*I2)==k) { x+=D[i]*D[i]; }}
 
-   x=SQRT(x);
-   if (ABS(x)>1E-15) { x=1/x;
+   x=Wb::sqrt(x);
+   if (Wb::abs(x)>1E-15) { x=1/x;
       for (i=0; i<n; ++i, I2+=2) if ((*I2)==k) { D[i]*=x; }
    }
    else if (!qflag) {
@@ -1056,7 +1056,7 @@ wbsparray<TD>& wbsparray<TD>::QRdecomp(const char *F, int L,
    wbsparray<TD> u,X;
    int dk=0;
 
-   eps2*=SQRT(TD(MAX(d1,d2)));
+   eps2*=Wb::sqrt(TD(MAX(d1,d2)));
 
    if (eps2>TD(1E-8)) wblog(F_L,
       "ERR %s() got eps=%.3g !?",FCT,double(eps));
@@ -1116,7 +1116,7 @@ wbsparray<TD>& wbsparray<TD>::QRdecomp(const char *F, int L,
                   FCT,idx[-2],k-1,k_,double(rk),l1,l2-1
                );
             }
-            if (NORM2(rk)<=eps2) {
+            if (Wb::norm2(rk)<=eps2) {
                sprintf_str("got R(%ld,%ld)=%.4g",k-1,k_,double(rk));
                if (rk) wblog(FL,"WRN %s() %s",FCT,str);
                else wblog(FL,"ERR %s() %s",FCT,str);
@@ -1129,8 +1129,8 @@ wbsparray<TD>& wbsparray<TD>::QRdecomp(const char *F, int L,
             k_=idx[1]; continue; 
          }
 
-         l1=l2; c2=NORM2(D[l2]);      idx+=2; ++l2;
-         while (l2<N && idx[1]==k_) { idx+=2; c2+=NORM2(D[l2++]); }
+         l1=l2; c2=Wb::norm2(D[l2]);      idx+=2; ++l2;
+         while (l2<N && idx[1]==k_) { idx+=2; c2+=Wb::norm2(D[l2++]); }
 
          if (c2<=eps2 || (l1 && dk==0)) { e2+=c2;
             if (c2>100*eps2) wblog(FL,"ERR %s() "
@@ -1172,7 +1172,7 @@ wbsparray<TD>& wbsparray<TD>::QRdecomp(const char *F, int L,
    if (k<d1) {
       N=IDX.dim1; idx=IDX.data; c2=0;
       for (l=0; l<N; ++l, idx+=2) {
-         if (idx[0]>=k) { c2+=NORM2(D[l]); }
+         if (idx[0]>=k) { c2+=Wb::norm2(D[l]); }
       }
       if (c2>eps2) { MXPut(FL,"q").add(*this,"R").add(c2,"c2");
          wblog(FL,"ERR %s() got non-triangular R matrix (%.3g) !?",
@@ -1216,7 +1216,7 @@ wbsparray<TD>& wbsparray<TD>::OrthoNormalizeColsQR(
       wbvector<TD> dd(d2); TD eps=1E-12;
       wbvector<int> id; id.init2val(d2,-1);
 
-      for (l=0; l<n; ++l) { if (NORM(D[l])>eps) {
+      for (l=0; l<n; ++l) { if (Wb::norm(D[l])>eps) {
          dd[IDX(l,1)]=D[l]; 
          id[IDX(l,1)]=IDX(l,0);
       }}
@@ -1271,9 +1271,9 @@ wbsparray<TD>& wbsparray<TD>::OrthoNormalizeColsGS(
          }}
       }
 
-      z=X[i].norm2(tnorm); a=ABS(z);
+      z=X[i].norm2(tnorm); a=Wb::abs(z);
 
-      if (a>eps) { X[i]*=(TD(1)/SQRT(a)); }
+      if (a>eps) { X[i]*=(TD(1)/Wb::sqrt(a)); }
       else {
          if (qflag) {
             X[i].initz();
@@ -1325,7 +1325,7 @@ wbvector<T2>& wbsparray<TD>::norm2vec(unsigned l,
 
    if (tnorm)
         { for (; i<D.len; ++i, ip+=m) { ad[*ip] += D[i]*D[i]; }}
-   else { for (; i<D.len; ++i, ip+=m) { ad[*ip] += CONJ(D[i])*D[i]; }}
+   else { for (; i<D.len; ++i, ip+=m) { ad[*ip] += Wb::CONJ(D[i])*D[i]; }}
 
    return a;
 };
@@ -2048,10 +2048,10 @@ mxArray* wbsparray<TD>::IDtoMx() const {
       wbindex I(m); widx_t *k=I.data;
       wbvector<double> x_(m); double *x=x_.data;
          x[0]=d[0];
-         x[1]=ABS(d[0]);
+         x[1]=Wb::abs(d[0]);
          x[2]=d[0];
 
-      for (++i; i<D.len; ++i) { a=ABS(d[i]);
+      for (++i; i<D.len; ++i) { a=Wb::abs(d[i]);
          if (x[0]>d[i]) { x[0]=d[i]; k[0]=i; } 
          if (x[1]>a   ) { x[1]=a;    k[1]=i; } 
          if (x[2]<d[i]) { x[2]=d[i]; k[2]=i; } 
@@ -2413,11 +2413,11 @@ wbsparray<TD>& wbsparray<TD>::init(
    SPIDX_T i,N, nz=0, iz=0, *ip=I.data; const size_t *s=A.SIZE.data;
 
    N=A.numel();
-   for (i=0; i<N; ++i) { if (ABS(A.data[i])>eps) ++nz; }
+   for (i=0; i<N; ++i) { if (Wb::abs(A.data[i])>eps) ++nz; }
    init(A.SIZE,nz);
 
    for (i=0; i<N; ++i) {
-       if (ABS(A.data[i])>eps) {
+       if (Wb::abs(A.data[i])>eps) {
           if (iz>=nz) wblog(F_L,
              "ERR %s() index out of bounds (%d/%d) !?",FCT,iz+1,nz);
           D[iz]=A.data[i]; IDX.recSetP(iz,ip); ++iz;
@@ -2802,7 +2802,7 @@ TD wbsparray<TD>::getHouseholderVec(const char *F, int L,
    for (; i<n; ++i, i0+=2) { if (i0[0]>=k) break; }
    i1=i; if (i<n && i0[0]==k && i0[1]==j) gotk=1;
    for (; i<n; ++i, i0+=2) {
-      if (i0[1]==j) { b2+=NORM2(D[i]); ++l; }
+      if (i0[1]==j) { b2+=Wb::norm2(D[i]); ++l; }
       else break;
    }
    i2=i;
@@ -2825,11 +2825,11 @@ TD wbsparray<TD>::getHouseholderVec(const char *F, int L,
       u.D[l]=D.data[i]; idx[l]=i0[0]; ++l;
    }
 
-   x2=NORM2(u.D[0]);
-   if (u.D[0]<0) { u.D[0]-=SQRT(b2); } else { u.D[0]+=SQRT(b2); }
-   x2=b2-x2+NORM2(u.D[0]);
+   x2=Wb::norm2(u.D[0]);
+   if (u.D[0]<0) { u.D[0]-=Wb::sqrt(b2); } else { u.D[0]+=Wb::sqrt(b2); }
+   x2=b2-x2+Wb::norm2(u.D[0]);
 
-   u*=(TD(1)/SQRT(x2));
+   u*=(TD(1)/Wb::sqrt(x2));
 
    return x2;
 };
@@ -3257,8 +3257,8 @@ wbsparray<TD>& wbsparray<TD>::tensorProdX(const char *F, int L,
 
          if (noconj) { X.D[ic]=D[ia]*B.D[ib]; }
          else { X.D[ic] =
-                (conja ? CONJ(  D[ia]) :   D[ia])
-              * (conjb ? CONJ(B.D[ib]) : B.D[ib]);
+                (conja ? Wb::CONJ(  D[ia]) :   D[ia])
+              * (conjb ? Wb::CONJ(B.D[ib]) : B.D[ib]);
          }
       }
    }
@@ -3362,18 +3362,18 @@ wbsparray<TD>& wbsparray<TD>::Plus(
    for (; i<nx; ++i) {
       if (qq[i]<0) {
          x[l]=a[ia]; if (afac!=1) x[l]*=afac;
-         if (ABS(x[l])>eps) X.IDX.recSetP(l++,Ia); else e2+=NORM2(x[l]);
+         if (Wb::abs(x[l])>eps) X.IDX.recSetP(l++,Ia); else e2+=Wb::norm2(x[l]);
          ++ia; Ia+=m;
       }
       else if (qq[i]>0) {
          x[l]=b[ib]; if (bfac!=1) x[l]*=bfac;
-         if (ABS(x[l])>eps) X.IDX.recSetP(l++,Ib); else e2+=NORM2(x[l]);
+         if (Wb::abs(x[l])>eps) X.IDX.recSetP(l++,Ib); else e2+=Wb::norm2(x[l]);
          ++ib; Ib+=m;
       }
       else {
          x[l]=a[ia]; if (afac!=1) x[l]*=afac;
          x[l]+=(bfac!=1 ? bfac*b[ib] : b[ib]);
-         if (ABS(x[l])>eps) X.IDX.recSetP(l++,Ia); else e2+=NORM2(x[l]);
+         if (Wb::abs(x[l])>eps) X.IDX.recSetP(l++,Ia); else e2+=Wb::norm2(x[l]);
          ++ia; ++ib; Ia+=m; Ib+=m;
       }
    }
@@ -3397,7 +3397,7 @@ double wbsparray<TD>::Compress(
       if (double(eps)>0) {
          for (SPIDX_T k=0; k<D.len; ++k) {
             TD &x=D.data[k];
-            if (x && ABS(x)<=eps) { e2+=double(NORM2(x)); x=0; }
+            if (x && Wb::abs(x)<=eps) { e2+=double(Wb::norm2(x)); x=0; }
          }
       }
       return e2;
@@ -3798,7 +3798,7 @@ wbsparray<TD>& wbsparray<TD>::contract(
       if (np<1) { np=1; }
    }
 
-  #ifdef LOAD_CGC_QSPACE
+  #ifdef LD_CLEBSCH_QS
    if (np<sp_num_threads && CG_VERBOSE>5) {
       static time_t tlast=0;
       time_t tnow=time(NULL); 
@@ -4054,7 +4054,7 @@ wbsparray<TD>& wbsparray<TD>::contract(
       if (B.len!=1) wblog(F_L,"ERR %s() "
          "size mismatch (%s ; %d @ %d)",FCT,SSTR_(this),B.len,k+1);
       C=*this; C*=B.data[0];
-      if (ABS(B.data[0])<TD(1E-8)) C.Compress();
+      if (Wb::abs(B.data[0])<TD(1E-8)) C.Compress();
       return C;
    }
 

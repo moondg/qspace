@@ -511,7 +511,7 @@ size_t wbvector<T>::numZeros(T eps) const {
       for (; i<len; ++i) { if (!data[i]) { ++n; }}
    }
    else if (eps>0) {
-      for (; i<len; ++i) { if (ABS(data[i])<eps) { ++n; }}
+      for (; i<len; ++i) { if (Wb::abs(data[i])<eps) { ++n; }}
    }
    else {
        wblog(FL,"WRN %s() got eps=%.3g (-> 0) !?",FCT,double(eps));
@@ -755,7 +755,7 @@ int wbvector<T>::init_base(
          { init2ref(n,A.data); }
     else { init(n); A.copyTo(data,tcheck); }
 
-    if (data && !Wb::is_finite(data,1)) wblog(FL,
+    if (data && !Wb::is_finite(data,1)) wblog(PFL,
        "WRN %s() encountered nan or inf in mex input data",FCT);
 
     return 0;

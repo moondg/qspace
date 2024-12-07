@@ -504,7 +504,7 @@ void dbstop(const char* file, int line);
 void ExitMsg(const char* s="", char xflag=0);
 void doflush();
 
-#ifdef LOAD_CGC_QSPACE
+#ifdef LD_CLEBSCH_QS
 #ifndef QS_SKIP_MPFR 
    #define QS_USING_MPFR
 #endif
@@ -558,13 +558,14 @@ namespace wblog {
 #include "memlib.hh"
 #include "mxlib.hh"
 
+#include "wbcomplex.hh" 
+
 #ifdef QS_USING_MPFR
 #include <gmp.h>
 #include <mpfr.h> 
 #include "wbmpfr.hh" 
 #endif
 
-#include "wbcomplex.hh"
 #include "gathered.hh"
 #include "wbsort.hh"
 
@@ -602,7 +603,7 @@ namespace wblog {
    Wb::tmpFile BFF(FL,"-buf"); 
 #endif
 
-#ifdef LOAD_CGC_QSPACE
+#ifdef LD_CLEBSCH_QS
 #include "clebsch.hh"
 #include "QSpace_aux.hh"
 #include "QSpace.hh"
@@ -627,7 +628,7 @@ namespace wblog {
 #include "gathered.cc"
 #include "util.cc"
 
-#ifdef LOAD_CGC_QSPACE
+#ifdef LD_CLEBSCH_QS
 #include "QSpace_aux.cc"
 #include "QSpace.cc"
 #endif
@@ -648,7 +649,7 @@ namespace wblog {
 #include "wbio.c"
 #include "wbmsg.hh"
 
-#ifdef LOAD_CGC_QSPACE
+#ifdef LD_CLEBSCH_QS
 #include "clebsch.cc"
 #include "clebsch_aux.cc"
 #include "clebsch_io.cc"  
@@ -681,13 +682,11 @@ namespace Wb {
           envVRB=get_WB_VERBOSE();  
           envDBG=got_DBSTOP();
 
-       #ifdef LOAD_CGC_QSPACE
        #ifdef QS_USING_OMP
           Wb::GetNumThreads(FL,OMP_NUM_THREADS,"OMP_NUM_THREADS");
           Wb::GetNumThreads(FL,QSP_NUM_THREADS,"QSP_NUM_THREADS");
 
           sp_num_threads=MAX(OMP_NUM_THREADS,QSP_NUM_THREADS);
-       #endif
        #endif
 
           my_caller_tid=omp_get_thread_num(); 

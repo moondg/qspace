@@ -489,7 +489,7 @@ wbMatrix<T>& wbMatrix<T>::NormalizeCol(size_t k) {
    if (!dim1) return *this;
 
    T *d=data+k, x2 = Wb::overlap(d,d,dim1,dim2);
-   Wb::timesRange(d,1/SQRT(x2),dim1,dim2);
+   Wb::timesRange(d,1/Wb::sqrt(x2),dim1,dim2);
 
    return *this;
 };
@@ -1527,7 +1527,7 @@ wbMatrix<T>& wbMatrix<T>::SortRecs(
    if (!dim1) { P.init(); return *this; }
    static int use_omp=-1;
 
-#ifdef LOAD_CGC_QSPACE
+#ifdef LD_CLEBSCH_QS
    if (use_omp<0) {
       use_omp=( 
          sp_num_threads > 0 ? 1 : 0 
@@ -1567,7 +1567,7 @@ wbMatrix<T>& wbMatrix<T>::SortRecs(
       return recPermute(P); 
    }
 
-#ifdef LOAD_CGC_QSPACE
+#ifdef LD_CLEBSCH_QS
    if (isLarge) wblog(FL,"TST %s() done",FCT);
 #endif
    return *this;

@@ -81,6 +81,7 @@
      }
   }}
 
+# insist that `which matlab' exists and agrees with MATLAB_ROOT
   if (!$matlab) { ++$nerr; wblog(
      "ERR command 'matlab' not available on PATH (see matlab_setup*.sh)");
   }

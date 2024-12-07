@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace OMP routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,7 +135,7 @@ int Wb::ompNLock::release() {
    return (l>0? l : 0);
 };
 
-#ifdef LOAD_CGC_QSPACE
+#ifdef LD_CLEBSCH_QS
 
 wbstring Wb::ompNLock::check_BUF_size() const {
 
@@ -221,7 +221,7 @@ void Wb::ompGuard::acquire(const char *F, int L, ompNLock &lk, int lmax) {
    "WRN got lk.level=%d/%d\n",shortFLT,lk.level,lmax);
 };
 
-#ifdef LOAD_CGC_QSPACE
+#ifdef LD_CLEBSCH_QS
 
 namespace CG {
 

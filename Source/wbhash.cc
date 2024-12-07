@@ -10,7 +10,7 @@ char USAGE[]=""; // outsourced to wbhash.m // Wb,Feb14,19
    #define PROG "wbhash"
 #endif
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #define QS_SKIP_MPFR
 
 #include "wblib.h"

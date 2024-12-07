@@ -13,7 +13,7 @@ char USAGE[]=""; // outsourced to getQDimQS.m // Wb,Jan12,19
    #define PROG "getQDimQS"
 #endif
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #include "wblib.h"
 
 template <class TQ, class TD>

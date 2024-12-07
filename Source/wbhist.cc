@@ -9,6 +9,7 @@ char USAGE[]=""; // outsourced to wbhist.m // Wb,Feb14,19
 #else
    #define PROG "wbhist"
 #endif
+#define PROG_TAG "hst"
 
 #include "wblib.h"
 

@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : clebsch (for abelian and non-abelian symmetries)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -215,8 +215,6 @@
 
    unsigned get_CG_PREVIEW(const char *F=0, int L=0);
    unsigned CG_PREVIEW=get_CG_PREVIEW();
-
-   int QSP_NUM_THREADS=0; 
 
    #define RC_LOAD_ERR_AB_MSG "RC_LOAD_ERROR (A or B)"
 
@@ -3111,7 +3109,7 @@ class CRef {
 
     double normDiff2(const char *F, int L, const CRef &B) const;
     double normDiff (const char *F, int L, const CRef &B) const {
-       return SQRT(normDiff2(F,L,B)); };
+       return Wb::sqrt(normDiff2(F,L,B)); };
 
     wbarray<double>& wProd(const CRef &B, wbarray<double> &x) const;
 

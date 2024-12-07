@@ -13,7 +13,7 @@ char USAGE[]=""; // outsourced to orthoQS.m // Wb,Jan12,19
    #define PROG "orthoQS"
 #endif
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #include "wblib.h"
 
 template<class TQ, class TD>

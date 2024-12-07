@@ -401,7 +401,7 @@ bool getBoltzman_base(
    }
    else {
       for (i=0; i<E.len; i++)
-      R[i]=( ABS(E[i]+Eref)<EPS ? (dz.len ? dz[i] : 1) : 0. );
+      R[i]=( Wb::abs(E[i]+Eref)<EPS ? (dz.len ? dz[i] : 1) : 0. );
 
       i=unsigned(R.sum());
       if (i) wblog(FL," *  T=0 ground state degeneracy %d", i);

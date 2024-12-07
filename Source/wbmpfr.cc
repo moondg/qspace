@@ -218,7 +218,7 @@ void mpfr__<P>::toStr(
 template <unsigned P>
 void mpfr__<P>::Cleanup(const char *F, int L) const {
 
-#ifdef LOAD_CGC_QSPACE
+#ifdef LD_CLEBSCH_QS
    if (CG_VERBOSE>5) {
    wblog(F_L," *  free mpfr cache (%s)",myname); }
 #endif

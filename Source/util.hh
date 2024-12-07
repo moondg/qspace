@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace utility routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -574,7 +574,8 @@ namespace wbsys {
 
     char checkSwapSpace(const char *F=NULL, int L=0);
 
-    int getNumCores(); 
+    int getNumCores();      
+    int getCacheLineSize(); 
 };
 
 class wbtop { 

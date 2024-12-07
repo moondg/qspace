@@ -808,8 +808,8 @@ void Spectral<TS>::dispSumRule() {
       sp+=A0.recSum();
    }
 
-   if (sp.len) { w=REAL(sp[0]); }
-   for (i=0; i<sp.len; ++i) { if (ABS(sp[i]-w)>1E-2) break; }
+   if (sp.len) { w=Wb::real(sp[0]); }
+   for (i=0; i<sp.len; ++i) { if (Wb::abs(sp[i]-w)>1E-2) break; }
 
    if (i==sp.len && fabs(w)>1E-4 && fabs(w-round(w))<1E-4) { sp-=w;
       wblog(FL,"\r%60s\r   %s\\","",Tc.e1);
@@ -818,13 +818,13 @@ void Spectral<TS>::dispSumRule() {
    }
    else {
       printf("       %stotal   : ",Tc.e1);
-      for (i=0; i<sp.len; ++i) { w=round(REAL(sp[i]));
-         if (ABS(sp[i]-w)<1E-5) {
+      for (i=0; i<sp.len; ++i) { w=round(Wb::real(sp[i]));
+         if (Wb::abs(sp[i]-w)<1E-5) {
             if (w!=0)
-                 printf("%2g%+5.0E ",w,REAL(sp[i])-w);
-            else printf("%8.1E ",REAL(sp[i]));
+                 printf("%2g%+5.0E ",w,Wb::real(sp[i])-w);
+            else printf("%8.1E ",Wb::real(sp[i]));
          }
-         else { printf("%8.5f ",REAL(sp[i])); }
+         else { printf("%8.5f ",Wb::real(sp[i])); }
       }; printf("%s\n",Tc.em);
    }
 };
@@ -852,8 +852,8 @@ void Spectral<TS>::dispSumRule(
    }
 
    if (s.len) {
-      for (m=round(REAL(s[0])), i=0; i<s.len; ++i) {
-        if (ABS(s[i]-m)>1E-2) break;
+      for (m=round(Wb::real(s[0])), i=0; i<s.len; ++i) {
+        if (Wb::abs(s[i]-m)>1E-2) break;
       }
       if (m && i==s.len) { s-=m;
          char ms[8]; Wb::termcolor Tc(Wb::TCOLS::BLUE);
@@ -1499,8 +1499,8 @@ void TDSpectral<TS>::dispSumRule() {
    sp+=sn;
 
    if (sp.len) {
-      m=ROUND(REAL(sp[0]));
-      for (i=0; i<sp.len; i++) if (ABS(sp[i]-m)>1E-2) break;
+      m=Wb::round(Wb::real(sp[0]));
+      for (i=0; i<sp.len; i++) if (Wb::abs(sp[i]-m)>1E-2) break;
    }
 
    Wb::termcolor Tc(Wb::TCOLS::BLUE);
@@ -1528,8 +1528,8 @@ void Wb::dispSumRule(
    wblog(FL,"SUM %s", s.toStrf("%8.5f").data);
 
    if (s.len) {
-      for (m=ROUND(s[0]), i=1; i<s.len; ++i) {
-         if (ABS(s[i]-m)>1E-2) { break; }
+      for (m=Wb::round(s[0]), i=1; i<s.len; ++i) {
+         if (Wb::abs(s[i]-m)>1E-2) { break; }
       }
       if (i==s.len) { s-=m;
          wblog(FL,"%s *  total-%g     = %s%s",

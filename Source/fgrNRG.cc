@@ -38,7 +38,7 @@ char USAGE_2[] =
 #define DEPS DBL_EPSILON
 #define NLEN 128  
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #include "wblib.h"
 
 #include "spectral.hh" 

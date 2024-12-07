@@ -20,7 +20,7 @@ char USAGE[]=""; // outsourced to permuteQS.m // Wb,Jan12,19
    #define PROG "permuteQS"
 #endif
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #include "wblib.h"
 
 template<class TD>
@@ -31,7 +31,7 @@ mxArray* PERMUTE_QS(
    unsigned r=A.rank(F_L);
    QSpace<gTQ,TD> B; B.mt=Wb::MEX_RETURN; 
 
-   if (P.len && r) {
+   if (P && r) { 
       if (r>P.len) { P.Extend(r); } 
       else if (r<P.len) { wblog(F,L,
          "ERR invalid permutation (%s; len=%d/%d)",STR(P),P.len,r); }
@@ -87,7 +87,7 @@ void mexFunction(
       argout[0]=PERMUTE_QS(FL,A,P,conj); 
    }
    else {
-      const QSpace<gTQ,wbcomplex> A(argin[0]);
+      const QSpace<gTQ,wbcomplex> A(argin[0],'r');
       argout[0]=PERMUTE_QS(FL,A,P,conj); 
    }
 

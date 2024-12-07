@@ -44,7 +44,7 @@ char USAGE_2[] =
 #define  EPS 1E-12
 #define DEPS DBL_EPSILON
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #include "wblib.h"
 
 #include "nrgdata.hh"  

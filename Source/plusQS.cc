@@ -12,7 +12,7 @@ char USAGE[]=""; // outsourced to plusQS.m // Wb,Jan12,19
    #define PROG "plusQS"
 #endif
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #include "wblib.h"
 
 template<class TQ, class TD>

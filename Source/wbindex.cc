@@ -872,7 +872,7 @@ iTags& iTags::init_alpha(
    return *this;
 };
 
-#ifdef LOAD_CGC_QSPACE
+#ifdef LD_CLEBSCH_QS
 
 unsigned iTags::init_qdir(const char *s) {
 

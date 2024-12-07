@@ -10,7 +10,7 @@ char USAGE[]=""; // outsourced to mpfr2dec.m // Wb,Feb14,19
    #define PROG "mpfr2dec"
 #endif
 
-   #define LOAD_CGC_QSPACE
+   #define LD_CLEBSCH_QS
 
 #include "wblib.h"
 

@@ -1,63 +1,61 @@
-## -------------------------------------------------------------------- #
-## User specific setup of the Matlab environment for QSpace
-## -------------------------------------------------------------------- #
+# -------------------------------------------------------------------- #
+# User specific setup of the Matlab environment for QSpace             #
+# -------------------------------------------------------------------- #
 
-## Environmental variables: MATLAB_ROOT and GCC
+## Environmental variables: Matlab version and C++ compiler
 
-## Matlab requires very specific c++ compilers for mex/mcc compilation
-## for compatible matlab/compiler combinations, see, e.g.,
-## https://www.mathworks.com/support/requirements/supported-compilers-linux.html
-## https://www.mathworks.com/support/requirements/previous-releases.html
+ # Matlab specifies supported C++ compilers for mex/mcc compilation
+ # depending on the Matlab release version. For more information, see e.g.
+ # https://www.mathworks.com/support/requirements/supported-compilers-linux.html
+ # https://www.mathworks.com/support/requirements/previous-releases.html
+ # Therefore please run
+ #
+ #     'mex -setup C++'
+ #
+ # for the specification of the C++ compiler. This process must
+ # be repeated if one switches to a new Matlab release version.
 
-## Define MATLAB_ROOT (e.g., required for MEX compilation etc.)
+## Matlab installation root directory MATLAB_ROOT
+## required for MEX compilation etc.
  # export MATLAB_ROOT="your-matlab-path (excluding ./bin)"
 
-## Define C++ compiler to use (default in matlab_setup.pl: `which gcc')
-## since supported and compatible compilers depend on the
-## matlab release version, please use 'mex -setup C++', instead.
-
-## if MATLAB_ROOT is not yet set, the following chooses
-## the module system as another way to define MATLAB_ROOT;
-## this may be configured such that it also defines MATLAB_ROOT.
-## if MATLAB_ROOT is still not set after that,
-## then the wrap up per script matlab_setup.pl called below
-## will check whether matlab is already available on the
-## path as the last check to set MATLAB_ROOT accordingly.
+ # if MATLAB_ROOT is not yet set, the following chooses
+ # the module system as another way to define MATLAB_ROOT;
+ # this may be configured such that it also defines MATLAB_ROOT.
+ # if MATLAB_ROOT is still not set after that,
+ # then the wrap up per script matlab_setup.pl called below
+ # will check whether Matlab is already available on the
+ # path as the last check to set MATLAB_ROOT accordingly.
 
    if [ -z $MATLAB_ROOT ]; then
       if `type module >/dev/null 2>&1`; then
-       # e.g., for linux
-       # module load matlab/2020b
-       # module load gcc/8.4.0
- 
-       # e.g., for macOS
          module load matlab/2022b
-         module load xcode/13.4
+         module load xcode/13.4    # e.g., macOS
+       # module load gcc/8.4.0     # e.g., linux
       fi
    fi
 
-## further QSpace specific directory settings (adapt as necessary)
-
-## see default value in matlab_setup.sh
-## therefore typically no need to change that value here
+## Further QSpace specific directory settings (adapt as necessary)
+## For default values see matlab_setup.sh
+## Therefore typically no need to set these values here
  # export MYMATLAB=$HOME/Matlab
 
-## LMA = local matlab data directory (default for data storage)
+## LMA = local Matlab data directory (default for data storage)
 ## used by lib/cto.m as in `cto lma' to change directory to $LMA
    if [ ! $LMA ]; then
       export LMA=/data/$USER/Data
    fi
    if [ ! $RC_STORE ]; then
-      export RC_STORE=$LMA/RCStore  # for non-abelian symmetries
-      export RC_SYNC=$LMA/RCSync    # just for lock files
+      export RC_STORE=$LMA/RCStore
+      export RC_SYNC=$LMA/RCSync
    fi
-  
+
 ## level of parallization of the MEX routines
 ## this overwrites the defaults chosen by matlab_setup.pl
  # export QSP_NUM_THREADS=2  # QSpace specific
  # export OMP_NUM_THREADS=4  # Intel MKL library
  # export MKL_NUM_THREADS=4  # Intel MKL library
- 
+
 ## used for parallelization of MEX compilation
 ## alternative to make -j $MSLOTS ... (see Source/Makefile)
  # export MSLOTS=12

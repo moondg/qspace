@@ -684,7 +684,7 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
 
    if (int(Nkmin)<0) { Nkmin=0; }
 
-   snorm=SQRT(snorm2);
+   snorm=Wb::sqrt(snorm2);
    markSet(SV,mark,Nkmin,NK,stol,Stot,0.,0.,-1,"desc"); 
 
    for (i=0; i<nq; ++i) {

@@ -27,6 +27,10 @@
 %
 %     wbhist([],[],xbin);
 %     wbhist(x, []);   plain count (assumes y=ones(size(x))).
-%     [a,b,c]=wbhist(['default']);
+%     [xbin,ybin,xbdr] = wbhist(['default']);
+%
+%        xbin  original input
+%        xbdr  boundry values between bins (midway)
+%        ybin  binned histogram data
 %
 %  Wb,Feb12,11

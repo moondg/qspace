@@ -271,98 +271,6 @@ inline wbcomplex operator/(double d, const wbcomplex &z) {
    return wbcomplex(d,0)/z;
 };
 
-inline bool isnan(const wbcomplex &z) { return z.isnan(); };
-
-inline bool isfinite(const wbcomplex &z) { return z.isfinite(); };
-inline bool isnormal(const wbcomplex &z) { return z.isnormal(); };
-
-template <class T> inline T real(const T &d) { return d; };
-template <class T> inline T imag(const T &d) { return 0; };
-template <class T> inline T conj(const T &d) { return d; };
-
-template <class T> inline T CONJ(const T &d) { return d; };
-template <class T> inline T ABS (const T &a) { return (a<0 ? -a : a); };
-template <class T> inline T ABS2(const T &d) { return d*d; };
-template <class T> inline T NORM (const T &a){ return (a<0 ? -a : a); };
-template <class T> inline T NORM2(const T &d){ return d*d; };
-
-inline double real(const wbcomplex &z) { return z.r; };
-inline double imag(const wbcomplex &z) { return z.i; };
-inline wbcomplex conj(const wbcomplex &z) {
-   return wbcomplex(z.r,-z.i);
-};
-
-inline double ROUND(const double &d) { return ::round(d); }
-inline wbcomplex ROUND(const wbcomplex &d) { return d.round(); }
-
-#ifdef __WB_MPFR_HH__
-template <unsigned P> inline
-Wb::mpfr__<P> ROUND(const Wb::mpfr__<P> &q) { return q.round(); };
-#endif
-
-template <class T> inline
-T SQRT(const T &d) { return std::sqrt(d); }
-
-template <> inline
-wbcomplex SQRT(const wbcomplex &d) { return d.sqrt(); }
-
-#ifdef __WB_MPFR_HH__
-template <unsigned P> inline
-Wb::mpfr__<P> SQRT(const Wb::mpfr__<P> &q) { return q.sqrt(); };
-#endif
-
-template <> inline
-double ABS(const double &a) { return std::fabs(a); };
-template <> inline
-double NORM(const double &a) { return std::fabs(a); };
-
-template <> inline
-wbcomplex CONJ(const wbcomplex &a) { return a.conj(); };
-
-inline double ABS  (const wbcomplex &a) { return a.abs();  };
-inline double ABS2 (const wbcomplex &a) { return a.abs2(); };
-inline double NORM (const wbcomplex &a) { return a.abs();  };
-inline double NORM2(const wbcomplex &a) { return a.abs2(); };
-
-inline bool ISINF(const double &a) { return std::isinf(a); }
-inline bool ISINF(const wbcomplex &a) {
-   return (std::isinf(a.r) || std::isinf(a.i)); }
-
-inline bool ISNAN(const double &a) { return std::isnan(a); }
-inline bool ISNAN(const wbcomplex &a) {
-   return (std::isnan(a.r) || std::isnan(a.i)); }
-
-inline double REAL(const double &a) { return a; }
-inline double REAL(const wbcomplex &a) { return a.r; }
-
-inline double IMAG(const double &a __attribute__ ((unused))) { return 0; }
-inline double IMAG(const wbcomplex &a) { return a.i; }
-
-#ifdef __WB_MPFR_HH__
-
-template <unsigned P> inline
-Wb::mpfr__<P> ABS(const Wb::mpfr__<P> &a) { return a.abs(); };
-template <unsigned P> inline
-Wb::mpfr__<P> NORM(const Wb::mpfr__<P> &a) { return a.abs(); };
-
-template <unsigned P> inline
-Wb::mpfr__<P> ABS2(const Wb::mpfr__<P> &a) { return a.abs2(); };
-template <unsigned P> inline
-Wb::mpfr__<P> NORM2(const Wb::mpfr__<P> &a) { return a.abs2(); };
-
-#endif
-
-template <class T> inline double ABSDIFF_F(
-   const T &d1, const T &d2
-){ return double(fabs(float(d1)-float(d2))); };
-
-template <> inline double ABSDIFF_F(
-   const wbcomplex &d1, const wbcomplex &d2
-){
-   float dr=float(d1.r)-float(d2.r), di=float(d1.i)-float(d2.i);
-   return std::sqrt(double(dr*dr+di*di));
-};
-
 inline wbcomplex exp(const wbcomplex &z) {
    double r=exp(z.r);
    return wbcomplex(r*cos(z.i), r*sin(z.i));
@@ -374,6 +282,80 @@ inline wbcomplex expi(const double &x) {
 
 inline wbstring toStr(const wbcomplex &z, const char* fmt="%.4g");
 inline wbstring toStr(const double &d, const char* fmt="%.4g");
+
+namespace Wb { 
+
+inline bool isnan(const wbcomplex &z) { return z.isnan(); };
+inline bool isnan(const double &d) { return std::isnan(d); }
+
+inline bool isinf(const wbcomplex &z) { return z.isinf(); }
+inline bool isinf(const double &d) { return std::isinf(d); }
+
+inline bool isfinite(const wbcomplex &z) { return z.isfinite(); };
+inline bool isnormal(const wbcomplex &z) { return z.isnormal(); };
+
+template <class T> inline T real(const T &d) { return d; };
+template <class T> inline T imag(const T &d __attribute__ ((unused))) { return 0; };
+template <class T> inline T conj(const T &d) { return d; };
+
+template <class T> inline T CONJ(const T &d) { return d; };
+template <class T> inline T abs (const T &a) { return (a<0 ? -a : a); };
+template <class T> inline T abs2(const T &d) { return d*d; };
+template <class T> inline T norm (const T &a){ return (a<0 ? -a : a); };
+template <class T> inline T norm2(const T &d){ return d*d; };
+
+inline double real(const wbcomplex &z) { return z.r; };
+inline double imag(const wbcomplex &z) { return z.i; };
+inline wbcomplex conj(const wbcomplex &z) { return wbcomplex(z.r,-z.i); };
+
+inline wbcomplex round(const wbcomplex &z) { return z.round(); }
+inline double round(const double &d) { return std::round(d); }
+
+template <class T> inline
+T sqrt(const T &d) { return std::sqrt(d); }
+
+template <> inline
+wbcomplex sqrt(const wbcomplex &d) { return d.sqrt(); }
+
+template <> inline
+double abs(const double &a) { return std::fabs(a); };
+template <> inline
+double norm(const double &a) { return std::fabs(a); };
+
+template <> inline
+wbcomplex CONJ(const wbcomplex &a) { return a.conj(); };
+
+inline double abs  (const wbcomplex &a) { return a.abs();  };
+inline double abs2 (const wbcomplex &a) { return a.abs2(); };
+inline double norm (const wbcomplex &a) { return a.abs();  };
+inline double norm2(const wbcomplex &a) { return a.abs2(); };
+
+#ifdef __WB_MPFR_HH__
+
+template <unsigned P> inline
+Wb::mpfr__<P> abs(const Wb::mpfr__<P> &a) { return a.abs(); };
+template <unsigned P> inline
+Wb::mpfr__<P> norm(const Wb::mpfr__<P> &a) { return a.abs(); };
+
+template <unsigned P> inline
+Wb::mpfr__<P> abs2(const Wb::mpfr__<P> &a) { return a.abs2(); };
+template <unsigned P> inline
+Wb::mpfr__<P> norm2(const Wb::mpfr__<P> &a) { return a.abs2(); };
+
+#endif
+
+template <class T> inline double absdiff_f(
+   const T &d1, const T &d2
+){ return double(std::fabs(float(d1)-float(d2))); };
+
+template <> inline double absdiff_f(
+   const wbcomplex &d1, const wbcomplex &d2
+){
+   float dr=float(d1.r)-float(d2.r), di=float(d1.i)-float(d2.i);
+   return std::sqrt(double(dr*dr+di*di));
+};
+
+}; 
 
 #endif
 

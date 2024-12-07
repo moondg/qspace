@@ -405,7 +405,7 @@ class wbIndex : public wbvector<widx_t> {
 
     widx_t numel() const { return  SIZE.prod(0); };
 
-    widx_t serial() {
+    widx_t serial() const {
        widx_t l, k=len-1;
        const widx_t *s=SIZE.data;
 
@@ -414,7 +414,7 @@ class wbIndex : public wbvector<widx_t> {
        return l;
     };
 
-    widx_t serial(const widx_t *stride) {
+    widx_t serial(const widx_t *stride) const {
        widx_t l=0;
           if (!len   ) wblog(FL,"ERR wbIndex::%s() got empty object",FCT);
           if (!stride) wblog(FL,"ERR wbIndex::%s() got null strides",FCT);
@@ -876,7 +876,7 @@ class iTags : public wbvector<itag_> {
       return *this;
    }
 
-#ifdef LOAD_CGC_QSPACE
+#ifdef LD_CLEBSCH_QS
    unsigned init_qdir(const char *s);
 #endif
 #ifndef NOMEX

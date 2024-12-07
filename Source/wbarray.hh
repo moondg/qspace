@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : wbarray (array class, col-major)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,10 @@
 #define __WB_ARRAY_COL_MAJOR_HH__
 
 // #define CHECK_ELEMENT_RANGE
+
+#ifdef QS_USING_HPTT
+#include "hptt.h"
+#endif
 
 namespace Wb {
    template<class T>
@@ -201,7 +205,7 @@ class wbarray {
 
        if (fac!=T(1) || flag!='N') { size_t i;
           if (flag!='N') permute(A,"2 1"); else A=(*this);
-          if (flag=='C') for (i=0; i<s; i++) A[i]=CONJ(A[i]);
+          if (flag=='C') for (i=0; i<s; i++) A[i]=Wb::CONJ(A[i]);
           if (fac!=T(1)) for (i=0; i<s; i++) A[i]*=fac;
        }
        else { A.init2ref(*this); } 
@@ -222,7 +226,7 @@ class wbarray {
        if (flag=='C' && typeid(T)!=typeid(wbcomplex)) flag='T';
 
        if (fac!=T(1) || flag=='C') { size_t i; A=(*this);
-          if (flag=='C') for (i=0; i<n; i++) A[i]=CONJ(A[i]);
+          if (flag=='C') for (i=0; i<n; i++) A[i]=Wb::CONJ(A[i]);
           if (fac!=T(1))    for (i=0; i<n; i++) A[i]*=fac;
        }
        else { A.init2ref(*this); } 
@@ -241,7 +245,7 @@ class wbarray {
        if (flag=='C' && typeid(T)!=typeid(wbcomplex)) flag='T';
        if (flag=='C') {
           for (size_t s=numel(), i=0; i<s; ++i)
-          data[i]=CONJ(data[i]);
+          data[i]=Wb::CONJ(data[i]);
        }
        flag='N'; 
 
@@ -358,7 +362,7 @@ class wbarray {
        return NEW(S,d); 
     };
 
-    wbarray& init_bare(const WBINDEX &S) { 
+    wbarray& init_bare(const WBINDEX &S) {
        size_t len=S.prod(0);
        if (len)
             { SIZE=S; NEW_DATA(len,NULL,0,0); } 
@@ -368,7 +372,7 @@ class wbarray {
 
     wbarray& init_bare(size_t d1, size_t d2) { 
        wbvector<size_t> S(2); S[0]=d1; S[1]=d2;
-       return init_bare(S);
+       return init_bare(S); 
     };
 
     wbarray& init(const char *F, int L,
@@ -927,7 +931,7 @@ class wbarray {
     wbvector<T>& normDim2(unsigned k, wbvector<T> &xk) const;  
     wbvector<T>& normDim (unsigned k, wbvector<T> &xk) const {
        normDim2(k,xk);
-       for (size_t n=xk.len, i=0; i<n; ++i) { xk[i]=SQRT(xk[i]); }
+       for (size_t n=xk.len, i=0; i<n; ++i) { xk[i]=Wb::sqrt(xk[i]); }
        return xk;
     };
 
@@ -987,7 +991,7 @@ class wbarray {
     return isDiag_aux(eps,"isDiag"); }
 
     bool isIdentityMatrix(double eps=1E-14) const {
-       if (data && ABS(data[0]-double(1))<eps) { 
+       if (data && Wb::abs(data[0]-double(1))<eps) { 
           if ((SIZE.len%2)==0) {
              if (SIZE.allEqual(1)) { return 1; } 
              else { T one(1); 
@@ -1044,7 +1048,7 @@ class wbarray {
     double maxDiff (const wbarray &B) const;
     T froNorm2(const wbarray &B) const;
     T norm2() const;
-    T norm() const { return SQRT(norm2()); };
+    T norm() const { return Wb::sqrt(norm2()); };
 
     T hasNorm2(const T &x2) const; 
 
@@ -1129,10 +1133,10 @@ class wbarray {
 
     T normDiff2(const wbarray &B, char sflag=0) const;
     T normDiff (const wbarray &B, char sflag=0) const {
-        return SQRT(normDiff2(B,sflag)); };
+        return Wb::sqrt(normDiff2(B,sflag)); };
 
     T normDiff2(const wbvector<T> &B) const;
-    T normDiff (const wbvector<T> &B) const { return SQRT(normDiff2(B)); };
+    T normDiff (const wbvector<T> &B) const { return Wb::sqrt(normDiff2(B)); };
 
     void TimesEl(const wbarray &, char conj=0);
     wbarray& timesEl(
@@ -1284,7 +1288,7 @@ class wbarray {
         size_t i=0, n=numel(); T z(0);
         if (eps==z)
              { for (; i<n; ++i) data[i] = (data[i]!=T(0)    ? m:z); }
-        else { for (; i<n; ++i) data[i] = (ABS(data[i])>eps ? m:z); }
+        else { for (; i<n; ++i) data[i] = (Wb::abs(data[i])>eps ? m:z); }
     };
 
     void toMatrixRef(
@@ -1393,7 +1397,7 @@ class wbarray {
     wbarray& Permute(const wbperm&, char iflag=0, char rcpy=0);
 
     wbarray& permute(wbarray&, const char* s, char iflag=0) const;
-    wbarray& permute(wbarray&, const wbperm&, char iflag=0) const;
+    wbarray& permute(wbarray&, const wbperm&, char iflag=0) const; 
 
     wbarray& select0( 
        const WBPERM &, unsigned dim, wbarray&) const;
@@ -1751,39 +1755,131 @@ class wbarray {
 
 }; 
 
-template<class T>
-wbstring Wb::sizeStrM( 
-   unsigned r, const T* sd,
-   unsigned m, const T* sm, const char *sep, const char *sepM
-) {
-   unsigned i=0, j, l=0, n=0, ndims=r+m;
-   char *s; size_t x;
-   wbstring sout;
+template <class T>
+class wbperm_helper { 
 
-   if (r>1 || m>1)
-          { n+=(ndims-(r && m ? 2 : 1))*(sep ? strlen(sep) : 1); }
-   if (m) { n+=(sepM ? strlen(sepM) : 1); }
+public:
 
-   for (; i<ndims; ++i) {
-      x=(i<r ? sd[i] : sm[i-r]); if (x<0) { x=-x; ++n; } 
-      for (j=0; j<64; ++j) { if (!(x>>1)) break; }
-      n+=(1+ceil(3*(double(i)/10))); 
-   }; if (n<8) n=8;
+   wbperm_helper() 
+    : rk_(0), rk(0), numel(0), sz(NULL), stride(NULL),
+      l1(0), l2(0), m_blk(0) {};
 
-   sout.init(n); s=sout.data;
+   wbperm_helper(const wbvector<widx_t> &sz_, const wbperm &perm)
+    : rk_(sz_.len), rk(0), numel(0),
+      sz( new widx_t [2*rk_] ),
+      stride(sz+rk_), l1(0), l2(0), m_blk(0) {
 
-   for (i=0; i<r && l<n; ++i) {
-      l+=snprintf(s+l,n-l,"%s%ld",i? (sep? sep:" "):"", long(sd[i]));
-   }
-   for (i=0; i<m && l<n; ++i) {
-      l+=snprintf(s+l,n-l,"%s%ld", i? (sep? sep:" ") : (sepM? sepM:"|"),
-      long(sm[i]));
-   }
+      unsigned i,j;
 
-   if (l>=n) wblog(FL,
-      "WRN %s() string out of bounds (%d/%d)\n'%s'",FCT,l,n,s);
-   return sout;
+      widx_t stride_[rk_+1]; stride_[0]=1;
+      for (i=1; i<=rk_; ++i) { stride_[i] = stride_[i-1]*sz_[i-1]; }
+      numel = stride_[i-1];
+
+      if (rk_!=perm.len) wblog(FL,
+         "ERR %s() rank mismatch (r=%d/%d)",FCT,rk_,perm.len);
+      if (!numel) { rk=1; return; }
+
+      for (i=0; i<rk_; ++i) { j=perm[i];
+         sz[i]     = sz_[j];
+         stride[i] = stride_[j];
+      }
+
+      for (i=1; i<rk_; ++i) {
+         if (sz[rk]==1) {
+            sz[rk] *= sz[i];
+            stride[rk] = stride[i]; 
+         }
+         else if (sz[i]==1 || stride[i] == stride[rk] * sz[rk]) {
+            sz[rk] *= sz[i];
+         }
+         else if ((++rk)<i) { 
+            sz[rk] = sz[i];
+            stride[rk] = stride[i];
+         }
+      }
+
+      if (++rk>=2) { widx_t s0;
+         l1=(stride[0]==1 ? 1 : 0);
+
+         s0=(l1 ? sz[0] : 1);
+         for (i=0; i<rk; ++i) { if (stride[i]==s0) { l2=i; break;}}
+
+         if (l2<=l1) { 
+            wblog(FL,"ERR %s() failed to identify l2=%d "
+            "(rk=%d, l1=%d, s0=%ld)",FCT,l2,rk,l1,s0);
+         }
+      }
+
+      m_blk = wbsys::getCacheLineSize()/sizeof(T); 
+   };
+
+   ~wbperm_helper () {
+       if (sz) { delete [] sz; sz=0; }
+    };
+
+   void permute(const T *src, T *dest, int np=1) const;
+
+   wbperm_helper& save2(wbperm_helper &X) {
+      X.rk_=rk_; X.rk=rk; X.numel=numel; rk_=rk=0;
+      X.sz=sz;   X.stride=stride;        sz=stride=NULL;
+      X.l1=l1;   X.l2=l2; X.m_blk=m_blk;
+      return X;
+   };
+
+   mxArray* toMx() const;
+
+   unsigned rk_;    
+   unsigned rk;     
+   widx_t numel;    
+   widx_t *sz;      
+   widx_t *stride;  
+
+   unsigned l1, l2; 
+
+   unsigned m_blk;
 };
+
+template <class T>
+void wbarray_permute__(T *B_data,
+   const wbarray<T> &A, const wbvector<wperm_t> &P, int np=1
+);
+
+template <class T>
+void wbarray_permute__(T *B_data,
+   const wbarray<T> &A, const wbvector<wperm_t> &P, int np
+){
+   wbperm_helper<T> PH(A.SIZE,P);
+   PH.permute(A.data,B_data,np);
+};
+
+#ifdef QS_USING_HPTT
+
+template <>
+void wbarray_permute__( double *B_data,
+   const wbarray<double> &A, const wbvector<wperm_t> &P_, int np
+){
+   wbvector<int> Sz(A.SIZE), P(P_); 
+
+   auto plan = hptt::create_plan(P.data, Sz.len,
+       1., A.data, Sz.data, NULL,  
+       0., B_data,          NULL,  
+       hptt::ESTIMATE,np>=1 ? np : 1);
+   plan->execute();
+};
+
+template <>
+void wbarray_permute__(wbcomplex *B_data,
+   const wbarray<wbcomplex> &A, const wbvector<wperm_t> &P_, int np
+){
+   wbvector<int> Sz(A.SIZE), P(P_);
+   auto plan = hptt::create_plan(P.data, Sz.len,
+       1., (hptt::DoubleComplex*)A.data, Sz.data, NULL,
+       0., (hptt::DoubleComplex*)B_data,          NULL,
+       hptt::ESTIMATE,np>=1 ? np : 1);
+   plan->execute();
+};
+
+#endif
 
 class tensor_ref_ { 
 
@@ -2015,8 +2111,8 @@ T pythag(T a, T b) {
   if (b<0) b=-b;
 
   if (a>b)
-       { T x=b/a; return a*SQRT(T(1)+x*x); } else if (b==0) return 0;
-  else { T x=a/b; return b*SQRT(T(1)+x*x); }
+       { T x=b/a; return a*Wb::sqrt(T(1)+x*x); } else if (b==0) return 0;
+  else { T x=a/b; return b*Wb::sqrt(T(1)+x*x); }
 };
 
 template<class T> inline
@@ -2347,7 +2443,7 @@ wbarray<T>& wbarray<T>::init(
       INIT2REF((T*)A.data,&S);
    }
    else {
-      init(S); A.copy_to(data);
+      init_bare(S); A.copy_to(data); 
       if (ref && WBLOG_TCAST) wblog(FL,
          "WRN ignoring ref (%s)",A.toStrT().data);
    }
@@ -2397,7 +2493,7 @@ void wbarray<T>::initTst() {
       data[j]=(T)x;
 
       k=0; I[0]++;
-      while(I[k]>=SIZE[k] && k<l) { I[k]=0; ++I[++k]; }
+      while (I[k]>=SIZE[k] && k<l) { I[k]=0; ++I[++k]; }
    }
 }
 
@@ -2525,7 +2621,7 @@ wbarray<T>& wbarray<T>::Reduce2Diag(T eps) {
    for (; j<n; ++j, d0+=n) { 
       X.data[j]=d0[j];
       for (i=0; i<n; ++i) { if (i!=j) {
-         if (ABS(d0[i])>eps) wblog(FL,
+         if (Wb::abs(d0[i])>eps) wblog(FL,
             "ERR %s() got off-diagonal matrix element (%g/%g)",
             FCT,double(d0[i]),double(eps)
          );
@@ -2571,7 +2667,7 @@ void wbarray<T>::contractDiag(
        else X.data[i]*=(b-h[I[ic]]);
 
        k=0; I[0]++; 
-       while(I[k]>=S[k] && k<l) { I[k]=0; ++I[++k]; }
+       while (I[k]>=S[k] && k<l) { I[k]=0; ++I[++k]; }
    }
 
    if (C.isEmpty()) X.save2(C); else {
@@ -2624,7 +2720,7 @@ wbarray<T>& wbarray<T>::ExpandDiagonal(unsigned i1, unsigned i2) {
        data[j] = X.data[i];
 
        k=0; I[0]++;
-       while(I[k]>=s0[k] && k<l) { I[k]=0; ++I[++k]; }
+       while (I[k]>=s0[k] && k<l) { I[k]=0; ++I[++k]; }
    }
    return *this;
 };
@@ -2642,7 +2738,7 @@ wbarray<T>& wbarray<T>::Expand2Projector(T eps) {
        FCT, SSTR_(this)
    );
 
-   for (m=i=0; i<n; i++) if (ABS(data[i])>eps) { mark[i]=1; m++; }
+   for (m=i=0; i<n; i++) if (Wb::abs(data[i])>eps) { mark[i]=1; m++; }
 
    S[0]=n; S[1]=m; init(S);
 
@@ -2659,7 +2755,7 @@ T wbarray<T>::froNorm2(const wbarray<T> &B) const {
    if (!sameSize(B)) wblog(FL,"ERR %s() size mismatch (%s/%s)",
    FCT, SSTR_(this), SSTR(B));
 
-   for (size_t n=numel(), i=0; i<n; i++) x+=CONJ(data[i])*B.data[i];
+   for (size_t n=numel(), i=0; i<n; i++) x+=Wb::CONJ(data[i])*B.data[i];
    return x;
 };
 
@@ -2684,7 +2780,7 @@ template<class T> inline
 T wbarray<T>::hasNorm2(const T &x2) const {
    T q2=0; size_t i=0, n=numel();
    for (; i<n; ++i) {
-       if ((q2+=NORM2(data[i]))>x2) { return q2; }
+       if ((q2+=Wb::norm2(data[i]))>x2) { return q2; }
    }
    return -q2;
 };
@@ -2700,7 +2796,7 @@ T wbarray<T>::normCol2(size_t k) const {
    size_t i=0, dim1=SIZE[0];
    const T *d=data+k*dim1; T d2=0; 
 
-   for (i=0; i<dim1; ++i) { d2+=ABS2(d[i]); }
+   for (i=0; i<dim1; ++i) { d2+=Wb::abs2(d[i]); }
    return d2;
 };
 
@@ -2714,7 +2810,7 @@ wbvector<T>& wbarray<T>::norm2Cols(wbvector<T> &x2_) const {
    x2_.init(SIZE[1]); {
       T* x2=x2_.data; size_t i,j, l=0, dim1=SIZE[0], dim2=SIZE[1];
       for (j=0; j<dim2; ++j) 
-      for (i=0; i<dim1; ++i, ++l) { x2[j]+=NORM2(data[l]); }
+      for (i=0; i<dim1; ++i, ++l) { x2[j]+=Wb::norm2(data[l]); }
    }
    return x2_;
 };
@@ -2725,7 +2821,7 @@ wbvector<T> wbarray<T>::normCols() const {
    wbvector<T> x_; norm2Cols(x_); 
    if (x_) {
       size_t i=0; T *x=x_.data;
-      for (; i<x_.len; ++i) { x[i]=SQRT(x[i]); }
+      for (; i<x_.len; ++i) { x[i]=Wb::sqrt(x[i]); }
    }
    return x_;
 };
@@ -2800,7 +2896,7 @@ wbarray<T>& wbarray<T>::sum(
         A.data[j]+=data[i];
 
         k=0; I[0]++; 
-        while(I[k]>=SIZE[k] && k<l) { I[k]=0; ++I[++k]; }
+        while (I[k]>=SIZE[k] && k<l) { I[k]=0; ++I[++k]; }
     }
 
     return A;

@@ -26,13 +26,14 @@ under the Apache 2.0 license (see
 
 Official documentation of QSpace v4.0 <br>
 *QSpace - An open-source tensor library for Abelian and non-Abelian symmetries*
- <br>A. Weichselbaum; <a href="https://scipost.org/10.21468/SciPostPhysCodeb.40-r4.0">
- SciPost Phys. Codebases 40-r4.0 (2024)</a> 
- [<a href=https://arxiv.org/abs/2405.06632>arXiv</a>]<br>
- bundled with Codebase release
- (snapshot of this repository at time of publication)<br>
- An up-to-date PDF version is maintained in 
- <a href="Docu/">Docu</a>/user-guide.pdf
+<br>A. Weichselbaum; <a href="https://scipost.org/10.21468/SciPostPhysCodeb.40-r4.0">
+SciPost Phys. Codebases 40-r4.0 (2024)</a> 
+[<a href=https://arxiv.org/abs/2405.06632>arXiv</a>]<br>
+bundled with Codebase release (snapshot of this repository at time of publication)<br>
+An up-to-date PDF version is maintained in 
+<a href="Docu/">Docu</a>/<a href="Docu/user-guide.pdf">user-guide.pdf</a>
+
+See also <a href="Docu/">Docu</a>/<a href="Docu/README-updates.md">README-updates.md</a> for recent updates.
 
 ### Acknowledgements
 

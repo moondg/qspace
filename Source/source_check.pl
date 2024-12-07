@@ -6,7 +6,7 @@
 #    This then allows simple usage with bash scripts, as in
 #    if NAME [-tag] source.cc; then .. else .. fi;
 #
-# Options #1: check wether LOAD_CGC_QSPACE is defined in any source file
+# Options #1: check wether LD_CLEBSCH_QS is defined in any source file
 #    --cgc mexfun1.cc ...
 #
 # Options #2: find location of binary of each of the source files
@@ -26,17 +26,20 @@
   }
 
   if ($tag eq '--cgc') {
-     $pat='LOAD_CGC_QSPACE'; # looking for "#define LOAD_CGC_QSPACE"
+     $pat='LD_CLEBSCH_QS'; # looking for "#define LD_CLEBSCH_QS"
      my $q=0;
 
+     if (!@ff && @opts) { die "\n  ERR $me: ".
+        "invalid file(s) with $tag: '".join("' '",@opts)."'\n";
+     }
      if (@dd || @opts) { die "\n  ERR $me: invalid usage with $tag\n"; }
      foreach (@ff) { $f=$_;
         if (!/[^\.]*\.[chm].*$/) { die "\n  ERR invalid C-file $_\n\n"; }
 
         open(FH,'<',$f); 
         foreach (<FH>) {
-           if (/^\s*#(define|undef)\s+(LOAD_CGC_QSPACE|QS_SKIP_MPFR)/) {
-              my $a=$1; my $b=$2; $b=($b=~/LOAD/ ? 1 : 2);
+           if (/^\s*#(define|undef)\s+(LD_CLEBSCH_QS|QS_SKIP_MPFR)/) {
+              my $a=$1; my $b=$2; $b=($b=~/LD/ ? 1 : 2);
               if ($a eq 'define')
                    { $q |=  $b; }
               else { $q &= ~$b; }

@@ -13,7 +13,7 @@ char USAGE[]=""; // outsourced to getDimQS.m // Wb,Jan12,19
    #define PROG "getDimQS"
 #endif
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #include "wblib.h"
 
 void mexFunction(

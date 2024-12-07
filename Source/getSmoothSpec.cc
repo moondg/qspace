@@ -107,7 +107,7 @@ void GET_SMOOTH_SPEC(
     }
 
     for (n=i=0; i<aa.dim1; ++i)
-    for (  j=0; j<aa.dim2; ++j) { if (ISNAN(aa(i,j))) { aa(i,j)=0; n++; }}
+    for (  j=0; j<aa.dim2; ++j) { if (Wb::isnan(aa(i,j))) { aa(i,j)=0; n++; }}
 
     if (n) wblog(FL, "    skipping %d NaN's", n);
 
@@ -143,7 +143,7 @@ void GET_SMOOTH_SPEC(
           if (!I.isEmpty()) {
              aa.getCols(I,ax).recSumA(a2); a2.setMin(1E-14);
              for (j=0; j<a2.len; ++j) {
-                if (ABS2(aa(j,i))>ABS2(a2[j])) {
+                if (Wb::abs2(aa(j,i))>Wb::abs2(a2[j])) {
                    a0(j,0)+=aa(j,i); aa(j,i)=0; ++gotdelta;
                 }
              }
@@ -156,7 +156,7 @@ void GET_SMOOTH_SPEC(
           if (!I.isEmpty()) {
              aa.getCols(I,ax).recSumA(a2); a2.setMin(1E-14);
              for (j=0; j<a2.len; ++j) {
-                if (ABS2(aa(j,i))>ABS2(a2[j])) {
+                if (Wb::abs2(aa(j,i))>Wb::abs2(a2[j])) {
                     a0(j,1)+=aa(j,i); aa(j,i)=0; ++gotdelta;
                 }
              }

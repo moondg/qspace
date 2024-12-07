@@ -2495,7 +2495,7 @@ void QSpace<TQ,TD>::initOpZ_WET(const char *F, int L,
          wblog(FL,"ERR WET data mismatch (len=%d/%d)",d0.len,dc.len);
       }
 
-      x=SQRT(double(QZ.normDiff2(qc))); if (x>eps1) {
+      x=Wb::sqrt(double(QZ.normDiff2(qc))); if (x>eps1) {
         MXPut(FL,"q").add(dc,"dc").add(qc,"qc").add(QZ,"QZ").add(d0,"d0");
         wblog(FL,"ERR %s() data mismatch (%.3g)",FCT,x);
       }
@@ -3901,7 +3901,7 @@ double QSpace<TQ,TD>::maxDiff(const QSpace<TQ,TD> &B) const {
 
        if (i1>=0 && i2>=0) {
           d=DATA[i1]->maxDiff(*B.DATA[i2]); ++m;
-          if (ISNAN(d)) return d;
+          if (Wb::isnan(d)) return d;
        }
        else {
           if (i1>=0) d=  DATA[i1]->aMax(); else
@@ -4116,7 +4116,7 @@ double QSpace<TQ,TD>::contract(const char *F, int L,
    Wb::Clock clk("QS:ctr:actual",1); 
 #endif
 
-#ifdef LOAD_CGC_QSPACE
+#ifdef LD_CLEBSCH_QS
 #endif
 
    unsigned nc,ic, Nx=0;
@@ -4325,7 +4325,7 @@ int QSpace<TQ,TD>::check_CGR_cgw(const char *F, int L) const {
    for (i=0; i<CGR.dim1; ++i)
    for (j=0; j<CGR.dim2; ++j) { if (CGR(i,j).cgw.len) {
       w2=CGR(i,j).cgw.norm2();
-      if (!isfinite(w2) || ABS(w2-1)>1E-12) { ++e;
+      if (!isfinite(w2) || Wb::abs(w2-1)>1E-12) { ++e;
          if (F) wblog(F,L,"ERR %s() ",FCT);
       }
    }}

@@ -71,7 +71,7 @@ function C=oplus(A,B,varargin)
         end
         [p,ip]=initperm(r,'--2front',l); px=[];
         for j=Ib{ib(i)}, r_=ndims(B.data{j});
-         % bear in mind trailing OM index [email Changkai Zhang 11/26/2024]
+         % bug-fix trailing OM index [email Changkai Zhang 11/26/2024]
            if r_<=r, p_=p; ip_=ip;
            elseif r_==r+1
               if isempty(px), [px,ipx]=initperm(r_,'--2front',l); end

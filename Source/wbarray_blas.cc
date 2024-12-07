@@ -709,7 +709,7 @@ void wbEigen_CS_regen(
       "WRN zggeev() orthogonal matrix with t-norm = %.3g",nmin);
 
    for (i=1; i<n; i++) {
-      a=ABSDIFF_F(E[i],E[i-1]);
+      a=Wb::absdiff_f(E[i],E[i-1]);
 
       if (i+1<n) { if (a<eps) continue; }
       else { if (a<eps) i++; }
@@ -768,7 +768,7 @@ void wbEigen_CS_regen_trial(
          wbarray<T> V0(V);
 
    for (i=1; i<n; i++) {
-      a=ABS(E[i]-E[i-1]);
+      a=Wb::abs(E[i]-E[i-1]);
       if (a<eps) {
 
          for (j=i0; j<i; j++) { vr=V.ref(j); v=V.ref(i);
@@ -1055,7 +1055,7 @@ void wbSVD(
    }
 
    #ifdef SVD_BUG_SAFEGUARD 
-   { double a=SQRT(A.norm2()), s=SQRT(S.norm2());
+   { double a=Wb::sqrt(A.norm2()), s=Wb::sqrt(S.norm2());
      double e=fabs(a-s)/(a*sqrt(double(dim1)*double(dim2)));
 
      if (e>1E-10) { char s_[128];
@@ -1069,7 +1069,7 @@ void wbSVD(
 
         GESVD(X,Vd,S,U); Vd.Transpose(); U.Transpose();
 
-        s=SQRT(S.norm2());
+        s=Wb::sqrt(S.norm2());
         a=fabs(a-s)/(a*sqrt(double(dim1)*double(dim2)));
         if (ISCOMPLX_(T))
              strcpy(s_,"ZGESVD");

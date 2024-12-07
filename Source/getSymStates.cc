@@ -14,7 +14,7 @@ char USAGE[]="";
    #define PROG "getSymStates"
 #endif
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #define QS_SKIP_MPFR 
 #include "wblib.h"
 

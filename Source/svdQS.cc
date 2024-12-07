@@ -15,7 +15,7 @@ char USAGE[]=""; // outsourced to svdQS.m // Wb,Jan12,19
    #define PROG "svdQS"
 #endif
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #include "wblib.h"
 
 template<class TD>

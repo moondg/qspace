@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace utility routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,6 @@
 // the compiler wants to know its full definition, so the
 // forward declarations in wblib.h do not suffice)
 // Wb,Sep03,16
-
-   int OMP_NUM_THREADS = 0; 
 
 namespace Wb {
 

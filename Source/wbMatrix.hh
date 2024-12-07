@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : wbMatrix (matrix class, row-major)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -396,7 +396,7 @@ class wbMatrix {
     T aMax() const { 
        T m=0; if (dim1 && dim2) {
           size_t i=0, n=dim1*dim2; T a;
-          for (; i<n; ++i) { a=ABS(data[i]); if (m<a) { m=a; }}
+          for (; i<n; ++i) { a=Wb::abs(data[i]); if (m<a) { m=a; }}
        }
        else wblog(FL,"WRN %s() got empty object",FCT);
        return m;
@@ -408,7 +408,7 @@ class wbMatrix {
 
        size_t i,j,l=0;
        for (i=0; i<dim1; ++i)
-       for (j=0; j<dim2; ++j, ++l) { if (m<(a=ABS(data[i]))) {
+       for (j=0; j<dim2; ++j, ++l) { if (m<(a=Wb::abs(data[i]))) {
            m=a; i_=i; j_=j;
        }}
        return m;
@@ -447,10 +447,10 @@ class wbMatrix {
 
     T norm2() const {
        T x2=0; size_t i, n=dim1*dim2;
-       for (i=0; i<n; ++i) x2+=NORM2(data[i]);
+       for (i=0; i<n; ++i) x2+=Wb::norm2(data[i]);
        return x2;
     };
-    T norm() const { return SQRT(norm2()); }
+    T norm() const { return Wb::sqrt(norm2()); }
 
     double normReal() const;
     double normImag() const;
@@ -464,7 +464,7 @@ class wbMatrix {
           "ERR %s() index out of bounds (%ld,%ld/%ld)",FCT,j1,j2,dim2);
 
        for (i=0; i<dim1; ++i)
-       for (j=j1; j<=j2; ++j) { x2+=NORM2(data[i*dim2+j]); } 
+       for (j=j1; j<=j2; ++j) { x2+=Wb::norm2(data[i*dim2+j]); } 
        return x2;
     };
 
@@ -477,14 +477,14 @@ class wbMatrix {
           "ERR %s() index out of bounds (%ld,%ld/%ld)",FCT,i1,i2,dim1);
 
        for (i=i1; i<=i2; ++i)
-       for (j=0; j<dim2; ++j) { x2+=NORM2(data[i*dim2+j]); } 
+       for (j=0; j<dim2; ++j) { x2+=Wb::norm2(data[i*dim2+j]); } 
        return x2;
     };
 
     wbvector<T>& norm2Cols(wbvector<T> &x2_) const { 
        x2_.init(dim2); T* x2=x2_.data; size_t i,j, l=0;
        for (i=0; i<dim1; ++i) 
-       for (j=0; j<dim2; ++j, ++l) { x2[j]+=NORM2(data[l]); }
+       for (j=0; j<dim2; ++j, ++l) { x2[j]+=Wb::norm2(data[l]); }
        return x2_;
     };
 
@@ -494,7 +494,7 @@ class wbMatrix {
 
     wbvector<T> normCols() const {
        wbvector<T> x_; norm2Cols(x_); T *x=x_.data; 
-       for (size_t i=0; i<dim2; ++i) { x[i]=SQRT(x[i]); }
+       for (size_t i=0; i<dim2; ++i) { x[i]=Wb::sqrt(x[i]); }
        return x_;
     };
 
@@ -652,7 +652,7 @@ class wbMatrix {
 
     T normDiff2(const wbMatrix &M, size_t *k=NULL) const;
     T normDiff (const wbMatrix &M, size_t *k=NULL) const {
-       return SQRT(normDiff2(M,k));
+       return Wb::sqrt(normDiff2(M,k));
     };
 
     bool sameSize(const wbMatrix B) const { 
@@ -691,7 +691,7 @@ class wbMatrix {
        size_t n=0; 
        if (!eps) { n=nnz(); } else {
           size_t i,s=dim1*dim2;
-          for (i=0; i<s; ++i) { if (ABS(data[i])>eps) ++n; }
+          for (i=0; i<s; ++i) { if (Wb::abs(data[i])>eps) ++n; }
        }
        return n;
     };
@@ -1439,7 +1439,7 @@ bool wbMatrix<T>::isDiagMatrix(T eps) const {
    size_t i,j, l=0;
 
    for (i=0; i<dim1; ++i)  
-   for (j=0; j<dim2; ++j, ++l) { if (i!=j && ABS(data[l])>eps) return 0; }
+   for (j=0; j<dim2; ++j, ++l) { if (i!=j && Wb::abs(data[l])>eps) return 0; }
 
    return 1;
 };
@@ -1467,7 +1467,7 @@ bool wbMatrix<T>::isProptoId(T &x, T eps) const {
 
    for (i=0; i<dim1; ++i)
    for (j=0; j<dim2; ++j, ++l) { 
-       if (ABS(data[l] - (i!=j ? 0 : data[0]))>eps) { return 0; }
+       if (Wb::abs(data[l] - (i!=j ? 0 : data[0]))>eps) { return 0; }
    }
    x=data[0]; return 1;
 };
@@ -1490,9 +1490,9 @@ bool wbMatrix<T>::isSym_aux(
       if (eps==0) {
          for (i=0; i<dim1; ++i) { k = (issame ? i : 0);
          for (j=k; j<dim2; ++j) {
-            if (A(i,j)!=CONJ(B(j,i))) {
+            if (A(i,j)!=Wb::CONJ(B(j,i))) {
                if (xref) {
-                  x = ABS(A(i,j) - CONJ(B(j,i)));
+                  x = Wb::abs(A(i,j) - Wb::CONJ(B(j,i)));
                   xref[0] = MAX(*xref,x);
                }
                else return 0;
@@ -1502,7 +1502,7 @@ bool wbMatrix<T>::isSym_aux(
       else {
          for (i=0; i<dim1; ++i) { k = (issame ? i : 0);
          for (j=k; j<dim2; ++j) {
-            x = ABS(A(i,j) - CONJ(B(j,i)));
+            x = Wb::abs(A(i,j) - Wb::CONJ(B(j,i)));
             if (x>eps) { if (xref) xref[0]=MAX(*xref,x); else return 0; }
          }}
       }
@@ -1511,9 +1511,9 @@ bool wbMatrix<T>::isSym_aux(
       if (eps==0) {
          for (i=0; i<dim1; ++i) { k = (issame ? i : 0);
          for (j=k; j<dim2; ++j) {
-            if (A(i,j)!=-CONJ(B(j,i))) {
+            if (A(i,j)!=-Wb::CONJ(B(j,i))) {
                if (xref) {
-                  x = ABS(A(i,j) + CONJ(B(j,i)));
+                  x = Wb::abs(A(i,j) + Wb::CONJ(B(j,i)));
                   xref[0] = MAX(*xref,x);
                }
                else return 0;
@@ -1523,7 +1523,7 @@ bool wbMatrix<T>::isSym_aux(
       else {
          for (i=0; i<dim1; ++i) { k = (issame ? i : 0);
          for (j=k; j<dim2; ++j) {
-            x = ABS(A(i,j) + CONJ(B(j,i)));
+            x = Wb::abs(A(i,j) + Wb::CONJ(B(j,i)));
             if (x>eps) { if (xref) xref[0]=MAX(*xref,x); else return 0; }
          }}
       }
@@ -2749,7 +2749,7 @@ template<class T>
 wbMatrix<T>& wbMatrix<T>::Conj() { return *this; };
 
 template<class T>
-double wbMatrix<T>::normReal() const { return SQRT(norm2()); };
+double wbMatrix<T>::normReal() const { return Wb::sqrt(norm2()); };
 
 template<class T>
 double  wbMatrix<T>::normImag() const { return 0; };
@@ -2757,15 +2757,15 @@ double  wbMatrix<T>::normImag() const { return 0; };
 template<>
 double wbMatrix<wbcomplex>::normReal() const {
     double x=0;
-    for (size_t n=dim1*dim2, i=0; i<n; ++i) x+=NORM2(data[i].r);
-    return SQRT(x);
+    for (size_t n=dim1*dim2, i=0; i<n; ++i) x+=Wb::norm2(data[i].r);
+    return Wb::sqrt(x);
 };
 
 template<>
 double wbMatrix<wbcomplex>::normImag() const {
     double x=0;
-    for (size_t n=dim1*dim2, i=0; i<n; ++i) x+=NORM2(data[i].i);
-    return SQRT(x);
+    for (size_t n=dim1*dim2, i=0; i<n; ++i) x+=Wb::norm2(data[i].i);
+    return Wb::sqrt(x);
 };
 
 template<>

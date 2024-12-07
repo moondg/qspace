@@ -2154,7 +2154,7 @@ TD cdata<TD>::NormSignC(
    TD nrm; 
 
    if (this->D.len<=1) { if (!this->D.len) return 0; else {
-      TD a=ABS(this->D[0]); 
+      TD a=Wb::abs(this->D[0]); 
       if (m) wblog(FL,"ERR %s() got m=%d for scalars",FCT,m);
       if (a<eps1) {
          if (a>eps2 && F) wblog(F_L, 
@@ -2181,7 +2181,7 @@ TD cdata<TD>::NormSignC(
       nrm/=Wb::maxRange(this->SIZE.data+(r-m),m);
    }
 
-   nrm=SQRT(nrm);
+   nrm=Wb::sqrt(nrm);
 
    if (nrm<eps1) {
       if (nrm>eps2) wblog(FL,
@@ -2190,7 +2190,7 @@ TD cdata<TD>::NormSignC(
       return 0;
    }
 
-   for (i=0; i<n; ++i) if (ABS(d[i])>=eps1) {
+   for (i=0; i<n; ++i) if (Wb::abs(d[i])>=eps1) {
       if (d[i]<0) { nrm=-nrm; }; break;
    }
    if (i==n) wblog(FL,
@@ -2954,7 +2954,7 @@ int CData<TQ,TD>::completeOM_DegQ(
    }
 
    if (m<=1) {
-      TD x2=x3.norm2(); e=ABS(double(x2-m));
+      TD x2=x3.norm2(); e=Wb::abs(double(x2-m));
       if (e<CG_SKIP_EPS1) {
          return dm;
       }
@@ -2965,7 +2965,7 @@ int CData<TQ,TD>::completeOM_DegQ(
 
          a.Plus(FL,cgd,-x3.D[0]); 
 
-         if (ABS(e=double(a.NormSignC(FL)))<1E-8) wblog(FL,
+         if (Wb::abs(e=double(a.NormSignC(FL)))<1E-8) wblog(FL,
            "ERR %s() got small OM weight (cfac=%g)",FCT,e);
       }
 
@@ -2988,7 +2988,7 @@ int CData<TQ,TD>::completeOM_DegQ(
          }
          n2=E.getDiag(FL,k);
 
-         if ((e=ABS(double(n2-1)))<CG_SKIP_EPS1) { update=0; continue; }
+         if ((e=Wb::abs(double(n2-1)))<CG_SKIP_EPS1) { update=0; continue; }
          if (e<1E-8) wblog(FL,"ERR %s() e=%g",FCT,e);
 
          getMultiplicity(k,a).Permute(p);
@@ -2997,7 +2997,7 @@ int CData<TQ,TD>::completeOM_DegQ(
          cgd.wbsparray<TD>::contract(FL,r,x, b); 
          a-=b;
 
-         if (ABS(e=double(a.NormSignC(FL)))<1E-8) {
+         if (Wb::abs(e=double(a.NormSignC(FL)))<1E-8) {
             MXPut(FL,"Idb").add(x3,"x3").add(k,"k").add(x,"x")
             .add(E,"E").add(*this,"C").add(n2,"n2").add(k,"k").add(e,"e");
             wblog(FL,"ERR %s() got small OM weight (cfac=%g)",FCT,e);
@@ -3180,7 +3180,7 @@ double CData<TQ,TD>::norm2(unsigned k) const {
    else {
       RTD x2=0; const size_t *i4=cgd.IDX.data+3;
       for (SPIDX_T i=0; i<cgd.D.len; ++i, i4+=cgd.IDX.dim2) {
-          if ((*i4)==k) x2+=(CONJ(cgd.D[i])*cgd.D[i]);
+          if ((*i4)==k) x2+=(Wb::CONJ(cgd.D[i])*cgd.D[i]);
       }
       return double(x2);
    }
@@ -3476,12 +3476,12 @@ CData<TQ,TD>& CData<TQ,TD>::save2(CData<TQ,TD> &B) {
             MXPut(FL,"Idb").add(cgd,"A").add(B.cgd,"B").add(X,"X").add(E,"E");
             wblog(FL,"ERR %s() got altered existing OM space",FCT);
          }
-         e=ABS(double(x-1));
+         e=Wb::abs(double(x-1));
       }
       else {
          if (X.SIZE.len>2 || !X.D) wblog(FL,
             "ERR %s() X=%s (n=%d)",FCT,SSTR(X),X.D.len);
-         e=ABS(double(X.D[0]-1)); 
+         e=Wb::abs(double(X.D[0]-1)); 
       }
       if (e>1E-20) wblog(FL,
          "ERR %s() got CG difference @ %.3g",FCT,sqrt(e));
@@ -3701,7 +3701,7 @@ CData<TQ,TD>& CData<TQ,TD>::Conj(unsigned k) {
    { double e=R.cgw[0]; unsigned d=R.cgb->cgd.dim(); e=fabs(e*e-d);
      if (e>1E-12) wblog(FL,
         "ERR %s() unexpected cgw^2 = %g / %d @ %.3g",FCT,R.cgw[0],d,e);
-     c*=SQRT(RTD(d));
+     c*=Wb::sqrt(RTD(d));
    }
 
    P.initLastTo(k, cgd.SIZE.len ? cgd.SIZE.len : this->qdir.len); 
@@ -5024,7 +5024,7 @@ char CRef<TQ>::sameUptoFac(const CRef &B,
       "ERR %s() cgw out of bounds (%s/%s/%d)",FCT,SSTR(cgw),SSTR(B.cgw),m);
    if (a<=eps) wblog(FL,
       "ERR %s() got small cgw (%.3g)",FCT,cgw.norm());
-   if (ABS(B.cgw(i,j))<=eps) { return 4; } 
+   if (Wb::abs(B.cgw(i,j))<=eps) { return 4; } 
 
    double fac=B.cgw(i,j)/cgw(i,j); if (fac_) { (*fac_)=fac; }
 
@@ -5034,18 +5034,18 @@ char CRef<TQ>::sameUptoFac(const CRef &B,
    for (i=j=0; j<N2; ++j, i=0) { 
       if (j<n2) {
          for (; i<n1; ++i) {
-            a=ABS( fac*cgw(i,j) - B.cgw(i,j) );
+            a=Wb::abs( fac*cgw(i,j) - B.cgw(i,j) );
             if (a>eps) { return 6; }
          }
       }
       if ((j<n2 && n1<sa[0]) || (j>=n2 && n2<sa[1])) {
          for (; i<N1; ++i) {           
-            if (ABS(  cgw(i,j)) > eps) { return (i==j ? 11 : 7); }
+            if (Wb::abs(  cgw(i,j)) > eps) { return (i==j ? 11 : 7); }
          }
       }
       else {
          for (; i<N1; ++i) {           
-            if (ABS(B.cgw(i,j)) > eps) { return (i==j ? 12 : 8); }
+            if (Wb::abs(B.cgw(i,j)) > eps) { return (i==j ? 12 : 8); }
          }
       }
    }
@@ -5382,7 +5382,7 @@ double CRef<TQ>::normDiff2(const char *F, int L, const CRef &B) const {
 
    if (n==1) { 
       x2 = wget0() - B.wget0();
-      x2=NORM2(x2);
+      x2=Wb::norm2(x2);
    }
    else {
       x2=cgw.normDiff2(B.cgw,'!'); 
@@ -5588,7 +5588,7 @@ double genRG_base<TQ,TD>::normDiff(const char *F, int L,
 
    for (unsigned i=0; i<Sp.len; i++) {
       e=Sp[i].normDiff2(B.Sp[i])/Sp[i].numel();
-      e=std::sqrt(ABS(e)); if (e>double(eps)) {
+      e=std::sqrt(Wb::abs(e)); if (e>double(eps)) {
          wblog(F_L,"TST %s() Sp[%d] (e=%.3g)",FCT,i+1,e);
          return e;
       }
@@ -5598,7 +5598,7 @@ double genRG_base<TQ,TD>::normDiff(const char *F, int L,
 
    for (unsigned i=0; i<Sz.len; i++) {
       e=Sz[i].normDiff2(B.Sz[i]);
-      e=std::sqrt(ABS(e)); if (e>double(eps)) {
+      e=std::sqrt(Wb::abs(e)); if (e>double(eps)) {
          wblog(F_L,"TST %s() Sz[%d] (e=%.3g)",FCT,i+1,e);
          return e;
       }
@@ -5771,7 +5771,7 @@ void genRG_struct<TQ,TD>::initCommRel(
 
       for (p=k=0; k<nz; ++k) {
          x=double(C.froNorm2(R.Sz[k])/R.Sz[k].froNorm2(R.Sz[k]));
-         if (ABS(x)>1E-10) { kk[p]=k; fac[p++]=x; }
+         if (Wb::abs(x)>1E-10) { kk[p]=k; fac[p++]=x; }
       }
       if (!p) {
          MXPut(FL,"i").add(R,"R").add(CR,"CR").add(C,"C")
@@ -6134,7 +6134,7 @@ int genRG_struct<TQ,TD>::get1J_gen(
 
    if (!i && d==1) { if (EK.len) Ebest=double(EK[0]); }
 
-   if (!EK.len || ABS(EK[0])>TD(CG_EPS1) || ABS(Ebest)>CG_EPS1) {
+   if (!EK.len || Wb::abs(EK[0])>TD(CG_EPS1) || Wb::abs(Ebest)>CG_EPS1) {
       wbarray<double> X_; MXPut(FL,"q1j").add(i,"i").add(d,"d")
         .add(wbarray<double>(HK),"HK")
         .add(wbvector<double>(EK),"EK")
@@ -6151,7 +6151,7 @@ int genRG_struct<TQ,TD>::get1J_gen(
 
    gStore.rclog(q, FL, i<2 && CG_VERBOSE>6 && F,
       " *  %s() k=%2d/%d @ E0=%.3g; %.3g, %.3g (i=%d/%d)",
-      FCT,iter,d,Ebest,double(xmin),SQRT(e2),i,nK
+      FCT,iter,d,Ebest,double(xmin),Wb::sqrt(e2),i,nK
    );
 
    i=gStore.save_CData(0,0,Z);
@@ -6191,7 +6191,7 @@ int BuildKrylovH(
       GetHPsi(HX,X,HL,HR,SL,SR);
       HK(ik,ik)=X.dotProd(FL,HX);
       if (ik) {
-         TD d=ABS(HK(ik-1,ik-1))+ABS(HK(ik,ik));
+         TD d=Wb::abs(HK(ik-1,ik-1))+Wb::abs(HK(ik,ik));
          if (d+x==d) { rval=2; 
             HK.Resize(ik,ik);  
 
@@ -6831,8 +6831,8 @@ double CG::getSymmetryStates(const char *F, int L, const QType &q,
          v0.setRec(0, i0,0, 1.); if (!i0 && !it) break;
 
          Wb::MatProd(U,v0,x1,'C'); x=x1.norm();
-         if (ABS(x-1)<eps) {
-            if (ABS(x-1)>eps2) wblog(FL,"WRN %s() "
+         if (Wb::abs(x-1)<eps) {
+            if (Wb::abs(x-1)>eps2) wblog(FL,"WRN %s() "
                "%g (%g,%g)",FCT,double(x),double(eps),double(eps2));
             continue;
          } else break;
@@ -6878,7 +6878,7 @@ double CG::getSymmetryStates(const char *F, int L, const QType &q,
 
           Wb::MatProd(Sp[ip],v0,vi,'C'); 
 
-          vi2=vi.norm2(); x=SQRT(vi2/vi.SIZE[1]);
+          vi2=vi.norm2(); x=Wb::sqrt(vi2/vi.SIZE[1]);
           if (x<eps) { 
              if (x>eps2) wblog(FL,"WRN %s() got %.3g [%g %g]",
                  FCT,double(x),double(eps),double(eps2));

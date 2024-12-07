@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : wbMatrix (matrix class, row-major)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -349,10 +349,10 @@ inline void MMDIAG(
        A.getDiag(adiag); B.getDiag(bdiag);
 
        if (aflag=='C')
-       for (i=0; i<adiag.len; i++) adiag[i]=conj(adiag[i]);
+       for (i=0; i<adiag.len; i++) adiag[i]=Wb::conj(adiag[i]);
 
        if (bflag=='C')
-       for (i=0; i<bdiag.len; i++) bdiag[i]=conj(bdiag[i]);
+       for (i=0; i<bdiag.len; i++) bdiag[i]=Wb::conj(bdiag[i]);
 
        dmax=MIN( MIN(A.dim1,A.dim2), MIN(B.dim1,B.dim2) );
        for (i=0; i<dmax; i++) C(i,i) += afac * adiag[i] * bdiag[i];
@@ -396,13 +396,13 @@ inline wbMatrix<TC>& MMDIAG(
    }
 
    for (i=0; i<C.dim1; i++) {
-      dbl=A[i];   if (acc) dbl=conj(dbl);
+      dbl=A[i];   if (acc) dbl=Wb::conj(dbl);
       dbl*=afac;  if (dbl==0.) continue;
 
       switch (bflag) {
         case 'N': for (j=0; j<C.dim2; j++) C(i,j)+=(dbl*B(i,j)); break;
         case 'T': for (j=0; j<C.dim2; j++) C(i,j)+=(dbl*B(j,i)); break;
-        case 'C': for (j=0; j<C.dim2; j++) C(i,j)+=(dbl*conj(B(j,i)));
+        case 'C': for (j=0; j<C.dim2; j++) C(i,j)+=(dbl*Wb::conj(B(j,i)));
       }
    }
 
@@ -444,13 +444,13 @@ inline wbMatrix<TC>& MMDIAG(
    }
 
    for (j=0; j<C.dim2; j++) {
-      dbl=B[j];   if (bcc) dbl=conj(dbl);
+      dbl=B[j];   if (bcc) dbl=Wb::conj(dbl);
       dbl*=afac;  if (dbl==0.) continue;
 
       switch (aflag) {
         case 'N': for (i=0; i<C.dim1; i++) C(i,j)+=(dbl*A(i,j)); break;
         case 'T': for (i=0; i<C.dim1; i++) C(i,j)+=(dbl*A(j,i)); break;
-        case 'C': for (i=0; i<C.dim1; i++) C(i,j)+=(dbl*conj(A(j,i)));
+        case 'C': for (i=0; i<C.dim1; i++) C(i,j)+=(dbl*Wb::conj(A(j,i)));
       }
    }
 
@@ -658,7 +658,7 @@ inline void wbSVD(
    GESVD_M(A,U,S,Vt);
 
 #ifdef SVD_BUG_SAFEGUARD 
-   { double a=SQRT(A0.norm2()), s=SQRT(S.norm2()), e=fabs(a-s)/a;
+   { double a=Wb::sqrt(A0.norm2()), s=Wb::sqrt(S.norm2()), e=fabs(a-s)/a;
      if (e>1E-10) {
         wblog(FL,"WRN %s() need to fix SVD bug: %dx%d @ e=%.3g !?",FCT,M,N,e);
      }

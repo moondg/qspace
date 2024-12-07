@@ -10,7 +10,7 @@ char USAGE[]=""; // outsourced to skipZerosQS.m // Wb,Jan12,19
    #define PROG "skipZerosQS"
 #endif
 
-#define LOAD_CGC_QSPACE
+#define LD_CLEBSCH_QS
 #include "wblib.h"
 
 void mexFunction(

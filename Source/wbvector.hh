@@ -621,17 +621,17 @@ class wbvector {
     };
 
     T scalarProd(const T *v) const { 
-        T s=T(); for (size_t i=0; i<len; ++i) s+=(data[i]*CONJ(v[i]));
+        T s=T(); for (size_t i=0; i<len; ++i) s+=(data[i]*Wb::CONJ(v[i]));
         return s;
     };
 
-    T norm() const { return SQRT(norm2()); }
+    T norm() const { return Wb::sqrt(norm2()); }
 
     T norm2() const { 
        T s=0; if (len==0) return s;
-       s=NORM2(data[0]);
+       s=Wb::norm2(data[0]);
 
-       for (size_t i=1; i<len; i++) s+=NORM2(data[i]);
+       for (size_t i=1; i<len; i++) s+=Wb::norm2(data[i]);
        return s;
     };
 
@@ -693,7 +693,7 @@ class wbvector {
           T x, x2=0; if (a!=0)  eps*=a;
           if (!len) wblog(FL,"WRN %s() got len=%d",FCT,len);
           for (size_t i=0; i<len; ++i) { x=data[i]-a; x2+=(x*x); }
-          return (ABS(x2)<eps);
+          return (Wb::abs(x2)<eps);
        }
     };
 
@@ -760,7 +760,7 @@ class wbvector {
 
     bool anySmallVals(const T eps=1E-15) const {
        size_t i=0; if (eps>0)
-            { for (; i<len; ++i) { if (ABS(data[i])<eps) return 1; }}
+            { for (; i<len; ++i) { if (Wb::abs(data[i])<eps) return 1; }}
        else { for (; i<len; ++i) { if (data[i]) return 1; }}
        return 0;
     };
@@ -1543,7 +1543,7 @@ T wbvector<T>::aMax(size_t *k_) const {
    if (len) {
       size_t k=-1, i=0; T a,x=0;
       for (; i<len; ++i) {
-         a=ABS(data[i]); if (x<a) { x=a; k=i; }
+         a=Wb::abs(data[i]); if (x<a) { x=a; k=i; }
       }
       if (k_) (*k_)=k;
       return x;
@@ -1565,17 +1565,17 @@ T wbvector<T>::aMin(char zflag, size_t *k_) const {
    size_t i=0, k=-1; double a,x=0;
 
    if (zflag==0) { 
-      x=ABS(data[i++]); k=0; if (x!=0) {
-         for (; i<len; ++i) { a=ABS(data[i]); if (x>a) {
+      x=Wb::abs(data[i++]); k=0; if (x!=0) {
+         for (; i<len; ++i) { a=Wb::abs(data[i]); if (x>a) {
             x=a; k=i; if (x==0) break;
          }}
       }
    }
    else {
       for (; i<len; ++i) {
-         a=ABS(data[i]); if (a) { x=a; k=i; break; }
+         a=Wb::abs(data[i]); if (a) { x=a; k=i; break; }
       }
-      for (; i<len; ++i) { a=ABS(data[i]);
+      for (; i<len; ++i) { a=Wb::abs(data[i]);
          if (a && x>a) { x=a; k=i; }
       }
    }
@@ -1628,7 +1628,7 @@ T wbvector<T>::std() const {
    else {
       T x=data[0], x2=data[0]*data[0];
       for (size_t i=1; i<len; ++i) { x+=data[i]; x2+=data[i]*data[i]; }
-      return SQRT( ( x2 - (x*x)/T(len) ) / T(len-1) );
+      return Wb::sqrt( ( x2 - (x*x)/T(len) ) / T(len-1) );
    }
 };
 
@@ -1636,10 +1636,10 @@ template <class T> inline
 int wbvector<T>::findClosest(T r) const {
    if (len==0) return -1;
 
-   T dbl, eps=ABS(data[0]-r); size_t i,k=0;
+   T dbl, eps=Wb::abs(data[0]-r); size_t i,k=0;
 
    for (i=1; i<len; i++) {
-      dbl = ABS(data[i]-r);
+      dbl = Wb::abs(data[i]-r);
       if (dbl<eps) { k=i; eps=dbl; if (eps==0) break; }
    }
 
@@ -1681,13 +1681,13 @@ int wbvector<T>::findClosestSorted(T r) const {
    for (k=0;;) {
       if (c==cref) {
           n1=n2/2; n2-=n1; if (n1) k+=n1; else {
-             if (k+1<len && (ABS(r-data[k]) > ABS(r-data[k+1]))) k++;
+             if (k+1<len && (Wb::abs(r-data[k]) > Wb::abs(r-data[k+1]))) k++;
              break;
           }
       }
       else if (c) {
           n2=n1/2; n1-=n2; if (n2) k-=n2; else {
-             if (k) if (ABS(r-data[k]) > ABS(r-data[k-1])) k--;
+             if (k) if (Wb::abs(r-data[k]) > Wb::abs(r-data[k-1])) k--;
              break;
           }
       }
