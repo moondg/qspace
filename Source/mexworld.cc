@@ -60,7 +60,7 @@ void mexFunction(
        return;
    }
 
-   for (unsigned i=0; i<nargin; ++i) {
+   for (int i=0; i<nargin; ++i) {
       if (!mxIsChar(argin[i])) { wblog(FL,
          "WRN ignoring input argument #%d (%s) expecting strings",
           i+1,mxGetClassName(argin[i]));

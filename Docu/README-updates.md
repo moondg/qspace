@@ -29,8 +29,8 @@ and Changkai Zhang (LMU Munich) for pointing out this library.
 `[10/17/2024]` 
 The git repository `QSpace-v4-osx12-Monterey`
 compiled for (Intel-based) macOS  Monterey has been retired,
-and will no longer be maintained. It has been replaced
-by the new git repository **`QSpace-v4-osx15-Sequoia`**,
-instead. It is compiled on the macOS ARM architecture
+and will no longer be maintained. It is replaced
+by the new git repository **`QSpace-v4-osx15-Sequoia`**
+which is compiled on the macOS ARM architecture
 M3 within the Rosetta environment.
 

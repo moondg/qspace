@@ -236,13 +236,16 @@ Wb::VersionInfo& Wb::VersionInfo::init() {
    l+=snprintf(flags+l,n-l," using");
 
 #ifdef LD_CLEBSCH_QS
-   if (l<n) { l+=snprintf(flags+l,n-l," QS"  ); }; ++m;
+   if (l<n) { l+=snprintf(flags+l,n-l," QS"  ); ++m; }
 #endif
 #ifdef QS_USING_OMP
-   if (l<n) { l+=snprintf(flags+l,n-l," OMP" ); }; ++m;
+   if (l<n) { l+=snprintf(flags+l,n-l," OMP" ); ++m; }
 #endif
 #ifdef QS_USING_MPFR
-   if (l<n) { l+=snprintf(flags+l,n-l," MPFR"); }; ++m;
+   if (l<n) { l+=snprintf(flags+l,n-l," MPFR"); ++m; }
+#endif
+#ifdef QS_USING_HPTT  
+   if (l<n) { l+=snprintf(flags+l,n-l," HPTT"); ++m; }
 #endif
 
    if (m)
@@ -597,7 +600,7 @@ int wblogf(FILE *fid,
       Wb::ompGuard myLK(wblog_lock,1); 
    #endif
 
-   wblog::SBUF S; int l; Wb::LogException e;
+   Wb::SBUF S; int l; Wb::LogException e;
 
    WBL_COLOR_SCHEME xcol=WLC_OFF;
    if (Wb::useCol && (fid==stdout || fid==stderr)) { xcol=WLC_DARK; }
@@ -625,7 +628,7 @@ int wblog1(const char* file, int line, const char *fmt, ...) {
    WBL_COLOR_SCHEME xcol=WLC_OFF;
    if (Wb::useCol) { xcol=WLC_DARK; }
 
-   wblog::SBUF S; int l; Wb::LogException e;
+   Wb::SBUF S; int l; Wb::LogException e;
    try { l=wblogs(S,xcol,file,line,fmt,args,1); } 
    catch (Wb::LogException &e_) { e=e_; l=-11; }
    catch (...) { l=-12; }
@@ -642,7 +645,7 @@ int wblog1(const char* file, int line, const char *fmt, ...) {
 };
 
 int wblogs( 
-    wblog::SBUF &Sb, WBL_COLOR_SCHEME xcol_,
+    Wb::SBUF &Sb, WBL_COLOR_SCHEME xcol_,
     const char* file, int line,
     const char *fmt, va_list args,
     char Hflag 
@@ -1051,7 +1054,7 @@ char wblog_findtoken(const char *istr, const char *tok, int maxoffset) {
     return f;
 }
 
-void wblog::SBUF::flush(FILE *fid, char fflag) {
+void Wb::SBUF::flush(FILE *fid, char fflag) {
 
    if (!slen || !sbuf) { return; }
 
@@ -1084,7 +1087,7 @@ void wblog::SBUF::flush(FILE *fid, char fflag) {
    if (sbuf) { sbuf[0]=0; l=0; }
 };
 
-void wblog::SBUF::print(const char *F, int L, const char *istr) {
+void Wb::SBUF::print(const char *F, int L, const char *istr) {
 
    if (!l) return;
    if (!slen || l>slen) { fprintf(stderr,
@@ -1106,14 +1109,20 @@ void wblog::SBUF::print(const char *F, int L, const char *istr) {
    sbuf[l]=c;
 };
 
-void wblog::SBUF::increase_size(const char *F, int L, unsigned n) {
+void Wb::SBUF::increase_size(const char *F, int L, unsigned n) {
 
    if (!slen || !sbuf || l>=slen) {
       error_bounds(F_L,FCT,"");
       ExitMsg(""); 
    }
-   else if (wblog::SLEN<=32) {
-      char s[64]; snprintf(s,64,"\n\n%s ERR got %p @ %d, L=%d !?\n\n",
+   else if (ref) { char s[64];
+      snprintf(s,64,"\n\n%s "
+        "ERR cannot increase size %d -> %d for ref=%d data\n\n",
+         shortFL(F_L),slen,n,ref);
+      ExitMsg(s);
+   }
+   else if (wblog::SLEN<=32) { char s[64];
+      snprintf(s,64,"\n\n%s ERR got %p @ %d, L=%d !?\n\n",
          shortFL(F_L),sbuf,slen,wblog::SLEN);
       ExitMsg(s);
    }
@@ -1138,7 +1147,7 @@ void wblog::SBUF::increase_size(const char *F, int L, unsigned n) {
    }
 };
 
-void wblog::SBUF::error_bounds(
+void Wb::SBUF::error_bounds(
    const char *F, int L, const char *fct, const char *fmt) {
 
    if (sbuf && slen) {
@@ -1157,7 +1166,7 @@ void wblog::SBUF::error_bounds(
    }
 };
 
-int wblog::SBUF::cat(const char *s) {
+int Wb::SBUF::cat(const char *s) {
    int n=0; 
 
    if (s && s[0]) {
@@ -1167,7 +1176,7 @@ int wblog::SBUF::cat(const char *s) {
    return n;
 };
 
-int wblog::SBUF::catf(const char *fmt, ...) {
+int Wb::SBUF::catf(const char *fmt, ...) {
 
    if (!fmt || !fmt[0]) { return 0; }
 
@@ -1199,7 +1208,7 @@ int wblog::SBUF::catf(const char *fmt, ...) {
    l+=n; return n;
 };
 
-int wblog::SBUF::skipEscCols() {
+int Wb::SBUF::skipEscCols() {
    int nesc=0, nskip=0; 
    if (!sbuf) { return (nesc=-1); }
    unsigned i=0, k=0, j=0;

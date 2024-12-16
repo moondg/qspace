@@ -1394,7 +1394,7 @@ TD indexSparseRef<TD>::LContractVec(
    if (j==j2) return x;
 
    SPIDX_T r=2, jr=j*r; 
-   char cflag = ((tnorm || WbUtil<TD>::hasNoConj()) ? 0 : 1);
+   char cflag = ((tnorm || WbUtil<TD>::hasConj()) ? 1 : 0);
    const SPIDX_T *I=B.IDX.data, *J=A->IDX.data;
    const TD *a=A->D.data, *b=B.D.data;
 

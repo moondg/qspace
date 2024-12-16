@@ -395,6 +395,9 @@ function [HH,XY,stype]=setup_HH_openBC(JJ,L,Ly,pBCy)
 end
 
 % -------------------------------------------------------------------- %
+% interleaved perBC setup // Wb,Apr01,16
+% -------------------------------------------------------------------- %
+
 function [HH,XY]=setup_HH_perBC(JJ,L)
 
   [l,m]=size(JJ);

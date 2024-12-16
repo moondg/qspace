@@ -166,6 +166,32 @@
   print join(' ',@qq,@gg);
 
 # ---------------------------------------------------------- #
+# Wb,Dec16,24
+
+sub get_host_name {
+   my ($q,$H);
+   foreach $H (@_,$ENV{HOSTNAME},$ENV{HOST}) {
+      if ($H) { $H=~s/\..*//; }
+      if ($H && $H!~/^\d[\d-]*(\.|$)/) { last; }
+   }
+   if (!$H) { my $ismac=0;
+      foreach (`uname -s`) { if (/Darwin/i) { ++$ismac; }}
+      if ($ismac)
+           { foreach $q (`scutil --get ComputerName`) { chomp($H=$q); }}
+      else { $H='(hostname)'; }
+   }
+
+   $q=$ENV{HOSTTYPE}; if (!$q) { chomp($q=`arch`); }
+   if ($H=~s/-Air//) {
+      my @q=`sysctl -n sysctl.proc_translated 2>/dev/null`;
+      if (!$? && $q[0]) { $q.="/rosetta"; }
+   }
+   if ($q) { $H="$H ($q)"; }
+
+   return $H;
+};
+
+# ---------------------------------------------------------- #
 # Wb,Apr27,20
 
 sub disp_info {
@@ -229,6 +255,9 @@ sub disp_defs {
       }
    }
 
+   if (!grep(/HOST_NAME/,@args)) {
+      push(@args,'-DHOST_NAME='.get_host_name());
+   }
    if ($ENV{DBSTOP}) {
       if (!grep(/DBSTOP/,@args)) { push(@args,'DBSTOP'); }
    }
@@ -240,11 +269,12 @@ sub disp_defs {
             if ($a=~/CXX_FLAGS/) { $v=~s/(^|\s)-Wall\b//; }
             $v=~s/^\s*//; $v=~s/[\s\x0A-\x0D]*$//g; $v=~s/ +/ /g;
 
-         if ($v) {
-            if ($x) { push(@ll, $v=~/\s/ ? "-D$a='$v'" : "-D$a=$v"); }
-            else { $e=1; }}
+         if ($v) { if (!$x) { $e=1; } else {
+            if ($a=~/HOST_NAME/) { $v=get_host_name($v); }
+            push(@ll, $v=~/[,;\s]/ ? "-D$a='$v'" : "-D$a=$v");
+         }}
          else {
-            push(@ll, $x ?"-U$a" : "-D$a");
+            push(@ll, $x? "-U$a" : "-D$a");
          }
       }
       elsif (/^-[UD]/) { push(@ll,$_); }

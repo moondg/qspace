@@ -30,6 +30,28 @@
 //-------------------------------------------------------------------//
 
 template<class T>
+wbindex& wbarray<T>::ind2sub(size_t k, wbindex &I) const { 
+   const size_t *s=SIZE.data, n=SIZE.len;
+   size_t i,r, e=0, *idx;
+
+   I.init(n); idx=I.data; 
+   for (i=0; i<n; ++i) {
+       if (!s[i]) wblog(FL,
+          "ERR wbarray::%s() got size %s",FCT,SSTR_(this));
+
+       r=k/s[i]; idx[i]=k-r*s[i]; k=r;
+       if (idx[i]>=s[i]) e++;
+   }
+
+   if (e || k) wblog(FL,
+      "ERR wbarray::%s() out of bounds (%d => [%s; %s])",
+       FCT, STR(I+1), SSTR_(this)
+   );
+
+   return I;
+};
+
+template<class T>
 void wbarray<T>::setRand(const char pnflag) {
     static int firstcall=1; size_t i,s=numel(); double fac;
 
@@ -4307,7 +4329,7 @@ template <typename T>
          "ERR %s() got rk=%d with l1=%d, l2=%d !?",FCT,rk,l1,l2);
       if (sz[0]<2) wblog(FL,"ERR %s() unexpected sz[0]=%d",FCT,sz[0]);
 
-      if (np>1) { np=std::min(4,np); if (len<4*np) { np=1; }}
+      if (np>1) { np=std::min(4,np); if ((int)len<4*np) { np=1; }}
 
       while (++I) { ++idest;
          isrc = I.serial(stride+k);

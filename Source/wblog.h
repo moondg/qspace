@@ -174,29 +174,31 @@ class termcolor {
   private:
 };
 
-}; 
-
-namespace wblog { 
-
 class SBUF {      
   public:
-    SBUF(unsigned l0=wblog::SLEN) : l(0), slen(0), sbuf(NULL) {
-       init(l0);
+    SBUF(unsigned l0=wblog::SLEN, char *s=NULL)
+     : l(0), slen(0), ref(0), sbuf(NULL) {
+       init(l0,s);
     };
 
    ~SBUF() { if (sbuf) {
       #pragma omp critical (__ensure_sequential_wblog__)
        { flush(stderr,1); }
-       delete [] sbuf;
+       if (!ref) { delete [] sbuf; }
+       sbuf=NULL;
     }};
 
-    SBUF& init(unsigned l0=0) { l=0;
-       if (sbuf) { delete [] sbuf; sbuf=NULL; }
-       if ((slen=l0)) {
-          sbuf = new char[slen];
-          if (!sbuf) { sprintf_str("ERR %s() "
-             "failed to allocate sbuf (l=%d)",__FUNCTION__,slen);
-             ExitMsg(str);
+    SBUF& init(unsigned l0=0, char *s=NULL) { l=0;
+       if (sbuf) { if (!ref) { delete [] sbuf; }; sbuf=NULL; }
+       slen=l0; ref=0;
+       if (slen) {
+          if (s) { sbuf=s; ref=1; } 
+          else {
+             sbuf = new char[slen];
+             if (!sbuf) { sprintf_str("ERR %s() "
+                "failed to allocate sbuf (l=%d)",__FUNCTION__,slen);
+                ExitMsg(str);
+             }
           }
           memset(sbuf,0,slen);
        }
@@ -214,15 +216,20 @@ class SBUF {
 
     int skipEscCols(); 
 
-    unsigned l,slen;
+    unsigned l, slen, ref;
+
     char *sbuf; 
 
   private:
 };
 
+}; 
+
+namespace wblog {
+
 class stdio_buf {  
  public:
-    stdio_buf(SBUF &S, FILE *f_, int t_) : s(NULL), fid(0), tid(0), ref(0) {
+    stdio_buf(Wb::SBUF &S, FILE *f_, int t_) : s(NULL), fid(0), tid(0), ref(0) {
        if (f_!=stdin && f_!=stdout) {
           fprintf(stderr,"\nERR %s() invalid fid=%p\n'%s'\n\n",
           FCT,f_,S.sbuf?S.sbuf:"");
@@ -285,7 +292,7 @@ class stdio_buf {
 
    void wbSetLogLevel(unsigned l);
 
-   int wblogs(wblog::SBUF &S,
+   int wblogs(Wb::SBUF &S,
       WBL_COLOR_SCHEME xcol, 
       const char* file, int line,
       const char *fmt, va_list args,
@@ -293,7 +300,7 @@ class stdio_buf {
    );
 
    int wblogs(
-      wblog::SBUF &S, WBL_COLOR_SCHEME xcol,
+      Wb::SBUF &S, WBL_COLOR_SCHEME xcol,
       const char* file, int line, const char *fmt, ...
    ){
       va_list args; Wb::ARGV wd(&args); 
@@ -322,7 +329,7 @@ class stdio_buf {
    int wb_printf(const char *fmt, ...) {   
 
       unsigned l=0, n=256;
-      wblog::SBUF S(n);  {
+      Wb::SBUF S(n);  {
          va_list args; Wb::ARGV wd(&args); 
          va_start(args,fmt);
          l=vsnprintf(S.sbuf,n,fmt,args);

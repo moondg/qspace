@@ -772,7 +772,7 @@ TD wbsparray<TD>::dotProd(
 ) const {
 
    TD x=TD(); 
-   char cflag = ((tnorm || WbUtil<TD>::hasNoConj()) ? 0 : 1);
+   char cflag = ((tnorm || WbUtil<TD>::hasConj()>0) ? 1 : 0);
    char iA=isDiag(), iB=B.isDiag();
 
    if (iA || iB) { 
@@ -865,7 +865,7 @@ template <class TD>
 wbsparray<TD>& wbsparray<TD>::TimesEl(
    const wbsparray<TD> &B, char tnorm
 ){
-   char cflag = ((tnorm || WbUtil<TD>::hasNoConj()) ? 0 : 1);
+   char cflag = ((tnorm || WbUtil<TD>::hasConj()>0) ? 1 : 0);
    char iA=0, iB=0, sab=sameSize(B);
 
    if (!sab || sab>=20) wblog(FL,"ERR %s() "

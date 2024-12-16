@@ -28,7 +28,11 @@
 #define PP_STRFY(a) PP_STR__(a)
 
 #ifndef QS_USING_OMP
-   #define QS_USING_OMP  1
+#  ifdef _OPENMP
+#     define QS_USING_OMP 1
+#  else
+#     warning compiling QSpace without openMP
+#  endif
 #elif QS_USING_OMP<=0
    #undef QS_USING_OMP
 #endif
@@ -106,6 +110,11 @@
 
 #endif
 
+#ifdef QS_USING_HPTT
+#include "hptt.h" 
+#undef I  
+#endif
+
    unsigned ARG_CHECK=1;
 
 #define STRLEN  1023
@@ -136,11 +145,11 @@ template <class TD> class wbsparray;
 template <class TQ, class TD> class QSpace;
 template <class T> class sparseIndex2D;
 
-class wbcomplex;
-class wbstring;
 class bitset;
-class wbperm;
+class wbcomplex;
 class wbindex;
+class wbperm;
+class wbstring;
 
 class iTags;
 class ctrIdx;
@@ -363,25 +372,22 @@ std::string getName(const std::type_info &type_id, char vflag=1);
 #endif
 
 #if !defined(POW)
-
    template <class T>
    inline T POW(const T &a, const unsigned &n) {
       T x = n ? a : 1;
       for (unsigned i=1; i<n; i++) x*=n;
       return x;
    }
-
 #endif
-#if !defined(SGN)
 
+#if !defined(SGN)
    template <class T>
    inline int SGN(const T &a) {
       return ((T(0)<a)-(a<T(0))); 
    }
-
 #endif
-#if !defined(NUMCMP)
 
+#if !defined(NUMCMP)
    template <class T>
    inline char NUMCMP(const T &a, const T &b) {
       if (a<b) return -1; else
@@ -395,11 +401,10 @@ std::string getName(const std::type_info &type_id, char vflag=1);
       if (a>b) return +1;
       return 0;
    }
-
 #endif
 
-#define ISCOMPLX_(a) WbUtil<a>::isComplex()
-#define ISREAL(a) WbUtil<a>::isReal()
+#define ISREAL(x)    WbUtil<x>::isReal()
+#define ISCOMPLX_(x) WbUtil<x>::isComplex()
 
 #ifdef TST_MAC
    #include "Include/nomex.hh"

@@ -440,9 +440,6 @@ class WbUtil {
 
      static void adjust_tnorm(char &tnorm);
 
-     static bool hasConj();
-     static bool hasNoConj();
-
      static constexpr bool isPOD() {
         return std::is_trivially_copyable<T>::value;
      };
@@ -450,11 +447,13 @@ class WbUtil {
      static bool isFloat();  
      static bool isInt();    
 
-     static constexpr char isComplex();
+     static constexpr char isComplex() { return 0; };
+
+     static char hasConj() { return isComplex(); };
      static char isReal() {
-        char q=isComplex(); if (q>=0) q=( q ? 0 : 1);
+        char q=isComplex(); if (q>=0) { q=(q? 0 : 1);  }
         return q;
-     }
+     };
 
      T eps(); 
 
@@ -469,29 +468,22 @@ void WbUtil<T>::adjust_tnorm(char &tnorm){ tnorm=0; };
 template <> inline
 void WbUtil<wbcomplex>::adjust_tnorm(char &tnorm __attribute__ ((unused))){};
 
-template <class T> inline bool WbUtil<T>::hasConj(){ return 0; };
-template <> inline bool WbUtil<wbcomplex>::hasConj(){ return 1; };
-
-template <class T> inline bool WbUtil<T>::hasNoConj(){ return 1; };
-template <> inline bool WbUtil<wbcomplex>::hasNoConj(){ return 0; };
-
-template <class T> inline
-constexpr char ISCOMPLX_(T){ return 0; }; 
+template <> inline
+constexpr char WbUtil<wbcomplex>::isComplex() { return 1; };
 
 template <> inline
-constexpr char ISCOMPLX_(wbcomplex){ return 1; };
-
-template <> inline
-constexpr char ISCOMPLX_(void){ return -1; }; 
+constexpr char WbUtil<void>::isComplex() { return -1; }; 
 
 #ifdef MATLAB_MEX_FILE
 template <> inline
-constexpr char ISCOMPLX_(mxComplexDouble){ return 2; };
+constexpr char WbUtil<mxComplexDouble>::isComplex() { return 2; };
 #endif
 
 #ifdef _COMPLEX_H  
 template <> inline
-constexpr char ISCOMPLX_(complex){ return 3; };
+constexpr char WbUtil<complex<double> >::isComplex() { return 4; };
+template <> inline
+constexpr char WbUtil<complex<float > >::isComplex() { return 8; };
 #endif
 
 template <class T> inline

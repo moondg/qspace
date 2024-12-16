@@ -22,10 +22,6 @@
 
 // #define CHECK_ELEMENT_RANGE
 
-#ifdef QS_USING_HPTT
-#include "hptt.h"
-#endif
-
 namespace Wb {
    template<class T>
    wbstring sizeStrM(
@@ -168,26 +164,7 @@ class wbarray {
        return *this;
     };
 
-    wbindex& ind2sub(size_t k, wbindex &I) const { 
-       const size_t *s=SIZE.data, n=SIZE.len;
-       size_t i,r, e=0, *idx;
-
-       I.init(n); idx=I.data; 
-       for (i=0; i<n; ++i) {
-           if (!s[i]) wblog(FL,
-              "ERR wbarray::%s() got size %s",FCT,SSTR_(this));
-
-           r=k/s[i]; idx[i]=k-r*s[i]; k=r;
-           if (idx[i]>=s[i]) e++;
-       }
-
-       if (e || k) wblog(FL,
-          "ERR wbarray::%s() out of bounds (%d => [%s; %s])",
-           FCT, STR(I+1), SSTR_(this)
-       );
-
-       return I;
-    };
+    wbindex& ind2sub(size_t k, wbindex &I) const; 
 
     void adjustMMat(
        const char* F, int L,

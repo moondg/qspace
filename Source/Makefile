@@ -12,11 +12,10 @@
      MAKEFLAGS += -j $(MSLOTS)
   endif
 
-# ifndef MATLAB_ROOT or 
   ifndef MATLAB_ROOT
      $(info )
      $(warning MATLAB_ROOT not defined, \
-	   having  "$(shell which matlab 2>/dev/null)")
+       having  "$(shell which matlab 2>/dev/null)")
      issue_error = 1
   endif
 
@@ -41,51 +40,70 @@
      CLIBS = -lmwblas -lmwlapack # -lmysqlclient # -liomp5
   endif
 
+  OPTS = # actual (direct) mex compiler options
+  XFLAGS = -Wall # goes into CXXFLAGS
+  LFLAGS = # goes into LDFLAGS
+  XOPT =
+  DEFS =
+
+  I = -I.
+  L = -L.
+
 # the following options assume gcc on linux and Xcode/clang for macOS;
 # this is checked with `make test' in makelog.pl
 # NB! removed ML_GCC_VERSION since mex -setup may use C++ compiler
 # other than what is on the path via `which gcc' // Wb,Feb19,24
 
-  ifeq (,$(findstring mac, $(ARCH)))
-     ismac = 0 # linux environment
+  ifeq (,$(findstring mac, $(ARCH))) # linux environment
+   # WRN! no comment with leading space for macos
+   # otherwise the space is part of the value!
+     ismac = 0
      CLIBS += -lrt
-	 # required by clock_gettime() starting gcc6 [matlab/2018a]
+     # required by clock_gettime() starting gcc6 [matlab/2018a]
      # (this option is gcc/linux specific, i.e., is not present for
-	 # clang on osx/mac at all; including it would result in error)
-	 GMP = -lgmp
+     # clang on osx/mac at all; including it would result in error)
+     GMP = -lgmp
      MPF = $(MATLAB_ROOT)/bin/glnxa64/libmpfr.so.1
      OMP = $(MATLAB_ROOT)/sys/os/$(ARCH)/libiomp5.so
      XOPT= CFLAGS="\$$CFLAGS -fopenmp -pthread"
-  else
-     ismac = 1 # macOS environment
-	 GMP = /usr/local/lib/libgmp.dylib  # Wb,Oct19,20 / matlab/2020b
+  else # macOS environment
+     ismac = 1
+     GMP = /usr/local/lib/libgmp.dylib  # Wb,Oct19,20 / matlab/2020b
      MPF = $(MATLAB_ROOT)/bin/maci64/libmpfr.1.dylib # Wb,Sep19,19
      OMP = $(MATLAB_ROOT)/sys/os/$(ARCH)/libiomp5.dylib
      XOPT= CFLAGS="\$$CFLAGS -Xclang -fopenmp -pthread"
   endif
+
   XOPT += CXXLIBS="\$$CXXLIBS $(OMP)"
 
 # avoid compiler warning on (invalid) target macOS version 10.14
   XOPT += MACOSX_DEPLOYMENT_TARGET=12.0
-
-  ifdef XFLAGS
-     XOPT += CXXFLAGS="\$$CXXFLAGS $(XFLAGS)"  # works :)
-  endif
-  ifdef LFLAGS
-     XOPT += LDFLAGS="\$$LDFLAGS $(LFLAGS)"  # Wb,Apr24,20
-  endif
 
   ifndef MPF_LIB
    # MPF_LIB = -lmpfr -lgmp
      MPF_LIB = $(MPF) $(GMP)
   endif
 
-  OPTS   = # actual (direct) mex compiler options
-  XFLAGS = -Wall # goes into CXXFLAGS
-  LFLAGS = # goes into LDFLAGS
+  ifdef QS_USING_OMP # Wb,Nov29,22
+     ifeq ($(shell expr $(QS_USING_OMP) \<= 0), 1)
+         DEFS += -DQS_USING_OMP=0 # unset
+     endif
+  endif
 
-  I = -I. 
-  L = -L. 
+# QSpace now permits to link against the high-performance
+# tensor transpose (HPTT) library -lhptt
+# This library needs to be installed separatly.
+# In order to use it, simply define the environmental
+# variable HPTT_ROOT to point to the root directory 
+# of its installation prior to calling this Makefile
+# Wb,Dec06,24
+  ifdef HPTT_ROOT
+      DEFS += -DQS_USING_HPTT
+      I += -I$(HPTT_ROOT)/include
+      L += -L$(HPTT_ROOT)/lib
+      CLIBS += -lhptt
+      LFLAGS += -Wl,-rpath,$(HPTT_ROOT)/lib # required on linux
+  endif
 
 # using GFLAG=1 with make for debugging purposes
 # e.g. more detaild stack backtrace in case of error // Wb,Jun26,20
@@ -94,6 +112,13 @@
      XFLAGS += -O1
   else
      XFLAGS += -O3
+  endif
+
+  ifdef XFLAGS
+     XOPT += CXXFLAGS="\$$CXXFLAGS $(XFLAGS)"
+  endif
+  ifdef LFLAGS
+     XOPT += LDFLAGS="\$$LDFLAGS $(LFLAGS)"  # Wb,Apr24,20
   endif
 
   ifdef VFLAG
@@ -114,7 +139,7 @@
   $(shell make.pl --make-info $(MATLAB_ROOT) $(MCC_TAG) \
     OPTS=$(OPTS) XFLAGS=$(XFLAGS)  LFLAGS=$(LFLAGS) );
 
-  DEFS = "__DATE_COMP__=$(shell date '+%m/%d/%Y %Z%H%M%S')" # __TIME__ TSTAMP
+  DEFS += "__DATE_COMP__=$(shell date '+%m/%d/%Y %Z%H%M%S')" # __TIME__ TSTAMP
   DEFS += HOST_NAME=$(shell hostname -s) # Wb,Nov05,21
   DEFS += MEX_EXT=$(shell mexext) # Wb,Jun27,23
   ifdef MATLAB_VERSION
@@ -122,20 +147,6 @@
   endif
   ifdef DBSTOP
      DEFS += -DDBSTOP
-  endif
-
-# QSpace now permits to link against the high-performance
-# tensor transpose (HPTT) library -lhptt
-# This library needs to be installed separatly.
-# In order to use it, simply define the environmental
-# variable HPTT_ROOT to point to the root directory 
-# of its installation prior to calling this Makefile
-# Wb,Dec06,24
-  ifdef HPTT_ROOT
-      DEFS += -DQS_USING_HPTT
-      I += -I$(HPTT_ROOT)/include
-      L += -L$(HPTT_ROOT)/lib
-      CLIBS += -lhptt
   endif
 
 # NB! make.pl checks whether DBSTOP is defined
@@ -159,8 +170,8 @@
 # I += -I/usr/include/x86_64-linux-gnu -I$(MATLAB_ROOT)/extern/include
   L += -L$(MATLAB_ROOT)/bin/$(ARCH)
 
-  ifeq ($(ismac),1)
-     I += -I/usr/local/include  # required for gmp.h // Wb,Sep19,19
+  ifeq ($(ismac), 1)
+     I += -I/usr/local/include # gmp.h, omp.h
   endif
 
  .SUFFIXES: .c .cc

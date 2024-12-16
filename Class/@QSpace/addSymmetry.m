@@ -131,6 +131,8 @@ function A=addSymmetry(A,qtype,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% ASSUME_OPERATOR! // Wb,Oct24,21
+
 function q=get_qset(qs,rA)
    if rA>2 && any(qs)
         q=[ repmat(qs,1,2), repmat(zeros(size(qs)),1,rA-2) ];

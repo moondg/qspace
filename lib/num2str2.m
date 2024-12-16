@@ -25,7 +25,9 @@ function s=num2str2(val,varargin)
 % Wb,Apr17,09
 
 % https://chemistry.stackexchange.com/questions/58661/..
-%    what-does-a-number-in-brackets-after-another-number-mean-i-e-211cm-1
+%     what-does-a-number-in-brackets-after-another-number-mean-i-e-211cm-1
+% ==> [JCGM08] Guide to the expression of uncertainty in measurements.
+% see also MATH/numberrep.tex
 % tags: bytes2str, byte2str, sizestr (meaning size=bytes)
 
   getopt('init',varargin);
@@ -114,7 +116,8 @@ function s=num2str2(val,varargin)
 
      if 1
         if isempty(fmt)
-           if x>4, fmt=sprintf('%%.%dg',x+2);
+           if x>4
+                fmt=sprintf('%%.%dg',x+2);
            else fmt='%g'; end
         end
 
