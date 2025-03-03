@@ -1,6 +1,19 @@
-
 The following contains a history log of more significant changes.
-<br>Newest entries are shown first.
+with newest entries shown first.
+
+## Added symmetries  `Aspin(:)` and `SU2spin(:)`
+
+`[03/03/2025]`
+The spin symmetry now can also be specified individually
+across channels (rather than just the total spin), if the
+inter-channel interaction acts trivially on the spin sector.
+For this purpose, `getLocalSpace` now permits adding a
+trailing `(:)` string to the `Aspin` or `SU2spin` symmetry specification.
+Note that the `(:)` flag was already implicit for the case of
+a non-abelian channel symmetry like SU(N).
+Thanks to Geng-Dong Zhou (Peking University, Beijing) and Seung-Sup Lee 
+(Seoul National University, South Korea) for pointing this out.
+
 
 ## Code update to tensor permute / HPTT
 

@@ -30,18 +30,18 @@ function varargout=getLocalSpace(model,varargin)
 %
 % Symmetries for sym (single string, separated by commas)
 %
-%   'Acharge'      abelian total charge;        Acharge(:)  *)
-%   'SU2charge'    SU(2) total particle-hole;   SU2charge(:) *)
-%   'Aspin'        abelian total spin
-%   'SU2spin'      SU(2) total spin (S)
+%   'Acharge'      abelian total charge;         'Acharge(:)'   ^1)
+%   'SU2charge'    SU(2) total particle-hole;    'SU2charge(:)' ^1)
+%   'Aspin'        abelian total spin;           'Aspin(:)'     ^1)
+%   'SU2spin'      SU(2) total spin (S);         'SU2spin(:)'   ^1)
 %   'SU2spinJ'     SU(2) total spin (J=L+S)
 %   'AspinJ'       U(1) total spin (J=L+S)_z
 %   'SUNchannel'   SU(N) channel symmetry
 %   'SONchannel'   SO(N) channel symmetry
 %   'SpNchannel'   Sp(N) particle/hole (charge) * channel symmetry
 %
-% *) sym(:) indicates to use given symmetry <sym> for each
-%    of the NC channels individually.
+%    ^1) sym(:) indicates to use given symmetry <sym> in the charge
+%        or spin sector for each of the NC channels individually.
 %
 % Examples
 %
@@ -411,6 +411,14 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
           q.Sz=2*sum(SS(:,3));
           if ~isempty(SOP), SOP(end+1)=q; else SOP=q; end
 
+      case 'Aspin(:)'
+
+          for i=1:NC
+             q=init_qstruct(sprintf('spin U(1) [%d/%d]',i,NC),'A');
+             q.Sz=2*SS(i,3);
+             if ~isempty(SOP), SOP(end+1)=q; else SOP=q; end
+          end
+
       case 'SU2charge'
 
           q=init_qstruct('total particle-hole SU(2)','SU',2);
@@ -439,10 +447,10 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
       case 'SU2spin(:)'
         % suggested by Geng-Dong Zhou / Seung-Sup Lee [email 02/28/2025]
 		  for i=1:NC
-			  q=init_qstruct(sprintf('spin SU(2) [%d/%d]',i,NC),'SU',2);
-			  q.Sp=SS(i,1);
-			  q.Sz=SS(i,3);
-			  if ~isempty(SOP), SOP(end+1)=q; else SOP=q;end
+             q=init_qstruct(sprintf('spin SU(2) [%d/%d]',i,NC),'SU',2);
+             q.Sp=SS(i,1);
+             q.Sz=SS(i,3);
+             if ~isempty(SOP), SOP(end+1)=q; else SOP=q;end
 		  end
 
       case {'SU2spinJ','AspinJ'}
