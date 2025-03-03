@@ -5,6 +5,8 @@
 #
 # Wb,May18,20
 
+  use strict; use warnings;
+
   my ($f,$F,$d,$e,$p,$n1,$n2,$nx,@q,@qq,@ff,@fx,@mopts,%FD);
   my ($vflag,$mflag); $vflag=0;
 
@@ -113,7 +115,7 @@
 
   if (@ff!=1 || !$mflag) { exit $#ff+1; }
 
-  my ($q,$l,@lb,@gg,@mo);
+  my ($q,$l,@l,@lb,@gg,@mo);
 
   $l=' '.$mopts[2];
   $l=~s/\s{2,}/ /g;
@@ -170,15 +172,17 @@
 
 sub get_host_name {
    my ($q,$H);
-   foreach $H (@_,$ENV{HOSTNAME},$ENV{HOST}) {
-      if ($H) { $H=~s/\..*//; }
-      if ($H && $H!~/^\d[\d-]*(\.|$)/) { last; }
+   foreach $q (@_,$ENV{HOSTNAME},$ENV{HOST}) {
+      if ($q) { $q=~s/\..*//; } 
+      if ($q && $q!~/^\d[\d-]*(\.|$)/) { $H=$q; last; }
    }
+
    if (!$H) { my $ismac=0;
       foreach (`uname -s`) { if (/Darwin/i) { ++$ismac; }}
       if ($ismac)
-           { foreach $q (`scutil --get ComputerName`) { chomp($H=$q); }}
-      else { $H='(hostname)'; }
+           { @q=`scutil --get ComputerName` }
+      else { @q=`hostname -s`; }
+      chomp($H=(@q ? $q[0] : '(hostname)'));
    }
 
    $q=$ENV{HOSTTYPE}; if (!$q) { chomp($q=`arch`); }
@@ -204,9 +208,9 @@ sub disp_info {
 
    foreach (@q) {
       if (/^--make-info/) { next; }
-      if (/^\/[^\s]*\/(matlab\/[^\s]*)/i) { $_=$1;
-         s/\.app$//;
-      }
+      if (/^\/[^\s]*\/(matlab\/[^\s]*)/) { $_=$1; }
+      elsif (/^\/[^\s]*\/(MATLAB)[-_]?([^\s]*)/i) { $_=lc($1)."/$2"; s/\.app//; }
+
       if (/^bin(\w*)$/) { $_=$1; }
       if (/([A-Za-z]\w+)=$/) { $tag=$1;
          if (!defined $q{$tag}) { push(@tag,$tag); }
@@ -258,6 +262,15 @@ sub disp_defs {
    if (!grep(/HOST_NAME/,@args)) {
       push(@args,'-DHOST_NAME='.get_host_name());
    }
+
+   if (!grep(/QS_GIT_BRANCH/,@args)) {
+      my @ll=`git branch 2>/dev/null`;
+      if (!$?) { my ($b);
+         foreach (@ll) { if (/^\s*\*\s*/) { chomp($b=$'); last; }}
+         if ($b) { push(@args,"-D__QS_GIT_BRANCH__=$b"); }
+      }
+   }
+
    if ($ENV{DBSTOP}) {
       if (!grep(/DBSTOP/,@args)) { push(@args,'DBSTOP'); }
    }
@@ -290,8 +303,15 @@ sub disp_defs {
       if ($vflag>1)
            { print STDERR join("\n   ",'',@ll,'',''); }
       else {
-         my @q=grep(!/DATE|MLVER|HOST_NAME/,@ll); if (@q) {
-         print STDERR "  \e[01;30musing [DEFS]\e[0m ",join(' ',@q,"\n\n"); }
+         $_=join('|',
+           'DATE','MLVER','GIT_BRANCH','HOST_NAME','CXX_FLAGS',
+           'QS_USING_OMP');
+
+         my @q=grep(!/$_/,@ll);
+         if (@q) {
+            print STDERR "  \e[01;30musing [DEFS]\e[0m ",
+            join(' ',@q,"\n\n");
+         }
       }
    }
 

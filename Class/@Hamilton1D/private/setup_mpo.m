@@ -1,5 +1,5 @@
-function HAM=setup_mpo(HAM,HH,stype,heps)
-% function HAM=setup_mpo(HAM,HH [,stype,heps])
+function HAM=setup_mpo(HAM,HH,varargin)
+% function HAM=setup_mpo(HAM,HH [,stype, heps, ...])
 %
 %    Automated routine to generate pseudo MPO (HAM.mpo) for the
 %    Hamiltonian described by HH together with HAM.ops and stype.
@@ -13,15 +13,29 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
 %    complete; however, this artificially blows up the number of
 %    operators and hence the MPO in d_loc).
 %
+% Options
+%
+%    stype   ID for site type ([] implies all sites the same)
+%    heps    threshold on Hamiltonian parameters to skip (1E-15)
+%    '-l'    lenient on MPO compression (no warning)
+%    '-q'    quiet mode
+%
 % Wb,Aug25,15
 
+   vflag=2;
+   getopt('INIT',varargin);
+      if     getopt('-l'), vflag=1; 
+      elseif getopt('-q'), vflag=0; end
+   args=getopt('get_remaining');
+
+   args(end+1:2)={[]}; if numel(args)~=2, args, wbdie('invalid usage'); end
+   stype=args{1};
+   heps =args{2}; if isempty(heps), heps=1E-15; end
+
    if size(HH,2)~=5
-    % 5 columns required:
-    % [ site1, iop1, site2, iop2, coupling strength ]
       wbdie('invalid usage (HH requires 5 columns)');
    end
 
-   if nargin<4, heps=1e-15; end
    i=find(abs(HH(:,end))<heps);
    if ~isempty(i), e=norm(HH(i,end));
       if e, wblog(' * ',...
@@ -56,7 +70,7 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
      size(HAM.oez,2),ntype);
    end
 
-   if nargin<3 || isempty(stype)
+   if isempty(stype)
       stype=ones(1,L);
       if ntype~=1, wblog('ERR',...
          'HAM.ops needs to be column vector (having stype=1 / %d)',ntype);
@@ -344,8 +358,10 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
    ss=cat(1,SS{:}); smin=min(ss); smax=max(ss);
 
    nk=max(NK,[],1);
-   if diff(nk)
-      wblog('WRN','got compressible mpo !?');
+   if diff(nk), s=sprintf('(%d -> %d)',nk([1 end]));
+      if vflag>1,   wblog('WRN',['got compressible mpo ' s]);
+      elseif vflag, wblog('mpo',['was compressible ' s]);
+      end
    else
       wblog(' * ','dimension of pseudo-mpo: D=%g',nk(1));
       wblog(' * ','having S=[ %.4g .. %.4g ], |mpo|^2 = %.8g',...
@@ -354,7 +370,7 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
 
    HAM.info.mpo=add2struct(IH,HM,NK,SS);
 
-   mpr=reduce_RL(mpo);
+   mpr=reduce_RL(mpo,vflag);
 
    q=[ mpsoverlap({mpr.M},'-q'),  mpsoverlap({mpo.M},'-q'), ...
        mpsoverlap({mpx.M},'-q'),  mpsoverlap({mpr.M},{mpo.M},'-q'), ...
@@ -363,7 +379,7 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
    e=norm(diff(q))/max(abs(q));
    if e>1E-10, q
         wblog('WRN','got MPO norm inconsistency @ %.3g !?',e); 
-   else wblog('mpo','MPO norm consistency @ %.3g',e); 
+   else wblog('mpo','norm consistency @ %.3g',e); 
    end
 
    HAM.mpo=mpr;
@@ -371,7 +387,13 @@ function HAM=setup_mpo(HAM,HH,stype,heps)
 end
 
 % -------------------------------------------------------------------- %
-function mpo=reduce_RL(mpo)
+% try simple reduction of dimensionality // tags: MERGING_TERMS
+% e.g. as it would have arisen, had the mpo been initialized R->L
+% Wb,Aug26,15
+
+function mpo=reduce_RL(mpo,vflag)
+
+   if nargin<2, vflag=2; end
 
    L=numel(mpo); nx=zeros(L,1);
 
@@ -401,12 +423,16 @@ function mpo=reduce_RL(mpo)
          q=mpo(k-1).iop; q(1:nk,2,:) = q(Ik,2,:); q(nk+1:end,2,:)=0;
          mpo(k-1).iop=q;
 
-         wblog(' * ','reduced mpo(%g) D=%g->%g',k,size(X));
+         if vflag>1
+            wblog(' * ','reduced mpo(%g) D=%g->%g',k,size(X));
+         end
       end
    end
 end
 
 % -------------------------------------------------------------------- %
+% Wb,Aug25,15
+
 function [NK,SS,mpo]=check_ortho(mpo,stol)
 
    L=numel(mpo);
@@ -423,6 +449,8 @@ function [NK,SS,mpo]=check_ortho(mpo,stol)
 end
 
 % -------------------------------------------------------------------- %
+% Wb,Aug25,15
+
 function [M1,M2,I]=mpo_ortho(M1,M2,dir,stol)
 
    X=contract(M1,M2,2,1); s=size(X); s(end+1:4)=1;
@@ -449,6 +477,8 @@ function [M1,M2,I]=mpo_ortho(M1,M2,dir,stol)
 end
 
 % -------------------------------------------------------------------- %
+% Wb,May23,19
+
 function check_ortho_ops(oez,ops,HH)
 
   q=QSpace(size(oez)); for i=1:numel(q), q(i)=oez(i).op; end; oez=makeIrop(q);

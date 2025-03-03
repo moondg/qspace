@@ -4,8 +4,9 @@ function A=blurgauss(A,sigma)
 %    Broadening of data based on normalized Gaussian kernel
 %    ~ exp(-0.5*(x/sigma)^2)
 %    where sigma can be chosen different for reach dimension of A;
-%    absent values e.g. by having length(sigma) < ndims(A) imply
-%    that sigma=0 for those dimensions, i.e. no blur.
+%    absent values e.g. by having length(sigma) < ndims(A) imply that
+%    sigma=0 for those dimensions, i.e. no blur. E.g, if single
+%    number is specified, this blurs the first dimension only.
 %
 % Wb,Aug29,19
 
@@ -20,6 +21,8 @@ function A=blurgauss(A,sigma)
 end
 
 % -------------------------------------------------------------------- %
+% blur first dimension
+
 function A=blurgauss_1(A,sigma)
 
    s=size(A); s1=s(1); s2=prod(s(2:end));

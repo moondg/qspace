@@ -1,20 +1,24 @@
-function [A,B]=getsub(A,varargin)
-% Usage #1: function [A,B]=getsub(A,idx)
+function [A,idx,B]=getsub(A,varargin)
+% Usage #1: function [Aout,idx,B]=getsub(A,idx)
 %
 %    Select given subspace where idx represents direct index
-%    into records of QSpace.
+%    into records of QSpace. Second return argument (B)
+%    if requested returns remaining records (complement) in input A.
+%    Output idx is redundant to input idx with usage #1.
 %
-% Usage #2: function [A,B]=getsub(A,q,dim)
-%           function [A,B]=getsub(A,{q} [,dim]) // Wb,Feb21,21
+% Usage #2: function [A,idx,B]=getsub(A,q,dim)
+%           function [A,idx,B]=getsub(A,{q} [,dim]) // Wb,Feb21,21
 %
 %    Select subspace that has given symmetry sector(s) in given dimension(s).
 %    if q is a cell array, then this directly relates to to dimensions in A
 %    e.g. getsub(ops,{[],[],0}) = getsub(ops,0,3) picks scalar sector
 %    on 3rd dimension; here '0' or 0 can be used as a shortcut to zeros(1,m)
 %    in q, with m the number of symmetry labels.
+%    Output idx specifies the automatically determined idx
+%    as in input of usage #1.
 %
-% Usage #3: function [A,B]=getsub(A,'-0')       // Wb,Dec04,20
-%           function [A,B]=getsub(A,'-0!')
+% Usage #3: function [A,idx,B]=getsub(A,'-0')       // Wb,Dec04,20
+%           function [A,idx,B]=getsub(A,'-0!')
 %
 %    Assuming A is an irop (rank-3 with irop-index on 3rd leg)
 %    select scalar operator part (q-labels 0); this is equivalent
@@ -53,29 +57,38 @@ function [A,B]=getsub(A,varargin)
      dflag=getopt('-d');
   args=getopt('get_remaining');
 
-  nA=numel(A);
-  if nargout<=1
-     for k=1:nA, [A(k)     ]=getsub_1(A(k),sflag,args{:}); end
+  sA=size(A); idx=cell(size(A));
+  nA=prod(sA);
+  if nargout<=2
+     for k=1:nA, [A(k),idx{k},    ]=getsub_1(A(k),sflag,args{:}); end
   else
-     B=QSpace(size(A));
-     for k=1:nA, [A(k),B(k)]=getsub_1(A(k),sflag,args{:}); end
+     B=QSpace(sA);
+     for k=1:nA, [A(k),idx{k},B(k)]=getsub_1(A(k),sflag,args{:}); end
   end
 
-  if dflag, sA=size(A);
-     A=reshape({A.data},sA);
-     ss=zeros(1,nA); for i=1:nA, ss(i)=numel(A{i}); end
-     if all(ss<=1)
-        i=find(ss==0); A(i)={[]};
-        A=reshape([A{:}],sA);
+  if dflag
+     if nA==1,
+        A=A.data;
+        if numel(A)==1, A=A{1}; idx=idx{1}; end
+     else
+        sA=size(A);
+        A=reshape({A.data},sA);
+        ss=zeros(1,nA); for i=1:nA, ss(i)=numel(A{i}); end
+        if all(ss<=1)
+           i=find(~ss); A(i)={{[]}};
+           A=reshape([A{:}],sA);
+        end
      end
   end
 
 end
 
 % -------------------------------------------------------------------- %
-function [A,B]=getsub_1(A,sflag,varargin)
+% B is complement in A_in as compared to returned A_out
 
-  B=QSpace; if isempty(A.Q), return; end
+function [A,idx,B]=getsub_1(A,sflag,varargin)
+
+  idx=[]; B=QSpace; if isempty(A.Q), return; end
   m=size(A.Q{1},2);
 
   if sflag
@@ -87,7 +100,7 @@ function [A,B]=getsub_1(A,sflag,varargin)
   elseif nargin==3 && ~iscell(varargin{1}), idx=varargin{1};
      if ~isnumeric(idx), wbdie('invalid idx'); end
      if isempty(idx)
-        if nargout>1, B=A; end
+        if nargout>2, B=A; end
         A=QSpace; return
      end
      if ~isvector(idx)
@@ -131,7 +144,7 @@ function [A,B]=getsub_1(A,sflag,varargin)
      idx=unique(ia);
   end
 
-  if nargout>1, B=A;
+  if nargout>2, B=A;
      if ~isempty(B.Q) && ~isempty(B.Q{1})
         n=size(B.Q{1},1); j=1:n; j(idx)=[];
 

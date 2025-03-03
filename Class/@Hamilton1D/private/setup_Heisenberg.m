@@ -458,11 +458,12 @@ function [HAM]=setup_Heisenberg(varargin)
 
      if gotJ3
         XY=[ (1:L)', zeros(L,1) ]; XY(2:3:end,2)=1; XY(3:3:end,2)=2;
-        HAM.info.XY=XY;
      elseif gotJ2
         XY=[ (1:L)', zeros(L,1) ]; XY(2:2:end,2)=1;
-        HAM.info.XY=XY;
+     else
+        XY=[ (1:L)', zeros(L,1) ]; XY(2:2:end,2)=1;
      end
+     HAM.info.XY=XY;
 
      for i=1:n
         if ncpl>=0

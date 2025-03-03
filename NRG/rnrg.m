@@ -149,8 +149,9 @@
      NKEEP=repmat(NKEEP,1,kx); else clear NKEEP; end
   end
 
-  if isempty(findstr(pwd,'/data/'))
-  cto lma; end
+  if isempty(regexpi(pwd,'/(data|project|scratch)\>'))
+     cto lma
+  end
 
   add2struct(param,wsys,'Etrunc?','ET1?','ETRUNC?','NKEEP?');
 

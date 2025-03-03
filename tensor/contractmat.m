@@ -1,24 +1,26 @@
-function Q=contractmat (A, B, ma, permQ);
-% Function - contractmat
-% Usage: Q = contractmat ( A, B, ma, permQ );
+function C=contractmat (A,B,ia,P_);
+% function C = contractmat (A,B,ia [,pout])
 %
-%     contract single index ma of tensor A with matrix B and
-%     replace this index ma with the one labeling the columns of B
+%     Contract single index ia of tensor A with matrix B
+%     while maintaining the index order in A. The resulting C
+%     can be optionally permuted by the trailing input argument pout.
 %
-% AWb, F.Verstraete
+% See contract() for more general contraction of two tensors.
+% F.Verstraete / adapted by AWb
 
-% Wb - see contract() for the more general
-% version of contracting two arbitrary tensors
+  sa=size(A); ra=max(numel(sa),ia); sa(end+1:ra)=1;
+  sb=size(B); q=[sa(ia), sb(1)];
+     if numel(sb)~=2, wbdie('invalid usage (got non-matrix B)'); end
+     if diff(q), wbdie('dimension mismatch (%d/%d)',q); end
+  Ia=1:ra; Ia(ia)=[]; P=[Ia ia]; iP(P)=1:ra;
 
-  sa=size(A);na=max(size(sa));Ia=[1:na];Ia(ma)=[];
-  sb=size(B);
-  AA=permute(A,[Ia ma]);
-  Q=reshape(AA,[prod(sa(Ia)) sa(ma)])*B;
-  Q=reshape(Q,[sa(Ia) sb(2)]);
+  AA=permute(A,P);
+  C=reshape(AA,[prod(sa(Ia)) sa(ia)])*B;
+  C=reshape(C, [sa(Ia)       sb(2 )]);
 
-  Q=permute(Q,[1:ma-1, na, ma:na-1]);
+  if nargin==4, iP=iP(P_); end
 
-  if nargin==4, Q=permute(Q,permQ); end
+  C=permute(C,iP);
 
 end
 

@@ -21,7 +21,7 @@ function [A,Iout]=appendSingletons(A,rnew,qdir)
 %
 %    A4=appendSingletons(E,'  +-')
 %
-% See also makeIrop, fixScalarOp.
+% See also: squeeze (reverse operation to this), makeIrop, fixScalarOp.
 % Wb,Sep17,18
 
   t0='';

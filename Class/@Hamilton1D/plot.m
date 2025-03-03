@@ -14,17 +14,18 @@ function plot(HAM,varargin)
 
   getopt('check_error');
 
+  N=numel(HAM.mpo);
+  full_mpo=(isa(HAM.mpo,'QSpace') || isfield(HAM.mpo,'Q'));
+
   if numel(HAM)~=1, wbdie('invalid usage'); end
   i3=[];
 
-  if     isfield(HAM.info,'HH'), HH=HAM.info.HH;
+  if isfield(HAM.info,'HH'), HH=HAM.info.HH;
+     if full_mpo && isfield(HAM.info,'HS'), HS=HAM.info.HS; end
   elseif isfield(HAM.info,'HS')
      HS=HAM.info.HS; [HH,m]=convert_HS(HS,3);
      i3=find(m==3);
   else wbdie('invalid usage (missing field HAM.info.HH)'); end
-
-  N=numel(HAM.mpo);
-  full_mpo=(isa(HAM.mpo,'QSpace') || isfield(HAM.mpo,'Q'));
 
   if ~N
      p=HAM.info.param;
@@ -92,11 +93,9 @@ setax(ah(1,1))
   else mflag=0;
   end
 
-  if isempty(HAM.mpo), q=ones(1,N);
-  elseif ~full_mpo
-     q=getdatafield(HAM.mpo,'stype');
-  elseif isfield(HAM.info,'stype'), q=HAM.info.stype;
-  else q=ones(1,N); end
+  q=[];
+  if isfield(HAM.info,'stype'), q=HAM.info.stype; end
+  if isempty(q), q=ones(1,N); end
 
   [s,I,D]=uniquerows(q(:));
   for i=1:numel(D), c=getcolor(i);
@@ -327,7 +326,7 @@ setax(ah(3,2))
 
 setax(ah(3,3))
    [iop,Ib,Db]=uniquerows(HH(:,[2 4]));
-   for i=1:size(iop)
+   for i=1:size(iop,1)
       kk=HH(Ib{i},[1 3]);
       xx=mean(reshape(HAM.info.XY(kk(:),1),size(kk)),2);
       h=plot(xx,HH(Ib{i},5),'o-');hold on
@@ -381,7 +380,7 @@ setax(ah(2,2));
   HM=cat(1,HM{:}); xx=mean(HM(:,[1 3]),2);
   [dx,Ix,Dx]=uniquerows([round(diff(HM(:,[1 3]),[],2)), HM(:,[2 4])]);
 
-  nl=zeros(1,L);
+  nl=zeros(1,N);
 
   for i=1:numel(Ix), o='o-';
      l=unique(dx(i,2:end));
@@ -417,6 +416,8 @@ setax(ah(2,2));
 end
 
 % -------------------------------------------------------------------- %
+% vary color within fluctations around mean value of coupling parameters
+
 function z=get_zcolor(z,io2)
    if isempty(z), return; end
    if nargin>1, z=z+mean(io2,2); end

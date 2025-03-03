@@ -10,6 +10,8 @@ function [A,I]=squeeze(A,varargin)
 %
 % Wb,Apr24,08 ; Wb,Dec01,20
 
+% tags: skipSingleton
+
   getopt('init',varargin);
      if getopt('-start'), ks='start';
      elseif getopt('-end'), ks='end'; else ks=[]; end
@@ -29,22 +31,30 @@ function [A,ks]=squeeze_1(A,ks)
   Q=A.Q; r=numel(Q); qnrm=zeros(1,r);
   for i=1:r, qnrm(i)=norm(Q{i},'fro'); end
 
-  if isempty(ks), ks=find(qnrm==0);
+  q=getDimQS(A);
+  is1=(qnrm==0 & q(end,:)==1);
+
+  if isempty(ks), ks=find(is1);
   elseif ~isnumeric(ks)
      if isequal(ks,'start')
-        for i=1:r,    if qnrm(i), ks=1:i-1; break; end; end
+        i=find(~is1,1);
+        if isempty(i), ks=1:r-2; else ks=1:min(i-1,r-2); end
      elseif isequal(ks,'end')
-        for i=r:-1:1, if qnrm(i), ks=i+1:r; break; end; end
+        i=find(~is1,1,'last');
+        if isempty(i), ks=3:r; else ks=max(3,i+1):r; end
      else ks, wbdie('invalid usage'); end
-     if any(ks<1 || ks>r), ks, wbdie('index out of range (r=%g)',r); end
+     if any(ks<1 | ks>r), ks, wbdie('index out of range (r=%g)',r); end
   else
      ks=unique(ks);
   end
 
+  n=numel(ks);
+  if n>r-2, ks=ks(n-r+3:end); end
+
   if isempty(ks), return; end
 
   qdir=getqdir(A); qk=qdir(ks); nk=numel(ks);
-  if any(qnrm(ks))
+  if any(~is1(ks))
      wbdie('invalid usage (specifed non-scalar dimension)');
   end
 

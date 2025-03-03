@@ -436,6 +436,15 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
           q.Sz=sum(SS(:,3));
           if ~isempty(SOP), SOP(end+1)=q; else SOP=q; end
 
+      case 'SU2spin(:)'
+        % suggested by Geng-Dong Zhou / Seung-Sup Lee [email 02/28/2025]
+		  for i=1:NC
+			  q=init_qstruct(sprintf('spin SU(2) [%d/%d]',i,NC),'SU',2);
+			  q.Sp=SS(i,1);
+			  q.Sz=SS(i,3);
+			  if ~isempty(SOP), SOP(end+1)=q; else SOP=q;end
+		  end
+
       case {'SU2spinJ','AspinJ'}
 
           lx=spinmat(NC,'-sp','-sym');

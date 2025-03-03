@@ -136,9 +136,9 @@ function [Htot,Iout]=runED(HAM,varargin)
    p=HAM.info.param;
    if isfield(p,'istr'), s=untex(p.istr); else s=''; end
 
- ah=smaxis(2,2,'tag',mfilename); addt2fig Wb
- header('%M :: %s',s);
- header('SW',param2str(p,'-x','system'),{'FontSize',10});
+ah=smaxis(2,2,'tag',mfilename); addt2fig Wb
+header('%M :: %s',s);
+header('SW',param2str(p,'-x','system'),{'FontSize',10});
 
    setax(ah(1,1)); j=100;
    if D>2*j

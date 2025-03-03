@@ -68,24 +68,44 @@ function varargout=setitags(A,varargin)
   end
 
   idx=[]; n=numel(varargin{1});
+  pmarks=0;
+  nskip=0;
 
-  if nargin==4 && (isstruct(varargin{2}) || isa(varargin{2},'QSpace')) ...
+  if nargin==2 && isQSpace(varargin{1}) ...
+  || nargin==4 && isQSpace(varargin{2}) ...
      && isnumeric(varargin{1}) && isnumeric(varargin{3})
+
      w=5;
 
-     ia=varargin{1}; ib=varargin{3}; n=numel(ia);
-     if numel(ib)~=n, wbdie(...
-       'invalid usage (index length mismatch %g/%g)',n,numel(ib));
+     if nargin>2
+        ia=varargin{1}; ib=varargin{3};
+        if numel(ib)~=n, wbdie(...
+          'invalid usage (index length mismatch %g/%g)',n,numel(ib));
+        end
+        n=numel(ia); l=2;
+     else
+        n=[ numel(A.Q), numel(varargin{1}.Q) ];
+        if diff(n), wbdie('invalid usage (rank mismatch %g/%g)',n); end
+        n=n(1); ia=1:n; ib=1:n; l=1;
+        pmarks=1;
      end
 
-     tB=varargin{2}.info.itags; tB=regexprep(tB,'\**$','');
+     tA=A.info.itags;
+     tB=varargin{l}.info.itags;
 
-     if ~n, n=[numel(tA), numel(tB)];
+     if nargin>2 && ~n, n=[numel(tA), numel(tB)];
         if diff(n)
-           wbdie('invalid usage (length mistmatch %g/%g)',n); end
+           wbdie('invalid usage (rank mistmatch %g/%g)',n); end
         n=n(1); ia=1:n; ib=1:n;
      end
 
+     ix=[]; for i=1:n, if isequal(tA{i},tB{i}), ix(end+1)=i; end; end
+     nskip=numel(ix);
+     if nskip
+         ia(ix)=[]; ib(ix)=[]; n=numel(ia);
+     end
+
+     tB=regexprep(tB,'\**$','');
      idx=ia; tt=tB(ib);
 
   elseif ischar(varargin{1}), q=varargin{1};
@@ -181,7 +201,7 @@ function varargout=setitags(A,varargin)
      end
   end
 
-  if isempty(idx)
+  if isempty(idx) && ~nskip
      tt=varargin{1}; if ischar(tt), w1=1; tt={tt};
      elseif iscell(tt) && ischar(tt{1}), w1=2; else w1=0; end
 
@@ -219,7 +239,7 @@ function varargout=setitags(A,varargin)
   if nidx, q=unique(idx); q=[ numel(q), nidx, q([1 end]) ];
      if diff(q(1:2)), idx, wbdie('invalid usage (non-unique index)'); end
      if q(3)<1 || q(4)>32, idx, wbdie('(likely) invalid index'); end
-  else wblog('WRN','got empty idx (%g/%g)',nidx,numel(tt));
+  elseif ~nskip wblog('WRN','got empty idx (%g/%g)',nidx,numel(tt));
   end
 
   nA=numel(A); TK=cell(1,nA);
@@ -236,7 +256,7 @@ function varargout=setitags(A,varargin)
 
      for i=1:nidx, j=idx(i);
         if j<=nk % skip 'op' if scalar operator // Wb,Jul24,22
-           tk{j}=set_itag(tk{j},tt{i});
+           tk{j}=set_itag(tk{j},tt{i},pmarks);
         end
      end
      TK{k}=tk;
@@ -257,9 +277,14 @@ end
 
 % -------------------------------------------------------------------- %
 
-function t=set_itag(t,tref)
+function t=set_itag(t,tref,pmark)
 
-   t=regexprep(t,'^[^\*]*',tref,'emptymatch');
+   if nargin<3 || ~pmark
+        pat='^[^\*]*';
+   else pat='^[^\*'']*'; tref=regexprep(tref,'''*$','');
+   end
+
+   t=regexprep(t,pat,tref,'emptymatch');
 
 end
 

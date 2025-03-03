@@ -346,7 +346,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
          EE(j)=untag(E0(j));
       end
    end
-   EE_=EE; EE=EE(1,stype);
+   E0_=E0; EE_=EE; EE=EE(1,stype);
 
    for i=1:numel(ops)
     % NB! in interactions terms the dagger is always applied
@@ -519,6 +519,10 @@ function [HAM]=setup_mpo_full(HAM,varargin)
       end
    end
 
+ % ------------------------------------------------------------------- %
+ % build full MPO of Hamiltonian by fitting
+ % ------------------------------------------------------------------- %
+
    SA=QSpace(1,L);  % cummulative sum for either L or R block (`sum')
    SM=QSpace(nH,L);
 
@@ -636,6 +640,8 @@ function [HAM]=setup_mpo_full(HAM,varargin)
             end
 
           % ---------------------------------------------------------- %
+          % propagate and update SA
+          % finished terms still come with Id for the rest of the system
             if kp
                Q={ SA(kp), mpo(k) }; if sdir<0, Q=Q([2 1]); end
                SA(k)=contract(oez(1,k),ic,Q);
@@ -793,6 +799,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
    end
 
    mpo_0=mpo;
+   mpo=skipzeros(mpo);
 
    for k=1:L % tr(H*H')
       Q=mpo(k); if k>1, Q={x2,Q}; end
@@ -853,21 +860,24 @@ function [HAM]=setup_mpo_full(HAM,varargin)
      Nkeep,svd_range,svd2tr, Ham2,hmpo,mpo2,nrm2,e);
 
  % Identify global energy offset in HAM propto Id
- % since this generates ambiguity with which site is going to
- % be associated with!
- % (1) obtain e0 for entire mpo (= trace(mpo) !)
- % (2) remove it from mpo while making it canonical, before finally,
- % (3) again adding it to the MPO uniformly over all sites
+ % since this generates ambiguity with which site this is going
+ % to be associated with! Overall strategy (carried out below):
+ % (1) obtain E0 for entire mpo (= trace(mpo) !)
+ % (2) remove it from mpo for the purpose of making MPO canonical
+ % (3) finally again add E0 back to the MPO uniformly over all sites
 
-   if k~=1, wbdie('got k=%d',k); end
+   deps=1E-12; 
+   k=kc; if k~=1, wbdie('got k=%d',k); end
    EM(k)=contract(oez(1,k),'!1*',{mpo(k),EM(k+1)}); EM_0=EM;
 
    xR=getscalar(EM(k));
 
-   e0=xR;
-   e1=e0/L;
+   E0=xR;
+   e0=E0/L;
 
-   gotId=(abs(e1)>1E-12);
+   mpo2_tr0 = mpo2-E0^2;
+
+   gotId=(abs(e0)>deps);
    if gotId
     % with Id for local identity and dfac=1/sqrt(dloc) above
     % and both, the mpo scaled by dfac as well as Id
@@ -876,276 +886,305 @@ function [HAM]=setup_mpo_full(HAM,varargin)
     % then with n_i = 1/2*(Id + sigma_z))
     % => total contribution to Id = L*(epsd/2)
     % => furthermore, if ~addHc, then half of this => (L/2)*(epsd/2) - ok!
-    % e0 can be complex if ~addHc => use num2str()
-    % => e1 = uniform contribution per site
+    % E0 can be complex for the case of ~addHc => use num2str()
+    % => e0 = uniform contribution per site
 
-      q=1; if addHc, q=2; end % NB! if addHc: mpo+mpo' => 2*e1
-      wblog('-->','got Id term in HAM.mpo (e0=%s)',num2str(q*e1,'%.4g')); 
-   end
+      q=1; if addHc, q=2; end % NB! if addHc: mpo+mpo' => 2*e0
+      wblog('-->','got Id term in HAM.mpo (E0=%s)',num2str(q*e0,'%.4g')); 
 
- % Canonicalize mpo by inserting 1=U*U' along bonds // MPO_CANONICAL
- % NB! in order to evaluate block matrix elements entering <A|mpo|A>
- % it is useful to be able to split off, and thus to identify
- % the identity operator which corresponds to completed terms
- % need to bring (0,0,0) sector in mpo to canonical form:
- %     1st state: `start' state from the left // ORDER_START_STOP_NORM
- %     2nd state: `stop' state towards the right
- % Then
- %  => the cumulative matrix elements of mpo(k).data{l}(1,1)
- %     with l the (0,0*,0) sector describes the weight for
- %     the identity operator in the left block
- %  => the cumulative matrix elements of mpo(k).data{l}(2,2) (= 1!)
- %     with l the (0,0*,0) sector describes the weight for
- %     the identity operator in the right block; by the RL
- %     orthonormalization of the mpo, this coefficient is 1.
- % also check sign to make sign in EM(k) positive
-
-   klast=-1;
-
-   for k=L:-1:2
-    % build weighted local Hermitian super-operator
-    % to respect local operator order, as well as incoming ops;
-    % => expect a more transparent structure of the mpo;
-    % the unitary U below is irrelevant, otherwise;
-    % what is important only, is the structure of the q=0 sector
-    % which will be explicitly set (overwritten) anyways
-      A=getIdentity(mpo(k),3); l=0;
-      [~,is]=sortrows(abs(A.Q{1}));
-      for i=is', s=size(A.data{i},1);
-         A.data{i}=diag(l+1:l+s); l=l+s;
-      end
-      X=contract(mpo(k),'!1*',{mpo(k),A});
-
-      A=getIdentity(mpo(k),2); l=0.5;
-      [~,is]=sortrows(abs(A.Q{1})); % start with `smallest' q-labels
-      for i=is', s=size(A.data{i},1);
-         A.data{i}=diag(l+1:l+s); l=l+s;
-      end
-      X=X+contract(mpo(k),'!1*',{mpo(k),A});
-
-      [ee,Ie]=eigQS(X); ee=ee(:,1);
-      if any(ee<1), ee, wbdie('got min(ee)=%.2g [k=%g]',min(ee),k); end
-
-      % NB! EM represents the identity applied all sites to the right
-      % which is a well-defined single(!) super-state for the R-block!
-      % Now Id in the R-block can be linked in at most two ways
-      % to the left (L-block), such that EM(k) is row-vector:
-      % (1) to HAM terms (H-terms) in the L-block that are completed
-      %     which must come with Id for the R-block, or
-      % (2) to the identity operator on the entire L-block itself
-      %     e.g. in case of gotId where HAM has finite trace,
-      %     i.e. has a trivial energy offset term propto Id globally.
-      %
-      %     Since the mpo can be tuned continuously w.r.t bare
-      %     parameters in the Hamiltonian (1) must act independently
-      %     from (2); therefore these must correpsond to independent
-      %     `states' (except for trivial trace-full part of H-terms
-      %     which actually represent the Id operator).
-      %
-      % Note, however, that the Q=0 bond state space must have
-      % two states even if the Hamiltonian is traceless (~gotId)
-      % because the distinction between completed terms and terms
-      % to come (not yet started) must exist in any case [similar
-      % to the previous argument, the mpo is continuous in bare
-      % paraemeters of HAM, and so it must distinguish between
-      % terms completed and terms still to come].
-      % For example: wsys='tb3'; use_mpo=1; epsd=0; has two states
-      % within the bulk of EM objects to start with, with significant
-      % SVD weight on both Q=0 states so this is not by accident,
-      % except for k<=2 (first bond 1-2), and k=L (last bond).
-      %
-      % Because of (1), EM must be non-zero as soon as H-terms
-      % have been completed in the L-block (e.g. k > ~ 2 .. L)
-      %
-      % => (1) can be absent for small k only; save to assume that
-      %    this cannot be the case k>L/2 for sufficiently large systems.
-      % => (2) can be absent if there is no global Id term
-      %    i.e. tr(H)=0; this must hold globally!
-
-      q=norm(EM(k));
-      if q<1E-12
-       % NB! EM(k) can only be zero (empty) if both (1) and (2)
-       % above are absent: this can only occur for small k if there are
-       % no H-terms yet completed for k'<k (the L-block); e.g. this
-       % may occur for k=2, which describes the bond 1-2).
-       % Completed terms require Id for the R-block [see (1) above]!
-       % [todo] Add infinitesimal local term to all sites so that
-       % identity operator is not fully absent? // Wb,Feb15,21
-         s={' * ', sprintf('<%g| got |EM|=%.3g',k,q) };
-         if k>2, s{1}='WRN'; end
-         if ~EM(k), s{2}=[s{2} ' (empty)'];
-            wblog(s{:}); klast=k; break
-         elseif q<1E-14
-            wblog(s{:}); klast=k; break;
-         end
-      end
-
-      if numel(EM(k).data)~=1 || size(EM(k).data{1},1)~=1
-         wbdie('unexpected EM(%g) dimensions',k);
-      end
-
-      v=EM(k).data{1}.'; v2=v*v'/(v'*v); p=eye(size(v2))-v2;
-        z=zeros(1,size(EM(k).Q{1},2));
-        i=matchIndex(X.Q{1},z);
-      X.data{i} = p*X.data{i}*p + 0.5*v2;
-
-      [ee,Ie]=eigQS(X);
-      U=Ie.AK; i=matchIndex(U.Q{1},z); u=U.data{i};
-
-      IE(k)=add2struct('-',X,U,ee,u,v);
-
-      if v'*u(:,1)<-1E-10, u=-u; end
-
-      if numel(u)>1
-         u=u(:,[2 1,3:end]);
-      elseif numel(u)~=1, u, wbdie('unexpected setting'); 
-       % NB! numel(u)==1 may only occur close to the boundary where
-       % no H-terms are yet completed close to the L (or R) boundary
-       % and where there is no global energy off set (~gotId)
-       % => should be interpreted w.r.t. L-block where either the
-       %    start or the stop state is present, but no longer both
-       % => artificially inflate bond dimension // ORDER_START_STOP_NORM
-      elseif k>L/2
-         u=[0, u]; % expect u to represent `stop' state close to R-end
-      else
-         u=[u, 0]; % expect u to link to `start' state close to L-end
-      end
-
-      U.data{i}=u;
-
-      mpo(k)=contractQS(U,'1',mpo(k),1);
-      mpo(k-1)=contractQS(mpo(k-1),U,'*',[1 3 2]);
-   end
-
-   for k=L:-1:1
-      Q=mpo(k); if k<L, Q={Q,EM(k+1)}; end
-      EM(k)=contractQS(oez(1,k),'!1*',Q);
-   end
-
- % NB! normalize EL: so far mpo is RL orthonormalized
- % => `stop' state is well-defined as second state within (0,0,0)
- % normalizing EL here, the mpo will no longer be strictly
- % RL orthonormal, at the benefit that Id_Left (like Id_Right)
- % is well-defined and normalized // ORDER_START_STOP_NORM
-   EL=QSpace(1,L); xp=zeros(1,L);
-   for k=1:L
-      Q=mpo(k); if k>1, Q={EL(k-1),Q}; end
-      EL(k)=contractQS(oez(1,k),'!2*',Q); q=0;
-
-      if EL(k)
-         q=EL(k).data{1}; a=abs(q); i=find(a==max(a),1);
-         l=length(q); p=1:l;
-         if i>2
-            p([1 i])=[i 1];
-            e=abs(q(2))>1E-8; if e || tflag
-               s={' * ',sprintf('|%g> swaping i=(1,%g) / %g',k,i,l)};
-               if e, s{1}='WRN'; end
-               wblog(s{:}); displ(q')
-            end
-         elseif i==2
-            k_=[L/2,L-dkL];
-            if a(1)<1E-12 && k<min(k_)
-               p([1 i])=[i 1];
-            elseif k<max(k_), displ(q');
-               s={ 'WRN', sprintf('|%g> got max xL at i=%g',k,i) };
-               if k<klast, s{1}=' * '; else s{2}=[s{2} ' !?']; end
-               wblog(s{:}); i=1; 
-            end
-         end
-         q=q(i);
-      end
-
-      if abs(q)>1E-6 && k<L
-         a=struct(mpo(k));
-         for i=matchIndex(a.Q{2},z)
-            x=a.data{i}(:,p,:); x(:,1,:)=(1/q)*x(:,1,:);
-            mpo(k).data{i}=x;
-         end
-
-         a=struct(mpo(k+1));
-         for i=matchIndex(a.Q{1},z);
-            x=a.data{i}(p,:,:); x(1,:,:)=(  q)*x(1,:,:);
-            mpo(k+1).data{i}=x;
-         end
-
-      elseif k+2<L
-         wblog('WRN','|%g> got EL->(1) = %.3g',k,q);
-      end
-
-      Q=mpo(k); if k>1, Q={EL(k-1),Q}; end
-      EL(k)=contractQS(oez(1,k),'!2*',Q);
-   end
-
-   irep=0; if gotId, irep=1; end
-   for irep=0:irep
-
-      if irep, xL_=xL; EM_=EM; xR_=xR; EL_=EL;
-      for k=1:L
-         Q=mpo(k); if k>1, Q={EL(k-1),Q}; end
-         EL(k)=contractQS(oez(1,k),'!2*',Q);
-      end, end
-      q=struct(EL); q=[q.data]; xL=cat2(1,q{:});
-      xL(end,:)=flip(xL(end,:));
+    % WRN! need to be careful with how E0 is subtracted!
+    % no proper start/stop states yet: Id may be admixed
+    % to other (bond-)operators: non-zero trace would add
+    % entire operator though, including traceless parts!
+    % Also trying to subtract E0 locally with mpo(1) only is not safe!
+    % Due to the proximity to the L-boundary it may be that mpo(2)
+    % has to be adapted to properly subtract E0 even if k1==1 below
+    % Wb,Feb11,25
+      [mpo,Ia,IL]=MPS_add(mpo,oez(1,:),-E0); mpo_1=mpo;
 
       for k=L:-1:1
          Q=mpo(k); if k<L, Q={Q,EM(k+1)}; end
          EM(k)=contractQS(oez(1,k),'!1*',Q);
       end
-      q=struct(EM); q=[q.data]; xR=cat2(1,q{:}); 
 
-      q=[xR(1); diag(xL(1:end-1,:)*xR(2:end,:).'); xL(end); xR(1); xL(end)];
-      e=[ norm(q-e0), abs(e0) ]; e=e(1)/max(1,e(2));
-      if any(e>1E-12), s=sprintf(', %.3g',e);
-         wbdie('inconsistent Id term (e=%s)',s(3:end));
-      end
+      e=getscalar(EM(k));
+      if abs(e)>1E-12
+         wbdie('failed to subtract E0 (trace error @ %.3g)',e); end
 
-      if ~irep
-         if gotId, e1=repmat(e0/L,1,L); else e1=[]; end
+      q=[ E0^2, mpo_diff2(mpo_0,mpo) ]; e=abs(diff(q));
+      if abs(e)>1E-12
+         wbdie('failed to subtract E0 (diff2 @ %.3g)',e); end
 
-         i=find(abs(xL(:,1))>1E-12,1,'last'); e=norm(xL(1:i,1)-1);
-         if e>1E-10
-            s=sprintf('failed to canonicalize start state (EL @ e=%.3g)',e);
-            if Fflag, wblog('ERR',s); else wbdie(s); end
-         elseif i<L, k=i+1;
-            wblog(' * ','got start states for k<L-%g @ e=%.1g',L-k,e);
-            if k<L && gotId, e1(k)=sum(e1(k:L)); e1(k+1:L)=0; end
-         end
+      check_mpo_overlap(mpo_0,mpo, mpo2_tr0);
 
-         i=find(abs(xR(:,2))>1E-12,1); e=norm(xR(i:end,2)-1);
-         if e>1E-10
-            s=sprintf('failed to canonicalize stop state (ER @ e=%.3g)',e);
-            if Fflag, wblog('ERR',s); else wbdie(s); end
-         elseif i>1, k=i-1;
-            wblog(' * ','got stop  states for k>%-3g @ e=%.1g',k,e);
-            if k>1 && gotId, e1(k)=sum(e1(1:k)); e1(1:k-1)=0; end
-         end
-
-         continue
-      end
-
-      check_mpo_overlap(mpo_0,mpo, mpo2); mpo_1=mpo;
-
-      for k=1:L, if abs(e1(k))
-         if k>1, a=EL(k-1).data; else a={1}; end
-         if k<L, l=k+1;
-            Q=mpo(l); if l<L, Q={Q,EM(l+1)}; end
-            EM(l)=contractQS(oez(1,l),'!1*',Q);
-            b=EM(l).data;
-         else b={1}; end
-
-         P=getIdProj(mpo(k),a,b,oez(1,k));
-         if P
-            xp(k)=getscalar(contract(P,'*',mpo(k)));
-            mpo(k)=mpo(k)+(e1(k)-xp(k))*P;
-         end
-      end; end
+    % project new mpo into mpo_0 basis // for debugging only // M0_BASIS
+    % M=mpo; % check only => create copy // Wb,Feb12,25
+    % for k=L:-1:2
+    %     X=contract(mpo_0(k),'!1*',M(k));
+    %     x=eig(X'*X); e=norm(x(:,1)-1); if e>deps, wbstop; end
+    %        % e.g. stopped at k=2: got difference already also within mpo(2)
+    %     M(k)=mpo_0(k);
+    %     M(k-1)=contract(M(k-1),X,[1 3 2]);
+    % end
    end
+
+   for k=1:L
+      Q=mpo(k); if k>1, Q={EL(k-1),Q}; end
+      EL(k)=contractQS(oez(1,k),'!2*',Q);
+   end
+
+   wk=zeros(1,L);
+   z=zeros(1,size(oez(1).Q{1},2));
+   z3={z,z,z}; kL=[]; kL_fixed=0;
+
+ % canonicalize mpo by inserting Id=U*inv(U) along bonds // MPO_CANONICAL
+ % NB! in order to evaluate block matrix elements entering <A|mpo|A>
+ % it is useful to be able to split off, and thus to identify
+ % the identity operator which corresponds to completed terms
+ % need to bring (0;0;0) sector in mpo to canonical form:
+ %     1st state: `start' state from the left // ORDER_START_STOP_NORM
+ %     2nd state: `stop' state towards the right
+ % Then with l the (0;0*,0) sector
+ %  => the cumulative matrix elements of mpo(k).data{l}(1,1)
+ %     describes the weight for the identity operator in the left block
+ %  => the cumulative matrix elements of mpo(k).data{l}(2,2) (= 1!)
+ %     describes the weight for the identity operator in the right block;
+ %     by the RL orthonormalization of the mpo, this coefficient is 1.
+ % also check sign to make sign in EM(k) positive
+
+ % NB! EM represents the projection to the identity for sites k'>=k
+ % -->  well-defined single(!) super-state for the R-block!
+ % NB! Id in the R-block can be linked in at most two ways
+ % to the left (L-block), such that EM(k) is row-vector:
+ %
+ % (1) to HAM terms (H-terms) in the L-block that are completed
+ %     which must come with Id for the R-block, or
+ %
+ % (2) to the identity operator on the entire L-block itself
+ %     e.g. in case of gotId where HAM has finite trace,
+ %     i.e. has a trivial energy offset term propto Id globally.
+ %
+ %     Since the mpo can be tuned continuously w.r.t bare
+ %     parameters in the Hamiltonian (1) must act independently
+ %     from (2); therefore these must correpsond to independent
+ %     `states' (except for trivial trace-full part of H-terms
+ %     which actually represent the Id operator).
+ %
+ % Because of (1), EM must be non-zero as soon as H-terms
+ % have been completed in the L-block (e.g. k > ~ 2 .. L)
+ %
+ % => (1) can be absent for small k only; save to assume that
+ %    this cannot be the case k>L/2 for sufficiently large systems.
+ % => (2) can be absent if there is no global Id term
+ %    i.e. tr(H)=0; this must hold globally!
+
+ % L- and R-block can include (random) contributions to Id
+ % as long the total sums to zero (thus still <E|mpo> = tr(H) = 0!).
+ % Taking x0 as the q=(0;0;0) sector mpo(k), then eventually, its
+ % matrix elements x0(i,j,k) must not have non-zero interies in the
+ %
+ %   * 1st col x0(:,1,k) other than i=1  // START_COL1
+ %   * 2nd row x0(2,:,k) other than j=2  // STOP_ROW2
+ %
+ % The stop-state is defined within the R-block which thus needs
+ % to be grown from the very beginning (hence R->L sweep).
+ % The below L<-R sweep based on EL/EM therefore permits to pin down
+ % the stop state and thus STOP_ROW2; START_COL1 beyond row 2
+ % appears difficult just basd on the MPO // Wb,Feb15,25
+
+   for k=L:-1:2
+      X=getIdentity(mpo(k),1);
+    % X=contract(mpo(k),'!1*',mpo(k)); %'!1*' since moving R->L
+      % NB! got (K,K*') itags here //  U_CONTRACT_1ST_IDX
+      % => (X -> U below) will be contracted on 1st! index with mpo(k)
+      % by construction, eig(X)>=0
+      % => project start/stop states to negative eigenvalues below
+      % see ipad/phys-notes => Hamilton1D // Wb,Feb07,25
+
+      [x0,i0]=getsub(X,{z,z},'-d');
+      ufac=[0 0]; q=[0 0]; u=0; v=0; 
+
+      Q=[ EL(k-1), EM(k) ];
+      for i=1:2, q(i)=norm(Q(i));
+         if q(i) && (numel(Q(i).data)~=1 || size(Q(i).data{1},1)~=1)
+            if i==1, s=sprintf('EL(%g)',k-1);
+            else     s=sprintf('EM(%g)',k); end
+            s={s,q(i), ''}; if ~Q(i), s{3}=' (empty)'; end
+            wbdie('unexpected dimensions for %s @ norm=%.3g%s',s{:});
+         end
+      end
+
+      if Q(1), u=Q(1).data{1}.'; end
+      if Q(2), v=Q(2).data{1}';  end
+
+      e=norm(u'*v);
+      if e>1E-12, wbdie('got finite trace %.3g',xp(k)); end
+
+      if all(q>deps), wk(k)=3;
+         Pu=u*u'/q(1)^2;
+         Pv=v*v'/q(2)^2; Px=eye(size(Pv)) - Pu - Pv;
+
+         X.data{i0} = -2*Pu - Pv + Px*x0*Px;
+         [ee,Ie]=eigQS(X); U=Ie.AK; 
+
+         i0=matchIndex(U.Q{1},z);
+         u0=U.data{i0}; ufac=q;
+         if u'*u0(:,1)<-1E-10, u0(:,1)=-u0(:,1); end
+         if v'*u0(:,2)<-1E-10, u0(:,2)=-u0(:,2); end
+
+      else
+         l=find(q<=deps);
+         if numel(l)~=1, wbdie('got |u|=%.3g, |v|=%.3g !?',q); end
+
+         if l==1
+            if k<0.5*L, wbdie(...
+              'got |u|=%.3g for R-block at bond k=%d/%d',q(1),k,L); end
+            wk(k)=2;
+            u_=u; u=v;
+         else
+            if k>0.5*L, wbdie(...
+              'got |v|=%.3g for L-block at bond k=%d/%d',q(2),k,L); end
+            wk(k)=1;
+         end
+         Pu=u*u'/(u'*u); Px=eye(size(Pu)) - Pu;
+         X.data{i0} = - Pu + Px*X.data{i0}*Px;
+
+         [ee,Ie]=eigQS(X); U=Ie.AK; 
+         i0=matchIndex(U.Q{1},z);
+         u0=U.data{i0};
+         if u'*u0(:,1)<-1E-10, u0(:,1)=-u0(:,1); end
+
+         u0=u0(:,[1 1:end]); u0(:,l)=0;
+         ufac=q; qfac(l)=0;
+      end
+
+      uL=u0; uR=u0;
+      if ufac(1), uL(:,1)=uL(:,1)/ufac(1);  uR(:,1)=uR(:,1)*ufac(1); end
+      if ufac(2), uL(:,2)=uL(:,2)*ufac(2);  uR(:,2)=uR(:,2)/ufac(2); end
+
+      U.data{i0}=uR; mpo(k  )=contractQS(U,'1',mpo(k),1);
+      U.data{i0}=uL; mpo(k-1)=contractQS(mpo(k-1),U,'*',[1 3 2]);
+
+      if k==L, continue; end
+
+      x0=getsub(mpo(k),z3,'-d'); x0_=0; x0__=x0;
+      x0=contractmat(x0,reshape(oez(1,k).data{1},[],1),3);
+
+      if norm(x0(1:2,1)-[1;0])>deps
+         kL(end+1)=k;
+      elseif 1
+         i=find(abs(x0(3:end,1,1))>deps);
+         if isempty(i), continue; end
+
+         uR=eye(size(uR)); i=i+2;
+         uR(1,i)=-x0(i,1)/x0(1);
+         uL=inv(uR).';
+
+         U.data{i0}=uR; mpo(k  )=contractQS(U,'1',mpo(k),1);
+         U.data{i0}=uL; mpo(k-1)=contractQS(mpo(k-1),U,'*',[1 3 2]);
+      end
+
+   end
+
+   q=[ E0^2, mpo_diff2(mpo_0,mpo) ]; e=abs(diff(q));
+   if abs(e)>1E-12
+      wbdie('start/stop adaption of MPO introduced diff2 @ %.3g)',e); end
+
+   check_mpo_overlap(mpo_0,mpo, mpo2_tr0,'-v');
+
+   k1=find(diff((wk&2)));
+   if numel(k1)~=1 || k1>L/2, k1, wbdie('unexpected EM data'); end
+
+   wk(L+1)=0;
+   k2=1+find(diff((wk(2:end) & 2)));
+   if numel(k2)~=1 || k2<L/2, k2, wbdie('unexpected EL data'); end
+
+   for k=L:-1:1
+      Q=mpo(k); if k<L, Q={Q,EM(k+1)}; end
+      EM(k)=contractQS(oez(1,k),'!1*',Q);
+   end
+   for k=1:L
+      Q=mpo(k); if k>1, Q={EL(k-1),Q}; end
+      EL(k)=contractQS(oez(1,k),'!2*',Q);
+   end
+
+   Q=struct(EM); Q=[Q.data]; QM=cat2(1,Q{:});
+   Q=struct(EL); Q=[Q.data]; QL=cat2(1,Q{:});
+
+   i=find(abs(QM(:,2))>deps,1); if k1<i, k1=i-1; end
+   q=ones(L,1); q(1:k1)=0; e=norm(QM(:,2)-q);
+   if e>1E-12, wbdie('failed to canonicalize EM data'); end
+
+   i=find(abs(QL(:,1))>deps,1,'last'); if k2>i, k2=i+1; end
+   q=ones(L,1); q(k2:end)=0; e=norm(QL(:,1)-q);
+   if e>1E-12, wbdie('failed to canonicalize EL data'); end
+
+   if 1 && ~isempty(kL) && kL(1)<=k1+1, k=kL(1); kL_fixed=k;
+      [x1,i1]=getsub(mpo(k-1),z3,'-d'); x1_=x1; QL_=QL;
+      [x2,i2]=getsub(mpo(k  ),z3,'-d'); x2_=x2; QM_=QM;
+
+      u=x2(1:2,1); q=norm(u); u=u/q;
+      u0=eye(size(x2,1)); u0(1:2,1:2)=[u, [-u(2); u(1)]];
+      if q<1E-3, wblog('WRN','got small norm start/stop (q=%.3g)',q); end
+      x2=contractmat(x2,u0,1);
+
+      q=reshape(oez(1,k).data{1},[],1); q=contractmat(x2,q,3);
+      u2=[q(1,1), q(2,2)]; if any(abs(u2)<1E-6), u=[1 1]; end
+      u2(3:size(u0,1))=1;
+
+      uR=u0*diag(1./u2);
+      uL=u0*diag(   u2);
+      U=getIdentity(mpo(k),1); [u0,i0]=getsub(U,{z,z},'-d');
+
+      U.data{i0}=uR; mpo(k  )=contractQS(U,'1',mpo(k),1);
+      U.data{i0}=uL; mpo(k-1)=contractQS(mpo(k-1),U,'*',[1 3 2]);
+
+      EM(k)=contractQS(oez(1,k),'!1*',{mpo(k),EM(k+1)});
+      q=EM(k).data{1}; QM(k,1:numel(q))=q;
+
+      k=k-1; Q=mpo(k); if k>1, Q={EL(k-1),Q}; end
+      EL(k)=contractQS(oez(1,k),'!2*',Q);
+      q=EL(k).data{1}; QL(k,1:numel(q))=q;
+   end
+
+   if 1 || vflag, mpo_1=mpo;
+      M3=check_start_stop(mpo,oez(1,:),k1,k2,'-v');
+   end
+   check_mpo_overlap(mpo_0,mpo, mpo2_tr0);
+
+   if gotId, e0=repmat(e0,1,L);
+      k1=max([k1,2,kL_fixed]);
+      k2=min(k2,L-1);
+
+      if k1>1, e0(k1)=sum(e0(1:k1)); e0(1:k1-1)=0; end
+      if k2<L, e0(k2)=sum(e0(k2:L)); e0(k2+1:L)=0; end
+
+      for k=k1:k2
+         [x0,i0]=getsub(mpo(k),z3,'-d'); s0=size(x0); 
+         ek=oez(1,k).data{1};
+
+         mpo(k).data{i0}(1,2,:) = x0(1,2,:) + e0(k)*ek;
+
+         if 0
+            if k>1, a=EL(k-1).data{1}; else a=1; end
+            if k<L, b=EM(k+1).data{1}; else b=1; end
+
+            x=a*contractmat(x0,ek(:),3)*b.';
+            if norm(x)>deps, wbdie('got trace x=%.3g at k=%d',x,k); end
+
+            ek=e0(k)*reshape(ek,1,[]);
+            mpo(k).data{i0} = x0 + reshape(mkron(a,b,ek),s0);
+         end
+      end
+   end
+
+   e=mpo_diff2(mpo_0,mpo);
+   if abs(e)>1E-12
+      wblog('ERR','failed to reapply E0 (difference @ %.3g)',e); end
 
    check_mpo_overlap(mpo_0,mpo, mpo2,'-v');
 
-   xR=fliplr(xR);
-
-   HAM.info.mpo=add2struct(Iout,xL,xR,e0,e1);
+   HAM.info.mpo=add2struct(Iout,QL,QM,E0,e0);
 
    dfac=1/dfac;
    for k=1:L, tt=getitags(mpo(k));
@@ -1182,45 +1221,74 @@ function s=sweep2str(isw,k,L,sdir)
 end
 
 % -------------------------------------------------------------------- %
-function P=getIdProj(mpo_k,El,Er,oez_k)
+% Wb,Feb10,25
 
-   n=[ numel(El), numel(Er), numel(oez_k.data) ];
-   if any(n>1), n, wbdie('invalid usage'); end
-   if any(~n), P=[]; return; end
+function M3=check_start_stop(mpo,oez,k1,k2,varargin)
 
-   q=[El, Er, oez_k.data];
-   for k=1:2
-      n=numel(q{k});
-      if n~=2
-         if n~=1, wblog('WRN','got %s of size %s',s{2},sizestr_(q{k})); end
-         continue
-      end
+   getopt('init',varargin);
+      vflag=getopt('-v');
+   getopt('check_error');
 
-      if k==1
-           i=1; s={'start','EL'};
-      else i=2; s={'stop', 'ER'}; end
+    L=numel(mpo); ll=cell(0,2);
 
-      if abs(q{k}(i)-1)<1E-12, j=1:n; j(i)=[]; q{k}(i)=1; q{k}(j)=0;
-      else wblog('WRN',...
-        'invalid %s vector with %s (%s)',s{:},num2str(q{k}(i),'%.4g'));
-      end
-   end
+    M3=getsub(mpo,{0 0 0},'-d')';
 
-   P=setitags(oez_k,getitags(mpo_k));
+    zflag=(numel(oez(1).data{1})>1);
 
-   s=zeros(1,3);
-   for i=1:3
-      q{i}=reshape(q{i},[],1); s(i)=numel(q{i});
-      nrm=norm(q{i}); if nrm<1E-12, nrm=-nrm; break; end
-      q{i}=q{i}/nrm;
-   end
+    for k=k1:k2, x0=M3{k}; s0=size(x0);
+       e1=reshape(oez(k).data{1},[],1);
+       if zflag
+          z1=zeros(size(e1)); z1(1:2)=[e1(2), -e1(1)];
+          q=norm(z1); if q<1E-8, e1, wbdie('unexpected oez data (k=%d)',k); end
+          z1=z1*norm(e1)/norm(z1);
+          M3{k,2}=contractmat(M3{k},z1,3);
+       end
 
-   if nrm>0
-      P.data{1}=reshape(kron(q{3},kron(q{2},q{1})),s);
-   end
+       M3{k,1}=contractmat(M3{k},e1,3);
+       if s0(1)>1
+          if s0(2)>1
+             e=norm(permute(x0(2,[1,3:end],:),[2 3 1]),'fro');
+             if e>1E-8, ll(end+1,:)={ k, sprintf(...
+                'extra entries with stop row 2 (e=%.3g)',e) };
+                continue
+             end
+             e=norm(permute(x0(2:end,1,:),[1 3 2]),'fro');
+             if e>1E-8, ll(end+1,:)={ k, sprintf(...
+                'extra entries with start col 1 (e=%.3g)',e) };
+                continue
+             end
+          end
+
+          x0=M3{k,1};
+          if s0(2)>1
+               q=[x0(1,1),x0(2,2)];
+          else q=         x0(2,1);
+          end
+          e=norm(1-q);
+          if e>1E-8, ll(end+1,:)={ k, sprintf(...
+             'start/stop diagonal entry differs from 1. (e=%.3g)',e) };
+          end
+       elseif k>1, ll(end+1,:)={k,'skipped'};
+       end
+    end
+
+    nl=size(ll,1);
+    if nl, ll=ll';
+       wblog(1,'WRN','MPO got %d non-canonical MPO entries',nl);
+       fprintf(1,'   k=%2d %s\n',ll{:});
+       wblog('-->','%3d/%d  iterations passed (k=%d..%d)',L-nl,L,k1,k2);
+    elseif vflag, wblog(1,'MPO',...
+      'all sites k=%d..%d/%d in start/stop state order',k1,k2,L); 
+    end
+
+    if ~nargout, clear M3; end
 end
 
 % -------------------------------------------------------------------- %
+% compute <HAM|mpo> // for debugging purposes // Wb,Nov24,20
+% example usage: mpo_overlap_0(SS(l,:),mpo,oez)
+% -------------------------------------------------------------------- %
+
 function [x,D]=mpo_overlap_0(SS,mpo,oez)
 
    L=length(mpo); nH=size(SS,1); x=[];
@@ -1268,36 +1336,45 @@ function [x,D]=mpo_overlap_0(SS,mpo,oez)
 end
 
 % -------------------------------------------------------------------- %
+% check MPO by computing overlap with reference
+% <A|B> ?= x2ref
+
 function [x2,e]=check_mpo_overlap(A,B,x2ref,varargin)
 
    getopt('init',varargin);
       vflag=getopt('-v');
    getopt('check_error');
 
-   if ~isequal(size(A),size(B))
-      wbdie('invalid usage (size mismatch)'); end
-   L=numel(A);
-
-   for k=1:L
-      Q=B(k); if k>1, Q={Xl,Q}; end
-      Xl=contractQS(A(k),'!2*',Q);
-   end
-
-   x2=getscalar(QSpace(Xl));
-
+   x2=MPS_overlap(A,B);
    if nargin<3 || isempty(x2ref), return; end
 
    if numel(x2ref)~=1 || ~isfinite(x2ref) || ~abs(x2ref)
       x2ref, wbdie('invalid x2ref');
    end
 
-   e=abs(x2-x2ref)/max(1,norm(x2ref));
+   e=x2-x2ref; e(2)=abs(e)/max(1,norm(x2ref));
    if nargout<2
-      if e>1E-12, wbdie('mpo changed @ %.3g',e);
-      elseif vflag, wblog('MPO','consistent @ e=%.2g',e);
+      if e(2)>1E-12, wbdie('mpo changed @ %.3g',e(2));
+      elseif vflag, wblog(1,'MPO','consistent @ e=%.2g',e(2));
       end
       if ~nargout, clear x2; end
    end
+end
+
+% -------------------------------------------------------------------- %
+% compute MPO difference |A-B|^2 // Wb,Feb10,25
+
+function x=mpo_diff2(A,B,varargin)
+
+   getopt('init',varargin);
+      vflag=getopt('-v');
+   getopt('check_error');
+
+   a2=MPS_overlap(A,A);
+   ab=MPS_overlap(A,B);
+   b2=MPS_overlap(B,B);
+
+   x = a2 + b2 - 2*real(ab);
 end
 
 % -------------------------------------------------------------------- %

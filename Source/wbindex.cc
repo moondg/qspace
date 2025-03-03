@@ -1442,8 +1442,7 @@ int iTags::findRegEx(const char *pat) const {
    char s[l+1]; s[l]=0; 
    wbstring ptx;
 
-   if (!pat || !pat[0]) wblog(FL,
-      "ERR %s() got invalid regexp (empty)",FCT);
+   if (!pat || !pat[0]) wblog(FL,"ERR got empty itag regexp");
 
    if (strstr(pat,"\\d") && strlen(pat)<32) { unsigned j=0; str[0]=0;
       for (i=0; pat[i]; ++i) {
@@ -1484,7 +1483,7 @@ int iTags::RegEx_replace(const char *F, int L, const char *rstr) const {
    int nrep=0; 
    if (!rstr || !rstr[0]) { return nrep; }
    if (strncmp(rstr,"s/",2) || !rstr[2]) wblog(F_L,
-      "ERR %s() invalid regex '%s' (expecting s/*/*/*)",FCT,rstr);
+      "ERR invalid itag regex '%s'\nexpecting s/*/*/*",rstr);
 
    unsigned j, i=0, i1=0, i2=0, e=0;
    char icase=0, gflag=0; const char *s=rstr+2;
@@ -1496,7 +1495,7 @@ int iTags::RegEx_replace(const char *F, int L, const char *rstr) const {
 	  if (s[i]=='g') { ++gflag; } else { break; }
    }
    if (!i1 || !i2 || s[i] || icase>1 || gflag>1) wblog(F_L,
-      "ERR %s() invalid regex '%s' (expecting s/*/*/*)",FCT,rstr);
+      "ERR invalid itag regex '%s'\nexpecting s/*/*/*",rstr);
 
    char  rst_[strlen(rstr+2)+1];
    strcpy(rst_,rstr+2); rst_[i1-1]=rst_[i2-1]=0;

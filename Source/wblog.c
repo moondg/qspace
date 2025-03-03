@@ -217,6 +217,11 @@ Wb::VersionInfo& Wb::VersionInfo::init() {
    if (QS_VERSION_SUB || !i)
           { l+=snprintf(qspace+l,n-l,".%g",double(QS_VERSION_SUB)); }
    if (i) { l+=snprintf(qspace+l,n-l,"-%s",QS_VERSION_SUB_); }
+#  ifdef QS_VERSION_XSTR
+   if (l<n) { 
+      l+=snprintf(qspace+l,n-l," / %s",PP_STRFY(QS_VERSION_XSTR));
+   }
+#  endif
 #endif
 
 #ifdef __QS_GIT_BRANCH__
