@@ -66,7 +66,7 @@ function x=trace(A,I,varargin)
                cg=A.info.cgr(i,:); m=numel(cg);
                for j=1:m
                   if ~isempty(cg(j).cgw)
-                     q=mpfr2dec(cg(j).cgw) .* mpfr2dec(cg(j).cgt);
+                     q=cg(j).cgw .* cg(j).cgt;
                      d=d*sum(q(:));
                   elseif ~isempty(cg(j).type) || ~isempty(cg(j).qset)
                      wbdie('invalid CGR_ABELIAN');

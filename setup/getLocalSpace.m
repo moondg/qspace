@@ -282,12 +282,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
 
   getopt('check_error');
 
-  for q={'spin','charge','channel'}, i=regexpi(Sym_,q{1});
-     if numel(i)>1, wbdie(...
-        'invalid symmetry %s\ngot ''%s'' %g times !?',...
-        Sym_,q{1},numel(i));
-     end
-  end
+  check_unique_syms(Sym_);
 
   NC=check_NC(NC,Sym_);
 
@@ -632,21 +627,15 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
         for i=1:numel(x), x{i}=full(x{i}); end
         F(k)=compactQS(oc{:},sym,Is.QZ,Is.QZ,Io.QZ, cat(3,x{:}));
 
-        a=QSpace(contractQS(F(k),'13*',F(k),'13'));
-        b=QSpace(contractQS(F(k),'23',F(k),'23*'));
-        q=(1/numel(x)) * (a+b);
-        if ~isIdentityQS(q), wbdie(...
-           'invalid fermionic creation/annihilation ops'); end
+        check_ferm_acomm(F(k),numel(x));
      end
 
      if numel(F)==numel(FF), F=reshape(F,size(FF)); end
   else
      x=cell(size(X)); for i=1:numel(x), x{i}=full(X(i).op); end
      F=QSpace([0;0;0],cat(3,x{:}),{'','*','*'});
-     q=QSpace(contractQS(F,'13*',F,'13')) ...
-             +contractQS(F,'23',F,'23*');
-     if ~isIdentityQS(q/numel(X)), wbdie(...
-        'invalid fermionic creation/annihilation ops'); end
+
+     check_ferm_acomm(F,numel(X));
   end
 
   if vflag,
@@ -843,6 +832,21 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% make sure there is only at most one occurance for symmetry types
+% Wb,Apr04,18 // outsourced Wb,Mar25,25
+
+function check_unique_syms(sym)
+
+  for q={'spin','charge','channel'}, i=regexpi(sym,q{1});
+     if numel(i)>1, wbdie(1,...
+        'invalid symmetry ''%s''\nhaving ''*%s'' specified %s',...
+        sym,q{1},int2str2(numel(i),'-#'));
+     end
+  end
+
+end
+
+% -------------------------------------------------------------------- %
 % Wb,Apr04,18
 
 function NC=check_NC(NC,Sym)
@@ -884,15 +888,16 @@ function [NC,NCx,NCxs,NCsplit]=check_NC_vec(NC,sym)
 
   if NCsplit
      NC=sum(NC);
-     NCxs=['(' vsprintf(NCx,'+') ')'];
+     NCxs=['[' vsprintf(NCx,'+') ']'];
 
      if ~isempty(regexpi(sym,'SU2charge'))
         wbdie('got NC=%s together with SU2charge',NCxs);
      end
 
      if ~isempty(regexpi(sym,'(SU|Sp)[N\d]*channel')) && NC<2+NCsplit
-        if NCsplit, wbdie(...
-           'channel symmetry for NC=%s requires sum(NC)>%g',NCxs,NC);
+        if NCsplit, wbdie(1,[
+           'NC=%s inconsistent with channel symmetry ''%s''\n' ...
+           'note that non-abelian would require sum(NC)>%g'],NCxs,sym,NC);
         else wbdie('channel symmetry requires NC>=2 (%g)',NC); end
      end
   end
@@ -990,6 +995,8 @@ function [F,Z,Iout]=getLocalSpace_SpinlessFermions(Sym_,varargin)
      elseif getopt('-q2'), zflag=2; else zflag=-1; end
 
   getopt('check_error');
+
+  check_unique_syms(Sym_);
 
   NC=check_NC(NC,Sym_);
 
@@ -1165,11 +1172,7 @@ function [F,Z,Iout]=getLocalSpace_SpinlessFermions(Sym_,varargin)
      for i=1:numel(x), x{i}=full(x{i}); end
      F(k)=compactQS(oc{:},sym,Is.QZ,Is.QZ,Io.QZ, cat(3,x{:}));
 
-     a=QSpace(contractQS(F(k),'13*',F(k),'13'));
-     b=QSpace(contractQS(F(k),'23',F(k),'23*'));
-     q=(1/numel(x)) * (a+b);
-     if ~isIdentityQS(q), wbdie(...
-        'invalid fermionic creation/annihilation ops'); end
+     check_ferm_acomm(F(k),numel(x));
   end
 
   if vflag,
@@ -2054,6 +2057,36 @@ function check_commrels(SOP)
              'SOP(%d).%d and SOP(%d).%d (e=%g)'],i,i1,j,i2,e);
            end
         end, end
+     end
+  end
+end
+
+% -------------------------------------------------------------------- %
+% safeguard: check fermionic commutator relations
+% outsourced // Wb,Nov04,16
+
+function check_ferm_acomm(F,nops)
+
+  for k=1:numel(F), rk=numel(F(k).Q);
+     if     rk==3, ic={'13*','13'; '23','23*'};
+     elseif rk==2, ic={'1*', '1' ; '2', '2*' };
+          wblog(1,'WRN','got fermionic F-operator of rank %d',rk);
+     else wbdie('unexpected fermionic F-operator of rank %d',rk);
+     end
+
+     a=contract(F(k),ic{1,1},F(k),ic{1,2});
+     b=contract(F(k),ic{2,1},F(k),ic{2,2});
+     Q=a+b; n=Q.data{1}(1); n(2)=max(1,round(n));
+
+     e=abs(diff(n));
+     if nargin<2, nops=n(2); else e(2)=abs(n(1)-nops); end
+
+     if any(e>1E-12), wbdie(1,...
+        'invalid fermionic creation/annihilation ops (n=%g)',n(1)); end
+
+     Q=(1/nops)*Q;
+     if ~isIdentityQS(Q), wbdie(1,...
+        'invalid fermionic creation/annihilation ops');
      end
   end
 end

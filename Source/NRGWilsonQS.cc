@@ -508,7 +508,7 @@ void NRG_Wilson(
        }
        else wblog(FL,"ERR invalid FC operator set");
 
-       FCC.MakeUnique(); FCC.SkipZeroData(1E-14);
+       FCC.MakeUnique(); FCC.SkipZeroData(1e-12); 
 
        if (!FCC.isHConj()) {
           MXPut(FL,"I4").add(F1,"F1").add(F2,"F2").add(FCC,"FCC")

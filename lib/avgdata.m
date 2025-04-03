@@ -1,61 +1,74 @@
-function yn=avgdata(y,n,lflag)
-% Function: y_new = avgdata(y,n [,'-l'])
+function ym=avgdata(y,varargin)
+% function ym=avgdata(y [,m, opts])
 % 
-%    averages data over n points.
-%    If '-l' is specified, length of data is preserved.
+%    Average data over m points (default m=2).
+%
+% Options
+%
+%    '-l'  preserve length (by default, length is reduced by (m-1))
 % 
-% Wb,Nov17,99 ; Wb,Apr05,13
+% Wb,Nov17,99 ; Wb,Apr05,13 ; Wb,Mar15,25
 
-  if nargin<1
-     helpthis, if nargin || nargout, wbdie('invalid usage'), end
+  if ~nargin
+     if ~helpthis(nargout,varargin{:}), wbdie('invalid usage'); end
      return
   end
 
-  if nargin<2, n=2; end
-  if nargin<3, lflag=0;
-    elseif isequal(lflag,'-l'), lflag=1;
-    else wbdie('invalid usage'); 
+  lflag=0; m=2;
+
+  if nargin>1, m=varargin{1};
+     if nargin>2
+        getopt('init',varargin(2:end));
+           lflag=getopt('-l');
+        getopt('check_error');
+     end
+     if m==1, ym=y; return; end
+     if mod(m,1) || m<2, wbdie('invalid usage (m=%g)',m); end
   end
 
-  tflag=size(y,1)<size(y,2);
-  if tflag, y=y'; end
+  transp=(diff(size(y))>0);
+  if transp, y=y.'; end
 
-  if n<=1, yn=y;
-     if n~=1, wblog('WRN','got n=%g !??',n); end
-     return
-  end
+  [N,n]=size(y);
+  if m>N, wbdie('too few data points for m=%g (N=%g)',m,N); end
 
   if ~lflag
-     yn = y(1:end-n+1,:);
-     for i=2:n, yn=yn+y(i:end-n+i,:); end
-     yn=yn/n;
-  else
-     w=0:(1/n):1; w=[ w(2:end) fliplr(w(2:end-1)) ];
+     ym = y(1:N-m+1,:);
+     for i=2:m, ym=ym+y(i:N-m+i,:); end
+     ym=ym/m;
+  elseif N>2
+     if 2*m>N+1, m=floor(N/2); end
+
+     w=linspace(0,1,m+1);
+     w=[ w(2:end) flip(w(2:end-1)) ];
      w=w/sum(w);
 
-     if size(y,1)<2*n, wbdie(...
-       'invalid usage (too few data points for n=%g (%g)',n,size(y,1));
+     ym = w(m)*y(m:N-m+1,:);
+     for i=1:m-1
+        ym = ym + w(m+i)*( y(m+i:(N-m+1)+i,:) + y(m-i:(N-m+1)-i,:) );
      end
 
-     yn = w(n)*y(n:end-n+1,:);
-     for i=1:n-1, yn = yn + w(n+i)*[ 
-        y(n+i:(end-n+1)+i,:) + ...
-        y(n-i:(end-n+1)-i,:)];
+     p=min(3,m-1); nb=2*m;
+     Y1=[ zeros(m-1,n);  y(1:nb,:)    ];
+     Y2=[ y(N-nb+1:N,:); zeros(m-1,n) ];
+     for j=1:n
+        pj=polyfit(-1:nb-2,Y1(m:end,j),p); Y1(1:m-1,j)=polyval(pj,-m:-2);
+        pj=polyfit(-nb+2:1,Y2(1:nb,j),p);  Y2(nb+1:end,j)=polyval(pj,2:m);
      end
 
-     we=zeros(n-1,3*n-3); l=2*n-2; k=[n, 2*n-1, 3*n-2];
-     for i=1:n-1
-        we(i,i:i+l)=w;
+     i1=m;      i1m=i1+m-2; y1 = w(m)*Y1(i1:i1m,:);
+     i2=nb-m+2; i2m=nb;     y2 = w(m)*Y2(i2:i2m,:);
+     for i=1:m-1
+        y1 = y1 + w(m+i)*( Y1(i1+i:i1m+i,:) + Y1(i1-i:i1m-i,:) );
+        y2 = y2 + w(m+i)*( Y2(i2+i:i2m+i,:) + Y2(i2-i:i2m-i,:) );
      end
-     we=[ we(:,1:k(1)-1), we(:,k(1):k(2)-1)+flipud(we(:,k(2):k(3)-1)') ];
 
-     yn=[ flipud(fliplr(we)*y(1:2*n-2,:))
-         yn
-         we*y(end-2*n+3:end,:)
-     ];
+     ym=[y1; ym; y2];
+  else
+     ym=y;
   end
 
-  if tflag, yn=yn'; end
+  if transp, ym=ym.'; end
 
 end
 

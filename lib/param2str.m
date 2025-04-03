@@ -1,15 +1,15 @@
 function s=param2str(param,varargin)
-% Function: param2str - convert parameter structure to string
-% Usage: s=param2str(param [, OPTS, replace strings])
+% function s=param2str(param [,opts, replace strings])
 %
-%    param is the parameter structure
-%    replace strings are given by ..., 'str1', 'str1r', 'str2', 'str2r', ...
+%    Convert parameter structure <param> to string.
+%    Replace strings are given by ..., 'str1', 'str1r', 'str2', 'str2r', ...
 %    where str1 would be replace by str1r and so on.
 %
 % Options
 %
-%   '--tex'   escale some Greek letters and underscore
-%   '-x',..   exclude fields matching grep pattern
+%   '--tex'   make use of Greek letters, underscores, and exponentials
+%   '-x',..   exclude fields matching grep pattern or values like [], 0, etc.
+%             this also accepts cell input, like '-x',{some_regexp, [], 0}.
 %   '-m',..   only include fields that match given grep pattern
 %   'sep',..  field separator (', ')
 %   'fmt',..  format for numbers and vectors
@@ -37,6 +37,23 @@ function s=param2str(param,varargin)
 
   fn=fieldnames(param)';
   istr='';
+
+  if ~isempty(xpat), n=numel(xpat); ix=[];
+     for l=1:n
+        if isempty(xpat{l}) || ~ischar(xpat{l}), ix(end+1)=l;
+        end
+     end
+     if ~isempty(ix), nf=numel(fn); q=zeros(1,nf);
+        ff=cell(1,nf); for i=1:nf, ff{i}=getfield(param,fn{i}); end
+        for l=ix
+           for i=1:nf
+              if ~q(i) && isequal(ff{i},xpat{l}), q(i)=l; end
+           end
+        end
+        xpat(ix)=[];
+        i=find(q); if ~isempty(i), fn(i)=[]; clear ff; end
+     end
+  end
 
   i=find(~cellfun(@isempty, regexpi(fn,'istr|info')));
   if numel(i)==1
@@ -88,7 +105,15 @@ function s=param2str(param,varargin)
   if istr, s=[istr ': ' s]; end
 
   if tex, s=str2tex(s);
-     s=regexprep(s,'(\d[\.\d])*[eE][+-]0*(\d+)','$1{\\cdot}10^{$2}');
+     s=regexprep(s,...
+       '(\d[\.\d])*[eE]([+-]\d+)',['$1' char(1) '10^{' char(2) '$2}']);
+     if ~isempty(s==1)
+        s=regexprep(s,'([^0-9\.])1\x01','$1');
+        s=regexprep(s,'\x01','{\\cdot}');
+        s=regexprep(s,'\x02\+0*','' );
+        s=regexprep(s,'\x02\-0*','-');
+     end
+
      if nrgflag
         symstr = @(x) format_sym_str(x);
 

@@ -8,9 +8,11 @@ function ss=int2str2(dd,varargin)
 %
 %    '-th'     using 1st, 2nd, 3rd, etc.
 %    '-TH'     same as '-th', but using superscript tex format: 1^{st},...
+%    '-#'      number of times, like 'once', 'twice', '3 times', etc.
+%    '-v'      verbose, like 'one', 'two', 'three', etc.
 %
 %    '-x'      convert integers to single digit chars
-%              assuming range [0,35]
+%              assuming extended hexadecimal range [0,35]
 %    '-X'      same as -x, but case sensitive [0,61]
 %    '-A'      similar to -X, but only use alphabet [0,51]
 %   '--ext',.. extend beyond -X still appending the chars provided
@@ -25,6 +27,8 @@ function ss=int2str2(dd,varargin)
   getopt('INIT',varargin);
      if     getopt('-th'), sflag=1;
      elseif getopt('-TH'), sflag=2;
+     elseif getopt('-#'),  sflag=3;
+     elseif getopt('-v'),  sflag=4;
      else sflag=0;
         xstr=getopt('--ext','');
         if     getopt('-x'), M=[ 10  26   0 ];
@@ -76,13 +80,33 @@ function ss=int2str2(dd,varargin)
 
   if sflag
      if nd~=1 || dd<0, wbdie('invalid usage'); end
-     if     dd==1, ss='st';
-     elseif dd==2, ss='nd';
-     elseif dd==3, ss='rd'; else ss='th'; end
+     if sflag<=2
+        if     dd==1, ss='st';
+        elseif dd==2, ss='nd';
+        elseif dd==3, ss='rd'; else ss='th'; end
 
-     if sflag>1
-          ss=sprintf('%g^{%s}',dd,ss);
-     else ss=sprintf('%g%s',dd,ss);
+        if sflag>1
+             ss=sprintf('%g^{%s}',dd,ss);
+        else ss=sprintf('%g%s',dd,ss);
+        end
+     elseif sflag==3
+        if     dd==1, ss='once';
+        elseif dd==2, ss='twice';
+        else ss=sprintf('%d times');
+        end
+     elseif dd== 1, ss='one';
+     elseif dd== 2, ss='two';
+     elseif dd== 3, ss='three';
+     elseif dd== 4, ss='four';
+     elseif dd== 5, ss='five';
+     elseif dd== 6, ss='six';
+     elseif dd== 7, ss='seven';
+     elseif dd== 8, ss='eight';
+     elseif dd== 9, ss='nine';
+     elseif dd==10, ss='ten';
+     elseif dd==11, ss='eleven';
+     elseif dd==12, ss='twelve';
+     else ss=sprintf('%g',dd);
      end
      return
   end

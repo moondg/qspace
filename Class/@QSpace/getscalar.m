@@ -17,7 +17,9 @@ function xx=getscalar(A)
 
         if ~isempty(Ak.info) && isfield(Ak.info,'cgr') && ~isempty(Ak.info.cgr)
            cgr=Ak.info.cgr; 
-           for i=1:numel(cgr), cgr(i).cgw=norm(mpfr2dec(cgr(i).cgw)); end
+           for i=1:numel(cgr)
+              cgr(i).cgw=norm(cgr(i).cgw);
+           end
            x=x*prod(cat(1,cgr.cgw));
         end
 

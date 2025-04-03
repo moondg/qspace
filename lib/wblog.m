@@ -1,4 +1,4 @@
-function rval=wblog(varargin)
+function [rval,wesc]=wblog(varargin)
 % function wblog([stack-level,] fmt,...)
 %
 %    logging routine with output format:
@@ -30,12 +30,15 @@ function rval=wblog(varargin)
   persistent fid newfile llday
 
   if ~nargin, eval(['help ' mfilename]); return; end
-  if nargin==1
-     if isequal(varargin{1},'--hl-check')
-        rval=wblog_hl_check();
-        return 
+  hl_check=0;
 
-     elseif isequal(varargin{1},'--ping')
+  if nargin && isequal(varargin{1},'--hl-check')
+     rval=wblog_hl_check();
+     if nargin>1 && ischar(varargin{2}), hl_check=1;
+     else return; end
+
+  elseif nargin==1
+     if isequal(varargin{1},'--ping')
         llday=check_nextday(llday,fid); return
      elseif ~isempty(regexp(varargin{1},'^--got-')), q=varargin{1}(7:end);
         u=getuser(0,'err_count'); rval=0;
@@ -90,7 +93,9 @@ function rval=wblog(varargin)
   t=datestr(now);
 
   tag=''; TAG=''; nargs=numel(varargin);
-  if nargs>1 && ischar(varargin{2}) && isempty(find(varargin{1}=='%'))
+
+  if hl_check, tag=varargin{2};
+  elseif nargs>1 && ischar(varargin{2}) && isempty(find(varargin{1}=='%'))
      tag=varargin{1}; varargin(1)=[];
   elseif nargs
      [i,j,x]=regexp(varargin{1},'^\s*(.)\s+');
@@ -171,6 +176,11 @@ function rval=wblog(varargin)
         wbdie('invalid wesc');
      end
      wesc{3}=[esc_ '0m'];
+  end
+
+  if hl_check
+     wesc=wesc([2 3 1]);
+     return
   end
 
   hstr=[ sprintf('%-20.20s %s  ', shortfstr(s,20), t(13:end)) wesc{2} tag ];

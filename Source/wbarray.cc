@@ -1694,12 +1694,10 @@ wbarray<T>& wbarray<T>::appendSingletons(
    const char *F, int L, unsigned r, unsigned m) {
 
    unsigned i, l=SIZE.len;
-   if (l<r) {
-      SIZE.Resize(r); for (i=l; i<r; ++i) { SIZE[i]=1; }
-      if (!l) {
-         wblog(F_L,"WRN adding singletons to empty space (%d/%d)",r,l);
-         SIZE[0]=0; 
+   if (l<r) { unsigned s=1;
+      if (!l) { s=0; 
       }
+      SIZE.Resize(r); for (i=l; i<r; ++i) { SIZE[i]=s; }
    }
    else if (l>r) {
       size_t *s=SIZE.data;
