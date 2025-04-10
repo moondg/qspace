@@ -21,6 +21,7 @@
 #define __WB_STRING_CC__
 
 // ----------------------------------------------------------------- //
+// string length l_ includes trailing 0 character
 // tags: filesize fsize kB MB GB
 
 char* Wb::memsize2Str(double x, char *s, unsigned l_) {

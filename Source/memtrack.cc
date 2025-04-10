@@ -177,11 +177,11 @@ class WbListMTRACK {
      char* totStr(char mflag=0) { size_t n=16, l=0;
 
         if (mflag) { char s1[n], s2[n];
-           memsize2Str(totsize,s1,n);
-           memsize2Str(maxsize,s2,n); l=snprintf(sbuf,32,"%s (%s)",s1,s2);
+           Wb::memsize2Str(totsize,s1,n);
+           Wb::memsize2Str(maxsize,s2,n); l=snprintf(sbuf,32,"%s (%s)",s1,s2);
         }
         else {
-           memsize2Str(totsize,sbuf); l=strlen(sbuf);
+           Wb::memsize2Str(totsize,sbuf,32); l=strlen(sbuf);
         }
 
         if (l>=32) wblog(FL,
@@ -190,13 +190,14 @@ class WbListMTRACK {
      };
 
      void printSize(const char *F, int L, char mflag=0) {
-        if (mflag) { char s1[16], s2[16]; wblog(F_L,
-           "MEM tracking %d entries @ %s (max. %s) ",
-            M.size(), memsize2Str(totsize,s1), memsize2Str(maxsize,s2));
+        if (mflag) { int n=16; char s1[n], s2[n];
+           wblog(F_L,"MEM tracking %d entries @ %s (max. %s) ", M.size(),
+           Wb::memsize2Str(totsize,s1,n),
+           Wb::memsize2Str(maxsize,s2,n));
         }
-        else { char s1[16]; wblog(F_L,
-           "MEM tracking %d entries %s ",
-            M.size(), memsize2Str(totsize,s1));
+        else { int n=16; char s1[n];
+           wblog(F_L,"MEM tracking %d entries %s ",
+           M.size(), Wb::memsize2Str(totsize,s1,n));
         }
      };
 
@@ -291,12 +292,12 @@ int MemCheck(const char *F="", int L=0,
     }
     else if (!strcasecmp(task,"info")) {
        size_t l=gML.M.size(); long s=gML.totsize-nbytes;
-       char ss[16];
+       int n=16; char ss[n];
 
        wblog(F,L,
          "MTR %d entries (%+d) using %s (%s%s; %lld)",
           l, l-len, gML.totStr(), s>=0 ? "+":"",
-          memsize2Str(s,ss,16), gML.idx
+          Wb::memsize2Str(s,ss,n), gML.idx
        );
     }
     else if (!strcasecmp(task,"LIST")) {
@@ -318,8 +319,8 @@ int MemCheck(const char *F="", int L=0,
 
 void MREC::println(size_t i, void *p) const {
 
-    char s[32];
-    memsize2Str(len*unit,s,32);
+    int n=32; char s[n];
+    Wb::memsize2Str(len*unit,s,n);
 
     printf("%6d %12lx %12ld %8d @%3d = %12s %s\n",
     i, (unsigned long)p, id, len, unit, s,
@@ -350,7 +351,7 @@ class wbdebug_dummy {
     };
 
   protected:
-  private: unsigned whatever;
+  private:
 };
 
    wbdebug_dummy wbdebug_dummy_var;

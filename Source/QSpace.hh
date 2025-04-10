@@ -1703,8 +1703,8 @@ wbstring QSpace<TQ,TD>::totSize2Str() const {
        sizeof(TQ)*(QIDX.dim1*QIDX.dim2),
        sizeof(double)*getCGSSize()
    };
-   char s_[32];
-   memsize2Str(ss[0]+ss[1]+ss[2],s_);
+   int n=32; char s_[n];
+   Wb::memsize2Str(ss[0]+ss[1]+ss[2],s_,n);
    return s_;
 };
 

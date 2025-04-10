@@ -506,20 +506,19 @@ wbstring Wb::hostname(unsigned len) {
    wbstring s(MAX(16U,len)); 
    int e=gethostname(s.data,s.len);
 
-   if (e) { unsigned i=0;
-      if (errno==ENAMETOOLONG) {
-         for (; i<s.len; ++i) {
-            if (s.data[i]=='.') { s.data[i]=0; break; }
-         }
+   if (e && errno==ENAMETOOLONG) { unsigned i=0;
+      for (; i<s.len; ++i) {
+         if (s.data[i]=='.') { s.data[i]=0; break; }
       }
-      else {
-         for (; i<s.len; ++i) {
-            if (!isprint(s.data[i])) { s.data[i]=0; break; }
-         }
-         if (i<4) { strcpy(s.data,"(host!?)"); } else
-         if (i>=s.len) {
-            s.data[s.len-1]=0; 
-         }
+      if (i && i<s.len) { e=0; } 
+   }
+   if (e) { unsigned i=0;
+      for (; i<s.len; ++i) {
+         if (!isprint(s.data[i])) { s.data[i]=0; break; }
+      }
+      if (i<4) { strcpy(s.data,"(host!?)"); } else
+      if (i>=s.len) {
+         s.data[s.len-1]=0; 
       }
       wblog(FL,"WRN %s() received e=%d (%s)",FCT,errno,s.data);
    }

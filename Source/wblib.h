@@ -666,10 +666,12 @@ namespace Wb {
 
    class gpara__ {
      public:
-       gpara__() : x(0) {
+       gpara__() {
          #ifdef __WBDEBUG__
-           wblog(FL,"TST %s (%s)",FCT,myname);
+           wblog(FL,"TST %s() setting up global %s",myname,FCT);
          #endif
+           tlast=time(NULL); 
+
            wb_srand(); 
 
          #ifdef __WB_MPFR_HH__
@@ -683,31 +685,38 @@ namespace Wb {
        };
 
        void init() {
+          time_t tnow=time(NULL), dt=tnow-tlast;
+
+          #ifdef __WBDEBUG__
+             wblog(FL,"TST gpara__::%s() %s ENV (dt=%ld)", FCT,
+             dt>=1 ? "checking":"skipping", dt);
+          #endif
+
+          if (dt>=1) { tlast=tnow; } else { return; }
+
           memset(str,0,STRLEN+1);   
           envVRB=get_WB_VERBOSE();  
           envDBG=got_DBSTOP();
 
-       #ifdef QS_USING_OMP
-          Wb::GetNumThreads(FL,OMP_NUM_THREADS,"OMP_NUM_THREADS");
-          Wb::GetNumThreads(FL,QSP_NUM_THREADS,"QSP_NUM_THREADS");
+          #ifdef QS_USING_OMP
+             Wb::GetNumThreads(FL,OMP_NUM_THREADS,"OMP_NUM_THREADS");
+             Wb::GetNumThreads(FL,QSP_NUM_THREADS,"QSP_NUM_THREADS");
 
-          sp_num_threads=MAX(OMP_NUM_THREADS,QSP_NUM_THREADS);
-       #endif
+             sp_num_threads=MAX(OMP_NUM_THREADS,QSP_NUM_THREADS);
+          #endif
 
           my_caller_tid=omp_get_thread_num(); 
-
        };
 
-       char x;
-
     private:
+       time_t tlast;
    };
 
    gpara__ gpara;
 
 class CleanUp {
   public:
-    CleanUp() : i(0) {
+    CleanUp() { 
        gpara.init(); 
     };
 
@@ -720,7 +729,7 @@ class CleanUp {
        if (gwb_Profs.size()) { Wb::save_and_clear_Profiling(); }
     };
 
-    int i;
+ private:
 };
 
 }; 

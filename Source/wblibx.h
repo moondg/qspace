@@ -13,7 +13,9 @@
 
    void dbstop(const char* file, int line);
 
+namespace Wb {
    char* memsize2Str(double x, char *s, unsigned l=-1);
+}
 
    void version_info_toMx(mxArray *&S); 
 

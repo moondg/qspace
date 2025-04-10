@@ -48,7 +48,7 @@ void mexFunction(
    int nargin, const mxArray *argin[]
 ){ Wb::CleanUp aclu; try { 
 
-   MX_CHECK_HELPER_NARGS(0,-1,0);
+   MX_CHECK_HELPER_NARGS(0,-1,1);
 
    if (!nargin) { mexPrintf("\n"
    "   Hello world, this is the %s() [.%s] !\n\n"
@@ -93,7 +93,15 @@ void mexFunction(
          wblog(FL," *  useCol = %d",Wb::useCol);
          wblog(FL," *  envDBG = %d",Wb::envDBG);
       }
-      else { wblog(FL,"TST ignoring input '%s'",str); }
+      else if (strcmp(str,"--test")) {
+         wblog(FL,"TST ignoring input '%s'",str);
+      }
+   }
+
+   if (nargout) { 
+      mxArray *a=mxCreateDoubleMatrix(1,1,mxREAL);
+      mxGetDoubles(a)[0]=double(nargin);
+      argout[0]=a;
    }
 
 }  catch (Wb::LogException &e) { ExitMsg(e.istr); }
