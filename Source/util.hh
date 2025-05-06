@@ -53,7 +53,11 @@ namespace Wb {
    );
 
    template<class T>
-   double SkipZeros(T *d, unsigned n, double eps=1E-14){ return 0; };
+   double SkipZeros(
+      T *d        QS_UNUSED_VAR,
+      unsigned n  QS_UNUSED_VAR,
+      double eps  QS_UNUSED_VAR =1e-14
+   ){ return 0; };
 
    void ResSummary(const char *F, int L, const char *istr=NULL);
 
@@ -416,7 +420,10 @@ bool is_finite(const wbcomplex *x, size_t n);
 
 template <class T, 
 typename std::enable_if< is_integral<T>::value , T>::type* = nullptr >
-bool is_finite(const T *x, size_t n) { return 1; }
+
+bool is_finite(
+   const T *x QS_UNUSED_VAR,
+   size_t n   QS_UNUSED_VAR) { return 1; }
 
 }; 
 
@@ -466,7 +473,7 @@ template <class T> inline
 void WbUtil<T>::adjust_tnorm(char &tnorm){ tnorm=0; };
 
 template <> inline
-void WbUtil<wbcomplex>::adjust_tnorm(char &tnorm __attribute__ ((unused))){};
+void WbUtil<wbcomplex>::adjust_tnorm(char &tnorm QS_UNUSED_VAR){};
 
 template <> inline
 constexpr char WbUtil<wbcomplex>::isComplex() { return 1; };

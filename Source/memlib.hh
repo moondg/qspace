@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace memory routines and smart pointers
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -231,9 +231,9 @@ class MEM_SET {
   public:
 
      MEM_SET(
-        T* data      __attribute__ ((unused)),
-        size_t len   __attribute__ ((unused)),
-        const T *a   __attribute__ ((unused)) = NULL
+        T* data      QS_UNUSED_VAR,
+        size_t len   QS_UNUSED_VAR,
+        const T *a   QS_UNUSED_VAR = NULL
      ){ 
      };
 

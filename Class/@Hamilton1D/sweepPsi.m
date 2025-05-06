@@ -215,6 +215,8 @@ function [r2,E0,Il,HAM,RR,EE]=sweepPsi(HAM,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% adapted from update_psi_2site()
+
 function [E,e0]=getEnergy(HAM,k,dir)
 
    X=load_dmrg_data(HAM,k); odir=itags2odir(X.AK);
@@ -258,6 +260,8 @@ function [E,e0]=getEnergy(HAM,k,dir)
 end
 
 % -------------------------------------------------------------------- %
+% adapted from update_psi_2site()
+
 function [E,e0,r2]=getEnergies(HAM,kc)
 
   L=numel(HAM.mpo); E=nan(L,2); e0=nan(L,2); r2=nan(L,2);

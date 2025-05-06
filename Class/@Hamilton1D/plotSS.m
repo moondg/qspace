@@ -25,6 +25,8 @@ function plotSS(HAM,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% adapted from plotHSS.m // Wb,Jan24,18
+
 function plot_HBLX(HAM,sl,sr,I,varargin)
 
   getopt('init',varargin);

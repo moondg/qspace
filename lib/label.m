@@ -35,6 +35,8 @@ function label(varargin)
 end
 
 % -------------------------------------------------------------------- %
+% if str is empty, then current/old label survives
+
 function lh=label_set(ah,tag,str)
 
   lh=get(ah,tag); if isempty(str) && ~ischar(str), return; end

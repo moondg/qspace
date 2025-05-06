@@ -1958,7 +1958,7 @@ bool QSpace<TQ,TD>::hasSameQ(const QSpace<TQ,T2> &B) const {
     if (!A.isConsistent(r)) { A.info("A"); wbdie(FL,str); }
     if (!B.isConsistent(r)) { B.info("B"); wbdie(FL,str); }
 
-    for (k=0; (int)k<r; ++k) {
+    for (k=0; k<r; ++k) {
        A.getQsub(k, QAk); QAk.groupRecs(pA,dA);
        B.getQsub(k, QBk); QBk.groupRecs(pB,dB);
 
@@ -2177,12 +2177,13 @@ TD QSpace<TQ,TD>::norm2(char checks) const {
 
 template <class TQ, class TD>
 void QSpace<TQ,TD>::checkNorm(
-   const char *F, int L, double nrm, char vflag, double eps
+   const char *F, int L, double nrm, char vflag,
+   double eps 
  ) const {
 
    double dbl=norm();
 
-   if (fabs(dbl-nrm)>1E-12) wblog(F,L,
+   if (fabs(dbl-nrm)>eps) wblog(F_L,
       "ERR invalid norm %.4g/%.4g (%.3g)",dbl,nrm,(nrm-dbl)/nrm);
    else if (vflag) wblog(F,L,
       "TST norm = %.4g/%.4g (%.3g)",dbl,nrm,(nrm-dbl)/nrm

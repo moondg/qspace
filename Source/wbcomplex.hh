@@ -295,7 +295,7 @@ inline bool isfinite(const wbcomplex &z) { return z.isfinite(); };
 inline bool isnormal(const wbcomplex &z) { return z.isnormal(); };
 
 template <class T> inline T real(const T &d) { return d; };
-template <class T> inline T imag(const T &d __attribute__ ((unused))) { return 0; };
+template <class T> inline T imag(const T &d QS_UNUSED_VAR) { return 0; };
 template <class T> inline T conj(const T &d) { return d; };
 
 template <class T> inline T CONJ(const T &d) { return d; };

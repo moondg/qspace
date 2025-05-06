@@ -75,6 +75,8 @@ function [R,dd]=LoadRData(sym,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% Wb,Jul06,17
+
 function [R,P,Q,ee,ok]=rat_fix(R,eps)
 
    rsym=numel(R.Sz);

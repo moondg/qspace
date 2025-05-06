@@ -860,7 +860,7 @@ function NC=check_NC(NC,Sym)
    end
 
    if numel(NC)<=1, q=[q NC]; e=0;
-      if isempty(q), NC=1;
+      if isempty(q), q=1;
       elseif norm(q-round(q)) || any(q<1), e=1;
       elseif any(diff(q)), e=2; end
       if e, wbdie('invalid NC = %s (e=%d)',vec2str(q,'sep',' / '),e); end

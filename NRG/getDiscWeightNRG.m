@@ -125,6 +125,7 @@ function [dw,Iout,IR]=getDiscWeightNRG(varargin)
    e3=[];
 
  % -------------------------------------------------------------------- %
+ % build reduced density matrix space starting from ground state space
   if aflag
      if isequal(n0,-1), n0=[]; end
      n1=1; n2=N;

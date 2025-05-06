@@ -290,7 +290,7 @@ namespace CG {
       for (; k<hid.len; ++k) {
          Guard::toStr(s1,hid[k]);
          for (j=0; s1.data[j]; ++j, ++i) { if (i<n) s[i]=s1.data[j]; }
-         if (i<n && k<hid.len) { s[i++]='\n'; }
+         if (i<n && k+1<hid.len) { s[i++]='\n'; }
       }
       s[i<n ? i:n-1]=0;
       if (i>=n) wblog(FL,"ERR string out of bounds (%d/%d)\n%s",i,n,s);

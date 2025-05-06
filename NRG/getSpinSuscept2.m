@@ -277,6 +277,10 @@ function [chi,iS]=getSpinSuscept2_iter(Simp,H,T,iS)
 end
 
 % -------------------------------------------------------------------- %
+% build Stot-operator from Simp at last iteration
+% NB! input is assume to already have the correct CGC spaces!
+% for testing purposes only!
+
 function [Stot,iS]=get_Stot(Simp,iS)
 
   if nargin<2 || isempty(iS), iS=[];

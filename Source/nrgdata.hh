@@ -244,7 +244,7 @@ mxArray* NRGIndex<TQ,TD>::mxCreateStruct(unsigned m, unsigned n) const {
 
 template <class TQ, class TD>
 void NRGIndex<TQ,TD>::add2MxStruct(
-   mxArray *S, unsigned i, char tst __attribute__ ((unused))
+   mxArray *S, unsigned i, char tst QS_UNUSED_VAR
  ) const {
 
    mxSetFieldByNumber(S,i,0, numtoMx(idx));

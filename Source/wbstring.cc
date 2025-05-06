@@ -58,7 +58,7 @@ wbstring num2Str(const T &x, const char *f, unsigned l) {
 
 template<>
 wbstring num2Str(const wbcomplex &x, const char *f,
-    unsigned l __attribute__ ((unused))
+    unsigned l QS_UNUSED_VAR
 ){ return x.toStr(f && f[0] ? f : "%.4g"); };
 
 #ifdef QS_USING_MPFR
@@ -86,12 +86,12 @@ wbstring num2Str(const unsigned long &x, const char *f, unsigned l) {
 
 template<>
 wbstring num2Str(const char &x,
-    const char *f __attribute__ ((unused)), unsigned l) {
+    const char *f QS_UNUSED_VAR, unsigned l) {
     return char2Str(x,l);
 };
 template<>
 wbstring num2Str(const unsigned char &x,
-    const char *f __attribute__ ((unused)), unsigned l) {
+    const char *f QS_UNUSED_VAR, unsigned l) {
     return char2Str(x,l);
 };
 

@@ -661,6 +661,7 @@ class itag_ {
 
    itag_& operator=(unsigned n) { t=n; return *this; }
    itag_& operator=(const char *s) { return init(FL,s); }
+   itag_& operator=(const itag_ &x) { t=x.t; return *this; } 
 
    bool operator==(const itag_ &x) const { return t==x.t; };
    bool operator!=(const itag_ &x) const { return t!=x.t; };
@@ -835,6 +836,7 @@ class iTags : public wbvector<itag_> {
    iTags(unsigned n=0) : wbvector<itag_>(n) {};
    iTags(const char *F, int L, const char *s) { init(F,L,s); };
    iTags(const char *s) { init(FL,s); };
+   iTags(const iTags &b) { wbvector<itag_>::init(b); }; 
 
    unsigned init(const char* F, int L, const char *s); 
    unsigned init(const char *s) { return init(FL,s); };

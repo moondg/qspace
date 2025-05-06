@@ -212,6 +212,10 @@ function display(HAM,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% adaptation of vec2str() for long integer vectors
+% e.g. for DMRG scans with length(HAM.ops) ~ L
+% Wb,Dec12,22
+
 function s=ivec2str(q)
   if numel(q)<8
        s=vec2str(q,'-f');

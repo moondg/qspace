@@ -13,7 +13,7 @@
 
   nfin=0; % number of tasks finished
 
-  if ~isvar('F' ) || ~isa(F,'QSpace') ||  ...
+  if isequal(task,'intro') || ~isvar('F' ) || ~isa(F,'QSpace') ||  ...
      ~isvar('IS') || ~isfield(IS,'sym') || ~isequal(IS.sym,'Acharge,SU2spin')
 
      echo_c('spinfull fermionic site-half');
@@ -30,6 +30,8 @@
 
      echo_c
      E2=getIdentity(A,2)  % identity on combined state space (2 sites)
+
+     if isequal(task,'intro'), nfin=nfin+1; end
   end
 
 switch task
@@ -69,10 +71,5 @@ case {'*','FdagF'}
   nfin=nfin+1;
 end
 
-if ~nfin
-   if ischar(task)
-        printf(1,'\n   ERR invalid task ''%s''\n\n',task);
-   else printf(1,'\n   ERR invalid task\n\n'); disp(task);
-   end
-end
+  check_finished(nfin,task,mfilename);
 

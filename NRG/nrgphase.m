@@ -172,6 +172,9 @@ setax(ah(2,2))
 end
 
 % -------------------------------------------------------------------- %
+% find first all elementary excitations
+% => build many-body spectrum once ALL phase shifts have been obtained
+
 function [ph,e0,EQD,Er]=nrgphase_1(EQD,Er,i0,eps,qflag)
 
    i0=i0(find(EQD(i0,end),1)); ph=[]; e0=[];

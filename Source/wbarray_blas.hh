@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : wbarray (array class, col-major)
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,9 +88,9 @@ void DMatProd(
    template<class T>
    wbarray<T>& wbInverse(
       const char *F, int L,
-      const wbarray<T>&M, wbarray<T> &Minv
+      const wbarray<T> &M QS_UNUSED_VAR, wbarray<T> &Minv
    ){
-      wblog(FL,"ERR %s() not yet defined for T=%s",FCT,TSTR(T));
+      wblog(F_L,"ERR %s() not yet defined for T=%s",FCT,TSTR(T));
       return Minv;
    }
 

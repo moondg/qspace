@@ -998,10 +998,10 @@ class wbsparray {
       wbsparray<TD> &B 
     ) const;
 
-    wbsparray& getCol(SPIDX_T k, wbsparray<TD> &b) {  
+    wbsparray& getCol(SPIDX_T k, wbsparray<TD> &B) {  
       if (k>=dim0(k)) wblog(FL,"ERR %s() "
          "col-index out of bounds (%ld / %s)",FCT,k,SSTR_(this));
-      return getBlock(FL,0,-1,k,k);
+      return getBlock(FL,0,-1,k,k,B);
     };
 
     wbsparray& splitBlock(const char *F, int L,

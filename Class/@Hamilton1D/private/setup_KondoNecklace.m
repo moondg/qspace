@@ -159,6 +159,11 @@ function [HAM]=setup_KondoNecklace(varargin)
 end
 
 % -------------------------------------------------------------------- %
+% Hleg = (S.S)_upper_leg + (S.S)_lower_leg
+% Hp1  = (S.S)_local    <= Jperp, part 1
+% Sp2  = (S.S)_local    <= Jperp, part 1
+% Hchiral = S.(SxS)_upper_triangle + S.(SxS)_lower_triangle
+
 function [HK,Fb,Zb,Nb,S2,E1,IS]=get_ops_KondoLattice(NC,sym)
 
 % NB! build super-site to simplify structure

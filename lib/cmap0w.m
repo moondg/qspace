@@ -88,6 +88,9 @@ function cmap0w(varargin)
 end
 
 % -------------------------------------------------------------------- %
+% '-data' option useful for mp() for example when cmap should affect
+% the whole 3D data block the same way
+
 function [a,b,cl]=getDataRange_(varargin)
 
  if nargin>1 && isequal(varargin{1},'-data')

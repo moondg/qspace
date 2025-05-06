@@ -51,7 +51,7 @@ class MREC {
       const char* init(
          const char *F, int L,
          size_t i, 
-         const T* p __attribute__ ((unused)) 
+         const T* p QS_UNUSED_VAR 
          size_t l  
       ){
          id=i; unit=sizeof(T); len=l;
@@ -68,10 +68,10 @@ class MREC {
 #else
       template <class T>
       const char* init(
-         const char *F __attribute__ ((unused)),
-         int L         __attribute__ ((unused)),
+         const char *F QS_UNUSED_VAR,
+         int L         QS_UNUSED_VAR,
          size_t i, 
-         const T* p    __attribute__ ((unused)), 
+         const T* p    QS_UNUSED_VAR, 
          size_t l 
       ){
          id=i; unit=sizeof(T); len=l;

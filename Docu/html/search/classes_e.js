@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['sbuf_0',['SBUF',['../classwblog_1_1_s_b_u_f.html',1,'wblog']]],
+  ['sbuf_0',['SBUF',['../class_wb_1_1_s_b_u_f.html',1,'Wb']]],
   ['sighandler_1',['SigHandler',['../class_wb_1_1_sig_handler.html',1,'Wb']]],
   ['sparsecollector2d_2',['sparseCollector2D',['../classsparse_collector2_d.html',1,'']]],
   ['sparseindex2d_3',['sparseIndex2D',['../classsparse_index2_d.html',1,'']]],

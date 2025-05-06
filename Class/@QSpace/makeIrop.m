@@ -20,6 +20,8 @@ function A=makeIrop(A,t_op)
 end
 
 % -------------------------------------------------------------------- %
+% outsourced // Wb,Dec04,20
+
 function A=makeIrop_1(A,t_op)
 
    r=numel(A.Q); if ~r, return; end

@@ -72,7 +72,7 @@ void mexFunction(
 
    qset<gTQ> q0;
 
-   gRS.getRSet(FL,t,&q0);
+   gRS.getRSet(t,&q0);
    PRINTF("\n   defining multiplet: t=[%s]\n\n", STR(q0));
 
    unsigned n3, ip=0;

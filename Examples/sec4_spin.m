@@ -9,6 +9,8 @@
 %    'U1'     spin-half with U1 symmetry
 %    'Z2'     spin-half with Z2 symmetry
 %    'nosym'  spin-half with no symmetry
+
+% set default task='SU2' if variable is not set
   setdef('task','SU2');
 
   nfin=0; % number of tasks finished
@@ -73,10 +75,5 @@ case {'nosym'}
   nfin=nfin+1;
 end % nosym
 
-if ~nfin
-   if ischar(task)
-        printf(1,'\n   ERR invalid task ''%s''\n\n',task);
-   else printf(1,'\n   ERR invalid task\n\n'); disp(task);
-   end
-end
+  check_finished(nfin,task,mfilename);
 

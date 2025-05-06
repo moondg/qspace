@@ -81,7 +81,7 @@ int FileLock::init(
 template<class T>
 double FixRational(const char *F, int L,    
    T *d, SPIDX_T n,
-   unsigned niter __attribute__ ((unused)), 
+   unsigned niter QS_UNUSED_VAR, 
    double eps1, double eps2
 ){
 

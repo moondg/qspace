@@ -60,6 +60,10 @@ function [S,t]=load_dmrg_data(HAM,k,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% NB! if calculation is still running, file that is currently
+% written, may not be readable here (message "got corrupt file")
+% => pause, and retry. // Wb,Sep26,15
+
 function S=save_load(f,varargin)
 
   n=4;

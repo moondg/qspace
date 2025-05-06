@@ -150,6 +150,7 @@ class wbstring : public wbvector<char> {
     };
 
     wbstring& operator= (const char* s) { return init(s); }
+    wbstring& operator= (const wbstring &s) { return init(s.data); } 
 
     bool gotTerm0() {
         for (unsigned i=0; i<len; ++i) { if (data[i]==0) return 1; }
@@ -249,7 +250,7 @@ class wbstring : public wbvector<char> {
     };
 
     template <class T>
-    char* init2Fmt(const T& x __attribute__ ((unused)), int n=-1, int p=-1){
+    char* init2Fmt(const T& x QS_UNUSED_VAR, int n=-1, int p=-1){
        (*this)=wbstring(Wb::num2Fmt<T>(FL,n,p));
        return data;
     };

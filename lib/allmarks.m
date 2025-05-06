@@ -43,6 +43,8 @@ function hm=find_all_marks(ah)
 end
 
 % -------------------------------------------------------------------- %
+% move *mark data to the front by assigning ZData
+
 function mv_to_frontZ(ah,hm)
    for l=1:numel(ah);
       zmax=max([ get(ah(l),'ZLim'), get(ah(l),'CLim') ]);

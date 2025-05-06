@@ -27,7 +27,6 @@ function varargout=unmark(varargin)
   for k=1:nargin, Ak=varargin{k}; m=0;
      if isempty(Ak) || ~isfield(struct(Ak(1)),'info'), continue; end
      for j=1:numel(Ak)
-      % NB! some of the Ak(j) may be empty QSpaces
         if isfield(Ak(j).info,'itags')
            t0=Ak(j).info.itags; t2=regexprep(t0,tpat,'$1');
            if ~isequal(t0,t2)
@@ -40,7 +39,7 @@ function varargout=unmark(varargin)
      else
         v=inputname(k); if isempty(v), wbdie(['invalid usage #2 ' ... 
          '(inputname for argument %d not available)'],k); end
-        assignin('caller',v,Ak); % only call assign if modified
+        assignin('caller',v,Ak);
      end
   end
 

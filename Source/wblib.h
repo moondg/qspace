@@ -38,9 +38,11 @@
 #endif
 
 #if __linux__
+   #define QS_UNUSED_VAR __attribute__ ((unused))
 #elif __unix__
    #warning got unix
 #elif __APPLE__
+   #define QS_UNUSED_VAR __attribute__ ((unused))
 #else
    #error GOT UNSUPPORTED OPERATING SYSTEM
 #endif
@@ -76,6 +78,10 @@
 #include <sys/msg.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#if __linux__
+#include <sys/sysinfo.h> 
+#endif
 
 #include <map>
 #include <queue>         
@@ -684,7 +690,7 @@ namespace Wb {
           init();
        };
 
-       void init() {
+       void init(char force=0) {
           time_t tnow=time(NULL), dt=tnow-tlast;
 
           #ifdef __WBDEBUG__
@@ -692,7 +698,7 @@ namespace Wb {
              dt>=1 ? "checking":"skipping", dt);
           #endif
 
-          if (dt>=1) { tlast=tnow; } else { return; }
+          if (force || dt>=1) { tlast=tnow; } else { return; }
 
           memset(str,0,STRLEN+1);   
           envVRB=get_WB_VERBOSE();  
@@ -739,7 +745,7 @@ class CleanUp {
       #warning got MAIN with MATLAB_MEX_FILE
       #pragma message "\n\n"  \
       "   Don't define MAIN with MEX files, this kills the whole matlab seesion!\n" \
-      "   See ExitMsg() in wblib.h (!)\n" \
+      "   See ExitMsg() in wblib.h (!)\n\n" \
 ""
    #endif
 
@@ -774,7 +780,7 @@ class CleanUp {
          mexErrMsgIdAndTxt("Wb:ERR:mex",s);
       }
    #else
-      void ExitMsg(const char* s, char xflag __attribute__ ((unused))) {
+      void ExitMsg(const char* s, char xflag QS_UNUSED_VAR) {
          printf("\n");
          if (Wb::is_DEPLOYED()) { 
              Wb::print_backtrace(FL,"from deployed code"); printf("\n"); }

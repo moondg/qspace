@@ -88,6 +88,9 @@ function [chi,Iout]=calc_Chiral(HAM,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% area of triangle for chiral operator
+% (just used with safeguard on proper orientation of triangles)
+
 function a=area_triangle(HAM,k3)
 
   n=size(k3,1); a=nan(n,2);
@@ -102,6 +105,9 @@ function a=area_triangle(HAM,k3)
 end
 
 % -------------------------------------------------------------------- %
+% calculate plain expectation value <chi> for single triangles
+% NB! non-zero for complex data only // Wb,Apr29,21
+
 function [ch1,Ix]=calc_Chiral_plain(HAM,Chi,vflag,kflag)
 
   p=HAM.info.param; L=p.L; W=p.W; N=L*W;
@@ -171,6 +177,8 @@ function [ch1,Ix]=calc_Chiral_plain(HAM,Chi,vflag,kflag)
 end
 
 % -------------------------------------------------------------------- %
+% calculate chiral correlations relative to fixed site (system center)
+
 function [chi,Ix]=calc_Chiral_0(HAM,Chi,k0,vflag,kflag)
 
   p=HAM.info.param; L=p.L; W=p.W; N=L*W;
@@ -326,6 +334,10 @@ function [chi,Ix]=calc_Chiral_0(HAM,Chi,k0,vflag,kflag)
 end
 
 % -------------------------------------------------------------------- %
+% calculate just one value for the chi-chi correlation for 
+% triangle located at k0 (2 values) % Wb,Mar06,21
+% -------------------------------------------------------------------- %
+
 function [chi,Ix]=calc_Chiral_2(HAM,Chi,k0,vflag,kflag)
 
   p=HAM.info.param;
@@ -552,6 +564,9 @@ function [chi,Ix]=calc_Chiral_sym(HAM,Chi,vflag,kflag)
 end
 
 % -------------------------------------------------------------------- %
+% compute vertical chiral correlations computed for all positions x
+% adapted from calc_Chiral_2 // Wb,Jun25,21
+
 function [chi,Ix]=calc_Chiral_ysys(HAM,Chi,k2m,vflag,kflag)
 
   p=HAM.info.param; L=p.L; W=p.W; N=L*W;
@@ -628,6 +643,10 @@ function [chi,Ix]=calc_Chiral_ysys(HAM,Chi,k2m,vflag,kflag)
 end
 
 % -------------------------------------------------------------------- %
+% compute vertical correlations using HAM.info.xops for all positions x
+% adapted from calc_Chiral_ysys() above, but here actual for non-chiral
+% expectation values // Wb,Jun25,21
+
 function [ss,Ix]=calc_Chiral_yxops(HAM,vflag,kflag)
 
   p=HAM.info.param; L=p.L; W=p.W; N=L*W;

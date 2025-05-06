@@ -85,6 +85,9 @@ function s=structdisp(varargin)
 end
 
 % -------------------------------------------------------------------- %
+% structdisp(S) adapts the output of matlab's native disp(S)
+% Wb,Nov28,23
+
 function s=disp_1(S)
   s=evalc('disp(S)');
 

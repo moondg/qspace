@@ -163,6 +163,8 @@ function varargout=getSS(HAM,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% outsourced // Wb,Aug13,17
+
 function [SS,H]=get_SS(Ih,k,L)
 
   SS=Ih.HSS{k}; nS=size(SS,3);
@@ -204,6 +206,8 @@ function [SS,H]=get_SS(Ih,k,L)
 end
 
 % -------------------------------------------------------------------- %
+% outsourced // Wb,Jan24,18
+
 function [s1,s2,l,lstr]=getSS_12(SS,gotlad,perBC)
 
   if gotlad==1, L=max(size(SS));
@@ -255,6 +259,8 @@ function [s1,s2,l,lstr]=getSS_12(SS,gotlad,perBC)
 end
 
 % -------------------------------------------------------------------- %
+% Wb,Jan24,18
+
 function [sl,sr,sx,lstr]=getSS_HBLX(SS)
 
    q=size(SS,3); if q~=3

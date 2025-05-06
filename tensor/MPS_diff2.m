@@ -17,9 +17,9 @@ function dx2=MPS_diff2(A,B)
 
   XR=QSpace(3,1);
   for k=L:-1:1,  if k==1, ic='*'; end
-      Q=A(k); if k<L, Q={Q,XR(1)}; end; XR(1)=contract(A(k),ic,Q); % <A|A>
-      Q=B(k); if k<L, Q={Q,XR(2)}; end; XR(2)=contract(A(k),ic,Q); % <A|B>
-              if k<L, Q{2}=XR(3) ; end; XR(3)=contract(B(k),ic,Q); % <B|B>
+      Q=A(k); if k<L, Q={Q,XR(1)}; end; XR(1)=contract(A(k),ic,Q);
+      Q=B(k); if k<L, Q={Q,XR(2)}; end; XR(2)=contract(A(k),ic,Q);
+              if k<L, Q{2}=XR(3) ; end; XR(3)=contract(B(k),ic,Q);
       if rank(XR(2))>2, wbdie('got itag mismatch across A and B'); end
   end
 

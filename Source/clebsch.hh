@@ -1618,7 +1618,12 @@ class qset : public wbvector<TQ> {
     qset(const qset<TQ> &q1, char op, const qset<TQ> &q2);
 
     qset& init(const qset<TQ> &q1) {
-       wbvector<TQ>::init(q1);
+       if (this!=&q1) { wbvector<TQ>::init(q1); }
+       return *this;
+    };
+
+    qset& operator=(const qset<TQ> &q1) { 
+       if (this!=&q1) { wbvector<TQ>::init(q1); }
        return *this;
     };
 
@@ -1710,7 +1715,7 @@ class qset : public wbvector<TQ> {
 
     wbstring toStr() const { return wbvector<TQ>::toStr(); };
 
-    wbstring toStr(const QType &t __attribute__ ((unused))) const {
+    wbstring toStr(const QType &t QS_UNUSED_VAR) const {
        if (CG::gotQAlpha(this->data, this->len)) {  
           wbstring sout(this->len+1);
           if (CG::qset2cstr(this->data,sout.data,this->len)) wblog(FL,
@@ -1768,7 +1773,7 @@ class QSet {
        unsigned iout=0, 
        char isref=0
     ){
-       init(t,qs,iout,isref);
+       init(t_,qs_,iout,isref);
     };
 
     QSet(const QType &t_, const iTags &it, unsigned r=-1){
@@ -2268,11 +2273,6 @@ class cdata : public wbsparray<TD> {
        const char *F, int L, const mxArray *a, unsigned k,
        const QType &q, unsigned r=-1
     );
-
-    cdata& operator=(const cdata &C) {
-       wbsparray<TD>::init(C);
-       return *this;
-    };
 
     cdata& initScalar(double x=1, unsigned r=-1) {
        wbsparray<TD>::initScalar(x,r);
@@ -3970,6 +3970,7 @@ class genRG_base{
   public:
 
      genRG_base() : err(0) {};
+     genRG_base(const genRG_base& S) { init(S); }
 
      bool isEmpty() const {
         return (!q && !Sp.len && !Sz.len && !J.len && Z.isEmpty());
@@ -3989,17 +3990,19 @@ class genRG_base{
      genRG_base& ApplyQFac(
         const wbvector<double> &qfac, const wbarray<double> *JM=NULL);
 
-     genRG_base& operator=(const genRG_base& S) {
-        q=S.q; J=S.J; Z=S.Z; Sp=S.Sp; Sz=S.Sz;
-        err=S.err; istr=S.istr; 
-        return *this;
-     };
-
      genRG_base& init() {
         q=0; J.init(); Z.init(); Sp.init(); Sz.init();
         err=0; istr.init(); 
         return *this;
      };
+
+     genRG_base& init(const genRG_base& S) {
+        q=S.q; J=S.J; Z=S.Z; Sp=S.Sp; Sz=S.Sz;
+        err=S.err; istr=S.istr; 
+        return *this;
+     };
+
+     genRG_base& operator=(const genRG_base& S) { return init(S); }
 
      SPIDX_T dim() const {
         if (!Sz.len || Sz.len!=Sp.len) wblog(FL,
@@ -4144,7 +4147,7 @@ class genRG_struct {
           if (q.sub>1) { PRINTF("\n"
           "   RC_STORE %s() first-time build for %s\n"
           "   %d passes, please wait ...\n\n",fct,STR(q),nrep); }
-          else wblog(FL,
+          else wblog(F_L,
              "NB! %s() RC_STORE first-time build for %s",fct,STR(q));
        }
     };
@@ -4249,7 +4252,7 @@ class RStore {
    };
 
    genRG_struct<TQ,TD>& getRSet(
-      const char *F, int L, const QType &q,
+      const QType &q,
       qset<TQ> *qvec=NULL 
    ){
       genRG_struct<TQ,TD> &B=Buf(q);
@@ -4749,7 +4752,7 @@ class FileLock {
      FileLock(
         const QType &q_, const qset<TQ> &J1, const qset<TQ> &J2,
         const char *ext="mp3" 
-     ){ init(q,J1,J2,ext); }
+     ){ init(q_,J1,J2,ext); }
 
      template<class TQ>
      int init(
@@ -4770,8 +4773,8 @@ class FileLock {
         if (!fname) { q|=1; }
         if (fid<3 ) { q|=2; }
         if (q && F) {
-           if (q&1) wblog(FL,"ERR %s() got empty fname (e=%d)",FCT,q);
-           if (q&2) wblog(FL,"ERR %s() file not yet open "
+           if (q&1) wblog(F_L,"ERR %s() got empty fname (e=%d)",FCT,q);
+           if (q&2) wblog(F_L,"ERR %s() file not yet open "
               "(fid=%d; e=%d)\n%s",FCT,fid, q,fname.data
            );
         }

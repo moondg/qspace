@@ -21,8 +21,6 @@ function A=rmAbelian(A,ix)
        'invalid usage (got non-abelian %s for ix=%d)',sym{ix},ix);
      end
 
-   % remove labels from Ak.Q
-   % ensuring that only single symmetry sector is present
      r1=r; r1(r1<1)=1; j=sum(r1(1:ix));
      for l=1:numel(Ak.Q)
         q=Ak.Q{l}(:,j); if any(diff(q)), wbdie(['invalid usage ' ... 
@@ -30,7 +28,6 @@ function A=rmAbelian(A,ix)
         Ak.Q{l}(:,j)=[];
      end
 
-   % finally remove symmetry itself
      if ~isempty(Ak.info.cgr), Ak.info.cgr(:,ix)=[]; end
      if ~isempty(sym)
         sym(ix)=[];

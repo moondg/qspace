@@ -16,11 +16,10 @@ function [n,dN]=strlen(s)
 % http://www.zedwood.com/article/cpp-utf8-strlen-function
 % see also clab/c.c // Wb,Aug15,23
 
-
    n=length(s); dN=0;
 
-   cref=32768; % 2^15 32768 / last bit set
-   if all(s<cref), return; end % no special character expected
+   cref=32768;
+   if all(s<cref), return; end
 
    qm=256*uint32([
        hex2dec('0xE0') hex2dec('0xC0')
@@ -30,13 +29,10 @@ function [n,dN]=strlen(s)
 
    i=1; m=size(qm,1);
 
- % NB! matlab has 2-byte representation for each character
    while i<=n, c=uint32(s(i)); dn=1;
       if c>255
          for j=1:m
             if bitand(c,qm(j,1)) == qm(j,2)
-             % largest set of bits set to '1110 ...' indicates
-             % number of characters required
                dn=1+j; dN=dN+j; break
             end
          end

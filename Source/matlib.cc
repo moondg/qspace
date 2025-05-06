@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace MEX routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -234,7 +234,7 @@ double Wb::CallMatlab(
    const char *F, int L, const char* cmd, const char *arg1) {
 
    char s[16]=""; if (arg1) snprintf(s,16,"('%s')",arg1);
-    wblog(FL,
+    wblog(F_L,
      "ERR %s -> %s%s\nnot available outsite MatLab",
       FCT, cmd? cmd:"(cmd!?)",s);
    return 0;
@@ -242,7 +242,7 @@ double Wb::CallMatlab(
 
 double wbtoc(
    const char *F, int L, const char *istr,
-   char restart __attribute__ ((unused))
+   char restart QS_UNUSED_VAR
 ){
    wblog(FL,"WRN %s(%s,%s) not available outsite MatLab",
    FCT,shortFL(F_L),istr ? istr:""); return 0;
@@ -258,17 +258,20 @@ void mxPutArray(const char *F, int L,
 
 template<class T>
 int getNumGlobal( 
-   const char *vn  __attribute__ ((unused)),
-   T &x            __attribute__ ((unused)),
-   const char* ws  __attribute__ ((unused))
+   const char *vn  QS_UNUSED_VAR,
+   T &x            QS_UNUSED_VAR,
+   const char* ws  QS_UNUSED_VAR
 ){
    wblog(FL,"ERR %s(%s,%s) not available outsite MatLab",
    FCT,vn?vn:"",ws?ws:""); return 0;
 };
 
 void mexDisp(const mxArray *a, const char *vn) {
-   wblog(FL,"ERR %s(%s,%lX) not available outsite MatLab",
-   FCT,vn ? vn:"",a);
+   wblog(FL,"WRN %s(%s,%lX) not available outsite MatLab",FCT,vn?vn:"",a);
+};
+
+void mexWRN(const char *s) { 
+   wblog(FL,"WRN %s() %s",myname,s?s:"");
 };
 
 #endif 

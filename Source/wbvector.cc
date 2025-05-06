@@ -866,7 +866,7 @@ template<>
 int wbvector<Wb::quad>::init(
    const char *F, int L,
    const mxArray *a, const char *istr, char tcheck,
-   char ref __attribute__ ((unused))
+   char ref QS_UNUSED_VAR
 ){
    unsigned base=(tcheck<2 ? 30 : tcheck);
 

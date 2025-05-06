@@ -67,6 +67,10 @@ function HAM=setCurrentSite(HAM,k2)
 end
 
 % -------------------------------------------------------------------- %
+% trace is preserved, but the normalization of individual
+% states Psi may have deviated from 1 // Wb,Sep04,20
+% -------------------------------------------------------------------- %
+
 function Ak=fix_normPsi(Ak)
 
    r=numel(Ak.Q);

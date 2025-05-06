@@ -747,8 +747,7 @@ template<class T>
 void wbEigen_CS_regen_trial(
    const wbarray<T> &M0,
    wbarray<T> &V,
-   wbvector<T> &E,
-   char wjob
+   wbvector<T> &E
 ){
    if (E.len==0) return;
    if (!V.isRank(2) || E.len!=V.SIZE[1] || V.SIZE[0]!=V.SIZE[1])
@@ -796,10 +795,10 @@ wblog(FL,"ERR");
 
 template<class T> inline
 void GESVD_old(  
-   wbarray<T> &A,
-   wbarray<T> &U,
-   wbvector<double> &S,
-   wbarray<T> &Vd
+   wbarray<T>       &A  QS_UNUSED_VAR,
+   wbarray<T>       &U  QS_UNUSED_VAR,
+   wbvector<double> &S  QS_UNUSED_VAR,
+   wbarray<T>       &Vd QS_UNUSED_VAR
 ){
    wblog(FL,"ERR %s() not defined for datatype %s",
    FCT,getName(typeid(T)).c_str());

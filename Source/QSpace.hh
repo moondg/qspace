@@ -807,7 +807,10 @@ class QSpace {
        B=*this; B*=fac; return B;
     };
 
-    QSpace& operator= (const QSpace &A) { return init(A); }; 
+    QSpace& operator= (const QSpace &A) { 
+       if (this!=&A) { init(A); }
+       return *this;
+    };
 
     void operator+= (const QSpace &Q);
     void operator-= (const QSpace &Q);
@@ -837,7 +840,7 @@ class QSpace {
     TD scalarProd(const QSpace &B) const;
 
     void checkNorm(
-       const char *F, int L, double nrm, char vflag=1, double eps=1E-12
+       const char *F, int L, double nrm, char vflag=1, double eps=1e-12
      ) const;
 
     QSpace& TimesEl(const QSpace &B, char conj=0, unsigned r2=-1);
@@ -1231,10 +1234,13 @@ class QSpace {
 
     void save2MxStruct(mxArray *S, unsigned i, char tst=0, char vflag=0);
 
-    mxArray* mxCreateCell(unsigned m, unsigned n) const {
-       wblog(FL,"ERR %s()",FCT); return 0; };
-    void add2MxCell(mxArray *S, unsigned i, char tst=0) const {
-       wblog(FL,"ERR %s()",FCT); };
+    mxArray* mxCreateCell(
+       unsigned m QS_UNUSED_VAR,
+       unsigned n QS_UNUSED_VAR) const { wblog(FL,"ERR %s()",FCT); return 0; };
+    void add2MxCell(
+       mxArray *S QS_UNUSED_VAR,
+       unsigned i QS_UNUSED_VAR,
+       char tst   QS_UNUSED_VAR = 0) const { wblog(FL,"ERR %s()",FCT); };
 
     void put (
        const char *F, int L,

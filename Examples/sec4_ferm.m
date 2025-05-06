@@ -5,7 +5,7 @@
 % -------------------------------------------------------------------- %
 
 % select what to do / show by setting task (string)
-%    'overview'  selected output
+%    'overview'  selected output (default)
 %    'struct'    detailed display of data structure of F
 %    'noise'     check difference of QSpace tensors w.r.t. numerical noise
 %    'Fop'       simple commmands with fermionic annihilation operator F
@@ -13,7 +13,9 @@
 %    'perm'      permuting indices of legs and conjugate tensors
 %    '1j'        1j tensors
 %    '*'         choose all
-  setdef('task','overview');
+
+% set default task='overview' if variable is not set
+  setdef('task','overview'); 
 
 % get set of operators that describe the local state space of a
 % single spinful site, using U(1) charge and SU(2) spin symmetries
@@ -122,10 +124,5 @@ case {'*','1j'}
    nfin=nfin+1;
 end
 
-if ~nfin
-   if ischar(task)
-        printf(1,'\n   ERR invalid task ''%s''\n\n',task);
-   else printf(1,'\n   ERR invalid task\n\n'); disp(task);
-   end
-end
+  check_finished(nfin,task,mfilename);
 

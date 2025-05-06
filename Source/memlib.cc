@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace memory routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -190,7 +190,7 @@ T* Wb::sptr<T>::save_dref(const char *F, int L) {
      else if (len) { len=0; data=NULL; }
    }
 
-   if (e) wblog(FL,"ERR %s() %s got e=%d !?",FCT,STR_(this),e);
+   if (e) wblog(F_L,"ERR %s() %s got e=%d !?",FCT,STR_(this),e);
    return dref;
 };
 

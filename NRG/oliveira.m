@@ -174,6 +174,8 @@ function [b,a,I] = oliveira(Gamma,Lambda,z,varargin)
   end
 
 % -------------------------------------------------------------------- %
+% plot
+
 ah=smaxis(2,2,'tag',mfilename);
 
   header('%M :: NRG coefficients (z=%g, \\Gamma=%g, \\Lambda=%g)',...

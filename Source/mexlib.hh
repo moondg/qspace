@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace MEX routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@
       try {
          Mx::Array<T>(a).copyTo(v.data);
       }
-      catch (...) { wblog(FL,"ERR %s()",FCT); }
+      catch (...) { wblog(F_L,"ERR %s()",FCT); }
    };
 
    template<class T>
@@ -363,11 +363,13 @@ class MXPut {
     };
 
     template<class T>
-    MXPut& addP(const T* x, const char *fn) {
+    MXPut& addP(
+       const T* x     QS_UNUSED_VAR,
+       const char *fn QS_UNUSED_VAR
+     ) {
        if (!S) wblog(F_L,"ERR MXPut::%s() S not initialized yet",FCT);
        else wblog(F_L,
-          "ERR %s() not defined yet for pointer to %s",
-           FCT,TSTR(T));
+          "ERR %s() not defined yet for pointer to %s",FCT,TSTR(T));
        return *this;
     };
 

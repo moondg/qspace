@@ -150,6 +150,10 @@ function sc=scale_y(y0,ynew)
 end
 
 % -------------------------------------------------------------------- %
+% yflag: whether to operate on y-axis (default: x-axis)
+% adapted from test routine figscale.m
+% Wb,Jun28,18
+
 function sc=get_scale_auto(yflag,flag) 
 
    ot={'tag','fig:autoscale'};

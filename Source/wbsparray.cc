@@ -1999,7 +1999,7 @@ void wbsparray<TD>::add2MxStruct(mxArray *a, unsigned i, int ma) const {
 
 template <>
 void wbsparray<Wb::quad>::add2MxStruct(
-   mxArray *a, unsigned i, int ma  __attribute__ ((unused))
+   mxArray *a, unsigned i, int ma  QS_UNUSED_VAR
  ) const {
 
    mxSetFieldByNumber(a,i,0, SIZE.toMx ());
@@ -2663,12 +2663,12 @@ wbsparray<TD>& wbsparray<TD>::getBlock(const char *F, int L,
 
    SPIDX_T k1,k2,dim1,dim2, i=0, l=0, n=IDX.dim1;
 
-   if (!isRank(2)) wblog(FL,
+   if (!isRank(2)) wblog(F_L,
       "ERR %s() only applies to rank-2 tensors (%d)",FCT,SIZE.len);
 
    if (!SIZE.len) { dim1=dim2=D.len; } 
    else {
-      if (SIZE.len!=2 || IDX.dim2!=2) wblog(FL,"ERR %s() "
+      if (SIZE.len!=2 || IDX.dim2!=2) wblog(F_L,"ERR %s() "
          "got invalid rank-2 tensor (%ld,%ld)!?",FCT,SIZE.len,IDX.dim2);
       dim1=SIZE[0]; dim2=SIZE[1];
    }
@@ -2676,9 +2676,9 @@ wbsparray<TD>& wbsparray<TD>::getBlock(const char *F, int L,
    if (sSPIDX_T(i2)<0) i2+=dim1;
    if (sSPIDX_T(j2)<0) j2+=dim2;
 
-   if (sSPIDX_T(i1)<0 || i2>=dim1) wblog(FL,"ERR %s() \n"
+   if (sSPIDX_T(i1)<0 || i2>=dim1) wblog(F_L,"ERR %s() \n"
       "index out of bounds (1: %ld ..  %ld / %ld)", FCT,i1,i2,dim1);
-   if (sSPIDX_T(j1)<0 || j2>=dim2) wblog(FL,"ERR %s() \n"
+   if (sSPIDX_T(j1)<0 || j2>=dim2) wblog(F_L,"ERR %s() \n"
       "index out of bounds (1: %ld ..  %ld / %ld)", FCT,j1,j2,dim2);
 
    k1=(i2>=i1 ? i2-i1+1 : 0);
@@ -2730,7 +2730,7 @@ wbsparray<TD>& wbsparray<TD>::splitBlock(const char *F, int L,
 
    SPIDX_T k1,k2,dim1,dim2, j,i_, i=0, l=0, n=IDX.dim1;
 
-   if (!isRank(2) || SIZE.len!=2) wblog(FL,
+   if (!isRank(2) || SIZE.len!=2) wblog(F_L,
       "ERR %s() only applies to rank-2 tensors (%d)",FCT,SIZE.len);
 
    B.init(SIZE); if (!D.len) return B;
@@ -2739,9 +2739,9 @@ wbsparray<TD>& wbsparray<TD>::splitBlock(const char *F, int L,
    if (i2<0) i2+=dim1;
    if (j2<0) j2+=dim2;
 
-   if (i1<0 || i2>=dim1) wblog(FL,"ERR %s() \n"
+   if (i1<0 || i2>=dim1) wblog(F_L,"ERR %s() \n"
       "index out of bounds (1: %ld ..  %ld / %ld)", FCT,i1,i2,dim1);
-   if (j1<0 || j2>=dim2) wblog(FL,"ERR %s() \n"
+   if (j1<0 || j2>=dim2) wblog(F_L,"ERR %s() \n"
       "index out of bounds (1: %ld ..  %ld / %ld)", FCT,j1,j2,dim2);
 
    k1=(i2>=i1 ? i2-i1+1 : 0);
@@ -2809,10 +2809,10 @@ TD wbsparray<TD>::getHouseholderVec(const char *F, int L,
 
    if (b2<=eps2) {
       if (b2==0) {
-         wblog(FL,"WRN %s() got 0 vector (%s) !?",FCT,SSTR_(this));
+         wblog(F_L,"WRN %s() got 0 vector (%s) !?",FCT,SSTR_(this));
          return x2;
       }
-      wblog(FL,"WRN %s() got b2=%.3g !?",FCT,double(b2));
+      wblog(F_L,"WRN %s() got b2=%.3g !?",FCT,double(b2));
    }
 
    u.init_nnz(l+(gotk?0:1));
@@ -4114,10 +4114,10 @@ wbarray<TD>& wbsparray<TD>::contract(
    if (cfac && !C.isEmpty()) { C.save2(X); X*=cfac; }
 
    this->toFull(Af); B.toFull(Bf);
-   Af.contract(FL,ica,Bf,icb,C,pfinal,afac);
+   Af.contract(F_L,ica,Bf,icb,C,pfinal,afac);
 
    if (!X.isEmpty()) {
-      if (!X.sameSize(C)) wblog(FL,
+      if (!X.sameSize(C)) wblog(F_L,
          "ERR %s() severe size mismatch (%s <> %s; %g)",
          FCT, SSTR(C), SSTR(X), cfac);
       C+=X;

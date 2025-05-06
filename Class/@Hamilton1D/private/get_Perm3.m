@@ -116,6 +116,8 @@ function [X3,Iout]=get_Perm3(E0,varargin)
    end
 
  % -------------------------------------------------------------------- %
+ % 3-site cyclic (inverse) permutation operator
+
    A3=contract(A2,3,getIdentity(A2,3,E0,1),1);
    x3=contract(A3,'231*',A3,'123'); % s1,s2,s3,s123* '+++-'
 

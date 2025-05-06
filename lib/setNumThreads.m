@@ -79,6 +79,11 @@ function rval=setNumThreads(varargin)
 end
 
 % -------------------------------------------------------------------- %
+% see MEX/tst_numthreads.m // Wb,Mar30,16
+% warning off MATLAB:maxNumCompThreads:Deprecated
+% n=maxNumCompThreads(NTH);
+% warning on MATLAB:maxNumCompThreads:Deprecated
+
 function n=num_threads(varargin)
 
   n=feature('numthreads');

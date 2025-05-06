@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace additional routines
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ namespace Wb {
    int GetNumThreads(const char *F, int L, int &n, const char *name);
 
    template<class T>
-   int GetEnv (const char *F, int L, const char *name, T& val);
+   int GetEnv(const char *F, int L, const char *name, T& val);
 
    int EnvIsSet(const char *F, int L, const char *name);
 
@@ -438,13 +438,25 @@ class num2Fmt {
    size_t countNaN(double* a, size_t m);
 
    template<class T>
-   void chopTiny_float(T *d, size_t n, T dref=-1) { return; };
+   void chopTiny_float(
+      T *d     QS_UNUSED_VAR,
+      size_t n QS_UNUSED_VAR,
+      T dref   QS_UNUSED_VAR =-1
+    ) { return; };
 
    template<class T>  
-   void chopTiny_z(T *d, size_t n, double eps=1E-14) { return; };
+   void chopTiny_z(
+      T *d       QS_UNUSED_VAR,
+      size_t n   QS_UNUSED_VAR,
+      double eps QS_UNUSED_VAR =1e-14
+    ) { return; };
 
    template<class T> 
-   double chopTiny_imag(T *d, size_t n, double eps=1E-14) { return 0; };
+   double chopTiny_imag(
+      T *d       QS_UNUSED_VAR,
+      size_t n   QS_UNUSED_VAR,
+      double eps QS_UNUSED_VAR =1e-14
+    ) { return 0; };
 
    template <class T> inline
    int recCompare(

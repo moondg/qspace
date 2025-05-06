@@ -105,6 +105,9 @@ function [ff,N,I] = getNRGcoupling(Gamma,Lambda,N,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% try to extend to energy scales below double precision by fitting
+% while respecting even/odd behavior % Wb,Aug31,12
+
 function [fx,N]=fix_couplings(fx,N,vflag);
 
   n=length(fx); i0=ceil(0.66*n);

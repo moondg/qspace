@@ -9,7 +9,7 @@ function Iout=structsub(S,varargin)
 
   getopt('init',varargin);
      vflag=getopt('-v');
-     xflag=getopt('-x'); % accept regex patterns
+     xflag=getopt('-x');
   ff=getopt('get_remaining');
 
   if numel(ff)==1 && iscell(ff{1}), ff=ff{1}; end

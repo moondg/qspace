@@ -131,28 +131,28 @@ int num2int(const char *F, int L, const T &x){
 };
 
 template<> inline
-int num2int(const char *F __attribute__ ((unused)),
-   int L __attribute__ ((unused)), const char &x){ return x; }
+int num2int(const char *F QS_UNUSED_VAR,
+   int L QS_UNUSED_VAR, const char &x){ return x; }
 
 template<> inline
-int num2int(const char *F __attribute__ ((unused)),
-   int L __attribute__ ((unused)), const unsigned char &x){ return x; }
+int num2int(const char *F QS_UNUSED_VAR,
+   int L QS_UNUSED_VAR, const unsigned char &x){ return x; }
 
 template<> inline
-int num2int( const char *F __attribute__ ((unused)),
-   int L  __attribute__ ((unused)), const int &x){ return x; }
+int num2int( const char *F QS_UNUSED_VAR,
+   int L  QS_UNUSED_VAR, const int &x){ return x; }
 
 template<> inline
-int num2int( const char *F __attribute__ ((unused)),
-   int L  __attribute__ ((unused)), const long &x){ return x; }
+int num2int( const char *F QS_UNUSED_VAR,
+   int L  QS_UNUSED_VAR, const long &x){ return x; }
 
 template<> inline
-int num2int(const char *F __attribute__ ((unused)),
-   int L __attribute__ ((unused)), const unsigned &x){ return x; }
+int num2int(const char *F QS_UNUSED_VAR,
+   int L QS_UNUSED_VAR, const unsigned &x){ return x; }
 
 template<> inline
-int num2int(const char *F __attribute__ ((unused)),
-   int L __attribute__ ((unused)), const unsigned long &x){ return x; }
+int num2int(const char *F QS_UNUSED_VAR,
+   int L QS_UNUSED_VAR, const unsigned long &x){ return x; }
 
 template<class T> inline
 unsigned checkInt(const char *F, int L,
@@ -171,29 +171,29 @@ unsigned checkInt(const char *F, int L,
 
 template<> inline
 unsigned checkInt(
-   const char *F     __attribute__ ((unused)),
-   int L             __attribute__ ((unused)),
-   const int* x      __attribute__ ((unused)),
-   size_t n          __attribute__ ((unused)),
-   double eps        __attribute__ ((unused))
+   const char *F     QS_UNUSED_VAR,
+   int L             QS_UNUSED_VAR,
+   const int* x      QS_UNUSED_VAR,
+   size_t n          QS_UNUSED_VAR,
+   double eps        QS_UNUSED_VAR
 ){ return 0; }
 
 template<> inline
 unsigned checkInt(
-   const char *F     __attribute__ ((unused)),
-   int L             __attribute__ ((unused)),
-   const unsigned* x __attribute__ ((unused)),
-   size_t n          __attribute__ ((unused)),
-   double eps        __attribute__ ((unused))
+   const char *F     QS_UNUSED_VAR,
+   int L             QS_UNUSED_VAR,
+   const unsigned* x QS_UNUSED_VAR,
+   size_t n          QS_UNUSED_VAR,
+   double eps        QS_UNUSED_VAR
 ){ return 0; }
 
 template<> inline
 unsigned checkInt(
-   const char *F     __attribute__ ((unused)),
-   int L             __attribute__ ((unused)),
-   const char* x     __attribute__ ((unused)),
-   size_t n          __attribute__ ((unused)),
-   double eps        __attribute__ ((unused))
+   const char *F     QS_UNUSED_VAR,
+   int L             QS_UNUSED_VAR,
+   const char* x     QS_UNUSED_VAR,
+   size_t n          QS_UNUSED_VAR,
+   double eps        QS_UNUSED_VAR
 ){ return 0; }
 
 const char* Wb::basename(const char *data, char c) {
@@ -334,7 +334,7 @@ int Wb::charGetNumber(const char *F, int L, const char *s, T &x) {
     int i;
 
     if (!s) {
-       sprintf_str("cannot read number from empty string");
+       sprintf_str("%s got null string",shortFL(F_L));
        return 1;
     }
 
@@ -342,15 +342,15 @@ int Wb::charGetNumber(const char *F, int L, const char *s, T &x) {
     x=(T)fl;
 
     if (!i || fl!=(float)x) {
-       sprintf_str("invalid input for type `%s' (%g, %d)",
-       TSTR(T), fl, i); return 1;
+       sprintf_str("invalid input for type `%s' (%g, %d)",TSTR(T),fl,i);
+       return 1;
     }
 
     return 0;
 }
 
 template<>
-int Wb::GetEnv (const char *F, int L, const char *name, double &val) {
+int Wb::GetEnv(const char *F, int L, const char *name, double &val) {
 
     char *s, *s2;
     double dbl;
@@ -372,7 +372,7 @@ int Wb::GetEnv (const char *F, int L, const char *name, double &val) {
 };
 
 template<>
-int Wb::GetEnv (const char *F, int L, const char *name, int &val) {
+int Wb::GetEnv(const char *F, int L, const char *name, int &val) {
 
     double dbl=0;
 
@@ -385,7 +385,7 @@ int Wb::GetEnv (const char *F, int L, const char *name, int &val) {
 }
 
 template<>
-int Wb::GetEnv (const char *F, int L, const char *name, unsigned &val) {
+int Wb::GetEnv(const char *F, int L, const char *name, unsigned &val) {
 
     double dbl=0;
     int i=GetEnv(F,L,name,dbl); if (i) return i;
@@ -397,7 +397,7 @@ int Wb::GetEnv (const char *F, int L, const char *name, unsigned &val) {
 };
 
 template<>
-int Wb::GetEnv (const char *F, int L, const char *name, char &val) {
+int Wb::GetEnv(const char *F, int L, const char *name, char &val) {
 
     char *s=getenv(name); if (!s || !s[0]) return -1;
     if (s[1]) { return -2; }
@@ -408,7 +408,7 @@ int Wb::GetEnv (const char *F, int L, const char *name, char &val) {
 };
 
 template<>
-int Wb::GetEnv (const char *F, int L, const char *name, wbstring &val) {
+int Wb::GetEnv(const char *F, int L, const char *name, wbstring &val) {
 
    if (!name || !name[0]) wblog1(F_L,
       "ERR %s() invalid env '%s' !?",FCT,name);
@@ -507,8 +507,8 @@ int Wb::is_DEPLOYED(const char *F, int L) {
 #else
 int Wb::got_DESKTOP() { return 0; } 
 int Wb::is_DEPLOYED(
-   const char *F=0 __attribute__ ((unused),
-   int L=0 __attribute__ ((unused)) { return 1; } 
+   const char *F QS_UNUSED_VAR,
+   int L         QS_UNUSED_VAR) { return 1; } 
 #endif
 
 int Wb::GetNumThreads(const char *F, int L, int &n, const char *name) {
@@ -848,7 +848,7 @@ int Wb::num2Fmt<char*>::check_init() {
 
 template <class T> inline
 char* defaultFmt(char *fmt,
-const T &x __attribute__ ((unused)), int m, int p, char t) {
+const T &x QS_UNUSED_VAR, int m, int p, char t) {
 
    const unsigned n=16;
    unsigned l=0, flen=n;
@@ -945,7 +945,7 @@ void Wb::safeConvert(const char *F, int L, const wbcomplex &x1, double &x2) {
 
 template <> inline 
 void Wb::safeConvert(
-   const char *F __attribute__ ((unused)), int L __attribute__ ((unused)),
+   const char *F QS_UNUSED_VAR, int L QS_UNUSED_VAR,
    const double &x1, wbcomplex &x2
 ){ x2=wbcomplex(x1,0); }
 
@@ -1285,9 +1285,9 @@ void Wb::cpyRange(double* a, const wbcomplex* b, size_t n, char tcheck) {
 };
 
 template <> 
-void Wb::cpyRange(wbcomplex* a, const double* b, size_t n, char tcheck) {
-   for (size_t i=0; i<n; ++i) { a[i]=b[i]; }
-};
+void Wb::cpyRange(
+   wbcomplex* a, const double* b, size_t n, char tcheck QS_UNUSED_VAR
+ ) { for (size_t i=0; i<n; ++i) { a[i]=b[i]; }};
 
 template <class T>
 void Wb::cpyRangeR(T* a, const wbcomplex* z, size_t n) { 
@@ -1355,7 +1355,10 @@ void Wb::timesRange(TD* d, TX x, size_t n, size_t stride) {
 };
 
 template <class T> inline
-char Wb::check_conj_flag(const T* a, char &conj) {
+char Wb::check_conj_flag(
+   const T* a QS_UNUSED_VAR, 
+   char &conj
+ ) {
    if (conj) {
       if (!ISCOMPLX_(T)) { conj=0; } else {
       if (conj>2) { 
@@ -1492,7 +1495,7 @@ template<class T> inline
 T Wb::overlap(
    const T* a, const T* b, size_t n,
    size_t stride, 
-   char tnorm __attribute__ ((unused))
+   char tnorm QS_UNUSED_VAR
 ){
    T x2=0; 
    if (n) {
@@ -1578,11 +1581,11 @@ inline size_t Wb::countNaN(double* a, size_t m) {
 
    template <class T>
    void Wb::splitZRange(
-      const T *Z, double *R, double *I, size_t n
-   ){
-      wblog(FL,"ERR %s not applicable for type `%s'",
-      FCT, TSTR(T));
-   }
+      const T *Z QS_UNUSED_VAR,
+      double  *R QS_UNUSED_VAR,
+      double  *I QS_UNUSED_VAR,
+      size_t   n QS_UNUSED_VAR
+   ){ wblog(FL,"ERR %s not applicable for type `%s'",FCT,TSTR(T)); }
 
    template <>
    void Wb::splitZRange(

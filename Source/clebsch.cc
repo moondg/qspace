@@ -426,12 +426,12 @@ size_t Symmetry::getWeightsFT(const char *F, int L,
    map < qset<TQ>, const weight_info<TQ>* > x2;
    const TQ* md; int l;
 
-   if (!qm.len || qm.len!=q.qlen()) wblog(FL,
+   if (!qm.len || qm.len!=q.qlen()) wblog(F_L,
       "ERR %s() invalid qset %s (%s)",FCT,STR(q),STR2(qm,q));
-   if (qm.len!=A.dim2 || A.dim1!=A.dim2) wblog(FL,
+   if (qm.len!=A.dim2 || A.dim1!=A.dim2) wblog(F_L,
       "ERR %s() invalid Cartan matrix A (%dx%d / %d; %s)",
       FCT,A.dim1,A.dim2,qm.len,STR(q));
-   if (M.SIZE.len!=2 || M.SIZE[0]!=n || M.SIZE[1]<n) wblog(FL,
+   if (M.SIZE.len!=2 || M.SIZE[0]!=n || M.SIZE[1]<n) wblog(F_L,
       "ERR %s() invalid M data (%s /%d)",FCT,SSTR(M),n);
 
    qset<TQ> qs(n); np=M.SIZE[1];
@@ -441,7 +441,7 @@ size_t Symmetry::getWeightsFT(const char *F, int L,
       for (auto Il=R.X.begin(); Il!=R.X.end(); ++Il) { if (Il->second) {
          weight_info<TQ> &w0=R.W[Il->first];
 
-         if (w0.p.len!=n || !w0.m) wblog(FL,
+         if (w0.p.len!=n || !w0.m) wblog(F_L,
             "ERR %s() got missing weight (%s) @ m=%d",
             FCT, Il->first.wbvector<TQ>::toStr(2).data, w0.m);
 
@@ -467,9 +467,9 @@ size_t Symmetry::getWeightsFT(const char *F, int L,
       }
    }
    if (iter>=niter) {
-      wblog(FL,"ERR %s() got iter=%d",FCT,iter);
+      wblog(F_L,"ERR %s() got iter=%d",FCT,iter);
    }
-   else if (F) wblog(FL," *  %s() got iter=%d",FCT,iter);
+   else if (F) wblog(F_L," *  %s() got iter=%d",FCT,iter);
 
    map<int,   
       map<qset<TQ>,   
@@ -479,9 +479,9 @@ size_t Symmetry::getWeightsFT(const char *F, int L,
 
    for (auto I=R.W.begin(); I!=R.W.end(); ++I) {
       l=I->second.p.sum();
-      if (I->first.anyLT(0)) wblog(FL,"ERR %s() got w=[%s] "
+      if (I->first.anyLT(0)) wblog(F_L,"ERR %s() got w=[%s] "
          "outside dominant Weyl chamber",FCT,STR(I->first));
-      if (!I->second.p.len || !I->second.m) wblog(FL,
+      if (!I->second.p.len || !I->second.m) wblog(F_L,
          "ERR %s() got w=[%s] with p=[%s], m=%d", FCT,
          STR(I->first), STR(I->second.p), I->second.m);
       Ml[l][I->first]=&I->second;
@@ -496,13 +496,13 @@ size_t Symmetry::getWeightsFT(const char *F, int L,
       }
    }
 
-   if (F) wblog(FL,"==> %s[%s]: q=(%s) ",FCT,STR(q),STR2(qm,q));
-                  if (F) R.print(FL,q); 
-   wExpand(FL,R); if (F) R.print(FL,q);
+   if (F) wblog(F_L,"==> %s[%s]: q=(%s) ",FCT,STR(q),STR2(qm,q));
+                  if (F) R.print(F_L,q); 
+   wExpand(F_L,R); if (F) R.print(F_L,q);
 
    d=R.dim();
    i=q.wdim(qm.data); 
-   if (d!=i) wblog(FL,
+   if (d!=i) wblog(F_L,
       "WRN %s() got %s (%s) @ d=%d/%d",FCT,STR(q),STR2(qm,q),d,i);
    return d;
 };
@@ -627,7 +627,7 @@ int Symmetry::wExpand(const char *F, int L, Weights<TQ> &R) const {
       const weight_info<TQ>* 
    > W0,X,X_;
 
-   if (!n || n!=A.dim1 || n!=A.dim2) wblog(FL,
+   if (!n || n!=A.dim1 || n!=A.dim2) wblog(F_L,
       "ERR %s() invalid Cartan matrix %s /%d",FCT,SSTR(A),n);
 
    for (auto Iw=R.W.begin(); Iw!=R.W.end(); ++Iw) { if (Iw->second.m>0) {
@@ -638,7 +638,7 @@ int Symmetry::wExpand(const char *F, int L, Weights<TQ> &R) const {
       X.clear(); X[Iw->first]=Iw->second; m0=Iw->second->m; iter=0;
       while (++iter<niter) {
          for (auto Ik=X.begin(); Ik!=X.end(); ++Ik) { if (Ik->second) {
-            if (Ik->second->m<=0) wblog(FL,
+            if (Ik->second->m<=0) wblog(F_L,
                "ERR %s() [%s] got m=%d",FCT,STR(Ik->first),Ik->second->m);
             qs.init(Ik->first); qd=qs.data;
 
@@ -654,7 +654,7 @@ int Symmetry::wExpand(const char *F, int L, Weights<TQ> &R) const {
          X.clear(); X.swap(X_); 
          if (!X.size()) break;
       }
-      if (iter>=niter) wblog(FL,
+      if (iter>=niter) wblog(F_L,
          "ERR %s() got iter=%d/%d",FCT,iter,niter);
    }
    return nX;
@@ -686,10 +686,10 @@ void Weights<TQ>::print(
 
    if (F) {
       char s[128];
-      snprintf(s,128,"total of %d + %d = %d weight%s (%d state%s)",
-         ndom, n-ndom, n, n!=1 ? "s":"", mtot, mtot!=1 ? "s":"",
+      snprintf(s,128,"%s: total of %d + %d = %d weight%s (%d state%s)",
+         STR(q), ndom, n-ndom, n, n!=1 ? "s":"", mtot, mtot!=1 ? "s":"",
          merr ? ", incomplete!":"");
-      if (!merr) wblog(FL," *  %s",s); else wblog(FL,"WRN %s",s);
+      if (!merr) wblog(F_L," *  %s",s); else wblog(F_L,"WRN %s",s);
    }
    else PRINTF("\n");
 
@@ -4069,12 +4069,12 @@ int CRef<TQ>::checkQ( const char *F, int L,
 
    if (!cgb) {
       if (!Q.t.isAbelian()) {
-         if (F) wblog(FL,"ERR %s() missing cgb data (%s)",FCT,STR(Q.t));
+         if (F) wblog(F,L,"ERR %s() missing cgb data (%s)",FCT,STR(Q.t));
          return 1;
       }
    }
    else if (!sameQSet(Q)) {
-      if (F) wblog(FL,
+      if (F) wblog(F,L,
          "ERR %s() QSet mismatch\n   %s\n<> %s",FCT,STR_(this),STR(Q));
       return 2;
    }
@@ -4844,9 +4844,11 @@ int CRef<TQ>::SortDegQ(const char *F, int L, QSet<TQ> *QS) {
 
 template <class TQ>
 double CRef<TQ>::trace(const char *F, int L,
-   const ctrIdx &i1, const ctrIdx &i2, CRef<TQ> *Rt) const {
+   const ctrIdx &i1  QS_UNUSED_VAR,
+   const ctrIdx &i2  QS_UNUSED_VAR,
+   CRef<TQ>     *Rt  QS_UNUSED_VAR) const {
 
-   double q=0; wblog(FL,"ERR %s() to be cont'd",FCT);
+   double q=0; wblog(F_L,"ERR %s() to be cont'd",FCT);
    return q;
 };
 

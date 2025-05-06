@@ -38,3 +38,5 @@
   echo_c % counter check: same within numerical noise, indeed
   e=norm( a(1)*SS0 + a(2)*SS1 + a(3)*SS2 - X )
 
+% check_finished(nfin,task,mfilename);
+

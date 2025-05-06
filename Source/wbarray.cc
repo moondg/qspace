@@ -3233,9 +3233,9 @@ wbarray<TC>& wbarray<T>::contractMat(
    wbarray<T> A;
    wbarray<T> MA;
 
-   if (!M.isMatrix()) wblog (FL,
+   if (!M.isMatrix()) wblog (F_L,
       "ERR %s() rank 2 object required (%d)",FCT,M.SIZE.len);
-   if (i1<1 || i1>SIZE.len || i2<1 || i2>2) wblog(FL,
+   if (i1<1 || i1>SIZE.len || i2<1 || i2>2) wblog(F_L,
       "ERR %s() invalid contraction indizes [%d %d, %d %d]", i1,i2,
        FCT,rank(), M.rank());
 
@@ -4107,8 +4107,8 @@ mxArray* wbarray<Wb::quad>::toMx() const {
 template<> inline
 wbarray<Wb::quad>& wbarray<Wb::quad>::init(
    const char *F, int L, const mxArray *S,
-   char ref __attribute__ ((unused)),
-   char vec __attribute__ ((unused))
+   char ref QS_UNUSED_VAR,
+   char vec QS_UNUSED_VAR
 ){
    if (!S || !mxIsStruct(S)) wblog(FL,"ERR %s() "
       "got invalid input `%s' / mpfr",FCT,S? mxGetClassName(S):"null");
@@ -4238,7 +4238,7 @@ void wbarray<wbcomplex>::getReal(wbarray<double> &R) const {
 };
 
 template<class T>
-void wbarray<T>::getImag(wbarray<double> &I) const {
+void wbarray<T>::getImag(wbarray<double> &I QS_UNUSED_VAR) const {
    wblog(FL,"ERR wbarray::getImag not defined for type %s",TSTR(T));
 };
 
@@ -4264,9 +4264,9 @@ void wbarray<wbcomplex>::Conj() {
 
 template<class T>
 void wbarray<T>::set(
-   const wbarray<double> &R, const wbarray<double> &I) {
-   wblog(FL,"ERR wbarray::set(R,I) not defined for type %s",TSTR(T));
-};
+   const wbarray<double> &R QS_UNUSED_VAR,
+   const wbarray<double> &I QS_UNUSED_VAR
+ ) { wblog(FL,"ERR wbarray::set(R,I) not defined for type %s",TSTR(T)); };
 
 template<>
 void wbarray<wbcomplex>::set(

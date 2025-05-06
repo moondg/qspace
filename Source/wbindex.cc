@@ -1094,36 +1094,36 @@ unsigned iTags::Set(const char* F, int L,
    if (int(r)<0) {
       if (int(m)<=0) { r=len; } else
       if (m+2<len) { r=len-m; } else  
-      wblog(FL,"ERR %s() requesting %d OM legs for rank-%d",FCT,m,len-m);
+      wblog(F_L,"ERR %s() requesting %d OM legs for rank-%d",FCT,m,len-m);
    } else
-   if (r>len) wblog(FL, 
+   if (r>len) wblog(F_L, 
       "ERR %s() rank out of bounds (%d/%d)",FCT,r,len);
 
    if (int(m)<0) { if (tom) { m=len-r; }}
    else {
-      if (m && r< 2) wblog(FL,"ERR %s() "
+      if (m && r< 2) wblog(F_L,"ERR %s() "
          "requesting %d OM leg%s for rank-%d",FCT,m,m==1?"":"s",r);
 
-      if ((l=r+m)<len) wblog(FL,
+      if ((l=r+m)<len) wblog(F_L,
          "ERR %s() asking for lower rank (%d+%d / %d)",FCT,r,m,len);
       if (l>len) { this->Resize(l); }
    }
 
-   if (!tag || (r<len && int(m)>0 && !tom)) wblog(FL,
+   if (!tag || (r<len && int(m)>0 && !tom)) wblog(F_L,
       "ERR %s() got null strings (%p / %p)",FCT,tag,tom);
    if (int(m)<0) { m=0; }
 
    for (i=0; i<r; ++i) {
       if (data[i].isEmpty('m')) { ++rval;
-         data[i].SetSI(FL,tag,i+1); 
+         data[i].SetSI(F_L,tag,i+1); 
       }
    }
 
    for (i=0; i<m; ++i) {
       if (!data[r+i]) { ++rval;
-         data[r+i].SetSI(FL,tom,i+1, conjOM ? 1 : 0);
+         data[r+i].SetSI(F_L,tom,i+1, conjOM ? 1 : 0);
       }
-      else wblog(FL,
+      else wblog(F_L,
       "ERR %s() non-empty OM itags (%s; %d+%d)",FCT,STR_(this),r,m);
    }
 

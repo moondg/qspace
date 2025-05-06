@@ -133,6 +133,8 @@ function HAM=setup_mpo_trotter2(HAM,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% outsourced // Wb,May22,21
+
 function [M,H2,U4]=get_mpo_k(HAM, w1,h1,w2,h2, Hcpl, bflag,dt,E1,A2,X2)
 
   persistent Mlast
@@ -231,6 +233,8 @@ function [M,H2,U4]=get_mpo_k(HAM, w1,h1,w2,h2, Hcpl, bflag,dt,E1,A2,X2)
 end
 
 % -------------------------------------------------------------------- %
+% replace / standarize itags mpo[LR..] -> mpo, s1, s2, -> s<k>
+
 function tt=set_itags(tt,k)
 
    tt=regexprep(tt,'^mpo\w*$',  sprintf('m%02g',k-1),'ignorecase');

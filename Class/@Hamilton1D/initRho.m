@@ -24,11 +24,10 @@ function [Rho,Iout,IL,E3]=initRho(HAM,tau,varargin)
      tflag=getopt('-t');
      kflag=getopt('-k');
 
-     rtol =getopt('rtol', []); % 1E-24 // defaults in MPO_add.m
-     Nkeep=getopt('Nkeep',[]); % -1
-     nsw  =getopt('nsw',  []); %  3
+     rtol =getopt('rtol', []);
+     Nkeep=getopt('Nkeep',[]);
+     nsw  =getopt('nsw',  []);
 
-   % (estimate for) ground state energy to subtract (e0 = E0/L)
      e0=getopt('e0',0);
      pwr=getopt('pwr',[]);
 
@@ -39,14 +38,10 @@ function [Rho,Iout,IL,E3]=initRho(HAM,tau,varargin)
   if ~using_full_MPO(HAM)
      wbdie('invalid usage (full MPO required for HAM)'); end
 
-  [Dtot,dloc]=MPO_get_Dtot(HAM); % requires/ensures full MPO
+  [Dtot,dloc]=MPO_get_Dtot(HAM);
 
   osw={};
-% NB! instead of normalizing HAM.mpo, adjusting rtol in MPO_add()
-% see also comments in MPO_get_Dtot.m
-% WRN! Dtot=dloc^L quickly becomes astronomically large,
-% and so does |Rho| ~ |Id| for tau<<1!
-  if ~isempty(rtol) && rtol>0, setopts(osw,rtol); end % rtol*Dtot
+  if ~isempty(rtol) && rtol>0, setopts(osw,rtol); end
   if ~isempty(Nkeep) && Nkeep>0, setopts(osw,Nkeep); end
   if ~isempty(nsw), setopts(osw,nsw); end
 
@@ -71,18 +66,17 @@ function [Rho,Iout,IL,E3]=initRho(HAM,tau,varargin)
 
   if use_hconj
      fac=[ 1 +1; 1 -1]; % H_full = H+H'
-     if Eref, fac=[-Eref 0; fac]; end % H_full -> (H_full-Eref) // e0
+     if Eref, fac=[-Eref 0; fac]; end
      [Ham,IH,IL,E3]=MPO_add(HAM.mpo,fac,osw);
   elseif Eref
-       [Ham,IH,IL,E3]=MPO_add(HAM.mpo,[-Eref 0; 1 +1],osw); % H -> H - Eref
+       [Ham,IH,IL,E3]=MPO_add(HAM.mpo,[-Eref 0; 1 +1],osw);
   else [Ham,~, ~, E3]=MPO_add(HAM.mpo,osw);
   end
 
-% obtain energy fluctuation to check bounds on tau
   E1=MPO_trace(Ham,E3);
   E2=MPO_trace(Ham,2,E3);
 
-  q2=[ E2, MPO_norm2(Ham) ]; % check hermiticity of Ham // safeguard
+  q2=[ E2, MPO_norm2(Ham) ];
   e2=abs(diff(q2))/norm(q2);
   if e2>1E-12
      if e2<1E-9
@@ -91,18 +85,15 @@ function [Rho,Iout,IL,E3]=initRho(HAM,tau,varargin)
   end
 
   dE=sqrt(abs(E2)/(Dtot*L));
-  % e.g. Heisenberg (J=1, L=16) => dE=0.4193 with E1=0
-  % to be compared to e1 = -0.64342365 => dE ~ (2/3) |e1|
 
-  if tflag  % run consistency checks
-     q0=[ MPO_trace(HAM.mpo,2), MPO_norm2(HAM.mpo) ]; % MPO_trace(HAM.mpo),  
+  if tflag
+     q0=[ MPO_trace(HAM.mpo,2), MPO_norm2(HAM.mpo) ];
      e1=norm(diff(q0))/norm(q0); e=0;
      if use_hconj
          if e1<1E-12, e=1; wblog('WRN','already got hermitian HAM @ %.3g',e1); end
      elseif e1>1E-12, e=2; wblog('ERR','got non-hermitian HAM @ %.3g',e1); end
 
      if use_hconj
-      % | H+H' |^2 = 2*|H|^2 + 2*real(tr(H^2))
         q = [ 2*(q0(1) + real(q0(2))), E2 ];
         e3=norm(diff(q))/norm(q);
         if e3>1E-12, wbdie('got inconsistent H+H'' @ %.3g',e3); e=4; end
@@ -132,23 +123,19 @@ function [Rho,Iout,IL,E3]=initRho(HAM,tau,varargin)
   end
   fac(1,:)=[1  0];
 
-% add 3rd column to estimate numerical range of H^p (info only)
-  fac(1:3,3)=[Dtot, E1, E2]; % assuming (Ham^0 = Id)
+  fac(1:3,3)=[Dtot, E1, E2];
   for p=3:n, fac(p+1,3)=MPO_trace(Ham,p,E3); end
 
   tt(end+1)=get_time(t0);
 
-% HAM.mpo may not be hermitian => need Ham here
   [Rho,Iout,IL]=MPO_add(Ham, fac(1:pwr+1,1:2), E3,osw);
 
   tt(end+1)=get_time(t0);
 
-  add2struct(Iout,fac,pwr,'timing=tt',dloc,Dtot,Eref,tau); % e0
-  % Iout already contains Nkeep, rtol, etc.
+  add2struct(Iout,fac,pwr,'timing=tt',dloc,Dtot,Eref,tau);
 
-  Iout.Z =MPO_trace(Rho,E3); % normalization = partition function
-  Iout.Z2=MPO_norm2(Rho);  % partition function at 2*tau
-  % since Rho ~ Id => Z, Z2 ~ Dtot
+  Iout.Z =MPO_trace(Rho,E3);
+  Iout.Z2=MPO_norm2(Rho);
 
   if kflag, wbstop; end
 

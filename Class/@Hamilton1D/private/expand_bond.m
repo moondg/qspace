@@ -340,6 +340,8 @@ function [X1,X2,Psi,Iout]=expand_bond(HAM,X1,X2,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% project into discarded space (by projecting out kept space)
+
 function [HPsi,nrm]=project_DD(HPsi,A1,A2)
 
    q=(nargout>1); if q, nrm=norm(HPsi); end

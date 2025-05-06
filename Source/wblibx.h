@@ -5,9 +5,14 @@
 /* -------------------------------------------------------------------- */
 
    void usage(const char *file=NULL, int line=0, const char* estr=NULL);
+   int isHelpIndicator(const char *s);
 
+#ifdef MATLAB_MEX_FILE
    int isHelpIndicator(const mxArray *a0);
-   int checkHelpVersion( const mxArray *a0, mxArray **argout=NULL);
+   int checkHelpVersion(const mxArray *a0, mxArray **argout=NULL);
+#else
+   int checkHelpVersion(const char *s);
+#endif
 
    void wbdie(const char *file, int line, const char* istr);
 
@@ -68,7 +73,7 @@ template <class T>
 class is_pointer_<T***> { public: char q() { return 3; }; };
 
 template <class T>
-inline char ispointer(const T& x) { return is_pointer_<T>().q(); };
+inline char ispointer(const T& x QS_UNUSED_VAR) { return is_pointer_<T>().q(); };
 
 #endif
 

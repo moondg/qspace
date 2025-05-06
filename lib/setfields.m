@@ -52,6 +52,9 @@ function s=setfields(s,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% if kflag is set, keep current structure i.e. do not add extra fields
+% Wb,Sep08,15
+
 function S=set_fields_based_on_reference(S,S0,kflag)
 
    if numel(S)~=1 && numel(S0)~=1, wbdie(...

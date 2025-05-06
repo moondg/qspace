@@ -122,18 +122,18 @@ int Wb::Rational(
 
 template<class T>
 double Wb::FixRational(
-   const char *F  __attribute__ ((unused)),
-   int L          __attribute__ ((unused)),
-   T *d           __attribute__ ((unused)),
-   unsigned n     __attribute__ ((unused)),
-   char rflag     __attribute__ ((unused)),
-   unsigned niter __attribute__ ((unused)),
-   long pqmax     __attribute__ ((unused)),
-   double eps     __attribute__ ((unused)),
-   double eps2    __attribute__ ((unused)),
-   double *rz     __attribute__ ((unused)),
-   double *ra     __attribute__ ((unused)),
-   char vflag     __attribute__ ((unused))
+   const char *F  QS_UNUSED_VAR,
+   int L          QS_UNUSED_VAR,
+   T *d           QS_UNUSED_VAR,
+   unsigned n     QS_UNUSED_VAR,
+   char rflag     QS_UNUSED_VAR,
+   unsigned niter QS_UNUSED_VAR,
+   long pqmax     QS_UNUSED_VAR,
+   double eps     QS_UNUSED_VAR,
+   double eps2    QS_UNUSED_VAR,
+   double *rz     QS_UNUSED_VAR,
+   double *ra     QS_UNUSED_VAR,
+   char vflag     QS_UNUSED_VAR
 ) {
    return 0;
 };
@@ -238,13 +238,13 @@ wbstring Wb::rat2Str(
    long p;
 
    if (::fabs(d-(p=::round(d)))<eps) {
-      if (sout.printf(FL,"%.16g",d)>8) { 
-          sout.printf(FL,"%s%ld", p || d>=0 ? "":"-", p);
+      if (sout.printf(F_L,"%.16g",d)>8) { 
+          sout.printf(F_L,"%s%ld", p || d>=0 ? "":"-", p);
       }; return sout;
    }
 
    if (int(niter)<1) {
-      sout.printf(FL,"%.5g",d);
+      sout.printf(F_L,"%.5g",d);
       return sout;
    }
 
@@ -271,11 +271,11 @@ wbstring Wb::rat2Str(
    }
 
    if (!e1) {
-      sout.printf(FL,"%ld/%ld",p,q);
+      sout.printf(F_L,"%ld/%ld",p,q);
       return sout;
    }
    if (e2) {
-      sout.printf(FL,"%.5g",d);
+      sout.printf(F_L,"%.5g",d);
       return sout;
    }
 
@@ -285,20 +285,20 @@ wbstring Wb::rat2Str(
    sout.data[0]=0;
 
    if (q2==1) {
-      sout.printf(FL,"%s%s",  sgn,Wb::surdStrf(sx,"%ld",p2));
+      sout.printf(F_L,"%s%s",  sgn,Wb::surdStrf(sx,"%ld",p2));
    }
    else if (p2==1) {
-      sout.printf(FL,"%s1/%s",sgn,Wb::surdStrf(sx,"%ld",q2));
+      sout.printf(F_L,"%s1/%s",sgn,Wb::surdStrf(sx,"%ld",q2));
    }
    else { r=::sqrt(double(q2));
       if (::fabs(r-::round(r))<eps) {
-         sout.printf(FL,"%s%s/%g",sgn,Wb::surdStrf(sx,"%ld",p2),r);
+         sout.printf(F_L,"%s%s/%g",sgn,Wb::surdStrf(sx,"%ld",p2),r);
       }
    }
    if (!sout.data[0]) { r=::sqrt(double(p2));
       if (::fabs(r-::round(r))<eps)
-           { sout.printf(FL,"%s%g/%s",sgn,r,Wb::surdStrf(sx,"%ld",q2)); }
-      else { sout.printf(FL,"%s%s",sgn,Wb::surdStrf(sx,"(%ld/%ld)",p2,q2)); }
+           { sout.printf(F_L,"%s%g/%s",sgn,r,Wb::surdStrf(sx,"%ld",q2)); }
+      else { sout.printf(F_L,"%s%s",sgn,Wb::surdStrf(sx,"(%ld/%ld)",p2,q2)); }
    }
    return sout;
 };
@@ -789,9 +789,10 @@ size_t Mac::getProcMemSize(pid_t p, char res) {
    return (res ? S.resident_size : S.virtual_size);
 };
 
-size_t Wb::getProcSize(const char *tag, const pid_t &p) {
-   return Mac::getProcMemSize(p);
-};
+size_t Wb::getProcSize(
+   const char *tag QS_UNUSED_VAR, 
+   const pid_t &p
+ ) { return Mac::getProcMemSize(p); };
 
 #else 
 
@@ -884,10 +885,10 @@ int wbsys::getNumCores() {
    int n=-1; 
 
    size_t l=4; 
-   int e=sysctlbyname("hw.physicalcpu",&n,&l,NULL,0);
+   int e=sysctl((int [2]){ CTL_HW, HW_NCPU },2,&n,&l,NULL,0); 
 
-   if (e || n<1) { wblog(FL,
-      "ERR %s() sysctl returned e=%d (n=%d)\n%s",
+   if (e || n<1) {
+      wblog(FL,"ERR %s() sysctl returned e=%d (n=%d)\n%s",
       FCT,e,n, e? strerror(errno):"''");
    }
    return n;
@@ -896,10 +897,10 @@ int wbsys::getNumCores() {
 int wbsys::getCacheLineSize() {
    size_t n=-1; 
    size_t l=sizeof(n); 
-   int e=sysctlbyname("hw.cachelinesize",&n,&l,NULL,0);
+   int e=sysctl((int [2]){ CTL_HW, HW_CACHELINE },2,&n,&l,NULL,0); 
 
-   if (e || n<1) { wblog(FL,
-      "ERR %s() sysctl returned e=%d (n=%d)\n%s",
+   if (e || n<1) {
+      wblog(FL,"ERR %s() sysctl returned e=%d (n=%d)\n%s",
       FCT,e,n, e? strerror(errno):"''");
    }
    return n;
@@ -907,11 +908,26 @@ int wbsys::getCacheLineSize() {
 
 #else
 
-size_t wbsys::getMemTot()   { return Wb::getProcSize("MemTotal" ); };
-size_t wbsys::getMemFree()  { return Wb::getProcSize("MemFree"  ); };
-size_t wbsys::getSwapTot()  { return Wb::getProcSize("SwapTotal"); };
-size_t wbsys::getSwapFree() { return Wb::getProcSize("SwapFree" ); };
-int    wbsys::getNumCores() { return Wb::getCpuInfo("processor" ); };
+size_t wbsys::getMemTot()   {
+   struct sysinfo I; sysinfo(&I); return I.totalram;
+};
+
+size_t wbsys::getMemFree()  {
+   struct sysinfo I; sysinfo(&I); return I.freeram;
+};
+
+size_t wbsys::getSwapTot()  {
+   struct sysinfo I; sysinfo(&I); return I.totalswap;
+};
+
+size_t wbsys::getSwapFree() {
+   struct sysinfo I; sysinfo(&I); return I.freeswap;
+};
+
+int    wbsys::getNumCores() {
+
+   return sysconf(_SC_NPROCESSORS_ONLN);
+};
 
 int wbsys::getCacheLineSize() { 
    int n=sysconf(_SC_LEVEL1_DCACHE_LINESIZE); 
@@ -964,11 +980,11 @@ char wbsys::checkSwapSpace(const char *F, int L) {
 
    static double xref=0.25; 
 
-   int e, mib[2] = { CTL_VM, VM_SWAPUSAGE };
    struct xsw_usage S; size_t l=sizeof(S);
+   int e=sysctl((int [2]){ CTL_VM, VM_SWAPUSAGE },2,&S,&l,NULL,0);
 
-   if ((e=sysctl(mib,2,&S,&l,NULL,0))) wblog(FL,
-      "ERR %s() sysctl returned %d\n(%s)",FCT,e,strerror(errno));
+   if (e) wblog(FL,
+      "ERR %s() sysctl returned e=%d\n(%s)",FCT,e,strerror(errno));
 
    if (S.xsu_total<=0 || double(S.xsu_avail)/S.xsu_total>xref) { return 0; }
 

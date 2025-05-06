@@ -38,7 +38,6 @@
 
 #endif
 
-#ifndef NOMEX
 int isHelpIndicator(const char *s) {
    if (s && s[0]=='-') {
       if (!strcmp(s,"-?") || !strcmp(s,"-h") || !strcmp(s,"--help"))
@@ -46,7 +45,8 @@ int isHelpIndicator(const char *s) {
    }
    return 0;
 };
-#endif
+
+#ifdef MATLAB_MEX_FILE
 
 int isHelpIndicator(const mxArray *a) {
    char s[8];
@@ -71,6 +71,23 @@ int checkHelpVersion(const mxArray *a0, mxArray **argout) {
    }
    return 0;
 };
+
+#else 
+
+int checkHelpVersion(const char *s) {
+   if (s) {
+      if (isHelpIndicator(s)) { usage(); return 1; }
+      if (!strcmp(s,"--ping")) { return 2; }
+
+      if (!strcmp(s,"--version")) {
+         Wb::VersionInfo().print();
+         return 1;
+      }
+   }
+   return 0;
+};
+
+#endif
 
 inline mxArray* mx_get_field(mxArray *S, unsigned k, int i) {
    if (S && i>=0 && int(k)>=0) {
@@ -225,7 +242,7 @@ class Array {
     int safe_set_dptr(T *md) { data=md; return 0; }
 
     template <class TM>
-    int safe_set_dptr(TM *md __attribute__ ((unused))) { return 1; } 
+    int safe_set_dptr(TM *md QS_UNUSED_VAR) { return 1; } 
 
     void MX_INIT_DATA(unsigned ndim, const size_t *dims);
 };

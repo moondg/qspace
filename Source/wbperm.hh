@@ -58,6 +58,7 @@ class wbperm : public wbvector<wperm_t> {
        else return i;
     };
 
+    wbperm& operator= (const wbperm &P) { return init(P); }; 
     wbperm& operator= (const char *s) {
        initStr(FL,s,0); return *this;
     };

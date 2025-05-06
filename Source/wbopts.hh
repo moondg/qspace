@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------
- * Project : QSpace tensor library (v4.0 pre-release)
+ * Project : QSpace tensor library (v4.0)
  * Class   : QSpace MEX routine options class
  *
- * Copyright 2022 Andreas Weichselbaum
+ * Copyright 2024 Andreas Weichselbaum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,13 +73,13 @@ class OPTS {
     template <class T>
     bool getOpt(const char* vn,
        wbvector<T> &x, char force=0, const char *istr=0) {
-       return getOpt(NULL,0,x,force,istr);
+       return getOpt(NULL,0,vn,x,force,istr);
     };
 
     template <class T>
     bool getOpt(const char* vn,
        wbMatrix<T> &x, char force=0, const char *istr=0) {
-       return getOpt(NULL,0,x,force,istr);
+       return getOpt(NULL,0,vn,x,force,istr);
     };
 
     bool getOpt(const char* vn, const char *istr=0) {
@@ -313,8 +313,8 @@ bool OPTS::getOpt(const char *F, int L,
 
 template<>
 bool OPTS::getOpt(
-   const char *F  __attribute__ ((unused)),
-   int L          __attribute__ ((unused)),
+   const char *F  QS_UNUSED_VAR,
+   int L          QS_UNUSED_VAR,
    const char* vn, itag_ &t, char force, const char *istr 
 ){
    wbstring q;

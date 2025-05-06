@@ -16,7 +16,7 @@ function [mps,Iout,IL,E3]=MPS_add(varargin)
 % ensure that simple operations such as subtracting a constant etc.
 % are always accurate irrespective of the input MPS
 % --> do not set Nkeep (i.e., keep Nkeep=-1)
-  Nkeep=-1; rtol=1E-24; nsw=3; % default values
+  Nkeep=-1; rtol=1E-24; nsw=3;
 
   t0=tic();
 
@@ -35,7 +35,7 @@ function [mps,Iout,IL,E3]=MPS_add(varargin)
         end
      end
   end
-  
+
   if nargs<2, wbdie('invalid usage (%d args)',nargs); end
   iM=[]; l=0; fac=zeros(0,2);
   for i=1:nargs
@@ -58,17 +58,17 @@ function [mps,Iout,IL,E3]=MPS_add(varargin)
   fac=fac(:,1).';
 
   if s1(1)~=1, s1, wbdie('unexpected MPS QSpace array size'); end
-  N=prod(s1); nterms=l; % number of states
+  N=prod(s1); nterms=l;
 
   MPS=cat(1,varargin{iM}); 
 
   vflag=1; kflag=0;
 
   if ~isempty(opts)
-     if isstruct(opts) % convert to regular cell
+     if isstruct(opts)
         if isfield(opts,'sweep'), I=opts.sweep; else I=opts; end
-        opts={}; % safeguard: nsw -> nsw_mps
-        for f={'nsw_mps','Nkeep','rtol'} % fields
+        opts={};
+        for f={'nsw_mps','Nkeep','rtol'}
            if isfield(I,f{1}), x=getfield(I,f{1});
               if ~isempty(x), opts=[opts, {f{1},x}]; end
            end
@@ -95,35 +95,30 @@ function [mps,Iout,IL,E3]=MPS_add(varargin)
      MPS(i,:)=[];
   end
 
-  E1=QSpace(nterms,N); % local identity
+  E1=QSpace(nterms,N);
   for l=1:nterms
      for k=1:N
         E1(l,k)=getIdentityQS(MPS(l,k),3);
      end
      if l>1
-      % safeguard to ensure complete local state space
         E1(1,k)=E1(1,k)+E1(l,k);
         if l==nterms, E1(1,k)=getIdentity(E1(1,k)); end
      end
   end
   E1=E1(1,:);
 
-  osw={'stol',stol,'Nkeep',Nkeep}; % stol is taken absolut
+  osw={'stol',stol,'Nkeep',Nkeep};
 
-% initialize output with largest MPS
   s=zeros(nterms,1);
      for l=1:nterms, s(l)=sizeof(MPS(l,:)); end
      i=find(s==max(s),1);
   mps=MPS(i,:); iM=i;
 
-% initialize: normalize mps and obtain XR
   XL=QSpace(nterms,N); XR=XL;
   for k=N:-1:2
-   % make sure mps is R->L orthonormalized
      [mps(k),X,Io]=orthoQS(mps(k),1,'<<',osw{:});
      mps(k-1)=contract(mps(k-1),X,[1 3 2]);
 
-   % calculate overlaps XR
      for l=1:nterms
         if k<N, X_=XR(l,k+1); else X_='bdry'; end
         XR(l,k)=update_overlap(1,l,mps(k),MPS(l,k),X_);
@@ -133,12 +128,12 @@ function [mps,Iout,IL,E3]=MPS_add(varargin)
   tt=get_time(t0);
   istr=''; xpo=[]; xol=[];
 
-  for isw=0:nsw % isw=0 only computes initial overlap
+  for isw=0:nsw
      if nargout>1, mps_last=mps; end
 
-     if isw % <----- outer bracket!
+     if isw
 
-     for dk=[1 -1] % sweep direction
+     for dk=[1 -1]
         if dk>0, ksw=1:N-1; else ksw=N:-1:2; end
         for k=ksw
            if dk>0
@@ -148,12 +143,9 @@ function [mps,Iout,IL,E3]=MPS_add(varargin)
            A1=mps(k1); r1=rank(A1);
            A2=mps(k2); r2=rank(A2);
 
-           [tb,c,m]=getitags(mps(k1),r1-1); % c=conj, m=mark
-         % whether to apply mark on bond [eventually using mod(m,2)]
-         % i.e., if ~c && dk || c && dk<=0
+           [tb,c,m]=getitags(mps(k1),r1-1);
            if xor(c~=0,dk>0), m=m+1; end
 
-         % tl/tr: L/R itags for bond tensor; tb: final itag on bond
            tl=[tb 'l'];
            tr=[tb 'r']; s='''';
 
@@ -161,18 +153,15 @@ function [mps,Iout,IL,E3]=MPS_add(varargin)
                 tl=[tl s]; tb=[tb s];
            else tr=[tr s]; end
 
-         % switch 2-site -> bond picture
-           if r1==3 % typical case (within MPS)
+           if r1==3
               B1=getIdentity(A1,1,E1(k1),1,tl,[1 3 2]);   p1=[2 1 3];
            elseif k1==1 && r1==2
-            % [B1,X1]=orthoQS(A1,1,'<<','itag',tl,osw{:}); p1=[];
-            % NB! m01 may not be complete => consider full operator Id!
               B1=permute(E1(k1),[2 1]); setitags(B1,1,tl); p1=[];
            else
               wbdie('invalid usage (unexpected rank r1=%d at k=%d)',r1,k1);
            end
 
-           if r2==3 % same for the right tensor A2->B2
+           if r2==3
               B2=getIdentity(A2,2,E1(k2),1,tr,[3 1 2]);
            elseif k2==N && r2==2
               B2=permute(E1(k2),[2 1]); setitags(B2,1,tr);
@@ -183,12 +172,10 @@ function [mps,Iout,IL,E3]=MPS_add(varargin)
            X1=contract(B1,'*',A1); 
            X2=contract(B2,'*',A2);
 
-         % old X12 (actually not required since replaced right below!)
            X12_=contract(X1,X2);
            r=rank(X12_); if r~=2
              wbdie('invalid contractions (got rank-%d QSpace X)',r); end
 
-         % update overlaps
            for l=1:nterms
               if k1>1, X1=XL(l,k1-1); else X1='bdry'; end
               if k2<N, X2=XR(l,k2+1); else X2='bdry'; end
@@ -196,7 +183,6 @@ function [mps,Iout,IL,E3]=MPS_add(varargin)
               XR(l,k2)=update_overlap(1,l,B2,MPS(l,k2),X2);
            end
 
-         % new X12 -> mps(k,k+1)
            for l=1:nterms
               Q=fac(l)*contract(XL(l,k1),XR(l,k2));
               if l>1 X12=X12+Q; else X12=Q; end
@@ -212,7 +198,6 @@ function [mps,Iout,IL,E3]=MPS_add(varargin)
               mps(k2)=contract(U,B2);
            end
 
-         % update overlaps (L or R depending on dk)
            if dk>0
               for l=1:nterms
 				 if k1>1, X1=XL(l,k1-1); else X1='bdry'; end
@@ -224,19 +209,16 @@ function [mps,Iout,IL,E3]=MPS_add(varargin)
                  XR(l,k2)=update_overlap(1,l,mps(k2),MPS(l,k2),X2);
               end
            end
-        end % ksw (k range for half-sweep)
-     end % dk (sweep direction)
+        end
+     end
 
         if nargout>1
-         % this contains |mps - mps_last|^2 when combined with xol(isw-1,:)
            xol(isw,1:2)=[ MPS_overlap(mps_last,mps), MPS_overlap(mps) ];
         end
 
      else k1=1; k2=2;
-     end % if isw
+     end
 
-   % being at k=1, i.e., (k1,k2)=(1,2)
-   % simply also compute overlap xpo (for info purposes only)
      k=k1;
      for l=1:nterms
         XR(l,k)=update_overlap(1,l,mps(k),MPS(l,k),XR(l,k+1));
@@ -245,17 +227,17 @@ function [mps,Iout,IL,E3]=MPS_add(varargin)
 
      if ~isw, continue; end
 
-     s2=getdatafield(Il,'svd2tr','-0'); % -0 => default value: 0
+     s2=getdatafield(Il,'svd2tr','-0');
      ds2max=max(s2(:));
      nk=getdatafield(Il,'Nkeep','-0'); Nkept=max(nk(:));
 
      if nargout>2
         q=struct('svd2tr',s2,'Nkeep',nk,'ds2max',ds2max,'Nkept',Nkept);
 
-        [k,j]=find(nk==max(nk(:)),1); % first iteration with largest Nkept
+        [k,j]=find(nk==max(nk(:)),1);
         Iq=Il(k,j); Iq.k=[k j, N]; q.Ik=Iq;
 
-        [k_,j_]=find(s2==ds2max,1); % iteration with largest svd2tr
+        [k_,j_]=find(s2==ds2max,1);
         if ~isequal([k j],[k_ j_])
            Iq=Il(k_,j_); Iq.k=[k_ j_, N]; q.Ik(2)=Iq;
         end
@@ -271,33 +253,30 @@ function [mps,Iout,IL,E3]=MPS_add(varargin)
         break
      end
      tt(end+1)=get_time(t0);
-  end % n_sweeps
+  end
 
-% copy itags from from first input MPS
   for k=1:N
       mps(k)=setitags(mps(k),MPS(1,k));
   end
 
   if nargout>1
-     se=zeros(size(Il));            % normalize! --v
+     se=zeros(size(Il));
      for i=1:numel(Il), se(i)=SEntropy(Il(i).svd,'-n'); end
 
      if isempty(istr), istr=sprintf(...
         'target MPSs at svd2tr <= %.3g / %g (nsw=%d)',ds2max,rtol,isw);
      end
 
-     Iout=add2struct('-',istr,'converged=0',fac,... % NORM_OPS
+     Iout=add2struct('-',istr,'converged=0',fac,...
          N,nterms,iM,Nkeep,Nkept,rtol,'mps_stol=0','Dtot?',se,ds2max,isw,xol);
      Iout.converged = (ds2max<rtol);
      Iout.mps_stol=osw{2};
      if isw<nsw, Iout.isw(2)=nsw; end
-   % if isvar('Dtot'), Iout.rtol=Iout.rtol/Dtot; end
 
      if nargout<3
           Iout.xpo=xpo; 
-     else Iout.initial_xpo=xpo(1,:); % initial overlap only
+     else Iout.initial_xpo=xpo(1,:);
      end
-     % else contained in IL anyways
   end
 
   if kflag, wbstop; end
@@ -322,10 +301,8 @@ function X=update_overlap(odir,iM,mps,MPS,X_)
 
    if odir, ic=sprintf('!%d*',odir); else ic='*'; end
 
- % differentiate bond itags of input MPSs
    if isnumeric(iM), iM=char('a')+(iM-1); end
    trep=['--itag:s/^([A-R]+\d+)/$1' iM '/'];
-   % include K,D,H, etc., exclude like S##
 
    gotX=(nargin>4 && ~isequal(X_,'bdry'));
    if gotX
@@ -334,10 +311,10 @@ function X=update_overlap(odir,iM,mps,MPS,X_)
 
    X=contract(mps,ic,MPS);
 
-   if ~gotX % need to fix itag at boundary
+   if ~gotX
       i=find(trep=='/'); % got 's/*/*/'
-      p=trep( i(1)+1 : i(2)-1 );  % pattern
-      r=trep( i(2)+1 : i(3)-1 );  % replace
+      p=trep( i(1)+1 : i(2)-1 );
+      r=trep( i(2)+1 : i(3)-1 );
       X=itagrep(X,2,p,r);
    end
 end

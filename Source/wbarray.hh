@@ -841,8 +841,8 @@ class wbarray {
        return q;
     };
 
-    wbarray& SkipTiny_float(const T eps=1E-14) { return *this; };
-    double   SkipTiny_imag (double eps=1E-14) { return 0; };
+    wbarray& SkipTiny_float(const T eps QS_UNUSED_VAR =1e-14) { return *this; };
+    double   SkipTiny_imag (double  eps QS_UNUSED_VAR =1e-14) { return 0; };
 
     double SkipTiny(double eps_=1E-14);
 

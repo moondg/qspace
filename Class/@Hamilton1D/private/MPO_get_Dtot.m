@@ -48,7 +48,7 @@ function [Dtot,dloc]=MPO_get_Dtot(HAM)
   if any(diff(dloc))
      wblog('WRN','got various dloc=[%d .. %d]',min(dloc),max(dloc)); 
   else
-     dloc=dloc(1); % returned data
+     dloc=dloc(1);
      if dloc<2, wbdie('got dloc=%d',dloc); end
   end
 

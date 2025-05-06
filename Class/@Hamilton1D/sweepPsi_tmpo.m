@@ -212,6 +212,8 @@ function [HAM,Iout]=sweepPsi_tmpo(HAM,varargin)
     Iout.tt(itau)=ttot;
 
   % ------------------------------------------------------------------ %
+  % wblog_iteration
+
     if mod(itau,50)==1 && jid==1
        if olap
           f='%25s | %-16s | %-16s';
@@ -315,6 +317,8 @@ function [HAM,Iout]=sweepPsi_tmpo(HAM,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% updating neighboring pair of sites [k-1,k]
+
 function [HAM,Il,Ir,Ixt,Ixf]=update_trotter_2site(HAM,Il,Ir,k,sdir,varargin)
 
   if     isequal(sdir,'>>'), qdir=+1;

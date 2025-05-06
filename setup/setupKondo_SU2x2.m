@@ -36,6 +36,9 @@
   TK=TKondo; end
 
 % -------------------------------------------------------------------- %
+% operator setup
+% -------------------------------------------------------------------- %
+
   setdef('NC',1);
   param.NC=NC; o={'NC',NC,'-v'};
 
@@ -119,6 +122,8 @@
   ff=ff(2:end);
 
 % -------------------------------------------------------------------- %
+% apply B field // Wb,Jul13,13
+
   if isset('B')
      if numel(SS)<3 || dim(SS(end),'-op')~=1
         wbdie('invalid symmetry/spin setting for B!=0');
@@ -133,6 +138,9 @@
   end
 
 % -------------------------------------------------------------------- %
+
+% H0=H0+0*QSpace(contractQS(A0,[1 3],A0,[1 3],'conjA'));
+% irrelevant by now (plus calls skipzeros!) // Wb,Jul13,13
 
   op1=[]; op2=FF;
   if isset('B'), m=numel(FF); else m=1; end

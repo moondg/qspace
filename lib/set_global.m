@@ -46,6 +46,9 @@ function [dkt,dbg,isb]=set_global(iflag)
 end
 
 % -------------------------------------------------------------------- %
+% see also: (ismcc || isdeployed) for mcc-compiled routines!
+% Wb,Aug18,22
+
 function [dkt,dbg,isb]=check_ml_mode()
    dkt=0; dbg=0; isb=0;
    if usejava('Desktop'), dkt=1;

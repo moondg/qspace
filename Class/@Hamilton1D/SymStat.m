@@ -219,6 +219,8 @@ function [qq,nn,dd,dc]=SymStat(HAM,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% Wb,Oct03,16
+
 function q=qmat2cellstr(q)
 
     if ~isnumeric(q), wbdie('invalid usage'); end

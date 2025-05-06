@@ -43,6 +43,8 @@ function [dd,qq]=getzdim(A,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% getzdim for each record entry in QSpace
+
 function dd=getzdim_each(A,dim,pflag,xflag)
 
   if isempty(A.Q), dd=[]; return; end
@@ -92,6 +94,9 @@ function dd=getzdim_each(A,dim,pflag,xflag)
 end
 
 % -------------------------------------------------------------------- %
+% getzdim for unique qlabel set
+% Wb,Apr08,14
+
 function [dd,qq]=getzdim_unique(A,dim,pflag,xflag)
 
   if isempty(A.Q), dd=[]; qq=[]; return; end

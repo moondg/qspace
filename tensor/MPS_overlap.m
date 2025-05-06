@@ -13,7 +13,7 @@ function x=MPS_overlap(A,B)
   if s(1)~=1 || numel(s)>2
      wbdie('unexpected MPS QSpace array dimensions'); end
 
-  if nargin<2, B=A; % compute norm2(A) = <A|A> // tags: MPS_norm2()
+  if nargin<2, B=A;
   elseif ~isequal(s,size(B)), wbdie('MPS size mismatch'); end
 
   for k=L:-1:1,  if k==1, ic='*'; end

@@ -227,6 +227,8 @@ function [HAM,Iout]=initDMRG(HAM,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% add 0-sectors to HK if required // Wb,Apr20,14
+
 function Xk=fix_HK(Xk,k,dir)
 
    if ~isnumeric(dir), dir=check_dir(dir); end

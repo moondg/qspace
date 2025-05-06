@@ -499,9 +499,9 @@ class wbMatrix {
     };
 
     size_t maxRec(char lex=1, size_t *m=NULL) const;
-    size_t maxRec_float(char lex=1, size_t *m=NULL, T xref=-1) const {
-       return maxRec(lex,m);
-    };
+    size_t maxRec_float(char lex=1, size_t *m=NULL,
+       T xref QS_UNUSED_VAR =-1
+     ) const { return maxRec(lex,m); };
 
     T recMax(size_t r, size_t *k=NULL) const;
     T colMax(size_t c, size_t *k=NULL) const;
@@ -659,20 +659,22 @@ class wbMatrix {
        return (dim1==B.dim1 && dim2==B.dim2);
     };
 
-    WBINDEX& toIndex(WBINDEX &I, const WBINDEX *S=NULL) const { 
+    WBINDEX& toIndex(WBINDEX &I, const WBINDEX *S QS_UNUSED_VAR =NULL
+     ) const { 
        wblog(FL,"ERR %s() not defined for type '%s'",FCT,
        TSTR(T)); return I;
     };
 
     WBIDXMAT& toIndex2D(
-      const WBINDEX &S, const wbindex &ic, WBIDXMAT &IJ,
-      char pos=1 
+      const WBINDEX &S  QS_UNUSED_VAR,
+      const wbindex &ic QS_UNUSED_VAR, WBIDXMAT &IJ,
+      char pos          QS_UNUSED_VAR =1 
     ) const { 
        wblog(FL,"ERR %s() not defined for type '%s'",FCT,
        TSTR(T)); return IJ;
     };
 
-    wbMatrix& SkipTiny_float(T ref __attribute__ ((unused)) =-1) {
+    wbMatrix& SkipTiny_float(T ref QS_UNUSED_VAR =-1) {
        return *this;
     };
 
@@ -820,7 +822,7 @@ class wbMatrix {
     mxArray* toMxP_S() const; 
     mxArray* toMxP_C() const; 
 
-    mxArray* toMxT(char raw=0) const { return toMx(); }
+    mxArray* toMxT(char raw QS_UNUSED_VAR =0) const { return toMx(); }
 
     mxArray* mxCreateStruct(unsigned m, unsigned n) const;
     void add2MxStruct(mxArray *S, unsigned i, char tst=0) const;
@@ -922,7 +924,7 @@ class wbMatrix {
     void recSet(size_t k,
        const wbvector<T> &a, const wbindex &ia,
        const wbvector<T> &b, const wbindex &ib
-    ){ return recSet(a.data,ia,b.data,ib); };
+    ){ return recSet(k,a.data,ia,b.data,ib); };
 
     void recSet(size_t k,
        const T* a, const wbindex &ia,
@@ -1273,7 +1275,7 @@ class wbMatrix {
        wbperm P; return SortRecs(P,dir,lex);
     };
 
-    wbMatrix& sortRecs_float(wbperm &P, char dir=+1) {
+    wbMatrix& sortRecs_float(wbperm &P, char dir QS_UNUSED_VAR =+1) {
        P.init(dim1); return *this;
     };
     wbMatrix& sortRecs_float() { wbperm P; return sortRecs_float(P); };
@@ -2734,15 +2736,16 @@ void wbMatrix<T>::getReal(wbMatrix<double> &R) const {
 };
 
 template<class T>
-void wbMatrix<T>::getImag(wbMatrix<double> &I) const {
-   wblog(FL,"ERR wbMatrix::getImag not defined for type %s.",
-   TSTR(T));
+void wbMatrix<T>::getImag(wbMatrix<double> &I QS_UNUSED_VAR) const {
+   wblog(FL,"ERR wbMatrix::getImag not defined for type %s.",TSTR(T));
 };
 
 template<class T>
-void wbMatrix<T>::set(const wbMatrix<double> &R, const wbMatrix<double> &I) {
-   wblog(FL,"ERR wbMatrix::set(R,I) not defined for type %s.",
-   TSTR(T));
+void wbMatrix<T>::set(
+   const wbMatrix<double> &R QS_UNUSED_VAR,
+   const wbMatrix<double> &I QS_UNUSED_VAR
+ ) {
+   wblog(FL,"ERR wbMatrix::set(R,I) not defined for type %s.",TSTR(T));
 };
 
 template<class T> 

@@ -46,10 +46,8 @@ function [xz,yz,Iout]=findpeak(varargin)
   if ~isempty(ah), t=mfilename; xz={}; yz={};
      hh=findall(ah,'type','line'); nh=numel(hh); mark=ones(1,nh);
      for i=1:numel(hh), h=hh(i);
-      % do not include earlier fitted data by *this!
         if isequal(get(h,'Tag'),t), mark(i)=0;
         else
-         % also exclude marker sets or contour lines
            xd=get(h,'XData');
            if numel(xd)<=2 || any(diff(xd)<=0), mark(i)=0; end
         end
@@ -72,7 +70,7 @@ function [xz,yz,Iout]=findpeak(varargin)
           k=1; yd=varargin{k}; xd=1:length(yd);
      else k=2; xd=varargin{k-1}; yd=varargin{k};
      end
-    
+
      [xz,yz,pp]=findpeak_1(xd,yd,opts{:},varargin{k+1:end});
   end
 
@@ -83,7 +81,6 @@ function [xz,yz,Iout]=findpeak(varargin)
 
 end
 
-% -------------------------------------------------------------------- %
 % -------------------------------------------------------------------- %
 
 function [xz,yz,pp]=findpeak_1(xd,yd,xr,np,dk,ymin,wp,popts,varargin)
@@ -106,7 +103,6 @@ function [xz,yz,pp]=findpeak_1(xd,yd,xr,np,dk,ymin,wp,popts,varargin)
            nd=numel(yd); q=zeros(dk);
            q=sum(reshape(yd(1:nd-mod(nd,dk)),dk,[])',1);
            if wp>0
-              % searching for maximum => keep interleaved set with largest values
                 i=find(q==max(q),1);
            else i=find(q==min(q),1);
            end
@@ -185,7 +181,6 @@ function [xz,yz,pp]=findpeak_1(xd,yd,xr,np,dk,ymin,wp,popts,varargin)
         return
      end
      xd=xd(i); yd=yd(i);
-   % if pflag, plot(xd,yd,'m',ot{:}); end
   end
 
   nd=numel(xd);
@@ -196,8 +191,6 @@ function [xz,yz,pp]=findpeak_1(xd,yd,xr,np,dk,ymin,wp,popts,varargin)
   x1=avgdata(xd); n1=numel(x1);
   y1=diff(yd); s1=sign(y1);
 
-% peak might be given by two points at exactly the same height
-% (eg. when taking functional data!) // Wb,Mar17,18
   i=find(s1);
   if s1(1)==0, s1(1:i(1)-1)=s1(i(1)); end
   if s1(end)==0, s1(i(end)+1:end)=s1(i(end)); end
@@ -208,10 +201,10 @@ function [xz,yz,pp]=findpeak_1(xd,yd,xr,np,dk,ymin,wp,popts,varargin)
   end
 
   if wp==0
-       IZ=find(s1(1:end-1)~=s1(2:end)); % max or min
+       IZ=find(s1(1:end-1)~=s1(2:end));
   elseif wp>0
-       IZ=find(s1(1:end-1)> s1(2:end)); % max only
-  else IZ=find(s1(1:end-1)< s1(2:end)); % min only
+       IZ=find(s1(1:end-1)> s1(2:end));
+  else IZ=find(s1(1:end-1)< s1(2:end));
   end
 
   if ymin
@@ -221,8 +214,6 @@ function [xz,yz,pp]=findpeak_1(xd,yd,xr,np,dk,ymin,wp,popts,varargin)
   iw = (sign(y1(IZ)) - sign(y1(IZ+1)))/4 + 1.5;
 
   if 1
-   % take *more* data points than np+1
-   % (otherwise data may become badly conditioned)
      np_=ceil((np+1)/2)*[1 1];
   else
      if mod(np,2)
@@ -264,17 +255,12 @@ function [xz,yz,pp]=findpeak_1(xd,yd,xr,np,dk,ymin,wp,popts,varargin)
            end
            text(z,yz(k)+0.05*diff(ylim),s,to{:},ot{:},om{iw(k)}{:});
         end
-      % keyboard
      end
      p1(end)=p1(end)+x0;
      pp{end+1}=p1;
   end
 
-% keyboard
-
 end
 
 % -------------------------------------------------------------------- %
-% -------------------------------------------------------------------- %
-
 

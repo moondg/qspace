@@ -100,6 +100,9 @@ function C=mtimes(A,B,ia,ib)
 end
 
 % -------------------------------------------------------------------- %
+% in case of simple contaction of a pair of QSpace operators
+% (cf. QSpace/isop.m), fuse operator indices // Wb,Nov19,23
+
 function A=fuse_op_indices(A)
 
   t2=A.info.itags([2 4]); c2=zeros(1,2);

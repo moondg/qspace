@@ -106,6 +106,8 @@ function [isd,istr]=isdiag(A,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% Wb,Nov15,23
+
 function s=size_str(a)
    s=sprintf('x%d',size(a));
    if ~isempty(s), s=s(2:end); end

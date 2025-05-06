@@ -198,7 +198,7 @@ class wbvector {
 
     int init( 
        const char *F, int L, const mxArray *a, const char *istr=NULL,
-       char check_type __attribute__ ((unused)) =1,
+       char check_type QS_UNUSED_VAR =1,
        char ref=0
     ) { return init_Struct(F,L,a,istr,ref); };
 

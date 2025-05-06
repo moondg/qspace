@@ -1122,7 +1122,7 @@ wbMatrix<T>& wbMatrix<T>::rowTimes(size_t i, T x) {
 };
 
 template <class T>
-size_t wbMatrix<T>::skipNanRecs(wbindex &I) {
+size_t wbMatrix<T>::skipNanRecs(wbindex &I QS_UNUSED_VAR) {
    wblog(FL,"WRN %s() irrelevant for type <%s>",FCT,TSTR(T));
    return 0;
 }

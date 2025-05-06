@@ -212,6 +212,8 @@ header('%M :: x=%g, \Lambda=%g, z=%g, N = %g / %g',ximp,Lambda,z,N,Nmax);
 else ah=[]; end
 
  % --------------------------------------------- %
+ % actual 2-impurity case starting here // 2IMP
+ % --------------------------------------------- %
    [d0,d1]=get_star_helical(ximp,Lambda,z,Nmax,vflag);
 
    H0=diag([d0;d0;-d0;-d0]); 
@@ -514,6 +516,8 @@ end
 end
 
 % -------------------------------------------------------------------- %
+% --block-trafo // btrafo // Wb,Aug12,21
+
 function [alpha,beta]=block_trafo(Hb,varargin) 
 
    getopt('init',varargin);
@@ -573,6 +577,8 @@ function [alpha,beta]=block_trafo(Hb,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% plain 1-impurity case // Wb,Aug06,21
+
 function [d0,d1]=get_star_1(Lambda,z,Nmax,vflag)
 
   z=mod(z,1);
@@ -593,6 +599,10 @@ function [d0,d1]=get_star_1(Lambda,z,Nmax,vflag)
 end
 
 % -------------------------------------------------------------------- %
+% helical batch with two levels f0_eta
+% at the locations of the impurities at total distance ximp
+% Wb,Aug06,21
+
 function [d0,d1]=get_star_helical(ximp,Lambda,z,Nmax,vflag,ah)
 
   z=mod(z,1);

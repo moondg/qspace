@@ -1,6 +1,18 @@
 The following contains a history log of more significant changes.
 with newest entries shown first.
 
+## (re)reading ENV variables in QSpace mex-routines 
+
+`[04/15/2025]`
+Previously QSpace mex-routines checked / re-read QSpace specific
+environmental variables with every single call to the mex-routine.
+This has been reduced to re-checking at most once per second
+which thus is only relevant if a particular mex-routine is called
+rapidly many times within a second. The change was motivated
+by an observed slow-down in this regard for Linux environments.
+Acknowledgment Seung-Sup Lee / Geng-Dong Zhou (Seoul University).
+
+
 ## Added symmetries  `Aspin(:)` and `SU2spin(:)`
 
 `[03/03/2025]`

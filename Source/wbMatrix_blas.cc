@@ -562,13 +562,11 @@ inline void WbEigenSymmetric (
 
 template<class T>
 inline void GESVD_M(  
-   wbMatrix<T> &A,
-   wbMatrix<T> &U,
-   wbvector<double> &S,
-   wbMatrix<T> &Vt
-){
-   wblog(FL,"ERR GESVD_M not defined for datatype %s",TSTR(T));
-};
+   wbMatrix<T>      &A   QS_UNUSED_VAR,
+   wbMatrix<T>      &U   QS_UNUSED_VAR,
+   wbvector<double> &S   QS_UNUSED_VAR,
+   wbMatrix<T>      &Vt  QS_UNUSED_VAR
+){ wblog(FL,"ERR GESVD_M not defined for datatype %s",TSTR(T)); };
 
 template<>
 inline void GESVD_M(
@@ -659,7 +657,7 @@ inline void wbSVD(
 
 #ifdef SVD_BUG_SAFEGUARD 
    { double a=Wb::sqrt(A0.norm2()), s=Wb::sqrt(S.norm2()), e=fabs(a-s)/a;
-     if (e>1E-10) {
+     if (e>1e-10) {
         wblog(FL,"WRN %s() need to fix SVD bug: %dx%d @ e=%.3g !?",FCT,M,N,e);
      }
    }

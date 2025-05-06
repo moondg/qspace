@@ -23,6 +23,11 @@ function Sab=get_aklt_ops(S,naklt,waklt,sstr)
   if nargin<3, sstr='S'; end
 
 % -------------------------------------------------------------- %
+% NB! AKLT terms (as well as Heisenberg interactions between     %
+% different sites with different spin S require the contraction  %
+% Sa.Sb' with Sa!=Sb (!)  // Wb,Aug27,15                         %
+% -------------------------------------------------------------- %
+
   SS=permuteQS(contractQS(S,'3*',S,3),'2314');
   SX=SS;
 
