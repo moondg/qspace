@@ -1944,6 +1944,9 @@ function [S,Iout]=getLocalSpace_A4(varargin)
      'only supports trivial identity operator'],qloc); 
   end
 
+  if vflag
+     wblog('<i>','setting up A4-site'); end
+
   C=sprintf('%g;%g',qloc,qloc);
   C=SymStore('A4','-C',C);
 
@@ -1972,6 +1975,8 @@ function [S,Iout]=getLocalSpace_A4(varargin)
      Q.info.cgr(1).cgw=sqrt(3)*u;
      Y(i+2)=Q;
   end
+
+  for i=1:numel(Y), Y(i).info.otype='operator'; end
 
   S=Y(3); Iout.Y=Y;
 

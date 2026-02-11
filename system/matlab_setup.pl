@@ -24,26 +24,27 @@
 # since 'mex -setup' may use other C++ compiler anyway
 # => rather use cd Source && make test, instead
 
+  use strict; use warnings;
   use Cwd 'realpath';
+
+  $|=1;  # auto flush after every printf
 
   my $P=realpath($0); $P=~s/\/[^\/]*$//;
   require "$P/plib.pl";
 
   my $nerr=0; my $nwrn=0; my $vflag=1;
-  my ($q,$mver,$tflag, $ldflag,$clear);
+  my ($q,$mver,$tflag, $ldflag,@task);
 
   while (defined ($_=shift)) {
      if (/^-[h\?]$/) { die usage($0); }
      elsif (/^-(t)$/i) { $tflag+=($1 eq 'v'?1:2);  }
      elsif (/^-q$/) { $vflag=0; }
      elsif (/^-(ld)$/i) { $ldflag+=($1 eq 'ld'?1:2);  }
-     elsif (/^--clear$/) { ++$clear; }
+     elsif (/^-/) { push(@task,$_); }
      else { 
         die usage(__FILE__,__LINE__,"got extra arguments: ",$_,@ARGV);
      }
   }
-
-  $|=1;  # auto flush after every printf
 
 # -------------------------------------------------------------------- #
 # check MATLAB_ROOT and consistency with `which matlab`
@@ -51,14 +52,6 @@
   my ($matlab,$mex);
   my $mlr='MATLAB_ROOT';
   my $MLR=$ENV{$mlr};
-
-  if ($clear) {
-     my $ML=$ENV{MYMATLAB};
-     if ($MLR) { print join("\n", remove_paths('--bash','-q',$ML,
-        'PATH','LD_LIBRARY_PATH','XAPPLRESDIR'));
-     }
-     exit 0;
-  }
 
   chomp($matlab=`which matlab 2>/dev/null`);
   chomp($mex=`which mex 2>/dev/null`);
@@ -81,13 +74,26 @@
      }
   }}
 
+  if (@task>1) {
+     wbdie("invalid usage (multiple tasks: %s)",join(' ',@task));
+  }
+
+  foreach (@task) {
+     if (/^--clear$/) {
+        my $ML=$ENV{MYMATLAB};
+        if ($MLR) { print join("\n", remove_paths('--bash','-q',$ML,
+           'PATH','LD_LIBRARY_PATH','XAPPLRESDIR'));
+        }
+        exit 0;
+     }
+     elsif (/^--check$/) { exit check_ENV(); }
+  }
+
 # insist that `which matlab' exists and agrees with MATLAB_ROOT
   if (!$matlab) { ++$nerr; wblog(
-     "ERR command 'matlab' not available on PATH (see matlab_setup*.sh)");
-  }
+     "ERR command 'matlab' not available on PATH (see matlab_setup*.sh)"); }
   if (!$mex) { ++$nwrn; wblog(
-     "WRN command 'mex' not available on PATH (see matlab_setup*.sh)");
-  }
+     "WRN command 'mex' not available on PATH (see matlab_setup*.sh)"); }
 
   if (!$MLR) {
      if ($matlab) {
@@ -135,8 +141,8 @@
   if (!$nerr) {
   if (!$mver) { ++$nwrn; wblog(
      "ERR failed to derive matlab version from env\n$mlr = $MLR\n%s",
-     "this is required for MEX compilation, etc."); }
-  }
+     "this is required for MEX compilation, etc.");
+  }}
 
   if ($nerr) { exit 1; }
 
@@ -209,12 +215,12 @@
   print "\n";
 
   if ($MEX) {
-     export_frc('MEX',  $MEX);
-     export_frc('MYMEX',$MEX);
+     export_f('MEX',  $MEX);
+     export_f('MYMEX',$MEX);
   }
-  export_frc('MCC',$MCC);
+  export_f('MCC',$MCC);
 
-  $q=export_chk('MCC_BIN',"$MCC/$mcd");
+  $q=export_chk('MCC_BIN',"$MCC/$mar");
 
   if ($nerr) { exit 1; }
 
@@ -316,12 +322,43 @@ if (0) {
 
   export_plain('CG_VERBOSE',3);
 
-  if (@DEFS) {
-     $_=join(' -D','',@DEFS); s/\s+//g;
-     export_plain('WBDEFS',$_);
-  }
+# if (@DEFS) {
+#    $_=join(' -D','',@DEFS); s/\s+//g;
+#    export_plain('WBDEFS',$_);
+#  # print STDERR "WBDEFS = $_\n";
+# }
 
   set_limit_aux('-n', 4096);
+
+# -------------------------------------------------------------------- #
+# check basic environment assumed defined by earlier call to *this
+# Wb,Feb11,26
+
+sub check_ENV {
+
+   my ($v,$x,@ll);
+
+   $v='MATLAB_ROOT';
+   if (!$ENV{$v}) { push(@ll,"undefined ENV ".sprintf('%-12s (',$v).
+      ($matlab? "having $matlab" : "also command matlab undefined").")"); }
+
+   $v='MEX_R2018';
+   if (!$ENV{$v}) { push(@ll, "undefined ENV ".sprintf('%-12s ',$v).
+      "(auto-defined in system/matlab_setup.pl)"); }
+
+   $v='ARCH';
+   if (!$ENV{$v}) { push(@ll, "undefined ENV ".sprintf('%-12s ',$v).
+      "(auto-defined in system/matlab_setup.pl)"); }
+
+   if (@ll) {
+      select STDERR; my $Lsep='-' x70;
+      print "\e[31m  ",join("\n  ",'',@ll),"\e[0m\n";
+      $_=$0; s/.*(system)/[QSpace-repository\/] $1/;
+      die "  $Lsep\n  Please check QSpace environment (see Docs).\n".
+          "  Did you source $_?\n".
+          "  $Lsep\n\n";
+   };
+};
 
 # -------------------------------------------------------------------- #
 # LD_PRELOAD shim.so as suggested by mathworks support
@@ -383,11 +420,12 @@ sub export_chk {
 };
 
 # -------------------------------------------------------------------- #
-# export_frc(vname,value) - force export (possibly overwriting ENV)
+# export_f(vname,value) - force export (possibly overwriting ENV)
 
-sub export_frc {
-   if (@_!=2) { wbdie("export_frc() invalid usage",@_);  }
-   my $v=$_[0]; my $q=$ENV{$v}; if ($q && $q eq $_[1]) 
+sub export_f {
+   if (@_!=2) { wbdie("export_f() invalid usage",@_);  }
+   my $v=$_[0];
+   my $q=$ENV{$v}; if ($q && $q eq $_[1]) 
         { return export_plain($v,$q, 0); }
    else { return export_plain($v,$_[1]); }
 };

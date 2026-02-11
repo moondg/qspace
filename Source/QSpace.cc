@@ -943,7 +943,7 @@ void getQDimGen(
    if (int(rk)<=0) wblog(FL,"ERR got empty QSpaces (r=%d)",rk);
    cgflag&=1;
 
-   if (!I.len) I.Index(r_); 
+   if (!I) I.Index(r_); 
    else if (I.anyGE(r_)) wblog(FL,
      "ERR %s() index out of bounds (%s; %d)",FCT,STR((I+1)),r_);
 
@@ -1010,17 +1010,19 @@ void getQDimGen(
       if (cgflag) SC_->recSetP(i,SC.ref(i1));
       for (j=1; j<d; ++j, ++l) { i2=P[l];
          if (S0.recCompare(i1,i2)) {
-            sprintf_str(
-              "%s() data{} block size inconsistency (SC=%d)\n"
-              "A(%ld) @%ld <> A(%ld) @%ld: Q=[%s] D = %s / %s !?",FCT,cgflag,
-               II(i1,0)+1, II(i1,1)+1,
-               II(i2,0)+1, II(i2,1)+1, Q.rec2Str(i).data, 
+            sprintf_str("%s() inconsistent RMT dimension (%s, cg=%d)\n"
+              "   A(%ld).data{%d} @%ld\n"
+              "<> A(%ld).data{%d} @%ld: D=%s != %s having Q=[%s]",
+               FCT,STR(I),cgflag,
+               II(i1,0)+1, i1+1, II(i1,1)+1,
+               II(i2,0)+1, i2+1, II(i2,1)+1,
                S0.rec2Str(i1).data, 
-               S0.rec2Str(i2).data  
+               S0.rec2Str(i2).data, 
+               Q.rec2Str(i).data
             );
-            if (II(i1,0)==II(i2,0)) wblog(FL,"ERR %s\n"
-              "(specify explicit leg for non-hermitian objects?)",str);
-            else wblog(FL,"ERR %s",str);
+            if (II(i1,0)!=II(i2,0) || I.len==1)
+                 { wblog(FL,"ERR %s",str); }
+            else { wblog(FL,"ERR %s\n(specify explicit single leg?)",str); }
          }
          if (cgflag && SC.recCompare(i1,i2)) wblog(FL,
             "ERR %s() size inconsistency\nCGS: %d:%d <> %d:%d",

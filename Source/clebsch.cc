@@ -4200,22 +4200,18 @@ unsigned CRef<TQ>::rankS(char lflag) const {
 
 template <class TQ>
 unsigned CRef<TQ>::rank(const char *F, int L, char lflag) const {
-   if (cgb) {
-      unsigned r=cgb->rank();
+   unsigned r=0; 
+   if (cgb) { r=cgb->rank();
       if (!lflag) { unsigned m=cgb->getOM();
          if (!cgw || wdim1()>m) wblog(F_L,
-            "ERR %s() invalid cgw (%s /%d)",FCT,SSTR(cgw),m);
-         if (cgp.len && cgp.len!=r && cgp.len!=(r-1)) wblog(F_L,
-            "ERR %s() invalid cgp (len=%d/%d)",FCT,cgp.len,r
-         );
+         "ERR %s() invalid cgw (%s /%d)",FCT,SSTR(cgw),m);
+         if (cgp.len>r) wblog(F_L, 
+         "ERR %s() CRef::cgp out of bounds (len=%d/%d)",FCT,cgp.len,r);
       }
-      return r;
    }
-   else if (rtype==CR_CTR_SCALAR) { return 0; } 
-   else {
+   else if (rtype!=CR_CTR_SCALAR) 
       wblog(F_L,"ERR %s() unknown rank (since cref=NULL)",FCT);
-      return 0;
-   }
+   return r;
 };
 
 template <class TQ>

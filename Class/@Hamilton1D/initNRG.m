@@ -367,19 +367,20 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
 
         [i1,i2,Im]=matchIndex(Xk.AK.Q{1},EKt.Q{1});
         if isempty(i1), EKt, Xk.AK
-           wbdie('got symmetry sector mismatch !?');
+           wbdie('got symmetry sector mismatch');
         end
-
         if g>1 && NPsi1<=1 && maxS
            wblog('NB!','using symmetrized ground state space (--maxS)');
            u=repmat(1/sqrt(g),1,g);
            for i=1:numel(i1), j=i1(i);
-              Xk.AK.data{j}=contract(u,Xk.AK.data{j}(1:g,:,:),2,1);
+              s=size(Xk.AK.data{j}); s(1)=g;
+              Xk.AK.data{j}=contract(u,reshape(Xk.AK.data{j}(1:g,:),s),2,1);
            end
         else
            for i=1:numel(i1)
               j=i1(i); l=numel(EKt.data{i2(i)});
-              Xk.AK.data{j}=Xk.AK.data{j}(1:l,:,:);
+              s=size(Xk.AK.data{j}); s(1)=l;
+              Xk.AK.data{j}=reshape(Xk.AK.data{j}(1:l,:),s);
            end
         end
 

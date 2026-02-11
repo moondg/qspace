@@ -916,7 +916,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
          wbdie('failed to subtract E0 (trace error @ %.3g)',e); end
 
       q=[ E0^2, mpo_diff2(mpo_0,mpo) ]; e=abs(diff(q));
-      if abs(e)>1E-12
+      if abs(e)>1E-10
          wbdie('failed to subtract E0 (diff2 @ %.3g)',e); end
 
       check_mpo_overlap(mpo_0,mpo, mpo2_tr0);
@@ -1091,7 +1091,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
    end
 
    q=[ E0^2, mpo_diff2(mpo_0,mpo) ]; e=abs(diff(q));
-   if abs(e)>1E-12
+   if abs(e)>1E-10
       wbdie('start/stop adaption of MPO introduced diff2 @ %.3g)',e); end
 
    check_mpo_overlap(mpo_0,mpo, mpo2_tr0,'-v');

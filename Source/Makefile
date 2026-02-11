@@ -12,23 +12,12 @@
      MAKEFLAGS += -j $(MSLOTS)
   endif
 
-  ifndef MATLAB_ROOT
-     $(info )
-     $(warning MATLAB_ROOT not defined, \
-       having  "$(shell which matlab 2>/dev/null)")
-     issue_error = 1
-  endif
-
-  ifndef ARCH
-     $(warning ARCH not defined, having $(shell uname -sm))
-     issue_error = 1
-  endif
-
-  ifdef issue_error
-     $(info ------------ \
-            ----------------------------------------------------------------)
-     $(warning source system/setup_matlab.sh (or similar) to setup matlab environment)
-     $(error )
+#! make sure that system/matlab_setup.pl was run as part of
+#! the environmental setup -> enforce definitions of ENV variables:
+#! MATLAB_ROOT, ARCH, MEX_R2018
+  q := $(shell ../system/matlab_setup.pl --check; echo $$?)
+  ifneq ($(q),0)
+     $(error Please check QSpace environment)
   endif
 
   ifndef MXC_DIR
@@ -43,7 +32,6 @@
   OPTS = # actual (direct) mex compiler options
   XFLAGS = -Wall # goes into CXXFLAGS
   LFLAGS = # goes into LDFLAGS
-  XOPT =
   DEFS =
 
   I = -I.
@@ -54,30 +42,31 @@
 # NB! removed ML_GCC_VERSION since mex -setup may use C++ compiler
 # other than what is on the path via `which gcc' // Wb,Feb19,24
 
-  ifeq (,$(findstring mac, $(ARCH))) # linux environment
+  ifeq (maca,$(findstring maca, $(ARCH))) # mac on ARM // Wb,Jun11,25
+     GMP = /usr/local/lib/libgmp.dylib
+     MPF = $(MATLAB_ROOT)/bin/$(ARCH)/libmpfr.dylib
+     OMP = $(MATLAB_ROOT)/bin/$(ARCH)/libomp.dylib
+     ismac = 1
+
+  else ifeq (maci,$(findstring maci, $(ARCH))) # mac on Intel
+     GMP = /usr/local/lib/libgmp.dylib  # Wb,Oct19,20 / matlab/2020b
+     MPF = $(MATLAB_ROOT)/bin/maci64/libmpfr.1.dylib # Wb,Sep19,19
+     OMP = $(MATLAB_ROOT)/sys/os/$(ARCH)/libiomp5.dylib
+     ismac = 2
+
+  else # assume linux environment
+     GMP = -lgmp
+     MPF = $(MATLAB_ROOT)/bin/glnxa64/libmpfr.so.1
+     OMP = $(MATLAB_ROOT)/sys/os/$(ARCH)/libiomp5.so
+     ismac = 0
+
    # WRN! no comment with leading space for macos
    # otherwise the space is part of the value!
-     ismac = 0
      CLIBS += -lrt
      # required by clock_gettime() starting gcc6 [matlab/2018a]
      # (this option is gcc/linux specific, i.e., is not present for
      # clang on osx/mac at all; including it would result in error)
-     GMP = -lgmp
-     MPF = $(MATLAB_ROOT)/bin/glnxa64/libmpfr.so.1
-     OMP = $(MATLAB_ROOT)/sys/os/$(ARCH)/libiomp5.so
-     XOPT= CFLAGS="\$$CFLAGS -fopenmp -pthread"
-  else # macOS environment
-     ismac = 1
-     GMP = /usr/local/lib/libgmp.dylib  # Wb,Oct19,20 / matlab/2020b
-     MPF = $(MATLAB_ROOT)/bin/maci64/libmpfr.1.dylib # Wb,Sep19,19
-     OMP = $(MATLAB_ROOT)/sys/os/$(ARCH)/libiomp5.dylib
-     XOPT= CFLAGS="\$$CFLAGS -Xclang -fopenmp -pthread"
   endif
-
-  XOPT += CXXLIBS="\$$CXXLIBS $(OMP)"
-
-# avoid compiler warning on (invalid) target macOS version 10.14
-  XOPT += MACOSX_DEPLOYMENT_TARGET=12.0
 
   ifndef MPF_LIB
    # MPF_LIB = -lmpfr -lgmp
@@ -114,12 +103,28 @@
      XFLAGS += -O3
   endif
 
+  ifeq ($(ismac),0)
+     XFLAGS += -Wno-format-truncation
+     CFLAGS =
+  else
+     CFLAGS = -Xclang
+  endif
+
+  CFLAGS += -fopenmp -pthread
+
+  XOPT = CFLAGS="\$$CFLAGS $(CFLAGS)"
+
+# avoid compiler warning on (invalid) target macOS version 10.14
+  XOPT += MACOSX_DEPLOYMENT_TARGET=12.0
+
   ifdef XFLAGS
-     XOPT += CXXFLAGS="\$$CXXFLAGS $(XFLAGS)"
+     XOPT += CXXFLAGS="\$$CXXFLAGS $(XFLAGS)"  # works :)
   endif
   ifdef LFLAGS
-     XOPT += LDFLAGS="\$$LDFLAGS $(LFLAGS)"  # Wb,Apr24,20
+     XOPT += LDFLAGS="\$$LDFLAGS $(LFLAGS)"    # Wb,Apr24,20
   endif
+
+  XOPT = CXXLIBS="\$$CXXLIBS $(OMP)"
 
   ifdef VFLAG
      OPTS += '-v' # e.g. include by running: make ... VFLAG=1
@@ -174,7 +179,7 @@
      I += -I/usr/local/include # gmp.h, omp.h
   endif
 
- .SUFFIXES: .c .cc
+.SUFFIXES: .c .cc
 
   STD_DEP =
 

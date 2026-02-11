@@ -75,8 +75,8 @@ function S=init_ops(x_,varargin)
      if numel(xi.Q)==3 && isempty(xi.info.otype)
      xi.info.otype='operator'; end
 
-     S(i).op=QSpace(xi); d=getDimQS(xi); d=d(end,:); d(end+1:3)=1;
-     S(i).dop=d(3);
+     S(i).op=QSpace(xi); d=getDimQS(xi); d(:,end+1:3)=1;
+     S(i).dop=d(end);
 
      if nx>1
         if regexp(istr,'^[a-zA-Z]+$')
@@ -104,9 +104,10 @@ function S=init_ops(x_,varargin)
         wbdie('invalid rank-%g operator',r);
      end
 
-     if size(q,1)~=1
-        if qflag, s={'-->',''}; else s={'NB!','got '}; end
-        wblog(s{1},[s{2} 'composite `%s'''],S(i).info);
+     n=size(q,1);
+     if n~=1, d=d(:,end);
+        if diff(d), d=sprintf('%d/%d',d); else d=num2str(d(end)); end
+        wblog(' * ','non-irop `%s'' (d_ops=%s)',S(i).info,d);
      end
      S(i).qop=q;
 

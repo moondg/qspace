@@ -2059,8 +2059,12 @@ class tensorRef_ {
         if (!t_) { it.init(); }
         else {
            if (t_->len!=S.len) { unsigned r=t_->len;
-              if (r>S.len || r<2 || (r==2 && A.numOM(r)!=1)) { wblog(FL,
-                 "ERR %s() unexpected rank r=%d/%d (%s; %s)",
+              if (r==1) { wblog(FL, 
+                "ERR %s() rank mismatch r=%d/%d (%s vacuum state?) %s",
+                 FCT, r,S.len, SSTR(A), STR_(t_));
+              }
+              else if (r>S.len || (r==2 && A.numOM(r)!=1)) {
+                 wblog(FL,"ERR %s() rank mismatch r=%d/%d (%s) %s",
                  FCT, r,S.len, SSTR(A), STR_(t_));
               }
            }

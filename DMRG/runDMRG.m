@@ -1,30 +1,14 @@
-
 % ==================================================================== %
 % DMRG launch script / based on matlab class @Hamilton1D
-% AW (2014-2018)
+% AW (2014-2026)
 % ==================================================================== %
 
-if isset('CONT') % CONTINUE_DMRG
+if ~isset('CONTINUE_DMRG') % start new DMRG run (default)
 
-  l=length(NKEEP);
-  if isw==l
-	 wblog(' * ','using automated sqrt(2) increase in Nkeep');
-	 NKEEP=[NKEEP, round(NKEEP(end)*(2.^(1:CONT)/2))];
-  elseif isw>l
-	 error('Wb:ERR','\n   ERR invalid isw=%g/%g !?',isw,l);
-  end
-
-  isw1=isw+1; nsw=numel(NKEEP);
-
-  fprintf(1,'\n NKEEP = [ ...%s ] (%g)\n',...
-	 sprintf(' %g',NKEEP(isw1:end)),nsw);
-
-  CONT_=CONT; clear CONT
-
-else % !CONTINUE_DMRG
-
+% choose (default) system Hamiltonian by setting wsys (`which system')
+% setdef('wsys','Heisenberg')
   if ~isset('wsys')
-     wsys='Heisenberg';
+     wsys='HAM::Heisenberg';
      setdef('J2',0.25); s=sprintf('%s @ J2=%g',wsys,J2);
      banner('box',['running DMRG for default model: ' s]);
   end
@@ -54,13 +38,11 @@ else % !CONTINUE_DMRG
   end
 
 % tflag = test flag
-  setdef('use_endspins',0,'NPsi',0,'tflag',0); 
+  setdef('use_endspins',0,'tflag',0); 
 
 % threshold in weights to discard in reduced density matrix
 % i.e. singular values squared
   setdef('rtol',1E-24');
-
-  onrg={};
 
 % if not specified / left emtpy, this stores data in memory
 % (global workspace) rather than in a local file structure
@@ -72,8 +54,19 @@ else % !CONTINUE_DMRG
 
   switch wsys
   % ================================================================ %
+  % setup Heisenberg chain via external setup script (preferred)
     case {'Heisenberg'}
-  % ================================================================ %
+
+      oham=setopts('-','J?','nk1?','nk2?','Nspeed?','use_mem?',...
+         odir,'ftag?','vflag?','kflag?');
+      setdef('L',32);
+
+      [HAM,Ix]=setup_Heisenberg(L,oham{:});
+      structexp(Ix);
+
+  % ---------------------------------------------------------------- %
+  % setup Heisenberg chain via @Hamilton1D/setup_Heisenberg.m
+    case {'HAM::Heisenberg'}
     % determine default value for L from J if specified
       if ~isset('L') && isset('J'), l=length(J);
          if l>4 % keep l<=4 reserved for different interpretation
@@ -102,17 +95,15 @@ else % !CONTINUE_DMRG
       if isset('B'),  setopts(oham,B); end
       if isset('J2'), setopts(oham,J2); end
 
-      ofout={'fout',[odir '/DMRG_' wsys]};
+      ofout={'fout',[odir '/DMRG-' regexprep(wsys,'^HAM:*','')]};
 
       [HAM]=Hamilton1D('Heisenberg',oham,ofout{:});
 
       L=numel(HAM.mpo);
-      if tflag==2, wblog('TST','%g return',tflag); return; end
-
-      [H0]=initNRG(HAM,'Nkeep',Nkeep,'-v',onrg{:}); HAM
 
   % ================================================================ %
-    case 'Spin1-AKLT'
+  % setup via @Hamilton1D/setup_Heisenberg.m
+    case 'HAM::Spin1-AKLT'
   % ================================================================ %
 
       setdef('qloc',2); % by default: use spin S=1 (qloc=2S=2)
@@ -129,13 +120,7 @@ else % !CONTINUE_DMRG
       setdef('L',32,'nk1',2,'nk2',6);
       initNKEEP
 
-    % target multiple multiplets / states
-      if isset('NPsi') && NPsi>1, onrg={onrg{:},'NPsi',NPsi}; end
-      if isvar('Qtot')
-         onrg={onrg{:},'Qtot',Qtot};
-      end
-
-      oham={'qloc',qloc};
+      oham=setopts(qloc);
 
     % check for end-spins
       if isset('use_endspins') && qloc~=1, setdef('qend',1); end
@@ -157,67 +142,15 @@ else % !CONTINUE_DMRG
       else J=repmat([1],n,1); % plain Heisenberg chain
       end
 
-      ofout={'fout',[odir '/DMRG_' wsys]};
+      ofout={'fout',[odir '/DMRG-' regexprep(wsys,'^HAM:*','')]};
 
       [HAM]=Hamilton1D('Heisenberg',{J,'sym','SU2',oham{:}},ofout{:});
 
       L=numel(HAM.mpo);
-      if tflag==2, wblog('TST','%g return',tflag); return; end
-
-      [H0]=initNRG(HAM,'Nkeep',Nkeep,'-v',onrg{:}); HAM
 
   % ================================================================ %
-    case {'HBL-SU2'} % Heisenberg ladder
-  % ================================================================ %
-
-      sym='SU2'; qloc=[1];
-
-      if isvar('Jp') && numel(Jp)>1
-         if norm(diff(Jp))==0, Jp=Jp(1);
-         elseif numel(Jp)==2 && ~isset('Jp1') && ~isset('Jp2')
-            Jp1=Jp(1); Jp2=Jp(2); Jp_=Jp; clear Jp
-         else whos J*; error('Wb:ERR','\n   ERR invalid usage');
-         end
-      end
-
-    % NB! uniform ladder is in a gapped phase for Jp>0 (likely AKLT)
-    % Nkeep=60 multiplets => discareded weight < 1E-14 (!)
-    % <e0>=-1.150879399567(4) // Wb,Aug28,15
-
-      setdef('L',32,'nk1',3,'nk2',8);
-      initNKEEP
-
-      J=[1,1];
-      if isvar('Jp') && numel(Jp)==1, J(2)=Jp;
-      elseif isvar('Jp1') && isvar('Jp2')
-         if isset('perBC'), error('Wb:ERR',...
-           '\n   ERR invalid usage (Jp1/2 with perBC !?'); end
-         J=repmat(J,L,1);
-         J(:,2)=linspace(Jp1,Jp2,L);
-      end
-
-      ofout={'fout',[odir '/DMRG_' wsys]};
-      
-      if isset('L'), oham={L}; else oham={}; end
-      if isset('J'), oham={oham{:},'J',J}; end
-      if isset('perBC'), oham{end+1}='-perBC'; end
-
-      oham={oham{:},'sym',sym,'qloc',qloc};
-      if isset('qend'), oham={oham{:},'qend',qend}; end
-
-      onrg={'-v','Nkeep',Nkeep};
-      if isset('NPsi') && NPsi>1, onrg={onrg{:},'NPsi',NPsi}; end
-      if isvar('Qtot') % && ~isempty(Qtot),
-         onrg={onrg{:},'Qtot',Qtot};
-      end
-
-      [HAM]=Hamilton1D('HsbgLadder',oham,ofout{:});
-      if tflag==2, wblog('TST','%g return',tflag); return; end
-
-      [H0]=initNRG(HAM,onrg{:}); HAM
-
-  % ================================================================ %
-    case 'TBChain' % tight binding chain of 1 spinless flavor
+  % setup via @Hamilton1D/setup_tightbinding.m
+    case 'HAM::TBChain' % tight binding chain of 1 spinless flavor
   % ================================================================ %
 
       setdef('L',32,'nk1',3,'nk2',7); 
@@ -257,46 +190,16 @@ else % !CONTINUE_DMRG
       %    the accuracy is comparable
       % Wb,Sep21,17
 
-    % ofout={'fout',[odir '/DMRG_' wsys]};
+    % ofout={'fout',[odir '/DMRG-' regexprep(wsys,'^HAM:*','')] };
 
-      onrg={'Nkeep',Nkeep,'-v'};
-      if isset('NPsi') && NPsi>1
-           onrg={onrg{:},'NPsi',NPsi};
-      else onrg={onrg{:},'Qtot',[fix(NC*L/2), zeros(1,NC-1)]};
-      end  % assuming half-filling for Qtot
-
-      [HAM]=Hamilton1D('tightbinding',oham,ofout{:}); %,'t',t);
-      [H0]=initNRG(HAM,onrg{:}); HAM
+      [HAM]=Hamilton1D('tightbinding',oham,ofout{:});
 
       H=HAM.info.mpo.H; ee=eig(H);
       E0x=NC*sum(ee(find(ee<0))) / L;
 
   % ================================================================ %
-    case {'TBLadder'} % tight binding ladder
-  % ================================================================ %
-
-      setdef('L',32,'nk1',3,'nk2',7); 
-      initNKEEP
-
-      setdef('NC',1); % by default single (i.e. spinless) flavor
-
-      oham={L,'NC',NC};
-      if isset('perBC'),   oham{end+1}='-perBC'; end
-
-      ofout={'fout',[odir sprintf('/DMRG_TB%g_Ladder',NC)]};
-
-      [HAM]=Hamilton1D('tb_ladder',oham,ofout{:});
-
-      if tflag==2, wblog('TST','%g return',tflag); return; end
-
-      [H0]=initNRG(HAM,'Nkeep',Nkeep,'-v','Qtot',[NC*L, zeros(1,NC-1)]); HAM
-    % assuming half-filling => Qtot = (NC*L/2) x (2 for ladder)
-
-      H=HAM.info.mpo.H; ee=eig(H);
-      E0x=NC*sum(ee(find(ee<0))) / (2*L);
-
-  % ================================================================ %
-    case {'Hubbard'} % Hubbard lattice
+  % setup via @Hamilton1D/setup_Hubbard.m
+    case {'HAM::Hubbard'} % Hubbard lattice
   % ================================================================ %
 
       if isset('perBC')
@@ -316,24 +219,16 @@ else % !CONTINUE_DMRG
       if isset('use_spin' ), oham{end+1}='--spin'; s='S'; else s=''; end
       if isset('u1_charge'), oham{end+1}='--U1charge'; end
 
-      ofout={'fout',[odir sprintf('/DMRG_%sHub%g',s,NC)]};
-
-      onrg={'Nkeep',Nkeep,'-v'};
+      ofout={'fout',[odir sprintf('/DMRG-%sHub%g',s,NC)]};
 
 	% NB! cannot know/fix Qtot yet even for mu~0 since U
 	% may not be specified yet, e.g., by taking default value
 	% Qtot=[] => pick low-energy symmetry sector automatically
 	% [since in spinless case, charge accumulates]
-	  q=[]; if isset('Qtot'), q=Qtot; end
-      onrg={onrg{:},'Qtot',q};
-      if isset('NPsi') && NPsi>1, onrg={onrg{:},'NPsi',NPsi}; end
 
       [HAM]=Hamilton1D('Hubbard',oham,ofout{:});
 
       L=numel(HAM.mpo);
-      if tflag==2, wblog('TST','%g return',tflag); return; end
-
-      [H0]=initNRG(HAM,onrg{:}); HAM
 
       if HAM.info.param.U==0
          H=HAM.info.mpo.H; ee=eig(H);
@@ -341,19 +236,33 @@ else % !CONTINUE_DMRG
          if isset('use_spin'), E0x=2*E0x; end
       end
 
+  % ================================================================ %
     otherwise
     % any other wsys assumes that setup was performed in calller
     % e.g., by adapting one of the setups above in caller // Wb,Apr05,24
       if ischar(wsys), q=['''' wsys '''']; else q=sprintf('%g',wsys); end
       if isvar('HAM')
-           wblog(' * ','assuming user-defined setup (wsys=%s)',q); 
-      else wbdie('invalid switch (wsys=%s)',q); 
+           wblog(' * ','assuming existing HAM (user-defined setup, wsys=%s)',q);
+      else wbdie('invalid switch (wsys=%s, HAM not defined)',q); 
       end
+  end
+  
+% ==================================================================== %
+% tflag: for testing purposes
+
+  if tflag<2
+   % NPsi: target multiple multiplets / states
+     onrg=setopts(Nkeep,'--v','Qtot?');
+     if isset('NPsi') && NPsi>1
+          setopts(onrg,NPsi);
+     else setopts(onrg,'dQtotN?'); end
+
+     [H0,Inrg]=initNRG(HAM,onrg{:}); HAM
   end
 
 % ==================================================================== %
 
-  if savedat
+  if savedat && ~tflag
      if isset('mat_user') % e.g. job tag // Wb,Jan24,16
         mat=mat_user;
      elseif isset('mtag')
@@ -376,13 +285,32 @@ else % !CONTINUE_DMRG
   fprintf(1,[' => Total of %g sweeps at NKEEP =' s ' [%s ]\n\n'],...
      numel(NKEEP), sprintf(' %g',NKEEP));
 
-  if tflag<0, NKEEP=NKEEP(1);
+  if tflag<0, NKEEP=NKEEP(1); % run first DMRG sweep only
   elseif tflag
-     wblog('TST','%g return',tflag);
+     wblog('TST','tflag=%g - return',tflag);
      return
   end
 
-end % !CONTINUE_DMRG
+else % CONTINUE_DMRG
+
+  l=length(NKEEP);
+  if isw==l
+	 wblog(' * ','using automated sqrt(2) increase in Nkeep');
+	 NKEEP=[NKEEP, round(NKEEP(end)*(2.^(1:CONT)/2))];
+  elseif isw>l
+     wbdie('invalid isw=%g/%g',isw,l);
+  end
+
+  isw1=isw+1; nsw=numel(NKEEP);
+
+  fprintf(1,'\n NKEEP = [ ...%s ] (%g)\n',...
+	 sprintf(' %g',NKEEP(isw1:end)),nsw);
+
+% reenable CONTINUE_DMRG if DMRG should be continued later again
+  CONT_=CONTINUE_DMRG;   % for tracking purposes
+  clear CONTINUE_DMRG
+
+end % CONTINUE_DMRG
 
 % ==================================================================== %
 

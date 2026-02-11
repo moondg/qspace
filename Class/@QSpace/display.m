@@ -7,11 +7,14 @@ function display(A,varargin)
 %
 % Options
 %
-%    -a, -f    show (compact) listing of all QSpaces (-a=all, -f=full)
+%    -a,-v     show QSpace display for all entries in QSpace array
+%              i.e., no listing of 1-liner infos per QSpace
+%    -f        show full QSpace listing
 %              i.e., no dots ⋮ showing subset only (first, largest, last)
+%    -F,-A     both of the above
 %
-%    -c        compact mode (e.g, shows combined CGS dimensions only)
-%    -C        compact mode (print 1-linesr for each QSpace element)
+%    -x        expand CGT dimensions (rather than combined CGT dimensions only)
+%    -C        compact mode (print 1-liner for each element in QSpace array
 %    -v        verbose flag (in case of QSpace array, show detailed content 
 %              for all entries
 %
@@ -28,20 +31,31 @@ function display(A,varargin)
 %
 % Wb,Mar01,08
 
+% replaced option -c (compact CGT dimensions, by default)
+% by option -x to expand CGT dimensions // Wb,Feb13,26
+
   getopt('INIT',varargin);
      m  = getopt('m',[6 2 2]);
      nm = getopt('nm','');
 
-     vflag=1; cflag=0;
+   % combined cflag (compact) with vflag
+   % by making vflag a bit pattern // Wb,Jul17,23
+   % bit 1 ( 1) -> 1: show QSpace (=> vflag=0 shows 1-liner; former -C)
+   % bit 2 ( 2) -> 1: show leading newline
+   % bit 3 ( 4) -> 1: show trailing newline
+   % bit 4 ( 8) -> 0: show detailed CGT dimensions for every symmetry
+   % bit 5 (16) -> 0: show full QSpace listing (former -f flag)
+   % bit 6 (32) -> 0: show full QSpace array (former -a flag)
+     vflag=7;
 
-     if getopt('-v'), vflag=2;
-     elseif getopt('-c'), vflag=0;
-     elseif getopt('-C'), vflag=0;   cflag=2;
+     if     getopt('-v'), vflag=bitor(vflag,7+16);
+     elseif getopt('-V'), vflag=bitor(vflag,7+32);
+     elseif getopt('-x'), vflag=bitset(vflag,4);
+     elseif getopt('-C'), vflag=0;
+     elseif getopt('-f'), vflag=bitset(vflag,5);
+     elseif getopt('-a'), vflag=bitset(vflag,6);
+     elseif getopt('-A') || getopt('-F'), vflag=bitor(vflag,48);
      end
-
-     aflag=getopt('-a'); if ~aflag,
-     aflag=getopt('-f'); end
-     if aflag, m=Inf; end
 
      if     getopt('-E'), Eflag=1; os={'-E'};
      elseif getopt('-R'), Eflag=2; os={'-R'};
@@ -59,6 +73,8 @@ function display(A,varargin)
   elseif ~isempty(n), {nm,n}
      wbdie('invalid usage (name specified twice !?)')
   end
+
+  if bitget(vflag,5), m=Inf; end
 
   if Eflag
     [A,isd]=sort(A,os{:}); Eflag=isd;
@@ -83,8 +99,8 @@ function display(A,varargin)
   eflag=0;
 
   nl=''; nl_=''; n2=0;
-  if nA<=2 || bitand(vflag,2)
-     vflag=bitor(vflag,4);
+  if nA<=2 && bitand(vflag,15)
+     vflag=bitset(vflag,6);
      nl=char(10); if bitand(vflag,2), nl_='\n'; end
   end
 
@@ -94,7 +110,7 @@ function display(A,varargin)
        fmt=sprintf(' %%%dg',floor(log10(max(sA)))+1);
   else fmt=sprintf(',%%%dg',floor(log10(sA))+1); fmt(1)=' ';
   end
-  if ~isempty(nm) && bitand(vflag,4), fmt(1)=[]; end
+  if ~isempty(nm) && bitand(vflag,7), fmt(1)=[]; end
   fmt=regexprep(fmt,'%1g','%g');
 
   if use_tex
@@ -109,12 +125,12 @@ function display(A,varargin)
      else
         s={''};
      end
-     if cflag<2
+     if bitget(vflag,6)
           display_1(A,m,Eflag,use_tex,vflag,s{:});
      else info(A,s{:},'-C'); end
   elseif nA>1
      n2=2;
-     if vflag && nA>n2, fprintf(1,'\n'); end
+     if bitand(vflag,7)>1 && nA>n2, fprintf(1,'\n'); end
      ise=zeros(1,nA); ocr=zeros(1,nA); rr=zeros(nA,2); nl2=nl;
 
      for i=1:nA, 
@@ -132,7 +148,7 @@ function display(A,varargin)
         if i>1 && i<nA && all(ise(i-1:i+1))
            if ~eflag, fprintf(1,[nl_ '    :\n']); end % '\n...' : ┋┊
            eflag=eflag+1; continue;
-        elseif eflag, eflag=0; if vflag<2, nl2=''; end
+        elseif eflag, eflag=0; if bitand(vflag,7)<=1, nl2=''; end
         else nl2=nl; end
 
         iA=ind2sub_aux(sA,i); l=sum(nm=='%');
@@ -141,14 +157,13 @@ function display(A,varargin)
         else
            s=sprintf(fmt,iA);
            if isempty(nm), s=[s '. '];
-           elseif ~bitand(vflag,4), if numel(iA)==1
+           elseif ~bitget(vflag,32), if numel(iA)==1
                 s=regexprep(s,'^ ',''); end
                 s=[nm '(' s ') '];
            else s=[nm '(' s ') = ']; end
         end
         if ~ise(i)
-           if cflag<2 && ...
-               (bitand(vflag,2+4) || vflag && nA<=n2)
+           if bitget(vflag,6) || vflag && nA<=n2
                 display_1(A(i),m,Eflag,use_tex,vflag,s);
            else info(A(i),s,'-C',oc{:},lmax); end
         else fprintf(1,[nl2 '%s(empty)\n'],s); end
@@ -162,7 +177,7 @@ function display(A,varargin)
      end
   end
 
-  if bitand(vflag,4) && nA
+  if bitget(vflag,6) && nA
      q=[isempty(A(end).Q) isempty(A(end).data)];
      if ~q(1) || all(q), fprintf(1,'\n'); end
   elseif vflag && nA>n2, fprintf(1,'\n');
@@ -305,15 +320,15 @@ function display_1(A,m,Eflag,use_tex,vflag,varargin)
         for j=isym, sc{j}=cgr_size(A,i,j); end
         sc=cat2(1,sc{isym},{1}); sc(:,end+1:r)=1; sa(end+1:r)=1;
 
-        if ~vflag
-           sc=prod(sc,1);
-           s2=sprintf(sfmt{2},dim_to_str(sc,r));
-        else
+        if bitget(vflag,4)
            n=size(sc,1); s2=cell(1,n);
            for j=1:n
               s2{j}=dim_to_str(sc(j,:),r);
            end
            s2=sprintf([' ' sfmt{2}],s2{:}); s2=s2(2:end); % ' x%6s'
+        else
+           sc=prod(sc,1);
+           s2=sprintf(sfmt{2},dim_to_str(sc,r));
         end
 
         sout{l}=sprintf(['%6d.  ' sfmt{1} ' | %s' ],i,s1,s2);

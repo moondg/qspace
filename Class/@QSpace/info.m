@@ -108,7 +108,11 @@ function info_1line(A,vstr,cflag,ocflag,lmax)
            qop=uniquerows(A.Q{3});
            if size(qop,1)==1
               q=['irop [' sprintf(getqfmt(A),qop) ']'];
+           elseif numel(qop)<4
+              q=['op ' mat2str(qop) ];
            end
+           d=getDimQS(A); d=d(1,end);
+           if d~=1, q=[q '_' num2str(d)]; end
         end
         sx{end+1}=q;
      end
