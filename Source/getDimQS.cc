@@ -31,15 +31,15 @@ void mexFunction(
     try { mxIsQSpace(FL,argin[0],'c'); }
     catch (...) {
        if (str[0]) printf("\n%s\n\n",str);
-       wblog(FL,"ERR input not a valid QSpace object.");
+       wblog(FL,"ERR invalid QSpace input");
     }
 
     if (mxIsQSpace(argin[0])>0) { 
-       const QSpace<gTQ,gTD> A(argin[0],'r',0); 
+       const QSpace<gTQ,gTD> A(argin[0],'r',0,0); 
        A.getDim(D,&D2); cgflag=A.gotCGS(FL);
     }
     else {
-       const QSpace<gTQ,wbcomplex> A(argin[0],'r',0); 
+       const QSpace<gTQ,wbcomplex> A(argin[0],'r',0,0); 
        A.getDim(D,&D2); cgflag=A.gotCGS(FL);
     }
 

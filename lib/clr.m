@@ -81,13 +81,12 @@ function [u0,i]=clear_fields(u0,varargin)
   for k=1:numel(varargin), f0=varargin{k};
      if isfield(u0,f0), u1=getfield(u0,f0);
         if isstruct(u1), j=0;
-           for f1=fieldnames(u1)', f1=f1{1};   q =getfield(u1,f1)
+           for f1=fieldnames(u1)', f1=f1{1};   q =getfield(u1,f1);
               if isnumber(q) && q,             u1=setfield(u1,f1, 0); j=j+1;
               elseif iscell(q) && ~isempty(q), u1=setfield(u1,f1,{}); j=j+1;
               end
            end
            if j,                           u0=setfield(u0,f0,u1); i=i+j; end
-           u1
         elseif isnumber(u1) && u1,         u0=setfield(u0,f0, 0); i=i+1;
         elseif iscell(u1) && ~isempty(u1), u0=setfield(u0,f0,{}); i=i+1;
         end

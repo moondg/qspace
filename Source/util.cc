@@ -28,6 +28,55 @@
 // and so compiler complains that MPFR routine got double // Wb,Jul05,22
 /* -------------------------------------------------------------------- */
 
+inline char Wb::conj2bool(char c) {
+   if (c<0) {
+      if (c<-1)
+           { wblog(FL,"ERR %s() got c=%d",FCT,c); }
+      else { wblog(FL,"WRN %s() got c=%d",FCT,c); c=abs(c%2); }
+   }
+   else {
+      if (c>=8) {
+         if (c=='*' || c=='1') { c=1; } else
+         if (c==' ' || c=='0') { c=0; } else
+         wblog(FL,"ERR %s() invalid c=%s",FCT,cSTR(c));
+      }
+      c%=2;
+   }
+   return c;
+};
+
+inline void Wb::conj_add_z2(char &conj, char dc) { 
+   if (dc) {
+      if (dc==1 || Wb::conj2bool(dc)) {
+         if (conj<0 || conj>8) { conj=Wb::conj2bool(conj); }
+         conj=((conj+1)%2);
+      }
+   }
+};
+
+template<class T>
+inline T Wb::z2ferm2sign(T z2) {
+   if (z2<0 || z2>=8) wblog(FL,"ERR %s() got z2 = %g",FCT,double(z2));
+   return (z2 = (z2%2) ? -1 : +1); 
+};
+
+template<class T>
+inline void Wb::z2ferm2sign(T* z2, unsigned len) {
+   if (len) {
+      if (!z2) wblog(FL,"ERR %s() got z2=%p",FCT,z2);
+      for (unsigned i=0; i<len; ++i) {
+         if (z2[i]<0 || z2[i]>=8) wblog(FL,
+            "ERR %s() got z2[%d/%d] = %g",FCT,i,len,double(z2[i]));
+         z2[i] = (z2[i]%2) ? -1 : +1;
+      }
+   }
+};
+
+template<class T>
+inline void Wb::z2ferm2sign(wbvector<T> &z2) {
+   z2ferm2sign(z2.data,z2.len);
+};
+
 int Wb::Rational( 
    double &x0,          
    long &P, long &Q,    
@@ -43,9 +92,9 @@ int Wb::Rational(
 
    char vflag
 ){
-   unsigned i; int err=0;
-   long p[niter+2], q[niter+2];
-   double e,xi,r=0, x=x0, a[niter+1];
+   unsigned i; int err=0; double e,xi, r=0, x=x0;
+   wbvec<long> p(niter+2), q(niter+2);
+   wbvec<double> a(niter+1);
 
    if (eps<eps2 || eps2<=0) wblog(FL,
       "ERR %s() invalid eps=%g, eps2=%g",FCT,eps,eps2);
@@ -72,7 +121,7 @@ int Wb::Rational(
    if (::fabs(xi-x)<eps) {
       P=p[1]; Q=q[1];
       if (dx) { (*dx)=::fabs(xi-x); }
-      if (nmax) { (*nmax)=0; }; if (aa) { aa->init(1,a); }
+      if (nmax) { (*nmax)=0; }; if (aa) { aa->init(1,a.data); }
       x0=xi; return 0;
    }
 
@@ -113,7 +162,7 @@ int Wb::Rational(
    }
 
    if (dx) (*dx)=r;
-   if (aa) aa->init(i,a);
+   if (aa) aa->init(i,a.data);
    if (nmax) (*nmax)=i;
 
    if (!err) x0=xi;
@@ -171,11 +220,11 @@ double Wb::FixRational(
    if (a>1) { epsi*=a; }
 
    for (i=0; i<n; ++i) { a=Ai=A[i]; e2=-1;
-       e1=Rational(a,p,q,&r,&m,NULL,niter,pqmax,eps,eps2,vflag>1);
+       e1=Rational(a,p,q,&r,&m,nullptr,niter,pqmax,eps,eps2,vflag>1);
 
        if (rflag && (e1 || abs(p)>999 || abs(q)>999)) {
           if ( (a2=Ai2=Ai*Ai) > eps) {
-		  e2=Rational(a2,p2,q2,&r2,&m2,NULL,niter,pqmax,
+		  e2=Rational(a2,p2,q2,&r2,&m2,nullptr,niter,pqmax,
 			 a2<0.01 ? eps *::fabs(Ai) : eps,
 			 a2<0.01 ? eps2*::fabs(Ai) : eps2, vflag>1);
 		  }
@@ -213,7 +262,7 @@ double Wb::FixRational(
           wblog(FL,"TST %s() pqmax=%ld, eps=%g, eps2=%g,niter=%d",
             FCT,pqmax,eps,eps2,niter);
           double a2=Ai*Ai; 
-          Rational(a2,p2,q2,&r2,&m2,NULL,niter,pqmax,eps,eps2,'v');
+          Rational(a2,p2,q2,&r2,&m2,nullptr,niter,pqmax,eps,eps2,'v');
        }
        d2=r*r; err2+=d2; if (r2max<d2) { r2max=d2; }
        A[i]=a;
@@ -251,11 +300,11 @@ wbstring Wb::rat2Str(
    int e1, e2=-1; unsigned m,m2; long q, p2,q2;
    double r,r2, d_=d, d2, d2_, a=::fabs(d); if (a>1) { eps*=a; }
 
-   e1=Rational(d,p,q,&r,&m,NULL,niter,pqmax,eps,eps2,vflag>1);
+   e1=Rational(d,p,q,&r,&m,nullptr,niter,pqmax,eps,eps2,vflag>1);
 
    if (e1 || abs(p)>999 || abs(q)>999) { 
       if ((d2_=d_*d_)>eps) { d2=d2_;
-      e2=Rational(d2,p2,q2,&r2,&m2,NULL,niter,pqmax,
+      e2=Rational(d2,p2,q2,&r2,&m2,nullptr,niter,pqmax,
          d2<0.01 ? eps *a : eps,
          d2<0.01 ? eps2*a : eps2, vflag>1
       );
@@ -343,8 +392,8 @@ inline wbstring Wb::size2Str(
 ){
    if (!n) { return "0"; } 
 
-   unsigned l=0, m=16; size_t x;
-   char s[m], ustr[8], fmt[m];
+   size_t x;
+   wbvec<char> s(16), fmt(16); char ustr[8];
 
    x=size_t(1)<<30; if (n>x) { strcpy(ustr,"GB"); } else {
    x=size_t(1)<<20; if (n>x) { strcpy(ustr,"MB"); } else {
@@ -352,22 +401,22 @@ inline wbstring Wb::size2Str(
    x=size_t(1);                strcpy(ustr,"bytes"); }}}
 
    if (p<1 || p>9) {
-      if (p=='c') { p=2; } 
-      else p=3;
+      if (p=='c')
+           { p=2; } 
+      else { p=3; }
    }
+   if (p>5)
+        { fmt.catf(0,0,"%%.%dg %%s",  p); }
+   else { fmt.catf(0,0,"%%.%dg%%1.1s",p); } 
 
-   if (p>5) { snprintf(fmt,16,"%%.%dg %%s",p); }
-   else { snprintf(fmt,16,"%%.%dg%%1.1s",p); } 
-   l=snprintf(s,m,fmt,n/x,ustr);
+   s.catf(FL,fmt.data,n/x,ustr);
 
-   if (l>=m) wblog(FL,
-      "ERR %s() string out of bounds (%d/%d)",FCT,l,m);
-   return s;
+   return s.data;
 };
 
 inline const char* Wb::filename(const char *s) { 
 
-   if (s==NULL) { wblog(FL,"WRN %s() got NULL string",FCT); }
+   if (s==nullptr) { wblog(FL,"WRN %s() got nullptr string",FCT); }
    else {
       for (int i=strlen(s)-1; i>=0; --i) {
       if (s[i]=='/' || s[i]=='\\') return (s+i+1); }
@@ -387,9 +436,9 @@ double Wb::GET_mtime(const char *F, int L, const char *f, const struct stat &S) 
 
    if (S.st_mtimespec.tv_nsec>1E9) wblog(F,L,
       "WRN %s%s got mtime %ld @ %.3g", f?f:"", f?"()":"",
-      S.st_mtimespec.tv_sec, 1E-9*S.st_mtimespec.tv_nsec
+      S.st_mtimespec.tv_sec, 1e-9*S.st_mtimespec.tv_nsec
    );
-   return (S.st_mtimespec.tv_sec + 1E-9*double(S.st_mtimespec.tv_nsec));
+   return (S.st_mtimespec.tv_sec + 1e-9*double(S.st_mtimespec.tv_nsec));
 };
 
 #else
@@ -398,9 +447,9 @@ double Wb::GET_mtime(const char *F, int L, const char *f, const struct stat &S) 
 
    if (S.st_mtim.tv_sec!=S.st_mtime || S.st_mtim.tv_nsec>1E9)
       wblog(F,L,"WRN %s() got difference in mtime (%ld @ %.3g)",
-      f?f:"",S.st_mtim.tv_sec, S.st_mtime, 1E-9*S.st_mtim.tv_nsec
+      f?f:"",S.st_mtim.tv_sec, S.st_mtime, 1e-9*S.st_mtim.tv_nsec
    );
-   return S.st_mtim.tv_sec + 1E-9*double(S.st_mtim.tv_nsec);
+   return S.st_mtim.tv_sec + 1e-9*double(S.st_mtim.tv_nsec);
 };
 
 #endif
@@ -411,9 +460,9 @@ double Wb::GET_atime(const char *F, int L, const char *f, const struct stat &S) 
 
    if (S.st_atimespec.tv_nsec>1E9) wblog(F,L,
       "WRN %s%s got atime %ld @ %.3g", f?f:"", f?"()":"",
-      S.st_atimespec.tv_sec, 1E-9*S.st_atimespec.tv_nsec
+      S.st_atimespec.tv_sec, 1e-9*S.st_atimespec.tv_nsec
    );
-   return S.st_atimespec.tv_sec + 1E-9*double(S.st_atimespec.tv_nsec);
+   return S.st_atimespec.tv_sec + 1e-9*double(S.st_atimespec.tv_nsec);
 };
 
 #else
@@ -422,9 +471,9 @@ double Wb::GET_atime(const char *F, int L, const char *f, const struct stat &S) 
 
    if (S.st_atim.tv_sec!=S.st_atime || S.st_atim.tv_nsec>1E9)
       wblog(F,L,"WRN %s() got difference in atime (%ld @ %.3g)",
-      f?f:"",S.st_atim.tv_sec, S.st_atime, 1E-9*S.st_atim.tv_nsec
+      f?f:"",S.st_atim.tv_sec, S.st_atime, 1e-9*S.st_atim.tv_nsec
    );
-   return S.st_atim.tv_sec + 1E-9*double(S.st_atim.tv_nsec);
+   return S.st_atim.tv_sec + 1e-9*double(S.st_atim.tv_nsec);
 };
 
 #endif
@@ -435,9 +484,9 @@ double Wb::GET_ctime(const char *F, int L, const char *f, const struct stat &S) 
 
    if (S.st_ctimespec.tv_nsec>1E9) wblog(F,L,
       "WRN %s%s got ctime %ld @ %.3g", f?f:"", f?"()":"",
-      S.st_ctimespec.tv_sec, 1E-9*S.st_ctimespec.tv_nsec
+      S.st_ctimespec.tv_sec, 1e-9*S.st_ctimespec.tv_nsec
    );
-   return S.st_ctimespec.tv_sec + 1E-9*double(S.st_ctimespec.tv_nsec);
+   return S.st_ctimespec.tv_sec + 1e-9*double(S.st_ctimespec.tv_nsec);
 };
 
 #else
@@ -446,9 +495,9 @@ double Wb::GET_ctime(const char *F, int L, const char *f, const struct stat &S) 
 
    if (S.st_ctim.tv_sec!=S.st_ctime || S.st_ctim.tv_nsec>1E9)
       wblog(F,L,"WRN %s() got difference in ctime (%ld @ %.3g)",
-      f?f:"",S.st_ctim.tv_sec, S.st_ctime, 1E-9*S.st_ctim.tv_nsec
+      f?f:"",S.st_ctim.tv_sec, S.st_ctime, 1e-9*S.st_ctim.tv_nsec
    );
-   return S.st_ctim.tv_sec + 1E-9*double(S.st_ctim.tv_nsec);
+   return S.st_ctim.tv_sec + 1e-9*double(S.st_ctim.tv_nsec);
 };
 
 #endif
@@ -505,14 +554,15 @@ wbstring Wb::hostname(unsigned len) {
 
    wbstring s(MAX(16U,len)); 
    int e=gethostname(s.data,s.len);
+   unsigned i=0;
 
-   if (e && errno==ENAMETOOLONG) { unsigned i=0;
+   if ((e && errno==ENAMETOOLONG) || !isalpha(s[0])) {
       for (; i<s.len; ++i) {
          if (s.data[i]=='.') { s.data[i]=0; break; }
       }
       if (i && i<s.len) { e=0; } 
    }
-   if (e) { unsigned i=0;
+   if (e) {
       for (; i<s.len; ++i) {
          if (!isprint(s.data[i])) { s.data[i]=0; break; }
       }
@@ -529,14 +579,15 @@ wbstring Wb::hostid(char pflag) {
 
    wbstring hid=hostname(pflag ? 24 : 16); 
 
-   unsigned i=0, k=0, n=hid.len; char *s=hid.data;
-   if (!n || !s[0] || !isalpha(s[0])) {
+   unsigned i=0, k=0, n=hid.len; char hflag=1, *s=hid.data;
+   if (!n || !s[0] || !isalnum(s[0])) {
       wblog(FL,"WRN %s() received hostname `%s'",FCT,s);
       return hid;
    }
+   if (!isalpha(s[0])) { hflag=0; } 
 
    for (; i<n; ++i) {
-      if (s[i]=='-') { k=i+1; } else
+      if (hflag && s[i]=='-') { k=i+1; } else
       if (s[i]=='.') { if (i>4 && k+3<i) { s[i]=0; n=i; break; }} else
       if (!s[i]) { n=i; break; }
    }
@@ -655,9 +706,21 @@ int Wb::dstrlen_utf8(const char *s) {
 };
 
 template <class T>
-wbstring Wb::bits(const T &x, char compact) {
-   wbstring s_; 
-   int i, j=0, n=sizeof(T), l=9*n; { s_.init(l); if (!l) return s_; }
+wbvec<char> Wb::bits(const T &x, char compact) {
+   wbvec<char> s_;  
+   int n=sizeof(T);
+
+   if (!x ) { s_.init(8).catf(0,0,"%d",int(x)); }
+   if (x<0) { if (x>T(-8)) { s_.init(8).catf(0,0,"%ld",long(x)); }}
+   else if (compact) { long xl=x;
+      if (n==1) { char x_=x; if (x_<0 && x_>   -8) { xl=x_; }} else
+      if (n==4) { int  x_=x; if (x_<0 && x_> -128) { xl=x_; }} else
+      if (n==8) { long x_=x; if (x_<0 && x_>-1024) { xl=x_; }}
+      if (xl<0) { s_.init(8).catf(0,0,"%ld",xl); }
+   }
+   if (s_) { return s_; }
+
+   int i, j=0, l=9*n; { s_.init(l); if (!l) return s_; }
    char *s; unsigned char c;
    const char *sx = (char*)(&x);
 
@@ -665,11 +728,42 @@ wbstring Wb::bits(const T &x, char compact) {
       for (i=0; i<n; ++i) { if (sx[i]) j=i; }
       n=j+1; l=9*n;
    }
-   s=s_.data+l-1; s[0]=0;
+   s=s_.data+l-1; s[0]=0; 
 
    for (i=0; i<n; ++i, s-=9) { c=sx[i];
       for (j=1; j<=8; ++j, c>>=1) { s[-j]=(c&1 ? '1' : '-'); }
       if (i+1<n) s[-j]=' ';
+   }
+
+   return s_;
+};
+
+template <class T>
+wbvec<char> Wb::Bits(const T &x, char compact) {
+   wbvec<char> s_; 
+
+   unsigned i, j=0, l=0, m,n=sizeof(T);
+   unsigned char c;
+   const char *sx = (char*)(&x);
+
+   for (i=0; i<n; ++i) { if ((c=sx[i])) {
+      for (j=0; j<8; ++j, c>>=1) { if (c&1) ++l; }
+   }}
+
+   if (l>=2*n) { return s_=Wb::bits(x,compact); } 
+
+   if (!l) { s_=""; }
+   else {
+      s_.init(3*l+8); s_=(l==1? "bit ":"bits ");
+
+      for (l=m=i=0; i<n; ++i) {
+         if (!sx[i]) { l+=8; } else { c=sx[i];
+            for (j=0; j<8; ++j, c>>=1, ++l) { if (c&1) {
+               if (++m>1) { s_.append(','); }
+               s_.catf(FL,"%d",l); 
+            }}
+         }
+      }
    }
 
    return s_;
@@ -699,49 +793,46 @@ bool Wb::is_finite(const wbcomplex *x, size_t n) {
 
 wbstring cpu_time::toStr(char flag) {
 
-   size_t l=0, n=32; char tstr[n];
+   wbvec<char> tstr(32);
 
    cpu_time dt=since();
    double t=(flag=='c' ? dt.tcpu : dt.tsys);
+   int e=0;
 
    if (t<0) {
       wblog(FL,"WRN %s() got negative time (%ld)",FCT,long(t)); t=-t; }
 
-   if (t<60) {
-      l=snprintf(tstr,n,"%.4g sec",t); }
-   else if (t<1E14) {
+   if (t<60) { tstr.catf(0,0,"%.4g sec",t); } else
+   if (t<1e14) {
       int s,m,h,d; long x=t,
       fac=24*3600; d=t/fac; x-=d*fac;
       fac=3600;    h=x/fac; x-=h*fac;
       fac=60;      m=x/fac; x-=m*fac; s=x; x-=s;
 
-      if (d)
-           l=snprintf(tstr,n,"%d-%02d:%02d:%02d",d,h,m,s);
-      else if (h || m>9)
-           l=snprintf(tstr,n,   "%02d:%02d:%02d",  h,m,s);
-      else l=snprintf(tstr,n,        "%02d:%02d",    m,s);
+      if (d)        tstr.catf(0,0,"%d-%02d:%02d:%02d",d,h,m,s); else
+      if (h || m>9) tstr.catf(0,0,   "%02d:%02d:%02d",  h,m,s);
+      else          tstr.catf(0,0,        "%02d:%02d",    m,s);
 
-      if (t>2E9) l=-l; 
+      if (t>2e9) { e=1; }
    }
-   else {
-      l=snprintf(tstr,n,"(WRN %.3g yrs (%ld sec))",
-      t/(3600*24*365), long(t));
-      l=-l; 
+   else { e=2;
+      tstr.catf(0,0,"(WRN %.3g yrs (%ld sec))", t/(3600*24*365), long(t));
    }
 
-   if (l>=n) {
+   if (e || tstr.check_bounds()<0) {
      long tl=(flag=='c' ? dt.tcpu : dt.tsys);
      double yrs=double(tl)/(3600*24*365);
      wblog(FL, 
-        "WRN cpu_time() %s `%s'\n'%c' dt=%ld => %.12g yrs (%d) !?\n"
+        "WRN cpu_time() %s `%s'\n'%c' dt=%ld => %.12g yrs (l=%ld) !?\n"
         "%15.12g %15.12g %% now [CPU/SYS]\n"
         "%15.12g %15.12g %% then",
-        int(l)<0 ? "possibly invalid CPU time":"string out of bounds\n",
-        tstr, flag,tl,yrs,l, dt.time('c'), dt.time('s'), tcpu, tsys
+        e ? "possibly invalid CPU time":"string out of bounds\n",
+        tstr.data, flag,tl,yrs,tstr.l,
+        dt.time('c'), dt.time('s'), tcpu, tsys
      );
    }
 
-   return tstr;
+   return tstr.data;
 };
 
 #ifdef __APPLE__
@@ -806,7 +897,7 @@ size_t Wb::getProcSize(const char *tag, const pid_t &p) {
 
 size_t Wb::getProcSize(const char *tag, const char *f) {
 
-   char *s, *line=NULL, u[8];
+   char *s, *line=nullptr, u[8];
    size_t val; unsigned i=0, m=0; size_t len=0; ssize_t n;
 
    static unsigned ncall=0;
@@ -833,8 +924,8 @@ size_t Wb::getProcSize(const char *tag, const char *f) {
       }
    }
 
-   if (line) { free(line); line=NULL; }
-   fclose(fid); fid=NULL;
+   if (line) { free(line); line=nullptr; } 
+   fclose(fid); fid=nullptr;
 
    if (!m) wblog(FL,"WRN %s() '%s' not found in %s",FCT,tag,f);
 
@@ -843,11 +934,11 @@ size_t Wb::getProcSize(const char *tag, const char *f) {
 
 long Wb::getCpuInfo(const char *tag, const char *f) {
 
-   char *s, *line=NULL;
+   char *s, *line=nullptr;
    int m=0, val=0, i=0, vmax=-1; size_t len=0; ssize_t n;
 
    FILE *fid=fopen(f,"r");
-   if (fid==NULL) {
+   if (fid==nullptr) {
       wblog(FL,"WRN failed to access %s '%s'",f?f:"",tag?tag:"");
       return 0;
    }
@@ -866,8 +957,8 @@ long Wb::getCpuInfo(const char *tag, const char *f) {
    }
    else wblog(FL,"ERR %s() invalid tag %s -> %s",FCT,f,tag);
 
-   if (line) { free(line); line=NULL; }
-   fclose(fid); fid=NULL;
+   if (line) { free(line); line=nullptr; }
+   fclose(fid); fid=nullptr;
 
    if (!m) wblog(FL,"WRN %s() '%s' not found in %s",FCT,tag,f);
 
@@ -885,7 +976,7 @@ int wbsys::getNumCores() {
    int n=-1; 
 
    size_t l=4; 
-   int e=sysctl((int [2]){ CTL_HW, HW_NCPU },2,&n,&l,NULL,0); 
+   int e=sysctl((int [2]){ CTL_HW, HW_NCPU },2,&n,&l,nullptr,0); 
 
    if (e || n<1) {
       wblog(FL,"ERR %s() sysctl returned e=%d (n=%d)\n%s",
@@ -897,7 +988,7 @@ int wbsys::getNumCores() {
 int wbsys::getCacheLineSize() {
    size_t n=-1; 
    size_t l=sizeof(n); 
-   int e=sysctl((int [2]){ CTL_HW, HW_CACHELINE },2,&n,&l,NULL,0); 
+   int e=sysctl((int [2]){ CTL_HW, HW_CACHELINE },2,&n,&l,nullptr,0); 
 
    if (e || n<1) {
       wblog(FL,"ERR %s() sysctl returned e=%d (n=%d)\n%s",
@@ -940,7 +1031,7 @@ int wbsys::getCacheLineSize() {
 void Wb::ResSummary(const char *F, int L, const char *istr) {
 
    static int do_cleanup=1;
-   if (F==NULL && L) { do_cleanup=L; return; }
+   if (F==nullptr && L) { do_cleanup=L; return; }
 
   #ifndef __APPLE__
    if (do_cleanup) { do_cleanup=0; wbtop PS;
@@ -980,17 +1071,21 @@ char wbsys::checkSwapSpace(const char *F, int L) {
 
    static double xref=0.25; 
 
-   struct xsw_usage S; size_t l=sizeof(S);
-   int e=sysctl((int [2]){ CTL_VM, VM_SWAPUSAGE },2,&S,&l,NULL,0);
+   struct xsw_usage S; size_t l=sizeof(S); double x;
+   int e=sysctl((int [2]){ CTL_VM, VM_SWAPUSAGE },2,&S,&l,nullptr,0);
 
    if (e) wblog(FL,
       "ERR %s() sysctl returned e=%d\n(%s)",FCT,e,strerror(errno));
 
-   if (S.xsu_total<=0 || double(S.xsu_avail)/S.xsu_total>xref) { return 0; }
+   x=double(S.xsu_avail)/S.xsu_total;
+   if (S.xsu_total<=0 || x>xref) { return 0; }
 
-   wblog(F_L,"WRN free swap space: %s / %s @ %.3g",
+   wblog(F_L,"2:WRN free swap space: (%s / %s) @ %.3f / %.3f", 
       Wb::size2Str(S.xsu_avail).data,
-      Wb::size2Str(S.xsu_total).data, xref); xref-=0.05;
+      Wb::size2Str(S.xsu_total).data, x, xref);
+
+   xref=0.75*x; 
+
    return 1;
 };
 
@@ -1102,6 +1197,24 @@ size_t Wb::findfirst_sorted(const char *F, int L,
    return i2;
 };
 
+template <class T0, class T> inline
+size_t findfirst_sorted(const char *F, int L,
+   const T0* d0, const T* dd, size_t m, size_t N, size_t M, char lex
+){
+   wbvec<T> d2(m);
+   for (unsigned i=0; i<m; ++i) { d2[i]=T(d0[i]); }
+   return findfirst_sorted(F,L,d2.data,dd,m,N,M,lex);
+};
+
+template <class T0, class T> inline
+size_t findlast_sorted(const char *F, int L,
+   const T0* d0, const T* dd, size_t m, size_t N, size_t M, char lex
+){
+   wbvec<T> d2(m);
+   for (unsigned i=0; i<m; ++i) d2[i]=T(d0[i]);
+   return findlast_sorted(F,L,d2.data,dd,m,N,M,lex);
+};
+
 template <class T>
 size_t Wb::findlast_sorted(const char *F, int L,
    const T* d0, const T* dd, size_t m, size_t N, size_t M, char lex
@@ -1152,10 +1265,17 @@ void wb_srand() {
    struct timespec tnow; 
    clock_gettime(CLOCK_REALTIME,&tnow); 
 
+#ifdef __ARM_ARCH_ISA_A64
+   uint64_t cntvct; 
+   asm volatile ("mrs %0, cntvct_el0; " : "=r"(cntvct) :: "memory");
+   ::srand(::rand() ^ unsigned(getpid()) ^ cntvct);
+#else
    unsigned long low, high; 
    __asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high) : );
 
    ::srand(::rand() ^ unsigned(getpid()) ^ high ^ low);
+#endif
+
    ::srand(::rand() ^ tnow.tv_sec ^ tnow.tv_nsec);
 };
 
@@ -1179,16 +1299,7 @@ quad& rand::rands(quad &x) {
 
 }; 
 
-template <> inline
-Wb::quad WbUtil<Wb::quad>::eps() {
-    Wb::quad x;
-    return x.eps();
-};
-
 #endif
-
-template <> inline
-wbcomplex WbUtil<wbcomplex>::eps() { return DBL_EPSILON; };
 
 #endif
 

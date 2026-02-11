@@ -24,7 +24,27 @@
 // >> setenv('WB_VERBOSE',num2str(1<<10 + 1<<21));
 // >> setenvb WB_VERBOSE  10 21
 // read in wblib.h -> envVRB=gathered.cc -> get_WB_VERBOSE()
-// default 0xF1; // 0xF1 = 241: bit 0 and 4..7
+//
+// default value Wb::envVRB = 0xF1 in Wb::get_WB_VERBOSE
+// where 0xF1 = 241: bit 0 and 4..7,
+// i.e. all bits 5-8: for TST,WRN,ERR, etc.
+// while only bit 1 from bits 1-4 for log_level
+//    bit  0 : default log
+//    bit  1 : vflag -v
+//    bit  2 : vflag -V
+//    bit  3 : etc. => total combined value range so far: 0..15
+//    bit  4 : TST
+//    bit  5 : WRN (always)
+//    bit  6 : ERR (always)
+//    bit  7 :
+//    bit  8 :
+//    bit  9 :
+//
+// e.g. 0xff -> log all // NB! hex numbers recognized by GetEnv()
+// see c_strtod.c // Wb,Dec18,18
+
+#define WBL_WRN__    (1U<< 5) 
+#define WBL_ERR__    (1U<< 6)
 
 #define WBL_MSEC__   (1U<<10) 
 #define WBL_TCAST__  (1U<<12) 
@@ -49,9 +69,11 @@
 #define WBL_HLEN 20
 #define WBL_GOT_SHORTFL -99
 
-const char* shortFL(
+#define shortFL(...) ShortFL(__VA_ARGS__).c_str()
+
+std::string ShortFL(
    const char *F, int L=-1, unsigned n=WBL_HLEN,
-   const char *P=NULL, char sep=':');
+   const char *p=NULL, char sep=':');
 
 const char* tmpmatFL(
    const char *F, int L, const char *vn, char *s, unsigned n);
@@ -141,7 +163,7 @@ namespace Wb {
    };
 
    char* surdStrf(wbstring &s, const char *fmt, ...);
-   char* surdStrf(char *s, unsigned n, const char *fmt, va_list args);
+   char* vsurdStrf(char *s, unsigned n, const char *fmt, va_list args);
 
 enum class TCOLS {
    BLACK, RED,  GREEN, YLW,   BLUE, PINK, CYAN, LGRAY, DGRAY,
@@ -173,70 +195,78 @@ class termcolor {
 
   private:
 };
+}; 
 
-class SBUF {      
+namespace wbl { 
+
+   unsigned level=0; 
+
+class sbuf { 
   public:
-    SBUF(unsigned l0=wblog::SLEN, char *s=NULL)
-     : l(0), slen(0), ref(0), sbuf(NULL) {
+    sbuf(unsigned l0=wbl::SLEN, char *s=NULL) 
+     : l(0), len(0), ref(0), data(NULL) {
        init(l0,s);
     };
 
-   ~SBUF() { if (sbuf) {
+   ~sbuf() { if (data) {
       #pragma omp critical (__ensure_sequential_wblog__)
        { flush(stderr,1); }
-       if (!ref) { delete [] sbuf; }
-       sbuf=NULL;
+       if (!ref) { delete [] data; }
+       data=NULL;
     }};
 
-    SBUF& init(unsigned l0=0, char *s=NULL) { l=0;
-       if (sbuf) { if (!ref) { delete [] sbuf; }; sbuf=NULL; }
-       slen=l0; ref=0;
-       if (slen) {
-          if (s) { sbuf=s; ref=1; } 
+    sbuf& init(unsigned l0=0, char *s=NULL) {
+       if (len==l0 && !s) {
+          if (len) { memset(data,0,len); }
+          return *this;
+       }
+
+       if (data) { if (!ref) { delete [] data; }; data=NULL; }
+       l=len=0; ref=0;
+
+       if (l0) {
+          if (s) { data=s; ref=1; } 
           else {
-             sbuf = new char[slen];
-             if (!sbuf) { sprintf_str("ERR %s() "
-                "failed to allocate sbuf (l=%d)",__FUNCTION__,slen);
+             data = new char[l0];
+             if (!data) { sprintf_str("ERR %s() "
+                "failed to allocate data (l=%d)",__FUNCTION__,len);
                 ExitMsg(str);
-             }
+             }; data[0]=0;  
           }
-          memset(sbuf,0,slen);
+          len=l0;
        }
        return *this;
     };
 
-    int cat(const char *s);
+    int cat (const char *s);
     int catf(const char *fmt, ...);
+    int vcatf(const char *fmt, va_list args);
 
-    void error_bounds(const char *F, int L, const char *fct, const char *fmt);
-    void increase_size(const char *F, int L, unsigned n);
+    void wberr_bounds(const char *F, int L, const char *fct, const char *fmt);
+    sbuf& increase_size(const char *F, int L, unsigned n); 
 
     void flush(FILE *fid=stdout, char fflag=0);
     void print(const char *F=0, int L=0, const char *istr=0);
 
     int skipEscCols(); 
 
-    unsigned l, slen, ref;
-
-    char *sbuf; 
+    unsigned l, len;
+    char ref;  
+    char *data; 
 
   private:
 };
 
-}; 
-
-namespace wblog {
-
 class stdio_buf {  
  public:
-    stdio_buf(Wb::SBUF &S, FILE *f_, int t_) : s(NULL), fid(0), tid(0), ref(0) {
+    stdio_buf(wbl::sbuf &S, FILE *f_, int t_) : s(NULL), fid(0), tid(0), ref(0) {
        if (f_!=stdin && f_!=stdout) {
           fprintf(stderr,"\nERR %s() invalid fid=%p\n'%s'\n\n",
-          FCT,f_,S.sbuf?S.sbuf:"");
+          FCT,f_,S.data?S.data:"");
        }
-       if (S.sbuf) {
-          s=S.sbuf; fid=f_; tid=t_; ref=1; 
-          S.sbuf=0; S.slen=S.l=0;
+       if (S.data) {
+          s=S.data; S.data=0; S.len=S.l=0; 
+          fid=f_; tid=t_; ref=1;
        }
     };
 
@@ -245,7 +275,7 @@ class stdio_buf {
         s=b.s; fid=b.fid; tid=b.tid;
     };
 
-    void print_stdout(FILE *f=NULL) const {
+    void print_stdout(FILE *f=NULL) const { if (s && *s) {
        if (Wb::envVRB &256) {
           unsigned i=0, m=0; for (; s[i]; ++i) {
              if (s[i]!='\n') { if (++m>2) break; } else m=0;
@@ -256,13 +286,11 @@ class stdio_buf {
              if (tid<62) x[i]=tid-36+'A'; else { x[i]='*'; }; x[i+1]=' ';
           }
        }
-       if (f) { fprintf(f,"%s",s); }
-       else {
-          if (Wb::envDKT==1) 
-               { mexPrintf("%s",s); }
-          else { PRINTF("%s",s); }
-       }
-    };
+       if (f) { fprintf(f,"%s",s); } else
+       if (Wb::envDKT==1) 
+            { mexPrintf("%s",s); }
+       else { PRINTF("%s",s); }
+    }};
 
    ~stdio_buf() { if (s && !ref) {
        if (Wb::my_caller_tid!=omp_get_thread_num()) {
@@ -283,7 +311,7 @@ class stdio_buf {
     char ref;
 };
 
-   std::deque<stdio_buf> myIO;
+   std::deque<stdio_buf> myIO; 
 
    void check_ERR_pending();
    int ERR_pending=0; 
@@ -292,7 +320,7 @@ class stdio_buf {
 
    void wbSetLogLevel(unsigned l);
 
-   int wblogs(Wb::SBUF &S,
+   int vwblogs(wbl::sbuf &S,
       WBL_COLOR_SCHEME xcol, 
       const char* file, int line,
       const char *fmt, va_list args,
@@ -300,15 +328,15 @@ class stdio_buf {
    );
 
    int wblogs(
-      Wb::SBUF &S, WBL_COLOR_SCHEME xcol,
+      wbl::sbuf &S, WBL_COLOR_SCHEME xcol,
       const char* file, int line, const char *fmt, ...
    ){
       va_list args; Wb::ARGV wd(&args); 
       va_start(args,fmt);
-      return wblogs(S,xcol,file,line,fmt,args);
+      return vwblogs(S,xcol,file,line,fmt,args);
    };
 
-   int wblogf(FILE *fid, 
+   int vwblogf(FILE *fid, 
       const char* file, int line, const char *fmt, va_list args);
 
    int wblogf(FILE *fid,
@@ -317,7 +345,7 @@ class stdio_buf {
       va_list args; Wb::ARGV wd(&args); 
       va_start(args,fmt);
 
-      int l=wblogf(fid,file,line,fmt,args); 
+      int l=vwblogf(fid,file,line,fmt,args); 
 
       return l;
    };
@@ -327,15 +355,14 @@ class stdio_buf {
 #define wblog(...) wblogf(stdout, __VA_ARGS__)
 
    int wb_printf(const char *fmt, ...) {   
+      int l=0;
+      wbl::sbuf S(256);
 
-      unsigned l=0, n=256;
-      Wb::SBUF S(n);  {
+      if (fmt && fmt[0]) {
          va_list args; Wb::ARGV wd(&args); 
          va_start(args,fmt);
-         l=vsnprintf(S.sbuf,n,fmt,args);
+         S.vcatf(fmt,args); l=S.l;
       }
-      if (l>=n) fprintf(stderr,
-         "\nERR string out of bounds (%d/%d)\nERR %s\n\n",l,n,S.sbuf);
 
       #pragma omp critical (__ensure_sequential_wblog__)
        { S.flush(); }
@@ -343,7 +370,8 @@ class stdio_buf {
       return l;
    };
 
-   unsigned wblog_check_tag(const char *fmt, const char *t, char *tag);
+   unsigned wblog_check_tag(
+      const char *fmt, const char *t, char *tag);
 
    char wblog_findtoken(const char *istr, const char *tok, int maxoffset=-1);
 

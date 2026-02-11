@@ -67,6 +67,19 @@ function info(A,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% formerly private/fdir_to_str.m => Archive/fdir_to_str_250531.m
+% Wb,May31,25
+
+function fdir=get_fdir_hl(A)
+   fdir=get_fdir(A);
+   if ~isempty(fdir)
+	  [q,e1,em]=syntax_hl('QS:fdir');
+	  if q, fdir=[e1 fdir em];
+	  else  fdir=['f=' fdir ]; end
+   end
+end
+
+% -------------------------------------------------------------------- %
 % print info in most compact form as one-liner
 
 function info_1line(A,vstr,cflag,ocflag,lmax)
@@ -86,6 +99,8 @@ function info_1line(A,vstr,cflag,ocflag,lmax)
      if ocflag, q=getqdir(A); ocflag=all(q>0); end
      stags=itags_to_str(A.info.itags,'QS:info');
   end
+
+  fdir=get_fdir_hl(A);
 
   if isfield(A.info,'otype'), q=A.info.otype;
      if ~isempty(q)
@@ -161,7 +176,7 @@ function info_1line(A,vstr,cflag,ocflag,lmax)
      if q>0, stags = [stags, repmat(' ',1,q)]; end
   end
 
-  fprintf(1,[ e1 '%s %-6s ' em stags  e1 ' %-12s %8s  %10s  %s' em '\n'],...
+  fprintf(1,[ e1 '%s %-6s ' em stags  e1 fdir ' %-12s %8s  %10s  %s' em '\n'],...
   s0,sym,sdc,snrm,sbytes,sdim);
 
 end
@@ -193,6 +208,9 @@ function info_1(A,s,cflag,use_tex)
   if isfield(A.info,'itags') && ~isempty(A.info.itags)
      s{end+1}=[ itags_to_str(A.info.itags,'QS:info',use_tex) ];
   end
+
+  fdir=get_fdir_hl(A);
+  if ~isempty(fdir), s{end+1}=fdir; end
 
   if ~isreal(A), s{end+1}='complex'; 
       if scalar, s{end}=[s{end} ' scalar']; end

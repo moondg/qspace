@@ -46,11 +46,14 @@ function [M,qex]=LoadMData(sym,varargin)
         M=load2(f,'-mat');
         if ~aflag
            e=sum(M.c2eps(:));
-           if e>1E-30 || vflag>1 || ~nargout
-              fprintf(1,'\n   Got mp3 data at e=%.3g\n\n',e);
+           if e>1e-30 || vflag>1 || ~nargout
+              wblog('TST','mp3 data obtained at at e=%.3g',e);
            end
            M=M.map3;
            M.c2eps=e;
+        end
+        if vflag>2
+           fprintf(1,'\n  load(''%s'',''-mat'')\n\n',repHome(f));
         end
         return
      end
@@ -62,16 +65,20 @@ function [M,qex]=LoadMData(sym,varargin)
         w2=zeros(1,nf); d2=zeros(1,nf); j2=cell(1,nf);
         for i=nf:-1:1
            M(i)=load(ff(i).name,'-mat');
+           j12=cellstr(qmat2char(reshape(M(i).map3.J12,r,[])'))';
 
-           j12=QSet2str(M(i).map3.J12);
-
-           if isequal(q,j12(1:r))
-                w2(i)=2; d2(i)=M(i).map3.cgr(1).size(2); j2{i}=j12(r+1:end);
-           else w2(i)=1; d2(i)=M(i).map3.cgr(1).size(1); j2{i}=j12(1:r);
+           if isequal(q,j12{1})
+                w2(i)=2; d2(i)=M(i).map3.cgr(1).size(2); j2{i}=j12{2};
+           else w2(i)=1; d2(i)=M(i).map3.cgr(1).size(1); j2{i}=j12{1};
            end
         end
 
         [~,is]=sort(d2); i2=is(find(w2(is)==2)); n2=numel(i2);
+
+        if ~vflag
+           M=[M(i2).map3]; qex=strvcat(j2(i2));
+           return
+        end
 
         fprintf(1,'\n   Found %g (%g) entries ...\n',n2,nf);
 
@@ -103,6 +110,7 @@ function [M,qex]=LoadMData(sym,varargin)
         for i=nx-n2+1:nx, k=I.ix1(is(i));
            fprintf(' %8g.  (%s)%8d\n',i,jj(k,:),dd(k));
         end
+     else M=[]; qex=[];
      end
   elseif ~vflag, qex=0;
      q2=sort(strread(q,'%s','whitespace',',')); q=[q2{1},',',q2{2}];

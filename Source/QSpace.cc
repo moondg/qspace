@@ -154,7 +154,8 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::setupCGR(const char *F, int L) {
 };
 
 template <class TQ, class TD> inline
-void QSpace<TQ,TD>::initIdentity(const QSpace<TQ,TD> &A, char dflag) {
+QSpace<TQ,TD>& QSpace<TQ,TD>::initIdentity(
+   const QSpace<TQ,TD> &A, char dflag) {
 
    wbMatrix<TQ> Q1;
    wbvector<widx_t> D; wbperm P;
@@ -165,7 +166,7 @@ void QSpace<TQ,TD>::initIdentity(const QSpace<TQ,TD> &A, char dflag) {
 
    clearQSpace();
 
-   if (A.isEmpty()) { return; }
+   if (A.isEmpty()) { return *this; }
    if (!A.isConsistent_r(2)) { wbdie(FL,str); }
 
    if (!A.isQSym(0,0,dflag)) {
@@ -185,19 +186,115 @@ void QSpace<TQ,TD>::initIdentity(const QSpace<TQ,TD> &A, char dflag) {
       DATA[i]->initIdentity(d,dflag);
    }
 
-   initIdentityCGS();
+   return initIdentityCGS();
 };
 
 template <class TQ, class TD> inline
-void QSpace<TQ,TD>::initIdentity(const wbMatrix<TQ> &Q) {
-   clearQSpace();
+QSpace<TQ,TD>& QSpace<TQ,TD>::initIdentity_bare(const wbMatrix<TQ> &Q) {
 
+   clearQSpace();
    QDIM=Q.dim2; QIDX.Cat(2,Q,Q); setupDATA();
+
    for (unsigned i=0; i<DATA.len; ++i) {
       DATA[i]->init(1,1);
       DATA[i]->data[0]=1;
    }
-}
+   return *this;
+};
+
+template <class TQ, class TD> inline
+QSpace<TQ,TD>& QSpace<TQ,TD>::initIdentity(const QType &t, const TQ *qs) {
+
+   unsigned n=t.qlen();
+   if (!n || !t || !qs) wblog(FL,
+      "ERR %s() invalid input '%s' (n=%d, %p)",FCT,STR(t),n,qs);
+
+   clearQSpace();
+   QDIM=n; QIDX.init(1,2*n).recSetP(0,qs,n,qs,n);
+
+   setupDATA();
+      DATA[0]->init(1,1);
+      DATA[0]->data[0]=1;
+
+   qtype.init(t);
+   if (!t.isAbelian()) { initIdentityCGS(); }
+
+   return *this;
+};
+
+template <class TQ, class TD> inline
+QSpace<TQ,TD>& QSpace<TQ,TD>::init(
+   const CDATA_TQ &Cb, wbperm *P, char inv) {
+
+   if (!Cb.valid()) { 
+      wblog(FL,"ERR %s() got %s CGT %s",
+      FCT, Cb.NP_zero()? "non-permissible":"invalid", STR(Cb));
+   }
+
+   unsigned r=Cb.rank(FL), m=0; clearQSpace(); 
+   if (!Cb.t || !Cb.cstat.gotuser_BUF()) wblog(FL,
+      "ERR %s() invalid input: %s",FCT,STR2(Cb,2));
+   QDIM=Cb.t.qlen();
+   QIDX.init(1,Cb.qs.len,Cb.qs.data);
+   itags.init(Cb.qdir);
+
+   if (Cb.t.isU1())
+        { qtype.init(); }
+   else { qtype.init(Cb.t); }
+
+   setupDATA(FL);
+   if (!Cb.t.isAbelian()) {
+      setupCGR(FL); CGR[0].initBase(&Cb); 
+      m=Cb.numOM(FL); 
+   }
+   DATA[0]->initSingleton(r,1,m);
+
+   if (P && *P) { Permute(*P); }
+
+   return *this;
+};
+
+template <class TQ, class TD> inline
+QSpace<TQ,TD>& QSpace<TQ,TD>::FusionTree(
+   const char *F, int L,
+   const QType &t, const wbMatrix<TQ> &Q, QSpace<TQ,TD> *AK) {
+
+   if (!t) { wblog(F_L,"ERR %s() invalid symmetry '%s'",FCT,STR(t)); }
+   if (Q) {
+      if (Q.dim2!=t.qlen()) wblog(F_L,
+         "ERR %s() size mismatch (%dx%d / %d)",FCT,Q.dim1,Q.dim2,t.qlen());
+      initIdentity(t,Q.data);
+   }
+   else { init(); qtype.init(t); }
+
+   if (AK) { AK->init(*this); }
+   if (Q.dim1<=1) { return *this; }
+
+   QSpace<TQ,TD> X;
+   wbindex Ia(1), Ib(1), i3(1);
+   wbMatrix<TQ> Qa,Qb;
+   wbvector<widx_t> Sa,Sb;
+   QMap<TQ> M;
+
+   QSpace<TQ,TD> A3, Ak(*this), Ek;
+
+   i3[0]=2; 
+
+   Wb::iterLevel<int> wd(&CG::thread_fOM.me(),256);
+
+   for (unsigned k=1; k<Q.dim1; ++k) {
+      getQDimGen( cPVEC1_(Ak), Qa,Sa,Ia); Ek.initIdentity(t,Q.rec(k));
+      getQDimGen( cPVEC1_(Ek), Qb,Sb,Ib);
+      gCS.getQfinal(FL,qtype,Qa,Qb,M,'c'); 
+      M.getIdentityQ(FL,Sa,Sb,A3);
+
+      if (AK) {
+      AK->contract(FL,k+1,A3,1,X); X.save2(*AK); }
+      Ak=initIdentityCG( cPVEC1_(A3), i3);
+   }
+
+   return Ak.save2(*this);
+};
 
 template <class TQ, class TD> inline
 QSpace<TQ,TD>& QSpace<TQ,TD>::initDiagonal(
@@ -235,7 +332,7 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::initDiagonal(
 };
 
 template <class TQ, class TD> inline
-char QSpace<TQ,TD>::checkQ_CGR(const char *F, int L, C_UVEC *I) const {
+char QSpace<TQ,TD>::checkQ_CGR(const char *F, int L, cUVEC *I) const {
 
     char q=0; 
 
@@ -547,13 +644,11 @@ int QSpace<TQ,TD>::gotCGS(const char *F, int L,
         "ERR %s() got m=%d/%d for all-abelian %s",FCT,m,nw,STR(qtype));
    }
    else if (!m) { wblog(FL,"ERR %s() got m=%d for %s",FCT,m,STR(qtype)); }
+   else if (xflag) {
+      if (m==1 && !nw) { m=-2; }
+   }
    else {
-      if (xflag) {
-         if (m==1 && !nw) { m=-2; }
-      }
-      else {
-         m=1+qtype.permitsOM(rank(FL));
-      }
+      m=1+qtype.permitsOM(rank(FL));
    }
 
    return m;
@@ -784,12 +879,13 @@ unsigned QSpace<TQ,TD>::cgsDimScalar(unsigned i) const {
 };
 
 template <class TQ, class TD>
-void getQDimGen(wbvector< const QSpace<TQ,TD>* > &A,
+void getQDimGen(
+   wbvector< const QSpace<TQ,TD>* > A,
    wbMatrix<TQ> &Q, wbvector<widx_t> &S,
    wbindex I, 
-   wbMatrix<widx_t> *SC_=NULL 
+   wbMatrix<widx_t> *SC_ 
 ){
-   if (!A.len) wblog(FL,"ERR got empty input space");
+   if (!cPVEC_nnz(FLF,A,'w')) wblog(FL,"ERR %s() got empty input",FCT);
 
    unsigned i,j,k,l,ic,d, d2=0, m=0, nq,p,i1,i2, n=0; widx_t *ip;
    unsigned r_=-1, rk=-1, QDIM=A[0]->QDIM;
@@ -803,19 +899,19 @@ void getQDimGen(wbvector< const QSpace<TQ,TD>* > &A,
 
    nq=A[0]->CGR.dim2;
 
-   for (k=0; k<A.len; ++k) { const QSpace<TQ,TD> &Ak=(*A[k]);
-      if (!A[k]) wblog(FL,"ERR %s() got null object",FCT);
+   for (k=0; k<A.len; ++k) {
+      const QSpace<TQ,TD> &Ak=(*A[k]);
       n+=Ak.QIDX.dim1;
 
       if (I.len) { r_=rk=Ak.rank(FL); }
       else {
          if (int(rk=Ak.isOperator(&r_,'x'))<=0) wblog(FL,
             "ERR %s() invalid rank-%d operator\n(%d: r=%d/%d, '%s')",
-            FCT,Ak.itags.len,k+1,rk,r_,A[0]->otype2Str().data
+            FCT,Ak.itags.len,k+1,rk,r_,A[k]->otype2Str().data
          );
          if (Ak.otype!=otype) wblog(FL,
             "ERR %s() object type inconsistency (%s ; %s)",
-            FCT, Ak.otype2Str().data, A[0]->otype2Str().data
+            FCT, Ak.otype2Str().data, A[k]->otype2Str().data
          );
       }
 
@@ -841,7 +937,7 @@ void getQDimGen(wbvector< const QSpace<TQ,TD>* > &A,
       if (cgflag && Ak.CGR.dim2!=nq) { e|=4; }
       if (e) { wblog(FL, 
          "ERR %s() CGR inconsistency (%d/%d: %d/%d)",
-         FCT,k+1,A.len,Ak.CGR.dim2,nq);
+         FCT, k+1,A.len, Ak.CGR.dim2,nq);
       }
    }
    if (int(rk)<=0) wblog(FL,"ERR got empty QSpaces (r=%d)",rk);
@@ -935,17 +1031,6 @@ void getQDimGen(wbvector< const QSpace<TQ,TD>* > &A,
 };
 
 template <class TQ, class TD> inline
-void getQDimGen(const wbvector< QSpace<TQ,TD> > &A,
-   wbMatrix<TQ> &Q, wbvector<widx_t> &S,
-   const wbindex &I,
-   wbMatrix<widx_t> *SC=NULL 
-){
-   wbvector< const QSpace<TQ,TD>* > Ap(A.len);
-   for (unsigned i=0; i<A.len; ++i) Ap[i]=&A[i];
-   getQDimGen(Ap,Q,S,I,SC);
-};
-
-template <class TQ, class TD> inline
 void QSpace<TQ,TD>::getQDim(wbMatrix<TQ> &Q,
    wbvector<widx_t> &S,
    wbMatrix<widx_t>*SC   
@@ -982,7 +1067,7 @@ void QSpace<TQ,TD>::getQDim(unsigned k,
 
    for (i=0; i<n; ++i) {
       const wbvector<widx_t> &si=DATA[i]->SIZE;
-      widx_t &s=SD.el(Ig[i]);
+      widx_t &s=SD.at(Ig[i]);
       if (k>=si.len || si.len>r_) wblog(FL,
          "ERR %s() index out of bounds (%d/%d,%d)",FCT,k+1,si.len,r);
       if (int(s)>=0) {
@@ -994,14 +1079,14 @@ void QSpace<TQ,TD>::getQDim(unsigned k,
       else s=si.data[k];
    }
 
-   if (SC==NULL) return;
+   if (SC==nullptr) return;
    if (gotCGS(FL)<=0) { SC->init(); return; }
 
    SC->init(D.len,CGR.dim2).set(-1);
 
    for (i=0; i<n; ++i) {
       for (j=0; j<CGR.dim2; ++j) {
-         widx_t &c=SC->el(Ig[i],j);
+         widx_t &c=SC->at(Ig[i],j);
          q=CGR(i,j).qdim(k,&qtype[j]);
 
          if (int(c)>=0) {
@@ -1015,6 +1100,13 @@ void QSpace<TQ,TD>::getQDim(unsigned k,
 };
 
 template <class TQ, class TD>
+char QSpace<TQ,TD>::getQDir(unsigned i) const {
+   if (i>=itags.len) wblog(FL,
+      "ERR %s() index out of bounds (i=%d/%d)",FCT,i,itags.len);
+   return (itags[i].isConj() ? -1 : 1);
+};
+
+template <class TQ, class TD>
 QDir& QSpace<TQ,TD>::getQDir(QDir &qdir) const {
 
    qdir.init(itags);
@@ -1022,12 +1114,11 @@ QDir& QSpace<TQ,TD>::getQDir(QDir &qdir) const {
    if (CGR.dim1) {
       for (unsigned j=0; j<CGR.dim2; ++j) {
          if (!CGR(0,j).sameQDir(FL,qdir)) wblog(FL,
-            "ERR %s() got qdir inconsistency !?\nj=%d: %s <> %s",
+            "ERR %s() got qdir inconsistency\nj=%d: %s <> %s",
             FCT,j+1,STR(CGR(0,j)), STR(qdir)
          );
       }
    }
-
    return qdir;
 };
 
@@ -1161,7 +1252,7 @@ void QSpace<TQ,TD>::recSave2(unsigned k, unsigned i) {
    QIDX.recSet(k,i);
 
    WB_DELETE_1(DATA[k]);
-   DATA[k]=DATA[i]; DATA[i]=NULL;
+   DATA[k]=DATA[i]; DATA[i]=nullptr;
 
    if (CGR.dim2) {
    for (unsigned j=0; j<CGR.dim2; ++j) {
@@ -1586,7 +1677,7 @@ bool QSpace<TQ,TD>::isIdentityMatrix(const TD eps) const {
          for (j=0; j<CGR.dim2; ++j) {
             if (!CGR(i,j).isIdentityCG(&cfac)) { return 0; }
          }
-         if (cfac.norm()<1E-12) { return 0; }
+         if (cfac.norm()<1e-12) { return 0; }
 
          if (cfac.len==1 && r==DATA[i]->SIZE.len) {
             dval=TD(1)/cfac[0];
@@ -1614,7 +1705,7 @@ template <class TQ, class TD> inline
 char QSpace<TQ,TD>::hasIdentityCGS(const TD eps) const {
 
     for (unsigned n=CGR.numel(), i=0; i<n; ++i) {
-       if (!CGR.data[i].isIdentityCG(NULL,eps)) {
+       if (!CGR.data[i].isIdentityCG(nullptr,eps)) {
           return 0;
        }
     }
@@ -1648,7 +1739,7 @@ bool QSpace<TQ,TD>::isHConj(
       if (r==3)  
            { P.initStr(FL,"2,1,3"); }
       else { P.initTranspose(r); } 
-      permute(P,X).Conj();
+      permute(X,P).Conj();
 
       if (r==3) { if (X.ConjOpScalar()) return 0; } else
       if (!itags.isOp(r,'L')) { return 0; } 
@@ -1692,7 +1783,7 @@ bool QSpace<TQ,TD>::isAHerm(
          return 0;
       }
       unsigned r=rank(FL); QSpace<TQ,TD> X;
-      wbperm P; P.initTranspose(r); permute(P,X); X+=(*this);
+      wbperm P; P.initTranspose(r); permute(X,P); X+=(*this);
       double e=X.norm();
       if (e>eps) { if (vflag) wblog(FL,
          "ERR %s() got non-symmetric data (%g)",FCT,e);
@@ -1735,7 +1826,7 @@ bool QSpace<TQ,TD>::isSym_aux(
     Q1=QIDX; Q1.SortRecs(P1); 
 
     P.init((unsigned)r).Rotate(K);
-    QIDX.blockPermute(P,Q2); Q2.SortRecs(P2);
+    QIDX.blockPermute(Q2,P); Q2.SortRecs(P2);
 
     if (Q1!=Q2) {
        sprintf_str("QIDX[:,1] does not match QIDX[:,2]");
@@ -1811,24 +1902,21 @@ bool QSpace<TQ,TD>::isSym_aux(
           }
        }
 
-       if (e) {
-          size_t l=0, n=128; char istr[n];
-          if (e<10) { l=snprintf(istr,n,
+       if (e) { wbvec<char> istr(128);
+          if (e<10) { istr.catf(FL,
              "%s %s() non-matching data{%d} <> data{%d} (e=%d)",
               SHORT_FL,fct, i+1, j+1,e);
           }
-          else { l=snprintf(istr,n,
+          else { istr.catf(FL,
              "%s %s() non-matching cgs{%d,%d} <> cgs{%d,%d} (e=%d)",
               SHORT_FL,fct, i+1, k+1, j+1, k+1,e);
           }
-          if (l>=n) wblog(FL,
-             "ERR %s() string out of bounds (%d/%d)",FCT,l,n);
 
-          if (str[0]) strcat(str,"\n");
-          strcat(str,istr);
+          if (str[0]) { strcat(str,"\n"); }
+          strcat(str,istr.data);
 
           if (vflag) { 
-             const char *s=strstr(istr,"non-match");
+             const char *s=strstr(istr.data,"non-match");
              if (s) wblog(F_L,"%s ",s);
           }
           else if (vflag=='!') { MXPut(FL,"qs")
@@ -1866,7 +1954,7 @@ bool QSpace<TQ,TD>::isQSym(const char *F, int L, char dflag) const {
     Q1=QIDX; Q1.SortRecs(P1); 
 
     P.init((unsigned)r).Rotate(r2);
-    QIDX.blockPermute(P,Q2); Q2.SortRecs(P2);
+    QIDX.blockPermute(Q2,P); Q2.SortRecs(P2);
 
     if (Q1!=Q2) {
        sprintf_str("QIDX[:,1] does not match QIDX[:,2]");
@@ -1992,63 +2080,40 @@ bool QSpace<TQ,TD>::hasSameQ(const QSpace<TQ,T2> &B) const {
 template<class TQ, class TD>
 template<class TA, class TB>
 QSpace<TQ,TD>& QSpace<TQ,TD>::initIdentityCG(
-   const wbvector< QSpace<TQ,TA> > &A, const wbindex &Ia,
-   const wbvector< QSpace<TQ,TB> > &B, const wbindex &Ib,
+   wbvector< const QSpace<TQ,TA>* > A, const wbindex &Ia,
+   wbvector< const QSpace<TQ,TB>* > B, const wbindex &Ib,
    char vflag
 ){
-   unsigned i,l,n1,n2, QDIM, dim2=A[0].QIDX.dim2;
+   if (!cPVEC_nnz(FLF,A,'w') || !cPVEC_nnz(FLF,B,'w')) {
+      wblog(FL,"ERR %s() got empty input",FCT); 
+   }
+
+   unsigned i, QDIM, dim2=A[0]->QIDX.dim2;
    wbMatrix<TQ> Qa,Qb;
    wbvector<widx_t> Sa,Sb;
-   QVec qt0=A[0].qtype; 
+   QVec qt0=A[0]->qtype; 
    QMap<TQ> M;
-
-   wbvector<char> m1(A.len), m2(B.len);
-
-   if (!A.len) wblog(FL,"ERR got empty input space 1");
-   if (!B.len) wblog(FL,"ERR got empty input space 2");
-
-   for (i=0; i<A.len; ++i) if (A[i].isEmpty()) { wblog(FL,
-       "WRN got empty space A[%d]",i+1); m1[i]++; }
-   for (i=0; i<B.len; ++i) if (B[i].isEmpty()) { wblog(FL,
-       "WRN got empty space B[%d]",i+1); m2[i]++; }
-
-   n1=m1.nnz(); n2=m2.nnz();
-   if (n1 || n2) { 
-      wbvector< QSpace<TQ,TA> > X(A.len);
-      wbvector< QSpace<TQ,TB> > Y(B.len);
-      for (l=i=0; i<A.len; ++i) {
-         if (!A[i].isEmpty()) X[l++].init2ref(A[i]); }
-      if (l) X.len=l; else wblog(FL,
-         "ERR got %d empty input space 1",A.len);
-      for (l=i=0; i<B.len; ++i) {
-         if (!B[i].isEmpty()) Y[l++].init2ref(B[i]); }
-      if (l) Y.len=l; else wblog(FL,
-         "ERR got %d empty input space 1",B.len);
-      wblog(FL,"WRN %s() => skip empty input spaces", FCT);
-
-      return initIdentityCG(X,Ia,Y,Ib,vflag);
-   }
 
    itag_ itA, itB;
      itA.init(FL,A,Ia); 
      itB.init(FL,B,Ib);
 
-   init(); QDIM=A[0].QDIM;
+   init(); QDIM=A[0]->QDIM;
 
-   for (i=1; i<A.len; ++i) if (A[i].qtype!=qt0) wblog(FL,
+   for (i=1; i<A.len; ++i) if (A[i]->qtype!=qt0) wblog(FL,
       "ERR qtype mismatch of input space 1 (%d: %s; %s)",
-       i+1, A[i].qStr().data, qStr().data);
-   for (i=0; i<B.len; ++i) if (B[i].qtype!=qt0) wblog(FL,
+       i+1, A[i]->qStr().data, qStr().data);
+   for (i=0; i<B.len; ++i) if (B[i]->qtype!=qt0) wblog(FL,
       "ERR qtype mismatch of input space 2 (%d: %s; %s)",
-       i+1, B[i].qStr().data, qStr().data);
+       i+1, B[i]->qStr().data, qStr().data);
    for (i=1; i<A.len; ++i)
-   if (A[i].QDIM!=QDIM || A[i].QIDX.dim2!=dim2) wblog(FL,
+   if (A[i]->QDIM!=QDIM || A[i]->QIDX.dim2!=dim2) wblog(FL,
       "ERR %s() size mismatch (%d: %d/%d %d/%d)",
-       i+1, A[i].QDIM, QDIM, A[i].QIDX.dim2, dim2);
+       i+1, A[i]->QDIM, QDIM, A[i]->QIDX.dim2, dim2);
    for (i=1; i<B.len; ++i)
-   if (B[i].QDIM!=QDIM || B[i].QIDX.dim2!=B[0].QIDX.dim2) wblog(FL,
+   if (B[i]->QDIM!=QDIM || B[i]->QIDX.dim2!=B[0]->QIDX.dim2) wblog(FL,
       "ERR %s() size mismatch (%d: %d/%d %d/%d)",
-       FCT,i+1, B[i].QDIM, QDIM, B[i].QIDX.dim2, B[0].QIDX.dim2);
+       FCT,i+1, B[i]->QDIM, QDIM, B[i]->QIDX.dim2, B[0]->QIDX.dim2);
 
    getQDimGen(A,Qa,Sa,Ia); 
    getQDimGen(B,Qb,Sb,Ib);
@@ -2069,25 +2134,26 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::initIdentityCG(
 template<class TQ, class TD>
 template<class TA>
 QSpace<TQ,TD>& QSpace<TQ,TD>::initIdentityCG(
-   const wbvector< QSpace<TQ,TA> > &A, const wbindex &ia, 
+   wbvector< const QSpace<TQ,TA>* > A, const wbindex &ia, 
    char zflag 
 ){
-   unsigned i, dim2=A[0].QIDX.dim2;
+   if (!cPVEC_nnz(FLF,A,'l')) { init(); return *this; }
+
+   unsigned i,dim2=A[0]->QIDX.dim2;
    wbMatrix<TQ> Qa,Qb;
    wbvector<widx_t> Sa,Sb;
    wbMatrix<widx_t> Sc;
 
-   if (!A.len) wblog(FL,"ERR got empty input space 1");
+   init(); QDIM=A[0]->QDIM; qtype=A[0]->qtype;
 
-   init(); QDIM=A[0].QDIM; qtype=A[0].qtype;
-
-   for (i=1; i<A.len; ++i) if (A[i].qtype!=qtype) wblog(FL,
-      "ERR qtype mismatch of input space 1 (%d: %s; %s)",
-       i+1, A[i].qStr().data, qStr().data);
    for (i=1; i<A.len; ++i) {
-   if (A[i].QDIM!=QDIM || A[i].QIDX.dim2!=dim2) wblog(FL,
-      "ERR %s() size mismatch (%d: %d/%d %d/%d)",
-       i+1, A[i].QDIM, QDIM, A[i].QIDX.dim2, dim2);
+      if (A[i]->qtype!=qtype) wblog(FL,
+         "ERR qtype mismatch of input space 1 (%d: %s; %s)",
+          i+1, A[i]->qStr().data, qStr().data);
+      if (A[i]->QDIM!=QDIM || A[i]->QIDX.dim2!=dim2) { wblog(FL,
+         "ERR %s() size mismatch (%d: %d/%d %d/%d)",
+          i+1, A[i]->QDIM, QDIM, A[i]->QIDX.dim2, dim2);
+      }
    }
 
    getQDimGen(A,Qa,Sa,ia,&Sc);
@@ -2097,8 +2163,9 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::initIdentityCG(
       for (i=0; i<QDIM; ++i) qtype[i]="A";
    }
 
-   unsigned j=0, d[qtype.len]; TQ *qij;
+   unsigned j=0; TQ *qij;
    char cgflag=qtype.isNonAbelian(); 
+   wbvec<unsigned> d(qtype.len);
 
    itags.init(2);
    itags[1]=itags[0].init(FL,A,ia);
@@ -2220,14 +2287,14 @@ unsigned QSpace<TQ,TD>::RemoveZLabels(
    wbvector<char> isz_(m);
    char *isz=isz_.data;
 
-   TQ *qz=NULL, *qq=QQ.data;
+   TQ *qz=nullptr, *qq=QQ.data;
 
    qtype.Qlen(d0_,dz_);
    if (m0!=d0_.sum() || mz!=dz_.sum()) wblog(FL,
       "ERR %s() qdim-inconsistency: %d/%d, %d/%d",
        FCT, m0, d0_.sum(), mz, dz_.sum());
 
-   if (Z) { Z->init(QQ.dim1,mz*r); qz=(Z ? Z->data : NULL); }
+   if (Z) { Z->init(QQ.dim1,mz*r); qz=(Z ? Z->data : nullptr); }
    if (!mz) return m0;
 
    for (l=i=0; i<qtype.len; ++i)
@@ -2276,7 +2343,7 @@ void QSpace<TQ,TD>::initOpZ_WET(const char *F, int L,
    wbMatrix<TQ> Q1r(Q1),Q2r(Q2),Q3r(Q), Q1u(Q1),Q2u(Q2),Q3u(Q);
    wbMatrix<TQ> QZ,QX,Z,q2,q3,qc; qset<TQ> q1;
    wbMatrix<double> x1,x2;
-   const wbperm P3("3,1,2");
+   const wbperm P3("312");
    wbperm p1,p2,p3, P;
    wbindex J1,J2,J3;
    QMap<TQ> M;
@@ -2402,7 +2469,7 @@ void QSpace<TQ,TD>::initOpZ_WET(const char *F, int L,
       gCS.getQfinal(F,L,qvec,q2,q3,M,QF_LOADC);
 
       m1.init();
-      M.getCGZlist(F,L,qc,dc,&I,NULL,&q1,&m1); 
+      M.getCGZlist(F,L,qc,dc,&I,nullptr,&q1,&m1); 
 
       if (!I.allEqual(I[0])) wblog(FL,"ERR %s() CData not unique",FCT);
 
@@ -2422,7 +2489,7 @@ void QSpace<TQ,TD>::initOpZ_WET(const char *F, int L,
 
          for (l=0; l<=mq; ++l) {
             if (l) {
-               if (!M.getCGZlist(F,L,qc,dc,&I,NULL,&q1,&m1)) break;
+               if (!M.getCGZlist(F,L,qc,dc,&I,nullptr,&q1,&m1)) break;
                qc.BlockPermute(P3);
                qc.SkipTiny_float(); qc.SortRecs(P); dc.Permute(P);
             }
@@ -2466,13 +2533,13 @@ void QSpace<TQ,TD>::initOpZ_WET(const char *F, int L,
 
          cc.init(c.numel(), c.data); m1.reset();
          Wb::VMatProd(X,c,Xc); x=Xc.normDiff(DC[l]);
-         if (x>1E-12) wblog(FL,
+         if (x>1e-12) wblog(FL,
             "ERR %s() failed to match OM (%.3g)",FCT,x);
          else wblog(FL,
             " *  %s() succeeded to match OM (@ %.2g)\n==> "
             "[%s] (%.5g)",FCT,x,STR(cc),cc.norm2());
 
-         if (!M.getCGZlist(F,L,qc,dc,&I,NULL,&q1,&m1,&cc)) wblog(FL,
+         if (!M.getCGZlist(F,L,qc,dc,&I,nullptr,&q1,&m1,&cc)) wblog(FL,
             "ERR %s() failed to get CGZ list (%s)",FCT,STR(m1));
 
          qc.BlockPermute(P3);
@@ -2525,7 +2592,7 @@ void QSpace<TQ,TD>::initOpZ_WET(const char *F, int L,
          X.add(x1,"x1").add(x2,"x2");
         wblog(FL,"ERR WET data mismatch (%.3g)",x);
       }
-      x=fabs(w); if (x>1E3 || x<1E-3)
+      x=fabs(w); if (x>1E3 || x<1e-3)
         wblog(FL,"WRN %s() got WET=%.3g !?",FCT,w);
 
       i0=I[0]; I.init(3); m1.reset();
@@ -2548,7 +2615,7 @@ void QSpace<TQ,TD>::initOpZ_WET(const char *F, int L,
          wbarray<TD> &a = DATA[r]->init(d1[j1], d2[j2], d3[j3]);
          a.element(I)=w*cc[im]; 
 
-         if (fabs(w*cc[im])<1E-12) wblog(FL,"WRN %s() "
+         if (fabs(w*cc[im])<1e-12) wblog(FL,"WRN %s() "
             "got w = %g * %g = %g (im=%d)",FCT,w,cc[im],w*cc[im],im);
 
       }
@@ -2659,13 +2726,13 @@ void QSpace<TQ,TD>::reduceMatEl(
       for (r=0; r<m; ++r) { 
          for (j=0; j<n; ++j){  x1[j]=dd[pp[k+j]+r*pp.len];
 
-             if (fabs(x1[j])<1E-12 || fabs(x2[j])<1E-12) wblog(F,L,
+             if (fabs(x1[j])<1e-12 || fabs(x2[j])<1e-12) wblog(F,L,
                 "ERR got matrix element (%d,%d): %.4g, %.4g",
                  i+1,j+1,x1[j],x2[j] 
              );
 
              xx[j]=x1[j]/x2[j];
-             if (j) { if (fabs(x-xx[j])>1E-12) {
+             if (j) { if (fabs(x-xx[j])>1e-12) {
 #ifdef MATLAB_MEX_FILE
                  MXPut(FL).add(QQ,"QQ").add(dd,"dd").add(Qc,"qc")
                  .add(dc,"dc").add(pp+1,"pp").add(pc+1,"pc")
@@ -2986,7 +3053,7 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::Append(
    QIDX.appendRows(B.QIDX.dim1, B.QIDX.data);
 
    unsigned i=DATA.len, n;
-   wbarray<TD> *a=NULL;
+   wbarray<TD> *a=nullptr;
 
    DATA.Append(B.DATA.len, B.DATA.data); 
    for (n=DATA.len; i<n; ++i) { 
@@ -3143,7 +3210,7 @@ unsigned QSpace<TQ,TD>::SkipZeroData(
          if (cj.wscalar()) { if (cj.cgw[0]!=1) wblog(FL,
             "ERR %s() invalid scalar normalization (%g)",FCT,cj.cgw[0]);
          }
-         else if (cj.rtype!=CGR_ABELIAN || cj.cgw) wblog(FL,
+         else if (cj.rtype!=CR_ABELIAN || cj.cgw) wblog(FL,
             "ERR %s() invalid scalar or empty\n%s",FCT,STR(cj)
          );
       }
@@ -3177,7 +3244,7 @@ unsigned QSpace<TQ,TD>::SkipZeroData(
          cfac=sqrt(w2);
 
          if (cfac<eps) { isz=2;
-            double x=a.aMax(); if (x>1E-6) { wblog(FL,
+            double x=a.aMax(); if (x>1e-6) { wblog(FL,
               "WRN %s() skipping |cgw|=%.3g having max(|data|)=%.3g !?",
               FCT,cfac,x
             ); }
@@ -3249,13 +3316,13 @@ bool QSpace<TQ,TD>::gotZeroData(unsigned i, const double eps) const {
       for (unsigned j=0; j<CGR.dim2; ++j) { const CRef<TQ>& R=CGR(i,j);
          if (!R.isRefInit()) {
             n2*=(x2=double(R.norm2()));
-            if (x2<1E-12) wblog(FL,"WRN %s() got small CGC (%g)",FCT,x2);
+            if (x2<1e-12) wblog(FL,"WRN %s() got small CGC (%g)",FCT,x2);
             if (!n2) return 1;
          }
       }
    }
    if (!DATA[i]) {
-      wblog(FL,"WRN %s() got NULL data[%d]",FCT,i);
+      wblog(FL,"WRN %s() got nullptr data[%d]",FCT,i);
       return 1;
    }
    n2 *= DATA[i]->norm2();
@@ -3496,7 +3563,7 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::TimesEl(
 
          if (w2!=1) {
             if (fabs(w2)<CG_SKIP_DEPS1) wblog(FL,"WRN %s() got w2=%g",FCT,w2);
-            Ai.init();  
+            Ai.init();         
             (*DATA[i1]) *= w2; 
          }
       }
@@ -3535,7 +3602,7 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::plus_plain(
       return C;
    }
 
-   unsigned i,j, n1=0, n2=0, n12=0; int i1,i2,np;
+   unsigned i,j, n1=0, n2=0, n12=0; int i1,i2, np=1;
    unsigned cgflag=0; 
    wbvector<double> bfc;
 
@@ -3556,7 +3623,7 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::plus_plain(
 
    getQOverlapU(FL,B,QQ,IQ);
 
-   C.init(QQ, isEmpty() ? B.QDIM : QDIM, NULL);
+   C.init(QQ, isEmpty() ? B.QDIM : QDIM, nullptr);
    C.initQ(FL,*this,1,&B);
 
    if (itags.len || B.itags.len) {
@@ -3601,20 +3668,22 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::plus_plain(
       }
    }
 
-   np=MAX( QSP_NUM_THREADS, OMP_NUM_THREADS );
-   if (np>int(IQ.dim1)) { np=(IQ.dim1 ? IQ.dim1 : 1); }
+   if (IQ.dim1>1 && !omp_in_parallel()) { 
+      np=MAX( QSP_NUM_THREADS, OMP_NUM_THREADS );
+      if (np>int(IQ.dim1)) { np=IQ.dim1; } else if (np<1) { np=1; }
+   }
 
    Wb::LogException ex; 
 
-  #pragma omp parallel for num_threads(np) private(i1,i2) reduction(+:n1,n2,n12)
-   for (i=0; i<IQ.dim1; ++i) { if (!ex) { try {
-      i1=IQ(i,0); i2=IQ(i,1);
+  #pragma omp parallel for num_threads(np) reduction(+:n1,n2,n12)
+   for (unsigned i=0; i<IQ.dim1; ++i) { if (!ex) { try {
+      int i1=IQ(i,0), i2=IQ(i,1); 
 
       if (i1>=0 && i2>=0) { ++n12; 
          DATA[i1]->plus(*B.DATA[i2], *C.DATA[i], cgflag ? TD(bfc[i2]) : bfac);
       }
       else if (i1>=0) { ++n1; 
-         C.DATA[i]->set(*DATA[i1]);
+         C.DATA[i]->init(*DATA[i1]);
       }
       else if (i2>=0) { ++n2; 
          C.DATA[i]->set(*B.DATA[i2], bfac);
@@ -3631,6 +3700,26 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::plus_plain(
    }
 
    return C;
+};
+
+template <class TQ, class TD>
+int QSpace<TQ,TD>::isNormCGW(char full) const {
+
+   int rval=1;
+
+   if (CGR) {
+      unsigned i,j, nwrn=0;
+      double cfac;
+
+      for (i=0; i<CGR.dim1 && !nwrn; ++i) {
+      for (j=0; j<CGR.dim2; ++j) {
+         cfac = CGR(i,j).getNormSignW(0,0, full? 0:1);
+         if (fabs(cfac-1)>CG_SKIP_DEPS1) { ++nwrn; }
+      }}
+      rval=(nwrn? 0 : 2);
+   }
+
+   return rval;
 };
 
 template <class TQ, class TD>
@@ -3699,7 +3788,7 @@ int QSpace<TQ,TD>::NormCGW(
    }
 
    if (mark) {
-      wbindex I; mark.findzeros(I);
+      wbindex I; mark.find(I,0);
       rval+=8*(DATA.len-I.len);
       Select(I);
    }
@@ -3749,7 +3838,7 @@ unsigned QSpace<TQ,TD>::MakeUnique() {
 
       i0=I[ib]=p[k+j0];
       wbarray<TD> &a0=(*DATA[i0]);
-      CRef<TQ> *r0=NULL, *r2=NULL;
+      CRef<TQ> *r0=nullptr, *r2=nullptr;
 
       if (CGR.data) { r0=CGR.ref(i0);
          if (noM) { cfac0=1;
@@ -3830,9 +3919,22 @@ TD QSpace<TQ,TD>::trace() const {
 
     for (i=0; i<DATA.len; ++i, q+=QIDX.dim2)
     if (!memcmp(q, q+K, s)) {
-       t=DATA[i]->trace();
-       for (j=0; j<CGR.dim2; ++j) { t*=TD(CGR(i,j).trace()); }
-       tsum+=t;
+       if (DATA[i]->SIZE.len==r) {
+          t=DATA[i]->trace();
+          for (j=0; j<CGR.dim2; ++j) { t*=TD(CGR(i,j).trace()); }
+          tsum+=t;
+       }
+       else {
+          wbvector<double> tc(1,1.);
+          wbvector<TD> tx; DATA[i]->trace(r,tx);
+
+          for (j=0; j<CGR.dim2; ++j) {
+             tc.TensorProd(CGR(i,j).trace(FL)); 
+          }
+          if (tx.len!=tc.len) wblog(FL,
+             "ERR %s() OM length mismatch (%d/%d)",FCT,tx.len,tc.len);
+          tsum+=tx.dotProd(tc);
+       }
     }
 
     return tsum;
@@ -3966,26 +4068,62 @@ TD QSpace<TQ,TD>::sumData() const {
 }
 
 template <class TQ, class TD> inline
-void QSpace<TQ,TD>::contractMat(
-   unsigned ia, const QSpace<TQ,TD> &B, unsigned ib,
+QSpace<TQ,TD>& QSpace<TQ,TD>::revertLeg(
+   const char *F, int L, unsigned i1, 
+   QSpace<TQ,TD> &C) const {
+
+   unsigned r=rank(FL);
+   if (i1>=r) wblog(FL,"ERR %s() index out of bounds (i1=%d/%d)",FCT,i1,r);
+
+   ctrIdx I1(1,&i1), I2(0, getQDir(i1)>0 ? '*':' ');
+   QSpace<TQ,TD> E;
+
+   E.initIdentityCG( cPVEC1_(*this),I1,'z');
+   contractMat(I1,E,I2,C); 
+
+   return C;
+};
+
+template <class TQ, class TD> inline
+QSpace<TQ,TD>& QSpace<TQ,TD>::contractMat(
+   unsigned ia, const QSpace<TQ,TD> &B, unsigned ib, 
    QSpace<TQ,TD> &C
-) const {
+ ) const {
 
-   unsigned i, ra=rank(FL), rb=B.rank(FL);
+   unsigned ra=rank(FL), rb=B.rank(FL);
 
-   if (ia==0 || ib==0) wblog(FL,
-      "ERR contractMat index is 1-based (%d,%d)!", ia, ib);
+   if (!ia || !ib) wblog(FL,
+      "ERR %s() invalid ctr-index (%d,%d; using 1-based)",FCT,ia,ib);
    if (ia>ra || ib>rb) wblog(FL,
-      "ERR contractMat index out of range (%d/%d; %d/%d)!", ia,ra,ib,rb);
-   if (rb!=2) wblog(FL,
-      "ERR contractMat requires 2-D object! (%d)", rb);
+      "ERR %s() index out of range (A: %d/%d; B: %d/%d)",FCT,ia,ra,ib,rb);
+   if (rb!=2) wblog(FL,"ERR %s() requires rank-2 tensor B (r=%d)",FCT,rb);
 
    ctrIdx ica(1,&(--ia)), icb(1,&(--ib)); 
+   wbperm P; P.initLastTo(ia,ra);
 
-   wbperm P(ra);
-   i=ia; P[i++]=ra; for (; i<ra; ++i) P[i]=i-1;
+   contract(ica,B,icb,C,P);
 
-   contract(ica, B, icb, C, P);
+   return C;
+};
+
+template <class TQ, class TD> inline
+QSpace<TQ,TD>& QSpace<TQ,TD>::contractMat(
+   const ctrIdx &ica, const QSpace<TQ,TD> &B, const ctrIdx &icb,
+   QSpace<TQ,TD> &C) const {
+
+   unsigned ra=rank(FL), rb=B.rank(FL);
+   wbperm P;
+
+   if (rb!=2) wblog(FL,"ERR %s() requires rank-2 tensor B (r=%d)",FCT,rb);
+   if (ica.len!=1 || icb.len!=1 || ica[0]>=ra || icb[0]>=rb) { wblog(FL,
+      "ERR %s() invalid ctr-index (A: %s/%d; B: %s/%d)",
+      FCT,STR(ica),ra,STR(icb),rb);
+   }
+
+   P.initLastTo(ica[0],ra);
+   contract(ica,B,icb,C,P);
+
+   return C;
 };
 
 template <class TQ, class TD>
@@ -3994,10 +4132,11 @@ int QSpace<TQ,TD>::contract_getIdxSet(const char *F, int L,
    const ctrIdx &ica, 
    const QSpace<TQ,TB> &B, const ctrIdx &icb,
    wbindex &Ia, wbindex &Ib, wbvector<widx_t> &Dc,
-   QSpace<TQ,TC> &C   
+   QSpace<TQ,TC> &C,   
+   MVEC &fA, MVEC &fB  
  ) const {
 
-   unsigned i=0, l, ra=rank(F_L), rb=B.rank(F_L); int e;
+   unsigned i=0, l, ra=rank(F_L), rb=B.rank(F_L); int isf, e;
 
    const wbindex ica_(ica), icb_(icb);
    wbindex ika, ikb;
@@ -4005,18 +4144,18 @@ int QSpace<TQ,TD>::contract_getIdxSet(const char *F, int L,
 
    wbMatrix<TQ> &QC=C.QIDX;
    iTags &idC=C.itags;
+   iFerm &fdC=C.fdir;
+
+   wbMatrix<unsigned> Z2;
 
 #ifdef WB_CLOCK
    Wb::Clock clk("QS:ctr:getIdx",1); 
 #endif
 
-   if (QDIM!=B.QDIM) wblog(F_L,
-      "ERR %scontract() incompatible objects (QDIM=%d/%d)",
-       F ? "QSpace::" : "", QDIM, B.QDIM);
+   if (QDIM!=B.QDIM) wblog(F_L,"ERR %scontract() "
+      "incompatible objects (QDIM=%d/%d)",F? "QSpace::":"",QDIM,B.QDIM);
    if (ica.len!=icb.len || !ica.len) wblog(F_L,
-      "ERR invalid contraction [%s] <> [%s]",
-       STR(ica), STR(icb)
-   );
+      "ERR invalid contraction [%s] <> [%s]",STR(ica), STR(icb));
 
    idC.init(); Ia.init(); Ib.init();
 
@@ -4028,6 +4167,63 @@ int QSpace<TQ,TD>::contract_getIdxSet(const char *F, int L,
 
    ica_.invert(ra,ika);
    icb_.invert(rb,ikb);
+
+   if ((isf=isFerm(0,0,&B.fdir))<0) wblog(FL,"ERR %s() "
+      "fdir inconsistency (%s / %s; e=%d)",FCT,STR(fdir),STR(B.fdir),isf);
+
+   fdC.init();
+   if (isf) {
+      char a, b; unsigned l=0;
+      wbindex iz(ica.len);
+      wbperm pA,pB;
+
+if (Wb::envFERM) {
+wblog(FL,"TST %40R","-");
+wblog(FL,"TST ica='%s' ;  icb='%s'",STR(ica),STR(icb));
+}
+      pA.init2End  (ica,ra); if (ica.conj) { pA.conj=1; }
+      pB.init2Front(icb,rb); if (icb.conj) { pB.conj=1; }
+if (Wb::envFERM) {
+wblog(FL,"--> ica='%s' ;  icb='%s' => pA=%s ;  pB=%s",STR(ica),STR(icb),STR(pA),STR(pB));
+}
+      for (i=0; i<ica.len; ++i) {
+         a=  fdir[ica[i]]; if (ica.conj) { a=-a; }
+         b=B.fdir[icb[i]]; if (icb.conj) { b=-b; }
+         if (!a || a!=-b) { wblog(FL,
+            "ERR %s() iFerm direction mismatch\n  %-12s @ %s\n  %-12s @ %s",
+            FCT, STR(fdir), STR(ica), STR(B.fdir), STR(icb));
+         }
+         if (a<0) {
+            iz[l++] = ica[i]; 
+         }
+      }
+
+      if (!l) { iz.init(); } else { iz.len=l; }
+
+        getFermSigns(pA,fA,&ica,&iz);  
+      B.getFermSigns(pB,fB);
+
+wblog(FL,"TST %s() %d/%d %d/%d",FCT,pA.len,DATA.len,pB.len,B.DATA.len);
+
+if (Wb::envFERM) {
+   static unsigned i=0; snprintf(str,8,"Ix%d",++i);
+   MXPut(FL,str,"base").add(pA,"pA").add(pB,"pB")
+    .add(fA,"fA") .add(fB,"fB").add(iz,"iz");
+   wblog(FL,"TST ica='%s' ;  fA=%s ",STR(ica),STR(fA));
+   wblog(FL,"TST icb='%s' ;  fB=%s ",STR(icb),STR(fB));
+}
+
+      fdC.init(ika.len+ikb.len, fdir); 
+      a=(ica.conj ? -1 : 1); 
+      b=(icb.conj ? -1 : 1);
+
+      for (     i=0; i<ika.len; ++i) { fdC[i  ] = a*  fdir.at(ika[i]); }
+      for (l=i, i=0; i<ikb.len; ++i) { fdC[i+l] = b*B.fdir.at(ikb[i]); }
+if (Wb::envFERM) {
+wblog(FL,"TST %s | %s | %s",STR(fdir), STR(B.fdir), STR(fdC)); }
+
+if (!fdC) wblog(FL,"ERR %s() ",FCT);
+   }
 
    iTags ta, tb;
 
@@ -4045,9 +4241,8 @@ int QSpace<TQ,TD>::contract_getIdxSet(const char *F, int L,
       tb.len? "invalid":"missing", tb.len,rb, B.CGR.numel()); }
 
    idC.init(ika.len+ikb.len);
-
-   if (ta.len) { for (     i=0; i<ika.len; ++i) idC[i  ]=ta[ika[i]]; }
-   if (tb.len) { for (l=i, i=0; i<ikb.len; ++i) idC[i+l]=tb[ikb[i]]; }
+   for (     i=0; i<ika.len; ++i) { idC[i  ]=ta[ika[i]]; }
+   for (l=i, i=0; i<ikb.len; ++i) { idC[i+l]=tb[ikb[i]]; }
 
    if (ta.len && tb.len) {  char q=0, zflag=0;
       for (i=0; i<ica.len; ++i)  {
@@ -4055,7 +4250,7 @@ int QSpace<TQ,TD>::contract_getIdxSet(const char *F, int L,
             if (zflag) { if (zflag!=q) q=0; }
             else { zflag=q; }
          }
-         if (!q) wblog(FL,"ERR contract() got itag mismatch\n"
+         if (!q) wblog(FL,"ERR contract() itag mismatch\n"
            "%s [%s] <> %s [%s] @ i=%d %N",
             IT2STR__, STR(ica+1),
             IT2STR(B),STR(icb+1), i+1
@@ -4099,8 +4294,8 @@ int QSpace<TQ,TD>::contract_getIdxSet(const char *F, int L,
 template <class TQ, class TD>
 template <class TB, class TC>
 double QSpace<TQ,TD>::contract(const char *F, int L, 
-   const ctrIdx &ica, const QSpace<TQ,TB> &B,
-   const ctrIdx &icb, QSpace<TQ,TC> &C, const wbperm &P,
+   ctrIdx ica, const QSpace<TQ,TB> &B,
+   ctrIdx icb, QSpace<TQ,TC> &C, const wbperm &P,
    char preview 
 ) const {
 
@@ -4120,19 +4315,22 @@ double QSpace<TQ,TD>::contract(const char *F, int L,
 #ifdef LD_CLEBSCH_QS
 #endif
 
-   unsigned nc,ic, Nx=0;
+   unsigned nc, Nx=0; int np=1;
    unsigned ra=rank(F_L), rb=B.rank(F_L), rc=(ra+rb)-ica.len-icb.len;
    char cgflag=gotCGS(FL);
-   int np=(QSP_NUM_THREADS>1 ? QSP_NUM_THREADS : 1); 
+
+   QSpace<TQ,TD> A2;
+   QSpace<TQ,TB> B2;
 
    wbvector<widx_t> D,Dc;
    wbindex Ia,Ib;
+   MVEC fA, fB;
 
    Wb::LogException ex;
 
    if (QDIM!=B.QDIM) wblog(F_L,
       "ERR QSpace() QDIM mismatch (%d/%d)",QDIM,B.QDIM);
-   if (!P.isEmpty() && (!validPerm(P) || P.len>rc)) wblog(FL,
+   if (!P.isEmpty() && (P.isValidPerm()<=0 || P.len>rc)) wblog(FL,
       "ERR %s() invalid permutation [%s; %d]",FCT,STR(P),rc);
 
    if (qtype!=B.qtype) {
@@ -4141,13 +4339,28 @@ double QSpace<TQ,TD>::contract(const char *F, int L,
       FCT, qStr().data, B.qStr().data);
    }
 
-   contract_getIdxSet(FL,ica,B,icb, Ia,Ib,D, C);
-   C.initQ(F,L,*this,0, cgflag<=0? NULL : &B);
+   if (!ica.isSorted() && !icb.isSorted()) {
+      size_t sA=getDataSize(), sB=B.getDataSize();
+      if (sA>sB)
+           { ica.Sort_(icb); }
+      else { icb.Sort_(ica); }
+   }
+
+     permute_to(2,ica,A2,'r'); 
+   B.permute_to(1,icb,B2,'r'); 
+
+   A2.contract_getIdxSet(FL,ica,B2,icb, Ia,Ib,D, C, fA, fB);
+
+   C.initQ(F,L,A2,0, cgflag<=0? nullptr : &B2);
    C.setupDATA(); if (cgflag>0) {
    C.setupCGR();  }
 
    D.cumsum_(Dc,'x');
-   nc=D.len; if (nc && np>int(nc)) np=nc;
+
+   nc=D.len;
+   if (nc>1 && QSP_NUM_THREADS>1 && !omp_in_parallel()) {
+      np=MIN( QSP_NUM_THREADS, int(nc) );
+   }
 
    if (WBLOG_CTR || (WBLOG_RLARGE && Dc.last()>(1<<14))) {
       size_t Dsum=Dc.last();       
@@ -4158,15 +4371,20 @@ double QSpace<TQ,TD>::contract(const char *F, int L,
    itag_::Reset();
 
    #pragma omp parallel for num_threads(np)
-    for (ic=0; ic<nc; ++ic) { if (!ex) {
+    for (unsigned ic=0; ic<nc; ++ic) { if (!ex) {
+     # if defined(DBSTOP) && defined(QS_USING_OMP) && defined(__OMP_H)
+       char tid[8]; 
+       snprintf(tid,8,"%d/%d",omp_get_thread_num(),omp_get_num_threads());
+     # endif
 
        widx_t i0=Dc[ic], Di=D[ic];
        const wbvector<widx_t>
-          ia(Di,Ia.data+i0,'r'),
-          ib(Di,Ib.data+i0,'r');
+          Ia_(Di,Ia.data+i0,'r'),
+          Ib_(Di,Ib.data+i0,'r');
 
        try { 
-          Nx+=contractDATA_group(FL,*this,ia,ica, B,ib,icb, C,ic,preview);
+          Nx+=contractDATA_group(FL, 
+              A2,fA,Ia_,ica, B2,fB,Ib_,icb, C,ic,preview);
        }
        catch (Wb::LogException &e_) { ex+=e_; }
        catch (...) { ++ex; }
@@ -4193,7 +4411,7 @@ double QSpace<TQ,TD>::contract(const char *F, int L,
 
    if (WBLOG_CTR) { 
       wblog(FL,"     %N");
-      this->info("A"); B.info("B"); C.info("C"); printf("\n");
+      A2.info("A"); B2.info("B"); C.info("C"); printf("\n");
    }
 
    return 0; 
@@ -4201,14 +4419,16 @@ double QSpace<TQ,TD>::contract(const char *F, int L,
 
 template <class TQ, class TD>
 QSpace<TQ,TD>& QSpace<TQ,TD>::trace(
-   const char *F, int L, ctrIdx &i1, ctrIdx &i2, QSpace<TQ,TD> &C
+   const char *F, int L, ctrIdx &i1, ctrIdx &i2, QSpace<TQ,TD> &B
  ) const {
 
-   unsigned i,j,k=0,l,m, r=rank(F_L); int e=0; 
-   wbstring mark(r);
+   unsigned i,j,d,k=0,l,m,n, r=rank(F_L), rB;
+   int e=0; 
+
+   MVEC mark(r);
 
    if (itags.len!=r) wblog(F_L,
-      "ERR %s() itags='' / %d !?",FCT,STR(itags),r);
+      "ERR %s() itag length mismatch ('%s' / %d)",FCT,STR(itags),r);
 
    if (!i1.len && !i2.len) {
       i1.init(r); i2.init(r); l=0;
@@ -4223,11 +4443,12 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::trace(
    }
 
    if (!i1.len || i1.len!=i2.len) { e|=1; } else
-   if (i1.conj ^ i2.conj) { e|=2; } else {
+   if (i1.conj ^ i2.conj) { e|=2; } 
+   else {
       for (i=0; i<i1.len; ++i) {
-         j=i1[i]; if (j>=r || ++mark[j]>1) { e|=4; }
-         k=i2[i]; if (k>=r || ++mark[k]>1) { e|=8; }
-         if (!itags[j].isConj(itags[k])) { e|=16; }
+         j=i1[i]; if (j>=r || ++mark[j]>1) { e|= 4; }
+         k=i2[i]; if (k>=r || ++mark[k]>1) { e|= 8; }
+         if (!itags[j].isConj(itags[k]))   { e|=16; }
       }
    }
    if (e&15) wblog(F_L,
@@ -4238,79 +4459,90 @@ QSpace<TQ,TD>& QSpace<TQ,TD>::trace(
      "having '%s' @ %s <> %s !?",FCT,STR(itags),STR(i1),STR(i2)
    );
 
-   if (r==2*i1.len) {
-      wbstring mark(r);
-      if (i1[0]<i2[0]) {
-         for (i=0; i<i1.len; ++i) {
-         if (i2[i]!=i1[i]+i1.len || i2[i]>=r || mark[i2[i]]++) break; }
-      }
-      else {
-         for (i=0; i<i1.len; ++i) {
-         if (i1[i]!=i2[i]+i2.len || i1[i]>=r || mark[i1[i]]++) break; }
-      }
+   rB=r-2*i1.len;
 
-      if (i==i1.len) { return C.initScalar(trace()); }
+   if (!rB) {
+      if (i1[0]<i2[0])
+           { for (i=0; i<i1.len; ++i) { if (i2[i]!=i1[i]+i1.len) break; }}
+      else { for (i=0; i<i1.len; ++i) { if (i1[i]!=i2[i]+i2.len) break; }}
+
+      if (i==i1.len) { return B.initScalar(trace()); }
    }
 
-   unsigned n,N;
-   wbindex Iu, ik, ic(2*i2.len);
+   wbindex D, ik, ic(2*i2.len);
    wbMatrix<TQ> Qc, Qk;
-   TD t;
+   wbperm P;
+   wbarray<TD> x2;
 
    ic.Cat(i1,i2); ic.invert(r,ik);
 
    getQsub(ic,Qc,Qk);
+   Qk.groupRecs(P,D);
 
-   if (!qtype.permitsOM(r-2*i1.len)) {
-      if (!ik.isEmpty()) {
-         Qk.makeUnique_ig(Iu);
-      }
-      else {
-         Qk.init(1,0); n=QIDX.dim1;
-         Iu.init(n+1); Iu[0]=n; for (i=0; i<n; ++i) Iu[i+1]=i;
-      }
+   {  unsigned i=0, k=0, il=0, kl=0; 
+      unsigned j, m=i1.len*QDIM, msz=m*sizeof(TQ), m2=2*m;
+      TQ *qc=Qc.data;
 
-      C.initQ(Qk,*this); N=Qk.dim1;
-
-      if (!C.CGR.data) {
-         for (i=l=0; l<N; ++l) { m=Iu[i++];
-            for (k=0; k<m; ++k, ++i) {
-               DATA[Iu[i]]->trace(i1,i2,*C.DATA[l]);
+      for (; k<Qk.dim1; ++k) { n=0; d=D[k];
+         for (j=0; j<d; ++j, ++i, qc+=m2) {
+            if (!memcmp(qc,qc+m,msz)) {
+               if (il<i) { Qc.recSet(il,i); P[il]=P[i]; }
+               ++il; ++n;
             }
          }
-      }
-      else {
-         wbarray<TD> Cl; unsigned ix;
-         for (i=l=0; l<N; ++l) { m=Iu[i++];
-            for (ix=0; ix<m; ++ix, ++i) { k=Iu[i]; Cl.init();
-               DATA[k]->trace(i1,i2,Cl);
-
-               for (t=1., j=0; j<CGR.dim2; ++j) { t*=double(
-                  CGR(k,j).trace(FL,i1,i2, ix ? NULL : &C.CGR(l,j)));
-               }
-               C.DATA[l]->Plus(Cl,t);
-            }
+         if (n) {
+            if (kl<k) { Qk.recSet(kl,k); }
+            D[kl++]=n;
          }
       }
-wblog(FL,"ERR %s() '%s' trace %s-%s\nic=[%s], ik=[%s]\nto be cont'd",
-FCT,STR(itags),STR(i1),STR(i2), STR(ic),STR(ik));
-      return C;
+
+      if (!il) { return B.initScalar(0); }
+      if (!kl) { wblog(FL,"ERR %s() kl=%d having il=%d",FCT,kl,il); }
+
+      P.len=il; Qc.dim1=il;
+      D.len=kl; Qk.dim1=kl;
    }
 
-   C.initQ(Qk,*this);
-   for (i=0; i<DATA.len; ++i) { wbarray<TD> &Ci=(*C.DATA[i]);
-      DATA[i]->trace(i1,i2,Ci);
-      for (t=1., j=0; j<CGR.dim2; ++j) {
-         t*=double(CGR(i,j).trace(FL,i1,i2, &C.CGR(i,j)));
-      }; Ci*=t;
+   B.initQ(Qk,*this);
+   itags.select(mark,B.itags,0);
+
+   if (!B.CGR.data) {
+      for (i=k=0; k<Qk.dim1; ++k) { d=D[k];
+      for (  j=0; j<d ; ++j, ++i) {
+         DATA[P[i]]->trace(i1,i2,*B.DATA[k]); 
+      }}
+   }
+   else {
+      wbarray<TD> Cl;
+      for (i=k=0; k<Qk.dim1; ++k) { d=D[k];
+      for (  j=0; j<d ; ++j, ++i) { l=P[i]; Cl.init();
+         DATA[l]->trace(i1,i2,Cl);
+
+         x2.init(1,1); x2[0]=1;
+         for (m=0; m<CGR.dim2; ++m) {
+            x2.Kron( CGR(l,m).trace(FL,i1,i2, j? nullptr : &B.CGR(k,m)) );
+         }        
+
+         if ((n=x2.numel())>1) { unsigned rl=Cl.SIZE.len;
+            if (rl!=rB+1) wblog(FL,
+               "ERR %s() unexpected rank %d+%d / %d",FCT,rl-1,1,rB);
+            Cl.ContractMat(FL,rB+1,x2); 
+            B.DATA[k]->Plus(Cl,TD(1),j==0); 
+         }
+         else if (n==1) {
+            B.DATA[k]->Plus(Cl,x2[0],j==0);
+         }
+         else wblog(FL,"ERR %s() numel(x2)=%d",FCT,n);
+      }}
+
+      if (qtype.permitsOM(r) && !qtype.permitsOM(rB)) {
+         for (k=0; k<B.DATA.len; ++k) {
+            B.DATA[k]->skipSingletons(rB);
+         }
+      }
    }
 
-   C.MakeUnique();
-
-wblog(FL,"ERR %s() '%s' trace %s-%s\nic=[%s], ik=[%s]\nto be cont'd",
-FCT,STR(itags),STR(i1),STR(i2), STR(ic),STR(ik));
-
-   return C;
+   return B;
 };
 
 template <class TQ, class TD>
@@ -4326,7 +4558,7 @@ int QSpace<TQ,TD>::check_CGR_cgw(const char *F, int L) const {
    for (i=0; i<CGR.dim1; ++i)
    for (j=0; j<CGR.dim2; ++j) { if (CGR(i,j).cgw.len) {
       w2=CGR(i,j).cgw.norm2();
-      if (!isfinite(w2) || Wb::abs(w2-1)>1E-12) { ++e;
+      if (!isfinite(w2) || Wb::abs(w2-1)>1e-12) { ++e;
          if (F) wblog(F,L,"ERR %s() ",FCT);
       }
    }}
@@ -4341,7 +4573,7 @@ void QSpace<TQ,TD>::checkScalarCGS(const char *F, int L) const {
    if (!CGR.dim2) return;
 
    unsigned i=0,j=0; 
-   char isa[qtype.len];
+   wbvec<char> isa(qtype.len);
 
    for (; j<CGR.dim2; ++j) {
       if ((isa[j]=qtype[j].isAbelian())!=0) ++i;
@@ -4368,13 +4600,11 @@ void QSpace<TQ,TD>::disp_cgs(
 
 template <class TQ, class TD>
 wbstring QSpace<TQ,TD>::sizeStrQ(const char *F, int L) const {
-   size_t l=0, n=32; char s[n];
-   isConsistent(F_L);
+   wbvec<char> s(32); isConsistent(F_L);
    if (QDIM)
-        l=snprintf(s,n,"%lix(%lix%d)",QIDX.dim1,QIDX.dim2/QDIM,QDIM);
-   else l=snprintf(s,n,"%lix%li/%d",QIDX.dim1,QIDX.dim2,QDIM);
-   if (l>=n) wblog(FL,"ERR %s() string out of bounds (%d/%d)",FCT,l,n);
-   return s;
+        s.catf(FL,"%lix(%lix%d)",QIDX.dim1,QIDX.dim2/QDIM,QDIM);
+   else s.catf(FL,"%lix%li/%d",QIDX.dim1,QIDX.dim2,QDIM);
+   return s.data;
 };
 
 template <class TQ, class TD>
@@ -4388,11 +4618,9 @@ wbstring QSpace<TQ,TD>::sizeStr(char vflag) const {
    }
    else {
       wbvector<widx_t> D,DD; getDim(D,&DD);
-      if (vflag) { unsigned l, n=64; char s[n];
-         l=snprintf(s,n,"%s (%s)",SSTR(D),SSTR(DD));
-         if (l>=n) wblog(FL,
-            "ERR %s() string out of bounds (%d/%d)%N%N'%s'%N",FCT,l,n,s);
-         return s;
+      if (vflag) { wbvec<char> s(64);
+         s.catf(FL,"%s (%s)",SSTR(D),SSTR(DD));
+         return s.data;
       }
       else { return DD.sizeStr(); }
    }
@@ -4416,10 +4644,11 @@ void QSpace<TQ,TD>::print_SIZE(const char *F, int L) const {
 template <class TQ, class TD>
 void QSpace<TQ,TD>::print_rankDATA(const char *F, int L) const {
 
-   unsigned i=0, l=0, n=64, r, r0=rank(F_L), rmin=r0+99, rmax=r0;
+   unsigned i=0, r, r0=rank(F_L), rmin=r0+99, rmax=r0;
    size_t m, M=1;
 
-   char sout[n]; l=snprintf(sout,n,"QSpace::DATA rank @ %d",r0);
+   wbvec<char> sout(64);
+   sout.catf(0,0,"QSpace::DATA rank @ %d",r0);
 
    for (; i<DATA.len; ++i) { r=DATA[i]->SIZE.len;
       if (rmin>r) { rmin=r; }
@@ -4428,14 +4657,15 @@ void QSpace<TQ,TD>::print_rankDATA(const char *F, int L) const {
    }
 
    if (rmin==rmax) { if (rmax!=r0) {
-        l+=snprintf(sout+l,n-l," + %d  [M<=%ld]",rmin-r0,M);
+        sout.catf(0,0," + %d  [M<=%ld]",rmin-r0,M);
    }}
    else if (rmax==rmin+1)
-        l+=snprintf(sout+l,n-l," + (%d, %d)  [M<=%ld]",rmin-r0,rmax-r0,M);
-   else l+=snprintf(sout+l,n-l," + (%d .. %d)  [M<=%ld]",rmin-r0,rmax-r0,M);
+        sout.catf(0,0," + (%d, %d)  [M<=%ld]",  rmin-r0,rmax-r0,M);
+   else sout.catf(0,0," + (%d .. %d)  [M<=%ld]",rmin-r0,rmax-r0,M);
 
-   if (l>=n) wblog(FL,"WRN %s() string out of bounds (%d/%d)",FCT,l,n);
-   wblog(F_L," *  %s",sout);
+   sout.check_bounds(FL,0);
+
+   wblog(F_L," *  %s",sout.data);
 };
 
 template <class TQ, class TD>
@@ -4447,7 +4677,7 @@ void QSpace<TQ,TD>::EigenSymmetric(
    int &Nkeep,             
    double Etrunc,          
    double *E0,             
-   char mKD,            
+   char mKD,               
    const wbperm &PA,       
    double deps,            
    double db,              
@@ -4528,7 +4758,7 @@ void QSpace<TQ,TD>::EigenSymmetric(
 
       for (n=CGR.numel(), i=0; i<n; ++i) {
          if (CGR[i].isScalar()) continue;
-         if (!CGR[i].isIdentityCG(NULL,1E-12)) {
+         if (!CGR[i].isIdentityCG(nullptr,1e-12)) {
             MXPut(FL,"q").add(*this,"H").add(Nkeep,"Nkeep")
              .add(Etrunc,"Etrunc").add(i+1,"i").add(n,"n");
             wblog(FL,
@@ -4547,13 +4777,15 @@ void QSpace<TQ,TD>::EigenSymmetric(
 
    Wb::LogException ex;
 
-   int np=MIN(int(D.len),QSP_NUM_THREADS);
-   if (np<1) np=1;
+   int np=1;
+   if (D.len>1 && QSP_NUM_THREADS>1 && !omp_in_parallel()) {
+      np=MIN( QSP_NUM_THREADS, int(D.len) ); 
+   }
 
    D.cumsum_(Dc);
 
   #pragma omp parallel for num_threads(np) 
-   for (i=0; i<D.len; ++i) { if (!ex) { try {
+   for (unsigned i=0; i<D.len; ++i) { if (!ex) { try {
       QBlock<TQ,TD> &b=QB[i];
       wbarray<TD> MM;
 

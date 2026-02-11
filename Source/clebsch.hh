@@ -28,7 +28,7 @@
 //     - based on QVec, qset, cdata below.
 //
 // cdata : wbarray<double>    // full data arrays!
-// cdata : wbSparray  // switching to sparse // Wb,Dec22,11
+// cdata : wbsparray<double>  // switching to sparse // Wb,Dec22,11
 //
 //    actual storage of ClebschGordan coefficients
 //     - of rank 3(+1) for standard CG (3+1=4 in case of multiplicity)
@@ -46,7 +46,7 @@
 // Wb,Sep20,09 ; Wb,May01,10
 //
 // ------------------------------------------------------------------ //
-// NB! sign convention on CGCs #CGD_NORM_QS  #CGD_NORM_EXTERN
+// NB! sign convention on CGCs #CD_NORM_QS  #CD_NORM_EXTERN
 //
 // using CRef, ensure that CData is simply normalized to 1
 // internally within gCS. This ensures that for each OM set
@@ -69,7 +69,7 @@
 //    so it may hold cgw*cgw^T != 1
 //
 // Benefits of this normalization
-//  - OM normalization convention of CData   // #CGD_NORM_QS
+//  - OM normalization convention of CData   // #CD_NORM_QS
 //    required for simple orthonormal OM basis decomposition
 //    remains intact also for CData_actual = CData * cgw
 //    irrespective of direction of legs
@@ -77,7 +77,7 @@
 //    contraction, such that e.g., A.norm2() of some QSpace A
 //    is simply carried by |A.data|^2
 //
-// NB! for `external' purposes only (readability) #CGD_NORM_EXTERN
+// NB! for `external' purposes only (readability) #CD_NORM_EXTERN
 // and only for rank-2 tensors (i.e, scalar operators,
 // which never have OM!), use |cgw|=sqrt(qdim)
 // to reflect actual matrix elements in A.data, e.g., see
@@ -88,7 +88,7 @@
 // Other (not so useful) attempts to normalize cgw
 // (with corresponding inverse factor multiplied onto data{:}):
 //
-//     |cgw| := sqrt(max(size(cdata))) // former version of CGD_NORM_EXTERN
+//     |cgw| := sqrt(max(size(cdata))) // former version of CD_NORM_EXTERN
 //
 // (+) rank-2 tensor are exact identities (or untaries for 1J symbols)
 // (+) rank-3 tensors are mostly normalized to max(|CGC|)
@@ -133,7 +133,7 @@
       Permit rank-1 QSpace if scalar, i.e. for q=0 only;
       e.g. for SU(2), can contract (S,0|S) at '13'
       for any spin-S multiplet, resulting in a non-zero weight
-      since by DEF_CGD_NORM with d=2S+1 the multiplet dimension,
+      since by CD_NORM_QS with d=2S+1 the multiplet dimension,
       trace('S,0;S,'13') = 1/sqrt(d) * d = sqrt(d)
       [e.g. see @QSpace/getIdentity3.m with --rho flag]
       however, contract('S,S;S,'13') = 0, i.e., rank-1 QSpace is
@@ -155,7 +155,7 @@
 
 // Wb,June 2014 ----------------------------------------------------- //
 
-    * removed CG_SU2 (merged with treatment of QTYPE_SUN)
+    * removed CG_SU2 (merged with treatment of QT_SUN)
     * removed zflag from qset [e.g. nq = n(q) + n(qz)]
     * removed zflags from QType and qset
     * removed qset::RemoveZLabels (still got QSpace::RemoveZLabels!)
@@ -195,23 +195,21 @@
 
 #define CDATA_TQ    CData<TQ,RTD>
 #define cdata__     cdata<RTD>
-#define cgsparray   wbsparray<RTD>
+#define SPARR_RTD   wbsparray<RTD>
 
    template <class TQ, class TD> class CData;
    template <class TQ> class CRef;
 
    class QVec;
 
-   int MAX_OM=9;
-
    int get_CG_VERBOSE(const char *F=0, int L=0);
    int CG_VERBOSE=get_CG_VERBOSE();
 
    unsigned get_CG_FIXIT(const char *F=0, int L=0);
-   unsigned CG_FIXIT=get_CG_FIXIT();
+   unsigned CG_FIX=get_CG_FIXIT();
 
-   #define FIX_CID3  1  
-   #define FIX_CTR   2  
+   #define cgfix_CID3  1  
+   #define cgfix_CTR   2  
 
    unsigned get_CG_PREVIEW(const char *F=0, int L=0);
    unsigned CG_PREVIEW=get_CG_PREVIEW();
@@ -220,55 +218,58 @@
 
    wbstring RC_LOG; 
 
-   #define CG_SKIP_DEPS1 1E-12 
-   #define CG_SKIP_DEPS2 1E-14
+   #define CG_SKIP_DEPS1 1e-12 
+   #define CG_SKIP_DEPS2 1e-14
 
-   #define CG_SKIP_REPS  1E-17 
+   #define CG_SKIP_REPS  1e-17 
 
 #ifdef __WB_MPFR_HH__
-   #define CG_SKIP_EPS1 1E-16 
-   #define CG_SKIP_EPS2 1E-18 
+   #define CG_SKIP_EPS1 1e-16 
+   #define CG_SKIP_EPS2 1e-18 
 
-   #define CG_EPS  1E-38      
-   #define CG_EPS0 1E-36      
-   #define CG_EPS1 1E-16      
-   #define CG_EPS2 1E-18      
+   #define CG_EPS  1e-38      
+   #define CG_EPS0 1e-36      
+   #define CG_EPS1 1e-16      
+   #define CG_EPS2 1e-18      
 
 #else
 
-   #define CG_EPS  2.22E-16    
-   #define CG_EPS0 1E-15       
+   #define CG_EPS  2.22e-16    
+   #define CG_EPS0 1e-15       
 
-   #define CG_SKIP_EPS1 1E-14  
-   #define CG_SKIP_EPS2 1E-16
+   #define CG_SKIP_EPS1 1e-14  
+   #define CG_SKIP_EPS2 1e-16
 
-   #define CG_EPS1 1E-10
-   #define CG_EPS2 1E-12
+   #define CG_EPS1 1e-10
+   #define CG_EPS2 1e-12
 
 #endif
 
    double cg_eps1=CG_EPS1;
    double cg_eps2=CG_EPS2;
 
-enum QTYPE_SET {
-   QTYPE_UNKNOWN,
-      QTYPE_P,   
-      QTYPE_ZN,  
-      QTYPE_U1,  
-   QTYPE_ASEP,   
-      QTYPE_SUN, 
-      QTYPE_SpN, 
-      QTYPE_SON, 
-      QTYPE_SEN, 
-   QTYPE_NUM_TYPES
+enum QT_QSPACE {
+   QT_UNKNOWN,
+      QT_P,   
+      QT_ZN,  
+      QT_U1,  
+      QT_A4,  
+      QT_SUN, 
+      QT_SpN, 
+      QT_SON, 
+      QT_SEN, 
+   QT_NUM_TYPES
 };
 
-const char* QTYPE_STR[QTYPE_NUM_TYPES]=  {
-"?QTYPE?",  
+#define QT_ABELIAN  QT_U1 
+#define QT_RANK0    QT_A4 
+
+const char* QT_STR[QT_NUM_TYPES]=  {
+  "QT:-",   
    "P",     
    "ZN",    
    "A",     
-   "!?!",   
+   "A4",
    "SUN",   
    "Sp2N",  
    "SO2N",  
@@ -277,60 +278,77 @@ const char* QTYPE_STR[QTYPE_NUM_TYPES]=  {
 
 #define CGC_ALL_ABELIAN "A*"
 
-enum CGD_TYPE {
-     CGD_UNKNOWN,  
+enum CD_TYPE {
+     CD_UNKNOWN,    
+     CD_ABELIAN,    
+     CD_IDENTITY,   
 
-     CGD_ABELIAN,  
-     CGD_IDENTITY, 
+     CD_REF_INIT,   
 
-     CGD_REF_INIT, 
+     CD_BSZ_INIT,   
 
-     CGD_BSZ_INIT, 
+     CD_FROM_CGR,   
 
-     CGD_FROM_CGR, 
+     CD_FROM_CTR,   
+     CD_FROM_DEC,   
 
-     CGD_FROM_CTR, 
-     CGD_FROM_DEC, 
+     CD_STD3,       
 
-     CGD_STD3,     
+     CD_1JSY_ST3,   
+     CD_1JSY_GEN,   
 
-     CGD_1JSY_ST3, 
-     CGD_1JSY_GEN, 
+     CD_STD3_X,     
+     CD_GEN3_X,     
+     CD_IMPLICIT,   
+     CD_EXPLICIT,   
 
-     CGD_STD3_X,   
-     CGD_GEN_X,    
-     CGD_EXPLICIT, 
+     CD_OTHER_15,   
 
-CGD_NUM_TYPES };
+     CD_COMPLETE,   
+     CD_COMPLETE_U, 
+     CD_NP_ZERO,    
+  CD_NUM_TYPES_X    
+};
+
+#define CD_NUM_TYPES    CD_COMPLETE  
 
 #define CID_RANK1_Q0  60   
 
-const char* CGD_TYPE_STR[CGD_NUM_TYPES+1] = { "C:??", 
+const char* CD_TYPE_STR[CD_NUM_TYPES_X+2] = {
+   "C:--",   
    "C:iA",   
-   "C:iE",   
+   "C:Id",   
    "C:iR",   
    "C:iS",   
    "C:cR",   
    "C:cX",   
    "C:cD",   
-   "C:c3",   
+   "C:s3",   
    "C:r1J",  
    "C:c1J",  
    "C:c3x",  
    "C:cgx",  
-   "C:iX",   
-"C:##"};
+   "C:iI",   
+   "C:iE",   
+   "C?15",   
+   "C:#1",   
+   "C:f",    
+   "C:U",    
+   "C:Z",    
+"C:#X"};     
 
-enum CGR_TYPE { CGR_DEFAULT,
-     CGR_ABELIAN,    
+enum CR_TYPE {
+     CR_DEFAULT,    
+     CR_ABELIAN,    
 
-     CGR_CTR_SCALAR, 
+     CR_CTR_SCALAR, 
 
-     CGR_CTR_ZERO,   
+     CR_CTR_ZERO,   
 
-CGR_NUM_TYPES };
+CR_NUM_TYPES };
 
-const char* CGR_TYPE_STR[CGR_NUM_TYPES]=  { "?CGR_TYPE?",
+const char* CR_TYPE_STR[CR_NUM_TYPES]=  {
+    "R:--", 
     "R:iA", 
     "R:cS", 
     "R:c0", 
@@ -339,11 +357,11 @@ const char* CGR_TYPE_STR[CGR_NUM_TYPES]=  { "?CGR_TYPE?",
 namespace Mx { 
 
 template <>
-size_t Mx::Array<CGD_TYPE>::copy_to(CGD_TYPE* b, const wbperm *P, char tcheck)
+size_t Mx::Array<CD_TYPE>::copy_to(CD_TYPE* b, const wbperm *P, char tcheck)
 const { return rcopy_to(b,P,tcheck); };
 
 template <>
-size_t Mx::Array<CGR_TYPE>::copy_to(CGR_TYPE* b, const wbperm *P, char tcheck)
+size_t Mx::Array<CR_TYPE>::copy_to(CR_TYPE* b, const wbperm *P, char tcheck)
 const { return rcopy_to(b,P,tcheck); };
 
 };
@@ -357,6 +375,46 @@ template <class TQ, class TD> class blockSpaceQS;
 #include <map>
 
 namespace CG {
+
+class FOM__ : public wbvector<int> { 
+public:
+
+   int& me() { int i=my_tid(FL); return data[i]; };
+   int tid() { return my_tid(FL); };
+
+   int& operator++()     { int i=my_tid(FL); return ++data[i];     };
+   int& operator--()     { int i=my_tid(FL); return --data[i];     };
+   int& operator=(int x) { int i=my_tid(FL); return (data[i]=x);   };
+
+  void status(const char *F=nullptr, int L=0, const char *fct=nullptr) {
+     wblog(F_L,"TST %s() %s= [ %s ] (len=%d)",
+     fct? fct:FCT, fct? "thread_fOM ":"", STR_(this),len);
+  };
+
+protected:
+private:
+
+   unsigned my_tid(const char *F, int L) { 
+      unsigned l=0, tid=Wb::get_omp_tid_nn(&l);
+
+      if (!len) { 
+         #pragma omp critical (CGT_FOM__)
+         { int n=omp_get_num_threads();
+               n=MAX(n,QSP_NUM_THREADS);
+               n=MAX(n,OMP_NUM_THREADS); n=MAX(n,int(tid+1));
+               n=Wb::pow2_ceil(n); 
+           init(n);
+         }
+      }
+      if (unsigned(tid)>=len) wblog(FL, 
+        "ERR CG::FOM__::%s() index out of bounds (%d/%d; l=%d)",tid,len,l);
+      return tid;
+   };
+}; 
+
+   FOM__ thread_fOM;
+
+   int MAX_OM=9; 
 
    template <class TD> inline
    int signFirstVal(const char *F, int L,
@@ -375,7 +433,7 @@ namespace CG {
       T* d, SPIDX_T n, unsigned niter=0,
       double eps1=-1, double eps2=-1
    );
-};
+}; 
 
 namespace DY { 
 
@@ -393,12 +451,512 @@ namespace DY {
 
 };
 
+class QType { 
+
+  public:
+
+    QType(QT_QSPACE t=QT_UNKNOWN, unsigned s=0)
+     : type(t), sub(s) { if (t || s) { validType(FL); }};
+
+    QType(const char *s ) : type(QT_UNKNOWN), sub(0) { init(0,0,s); };
+    QType(const QType &q) : type(q.type), sub(q.sub) { };
+
+    QType(const char *F, int L, const mxArray *a)
+      : type(QT_UNKNOWN), sub(0) { init(F,L,a); };
+
+   ~QType() { init(); };
+
+    QType& init() { type=QT_UNKNOWN; sub=0; return *this; };
+
+    QType& initx(QT_QSPACE t, unsigned m=0) {
+       if (!t && !m) { init(); return *this; }
+       type=t; sub=m; validType(FL);
+       return *this;
+    };
+
+    QType& init(QT_QSPACE t, unsigned m=0) {
+
+       if (!t && !m) { init(); return *this; }
+
+       type=t;
+       if (type==QT_SpN) { sub=m/2;
+          if (m%2) wblog(FL,"ERR %s() invalid sub=%d with SpN",FCT,m);
+       }
+       else { sub=m; }
+
+       validType(FL); return *this;
+    };
+
+    int init_s(const char *s);
+
+    QType& init(const char *s) { return init(FL,s); }
+
+    QType& init(const char *F, int L, const char *s) {
+       if (!s || !s[0]) { type=QT_UNKNOWN; sub=0; }
+       else {
+          if (init_s(s)) wblog(FL,"ERR invalid QType '%s'",s);
+          else validType(F_L);
+       }
+       return *this;
+    };
+
+    QType& init(const char *F, int L, const mxArray *a) {
+       wbstring s(F_L,a);
+       return init(F_L,s.data);
+    };
+
+    QType& init(const QType &q) {
+       type=q.type; sub=q.sub; return *this;
+    };
+
+    void swap(QType &q) { 
+       SWAP(type,q.type);
+       SWAP(sub, q.sub );
+    };
+
+    inline char validType(const char *F=0, int L=0) const;
+
+    bool isUnknown() const { return validType(FL)==0; };
+    bool isKnown()   const { return validType(FL)>0; };        
+    explicit operator bool() const { return validType(FL)>0; }; 
+
+    bool isAbelian(const char *F=NULL, int L=0) const {
+       if (type<=QT_UNKNOWN || type>=QT_NUM_TYPES) wblog(F_L,
+          "ERR invalid type %d, `%s'",type,STR(*this));
+       return ((type && type<=QT_ABELIAN)? 1 : 0);
+    };
+
+    bool isNonAbelian(const char *F=NULL, int L=0, char lflag=0) const {
+       if (!lflag && !isUnknown()) { 
+       if (type<=QT_UNKNOWN || type>=QT_NUM_TYPES) wblog(F_L,
+          "ERR invalid type %d, `%s'",type,STR(*this)); }
+       return (type>QT_ABELIAN? 1 : 0);
+    };
+
+    bool isSU2() const { return (type==QT_SUN && sub==1); };
+    bool isSUN() const { return (type==QT_SUN); };
+    bool isSU(unsigned N) const { return (type==QT_SUN && sub+1==N); };
+
+    bool isSpN() const { return (type==QT_SpN); };
+    bool isSON() const { return (type==QT_SON); };
+    bool isSEN() const { return (type==QT_SEN); };
+
+    bool isU1()  const { return (type==QT_U1 && sub==0); };
+    bool isParity()  const { return (type==QT_P && sub==0); };
+
+    bool isZN()  const { return (type==QT_ZN); }; 
+    bool isZ2()  const { return (type==QT_ZN && sub==2); };
+    bool isZN_even() const { return (type==QT_ZN && (sub%2)==0); };
+    bool isZN_odd()  const { return (type==QT_ZN && (sub%2)==1); };
+    bool isA4()  const { return (type==QT_A4); }; 
+
+    bool isAdditive() const { 
+       if (type==QT_U1) {
+          if (sub) wblog(FL,
+            "WRN invalid type %s (%d,%d)",STR(*this),type,sub);
+          return 1;
+       }
+       return 0;
+    };
+
+    bool permitsFerm() const { 
+       return (isU1() || isZN_even() || isParity() || isSU(2));
+    };
+
+    int getZ2(int q) const { 
+       if (isU1() || isZN_even() || isSU2()) { q %= 2; } else 
+       if (isParity()) { 
+          if (q==+1) { q=0; } else
+          if (q==-1) { q=1; } else wblog(FL,
+          "ERR %s() invalid symmetry label %d for %s",FCT,q,STR(*this));
+       }
+       else wblog(FL,"ERR %s() not yet implemented for %s",FCT,STR(*this));
+       return q;
+    };
+
+     bool signedLabels() const { 
+        return (type>QT_UNKNOWN && type<=QT_RANK0 && type!=QT_ZN);
+     };
+
+    int permitsOM() const { 
+       if (isRank0()) {
+          if (isAbelian()) { return 0; }    
+          if (isA4()     ) { return 2; }    
+          else wblog(FL,"ERR %s() invalid %s",FCT,STR(*this));
+       }
+       return (sub<=1 ? 1:2);
+    };
+
+    int permitsOM(unsigned r) const { 
+       if (r<3) { return 0; } 
+       if (isRank0()) {
+          if (isAbelian()) { return 0; } 
+          if (isA4()) { return 1; } 
+          else wblog(FL,"ERR %s() invalid %s",FCT,STR(*this));
+       }
+       return ((r==3 && sub<=1) ? 0:1);
+    };
+
+    unsigned qlen() const {
+       if (type && type<=QT_RANK0) { return 1; }
+       if (type>=QT_NUM_TYPES) wblog(FL,
+          "ERR invalid type `%s' (%d)",STR(*this),type);
+       return sub; 
+    };
+
+    unsigned qrank() const {
+       if (!type || type>=QT_NUM_TYPES) wblog(FL,
+          "ERR invalid type `%s' (%d)",STR(*this),type);
+       if (type<=QT_RANK0) { return 0; } 
+       if (!sub) wblog(FL,   
+          "ERR %s() got %s @ sub=%d",FCT,STR(*this),sub); 
+       return sub; 
+    };
+
+    bool isRank0(const char *F=NULL, int L=0) const {
+       if (!type || type>=QT_NUM_TYPES) wblog(F_L,
+          "ERR invalid type %d, `%s'",type,STR(*this));
+       return (type<=QT_RANK0? 1 : 0);
+    };
+
+    bool isLargeD(unsigned d) const {
+       if (type && type<=QT_ABELIAN) { return (d>1); }
+       switch (type) {
+          case QT_SUN: return (d>12000 || d>(sub!=1 ? exp10(qlen()) : 20));
+          case QT_SON:
+          case QT_SEN:
+          case QT_SpN: return (d>12000 || d>exp10(qlen()));
+
+          case QT_UNKNOWN : return (d>100);
+          default:
+          wblog(FL,"ERR invalid type `%s' (%d)",STR(*this),type);
+       }
+       return 1; 
+    };
+
+    bool isLargeD(const wbvector<unsigned> &dd) const {
+       for (unsigned i=0; i<dd.len; ++i) {
+          if (isLargeD(dd[i])) return 1;
+       }
+       return 0;
+    };
+
+    unsigned getDimDef() const { 
+       unsigned d=1; 
+       if (type>QT_RANK0) {
+          switch (type) {
+             case QT_SUN: d=sub+1;   return d;
+             case QT_SpN: d=2*sub;   return d;
+             case QT_SON: d=2*sub+1; return d;
+             case QT_SEN: d=2*sub;   return d;
+             default:
+             wblog(FL,"ERR invalid type `%s' (%d)",STR(*this),type);
+          }
+       }
+       return d;
+    };
+
+    template<class TQ>
+    size_t wdim(const TQ *qs) const {
+       unsigned d=1; 
+       if (type>QT_ABELIAN) {
+          switch (type) { 
+             case QT_SUN: d=DY::wdim_A(sub,qs); break; 
+             case QT_SpN: d=DY::wdim_C(sub,qs); break; 
+             case QT_SON: d=DY::wdim_B(sub,qs); break; 
+             case QT_SEN: d=DY::wdim_D(sub,qs); break; 
+             default:
+             wblog(FL,"ERR invalid type `%s' (%d)",STR(*this),type);
+          }
+       }
+       return d;
+    };
+
+    template<class TQ>
+    size_t wdim(const qset<TQ> &qs) const { return wdim(qs.data); }
+
+    unsigned maxDimLocal() const {
+       unsigned Dloc=1; 
+       if (type) {
+          Dloc=maxDimLocal0();
+          if (Dloc<20) { Dloc=20; } 
+       }
+       return Dloc;
+    };
+
+    unsigned maxDimLocal0() const {
+       unsigned Dloc=2; 
+       if (type>QT_ABELIAN) {
+
+          Dloc=round(pow(double(getDimDef()),2.25+double(sub)/4.));
+
+       }
+       return Dloc;
+    };
+
+    void printDimInfo(const char *F=NULL, int L=0) const {
+       wblog(F_L," *  %s: sub=%d, dim_def=%d, dloc<=%d",
+       STR(*this), sub, getDimDef(), maxDimLocal());
+    };
+
+    template <class T>
+    unsigned qdim(const T* q) const; 
+
+    template <class T>
+    wbvector<unsigned>& QDim(
+       const T* q, unsigned r, unsigned stride,
+       wbvector<unsigned> &S) const;
+
+    bool isSelfDual() const { 
+       switch (type) {
+          case QT_P   : 
+          case QT_SpN :
+          case QT_SON : return 1; 
+
+          case QT_SEN : return (qlen()%2 ? 0 : 1);
+
+          case QT_U1  : 
+          case QT_ZN  :
+          case QT_SUN : return 0;
+
+          default:
+          wblog(FL,"ERR dual not yet defined for '%s'",STR(*this));
+       }
+       return 0;
+    };
+
+    template<class TQ>
+    char setDual(TQ* q) const {
+       switch (type) {
+          case QT_P  : { return 0; } 
+          case QT_U1 : { q[0]=-q[0]; return 1; }
+          case QT_ZN : { q[0]=(sub-q[0])%sub; return 1; }
+          case QT_A4 : {
+             if (abs(q[0])==1) { q[0]=-q[0]; }
+          }
+
+          case QT_SUN: { 
+             unsigned n=qlen(); if (n<2) return 0; 
+             else {
+                unsigned i=0, l=n-1; TQ x;  
+                for (n/=2; i<n; ++i) { x=q[i]; q[i]=q[l-i]; q[l-i]=x; }
+                return 1;
+             }
+          }
+          case QT_SpN: 
+          case QT_SON: return 0;
+
+          case QT_SEN: {
+             unsigned n=qlen();
+             if (n<3) wblog(FL,"ERR %s() got %s",FCT,STR(*this));
+             if ((n%2)==0) { return 0; } 
+             else {
+                unsigned l=n-2; n-=1;
+                if (q[l]==q[n]) { return 0; } 
+                else {
+                   TQ x=q[l]; q[l]=q[n]; q[n]=x;
+                   return 1;
+                }
+             }
+          }
+
+          default:
+          wblog(FL,"ERR dual not yet defined for '%s'",STR(*this));
+       }
+       return 0;
+    };
+
+    template<class TQ>
+    char getDual(const TQ* q0, TQ* q) const {
+       if (q!=q0) { memcpy(q,q0,qlen()*sizeof(TQ)); }
+       return setDual(q);
+    };
+
+    template<class TQ>
+    bool isDual(const TQ *q, const TQ *x) const { 
+       switch (type) {
+          case QT_P  : { return x[0]== q[0]; } 
+          case QT_U1 : { return x[0]==-q[0]; }
+          case QT_ZN : { return x[0]==TQ((sub-q[0])%sub); }
+          case QT_A4 : {
+             if (abs(q[0])==1)
+                  { return x[0]==-q[0]; }
+             else { return x[0]== q[0]; }
+          }
+
+          case QT_SUN: { 
+             unsigned i=0, l=qlen();
+             if (!l) wblog(FL,"ERR %s() got n=%d",FCT,l);
+             for (--l; i<=l; ++i) { if (x[i]!=q[l-i]) return 0; }
+             return 1;
+          }
+          case QT_SpN: 
+          case QT_SON: {
+             if (x!=q) {
+                unsigned i=0, n=qlen();
+                for (; i<n; ++i) { if (x[i]!=q[i]) return 0; }
+             }; return 1;
+          }
+          case QT_SEN: {
+             unsigned n=qlen();
+             if (n<3) wblog(FL,"ERR %s() got %s",FCT,STR(*this));
+
+             if (x==q) {
+                return (n%2 ? x[n-2]==x[n-1] : 1);
+             }
+             else {
+                unsigned i=0, l=n-(n%2 ? 2 : 0);
+                for (; i<l; ++i) { if (x[i]!=q[i]) { return 0; }}
+                if (i<n) {
+                   if (x[i]!=q[i+1] || x[i+1]!=q[i]) { return 0; }
+                }; return 1;
+             }
+          }
+
+          default:
+          wblog(FL,"ERR dual not yet defined for '%s'",STR(*this));
+       }
+       return 0;
+    };
+
+    QType& operator=(const char *s) { return init(FL,s); };
+    QType& operator=(const QType &q) { return init(q); };
+
+    QType& operator=(QT_QSPACE t) {
+       type=t; sub=0; if (t) { validType(FL); }
+       return *this;
+    };
+
+    bool operator<(const QType &q) const {
+       if (type!=q.type)
+            return (type<q.type);
+       else return (sub<q.sub);
+    };
+
+    char cmp(const QType &q) const { 
+       if (type<q.type) return -1;
+       if (type>q.type) return +1;
+       if (sub <q.sub ) return -1;
+       if (sub >q.sub ) return +1; else return 0;
+    };
+
+    bool operator> (const QType &q) const { return !((*this)<=q); };
+    bool operator<=(const QType &q) const {
+       if (type!=q.type) return (type<q.type);
+       else return (sub<=q.sub);
+    };
+
+    bool operator== (const QType &q) const {
+        return (type==q.type && sub==q.sub);
+    };
+    bool operator!= (const QType &q) const {
+        return (type!=q.type || sub!=q.sub);
+    };
+
+    wbstring toStr() const { return toStr(0); }; 
+    wbstring toStr(char tflag) const {
+       wbstring s(8); 
+       char e=0; s[0]=0;
+
+       if (type==QT_U1  ) { s=(tflag ? QT_STR[type] : "U(1)"  ); } else
+       if (type==QT_P   ) { s=(tflag ? QT_STR[type] : "Parity"); } else
+       if (type==QT_A4  ) { s=QT_STR[type]; } else 
+       if (!type && !sub) { s=(tflag ? "???" : "unknown");}
+
+       if (s[0]) {
+          if (sub) wblog(FL,
+             "ERR invalid QType %s with sub=%d",s.data,sub);
+          return s;
+       }
+
+       if (sub<1 || sub>99) { e|=1; } 
+       else if (type==QT_ZN) { if (sub<2) e|=2;
+          if (tflag)
+               { snprintf(s.data,s.len,"Z%d",  sub); }
+          else { snprintf(s.data,s.len,"Z(%d)",sub); }
+       }
+       else if (type==QT_SUN) {
+          if (tflag) 
+               { snprintf(s.data,s.len,"SU%d",  sub+1); }
+          else { snprintf(s.data,s.len,"SU(%d)",sub+1); }
+       }
+       else if (type==QT_SpN) { if (sub<2) e|=4;
+          if (!tflag)
+               { snprintf(s.data,s.len,"Sp(%d)",2*sub); }
+          else { snprintf(s.data,s.len,"Sp%d",  2*sub);
+             if (tflag=='u') { s[1]='P'; } 
+          }
+       }
+       else if (type==QT_SON) {
+          if (!tflag)
+               { snprintf(s.data,s.len,"SO(%d)",2*sub+1); }
+          else { snprintf(s.data,s.len,"SO%d",  2*sub+1); }
+       }
+       else if (type==QT_SEN) { if (sub<2) e|=8;
+          if (!tflag)
+               { snprintf(s.data,s.len,"SO(%d)",2*sub); }
+          else { snprintf(s.data,s.len,"SO%d",  2*sub); }
+       }
+       else {
+          if (type) wblog(FL,"ERR %s() invalid type=%d",FCT,type);
+          s=(tflag ? "???" : "unknown");
+       }
+
+       if (e) wblog(FL,
+          "ERR invalid QType %s with sub=%d", type < QT_NUM_TYPES ?
+           QT_STR[type] : "(type out of bounds)", sub
+       );
+
+       return s;
+    };
+
+    mxArray* mxCreateStruct(unsigned m, unsigned n) const;
+    void add2MxStruct(mxArray *S, unsigned i) const;
+
+    mxArray* toMx(const char tflag=0) const {
+       const size_t n=32; wbstring s(n); 
+       size_t l=snprintf(s.data,n,"%s",toStr(tflag).data);
+       if (l>=n) wblog(FL,
+          "WRN %s() QType too long (%s; %d)",FCT,s.data,l);
+       return s.toMx();
+    };
+
+    QT_QSPACE type;
+    unsigned sub; 
+
+  private:
+
+    int atoi(const char *s, int &k, unsigned n) {
+       if (s[0]!='(') { return Wb::atoi(s,k,n); } 
+       else {
+          unsigned l=strlen(++s);
+          if (l && s[l-1]==')') {
+             wbvec<char> x(l,s); x[l-1]=0;
+             return Wb::atoi(x.data,k,n);
+          }
+       }
+       return -6;
+    }
+};
+
+QType SU2("SU2");
+
+bool operator!(const QType &q) {
+   if (q.type == QT_UNKNOWN) {
+      if (q.sub) wblog(FL,
+         "ERR %s() invalid QType %s",FCT,STR(q));
+      return 1;
+   }
+   return 0;
+};
+
 namespace CG {
 
 template <class TQ> inline
-unsigned gotQAlpha(const TQ* q, unsigned n) { 
+unsigned gotQAlpha(const TQ* q, unsigned n, const QType *t=NULL) {
 
-   if (!WbUtil<TQ>().isInt()) return 0;
+   if (!WbUtil<TQ>().isInt()) { return 0; }
+   if (t && !t->qrank()) { return 0; }
 
    if (int(n)<0) wblog(FL,"ERR %s() got n=%d",FCT,n);
 
@@ -413,7 +971,7 @@ unsigned gotQAlpha(const TQ* q, unsigned n) {
 };
 
 template <> inline
-unsigned gotQAlpha(const char* s, unsigned n) {
+unsigned gotQAlpha(const char* s, unsigned n, const QType *t) {
 
    unsigned i=0;
 
@@ -463,449 +1021,6 @@ int qset2cstr(const TQ *q, char *s, unsigned n) {
 
 }; 
 
-class QType { 
-
-  public:
-
-    QType(QTYPE_SET t=QTYPE_UNKNOWN, unsigned s=0)
-     : type(t), sub(s) { if (t || s) validType(FL); };
-
-    QType(const char *s ) : type(QTYPE_UNKNOWN), sub(0) { init(0,0,s); };
-    QType(const QType &q) : type(q.type), sub(q.sub) { };
-
-    QType(const char *F, int L, const mxArray *a)
-      : type(QTYPE_UNKNOWN), sub(0) { init(F,L,a); };
-
-   ~QType() { init(); };
-
-    QType& init() { type=QTYPE_UNKNOWN; sub=0; return *this; };
-
-    QType& initx(QTYPE_SET t, unsigned m=0) {
-       if (!t && !m) { init(); return *this; }
-       type=t; sub=m; validType(FL);
-       return *this;
-    };
-
-    QType& init(QTYPE_SET t, unsigned m=0) {
-
-       if (!t && !m) { init(); return *this; }
-
-       type=t;
-       if (type==QTYPE_SpN) { sub=m/2;
-          if (m%2) wblog(FL,"ERR %s() invalid sub=%d with SpN",FCT,m);
-       }
-       else { sub=m; }
-
-       validType(FL); return *this;
-    };
-
-    int init_s(const char *s);
-
-    QType& init(const char *s) { return init(FL,s); }
-
-    QType& init(const char *F, int L, const char *s) {
-       if (!s || !s[0]) { type=QTYPE_UNKNOWN; sub=0; }
-       else {
-          if (init_s(s)) wblog(FL,"ERR invalid QType '%s'",s);
-          else validType(F_L);
-       }
-       return *this;
-    };
-
-    QType& init(const char *F, int L, const mxArray *a) {
-       wbstring s(F_L,a);
-       return init(F_L,s.data);
-    };
-
-    QType& init(const QType &q) {
-       type=q.type; sub=q.sub; return *this;
-    };
-
-    bool isUnknown() const {
-       return (type==QTYPE_UNKNOWN && sub==0);
-    };
-
-    bool isKnown() const {
-       validType();
-       return (type!=QTYPE_UNKNOWN);
-    };
-
-    bool validType(const char *F=0, int L=0) const;
-
-    bool isAbelian(const char *F=NULL, int L=0) const {
-       if (type<=QTYPE_UNKNOWN || type>=QTYPE_NUM_TYPES) wblog(F_L,
-          "ERR invalid type %d, `%s'",type,STR_(this));
-       return ((type && type<QTYPE_ASEP)? 1 : 0);
-    };
-
-    bool isNonAbelian(const char *F=NULL, int L=0, char lflag=0) const {
-       if (!lflag && !isUnknown()) { 
-       if (type<=QTYPE_UNKNOWN || type>=QTYPE_NUM_TYPES) wblog(F_L,
-          "ERR invalid type %d, `%s'",type,STR_(this)); }
-       return ((type && type>QTYPE_ASEP)? 1 : 0);
-    };
-
-    bool isSU2() const { return (type==QTYPE_SUN && sub==1); };
-    bool isSUN() const { return (type==QTYPE_SUN); };
-    bool isSU(unsigned N) const { return (type==QTYPE_SUN && sub+1==N); };
-
-    bool isSpN() const { return (type==QTYPE_SpN); };
-    bool isSON() const { return (type==QTYPE_SON); };
-    bool isSEN() const { return (type==QTYPE_SEN); };
-
-    bool isU1()  const { return (type==QTYPE_U1 && sub==0); };
-    bool isParity()  const { return (type==QTYPE_P && sub==0); };
-
-    bool isAdditive() const { 
-       if (type==QTYPE_U1) {
-          if (sub) wblog(FL,
-            "WRN invalid type %s (%d,%d)",STR_(this),type,sub);
-          return 1;
-       }
-       return 0;
-    };
-
-    int permitsOM() const { 
-       return (isAbelian() ? 0 : (sub<=1 ? 1 : 2));
-    };
-
-    int permitsOM(unsigned r) const { 
-       return (isAbelian() || r<3 || (r==3 && sub<=1) ? 0 : 1);
-    };
-
-    unsigned qlen() const {
-       if (type && type<QTYPE_ASEP) { return 1; }
-       if (type>=QTYPE_NUM_TYPES) wblog(FL,
-          "ERR invalid type `%s' (%d)",STR_(this),type);
-       return sub; 
-    };
-
-    unsigned qrank() const {
-       if (type && type<QTYPE_ASEP) { return 0; } 
-       if (!type || type>=QTYPE_NUM_TYPES) wblog(FL,
-          "ERR invalid type `%s' (%d)",STR_(this),type);
-       if (!sub) wblog(FL,   
-          "ERR %s() got %s @ sub=%d",FCT,STR_(this),sub); 
-       return sub; 
-    };
-
-    bool isLargeD(unsigned d) const {
-       if (type && type<QTYPE_ASEP) { return (d>1); }
-       switch (type) {
-          case QTYPE_SUN: return (d>12000 || d>(sub!=1 ? exp10(qlen()) : 20));
-          case QTYPE_SON:
-          case QTYPE_SEN:
-          case QTYPE_SpN: return (d>12000 || d>exp10(qlen()));
-
-          case QTYPE_UNKNOWN : return (d>100);
-          default:
-          wblog(FL,"ERR invalid type `%s' (%d)",STR_(this),type);
-       }
-       return 1; 
-    };
-
-    bool isLargeD(const wbvector<unsigned> &dd) const {
-       for (unsigned i=0; i<dd.len; ++i) {
-          if (isLargeD(dd[i])) return 1;
-       }
-       return 0;
-    };
-
-    unsigned getDimDef() const { 
-       unsigned d=1; 
-       if (type && type>QTYPE_ASEP) {
-          switch (type) {
-             case QTYPE_SUN: d=sub+1;   return d;
-             case QTYPE_SpN: d=2*sub;   return d;
-             case QTYPE_SON: d=2*sub+1; return d;
-             case QTYPE_SEN: d=2*sub;   return d;
-             default:
-             wblog(FL,"ERR invalid type `%s' (%d)",STR_(this),type);
-          }
-       }
-       return d;
-    };
-
-    template<class TQ>
-    size_t wdim(const TQ *qs) const {
-       unsigned d=1; 
-       if (type && type>QTYPE_ASEP) {
-          switch (type) { 
-             case QTYPE_SUN: d=DY::wdim_A(sub,qs); break; 
-             case QTYPE_SpN: d=DY::wdim_C(sub,qs); break; 
-             case QTYPE_SON: d=DY::wdim_B(sub,qs); break; 
-             case QTYPE_SEN: d=DY::wdim_D(sub,qs); break; 
-             default:
-             wblog(FL,"ERR invalid type `%s' (%d)",STR_(this),type);
-          }
-       }
-       return d;
-    };
-
-    template<class TQ>
-    size_t wdim(const qset<TQ> &qs) const { return wdim(qs.data); }
-
-    unsigned maxDimLocal() const {
-       unsigned d=1; 
-       if (type) { d=maxDimLocal0(); if (d<20) d=20; }
-       return d;
-    };
-
-    unsigned maxDimLocal0() const { 
-       unsigned d=2; 
-       if (type>QTYPE_ASEP) {
-
-          d=pow(double(getDimDef()),2.25+double(sub)/4.);
-       }
-       return d;
-    };
-
-    void printDimInfo(const char *F=NULL, int L=0) const {
-       wblog(F_L," *  %s: sub=%d, dim_def=%d, dloc<=%d",
-       STR_(this), sub, getDimDef(), maxDimLocal());
-    };
-
-    template <class T>
-    unsigned qdim(const T* q) const; 
-
-    template <class T>
-    wbvector<unsigned>& QDim(
-       const T* q, unsigned r, unsigned stride,
-       wbvector<unsigned> &S) const;
-
-    bool isSelfDual() const { 
-       switch (type) {
-          case QTYPE_P   : 
-          case QTYPE_SpN :
-          case QTYPE_SON : return 1; 
-
-          case QTYPE_SEN : return (qlen()%2 ? 0 : 1);
-
-          case QTYPE_U1  : 
-          case QTYPE_ZN  :
-          case QTYPE_SUN : return 0;
-
-          default:
-          wblog(FL,"ERR dual not yet defined for '%s'",STR_(this));
-       }
-       return 0;
-    };
-
-    template<class TQ>
-    char setDual(TQ* q) const {
-       switch (type) {
-          case QTYPE_P  : { return 0; } 
-          case QTYPE_U1 : { q[0]=-q[0]; return 1; }
-          case QTYPE_ZN : { q[0]=(sub-q[0])%sub; return 1; }
-
-          case QTYPE_SUN: { 
-             unsigned n=qlen(); if (n<2) return 0; 
-             else {
-                unsigned i=0, l=n-1; TQ x;  
-                for (n/=2; i<n; ++i) { x=q[i]; q[i]=q[l-i]; q[l-i]=x; }
-                return 1;
-             }
-          }
-          case QTYPE_SpN: 
-          case QTYPE_SON: return 0;
-
-          case QTYPE_SEN: {
-             unsigned n=qlen();
-             if (n<3) wblog(FL,"ERR %s() got %s",FCT,STR_(this));
-             if ((n%2)==0) { return 0; } 
-             else {
-                unsigned l=n-2; n-=1;
-                if (q[l]==q[n]) { return 0; } 
-                else {
-                   TQ x=q[l]; q[l]=q[n]; q[n]=x;
-                   return 1;
-                }
-             }
-          }
-
-          default:
-          wblog(FL,"ERR dual not yet defined for '%s'",STR_(this));
-       }
-       return 0;
-    };
-
-    template<class TQ>
-    unsigned getDual(const TQ* q0, TQ* q) const {
-       unsigned n=qlen(); memcpy(q,q0,n*sizeof(TQ));
-       setDual(q); return n;
-    };
-
-    template<class TQ>
-    bool isDual(const TQ *q, const TQ *x) const { 
-       switch (type) {
-          case QTYPE_P  : { return x[0]== q[0]; } 
-          case QTYPE_U1 : { return x[0]==-q[0]; }
-          case QTYPE_ZN : { return x[0]==TQ((sub-q[0])%sub); }
-
-          case QTYPE_SUN: { 
-             unsigned i=0, l=qlen();
-             if (!l) wblog(FL,"ERR %s() got n=%d",FCT,l);
-             for (--l; i<=l; ++i) { if (x[i]!=q[l-i]) return 0; }
-             return 1;
-          }
-          case QTYPE_SpN: 
-          case QTYPE_SON: {
-             if (x!=q) {
-                unsigned i=0, n=qlen();
-                for (; i<n; ++i) { if (x[i]!=q[i]) return 0; }
-             }; return 1;
-          }
-          case QTYPE_SEN: {
-             unsigned n=qlen();
-             if (n<3) wblog(FL,"ERR %s() got %s",FCT,STR_(this));
-
-             if (x==q) {
-                return (n%2 ? x[n-2]==x[n-1] : 1);
-             }
-             else {
-                unsigned i=0, l=n-(n%2 ? 2 : 0);
-                for (; i<l; ++i) { if (x[i]!=q[i]) { return 0; }}
-                if (i<n) {
-                   if (x[i]!=q[i+1] || x[i+1]!=q[i]) { return 0; }
-                }; return 1;
-             }
-          }
-
-          default:
-          wblog(FL,"ERR dual not yet defined for '%s'",STR_(this));
-       }
-       return 0;
-    };
-
-    QType& operator=(const char *s) { return init(FL,s); };
-    QType& operator=(const QType &q) { return init(q); };
-
-    QType& operator=(QTYPE_SET t) {
-       type=t; sub=0; if (t) validType(FL);
-       return *this;
-    };
-
-    bool operator<(const QType &q) const {
-       if (type!=q.type)
-            return (type<q.type);
-       else return (sub<q.sub);
-    };
-
-    char cmp(const QType &q) const { 
-       if (type<q.type) return -1;
-       if (type>q.type) return +1;
-       if (sub <q.sub ) return -1;
-       if (sub >q.sub ) return +1; else return 0;
-    };
-
-    bool operator> (const QType &q) const { return !((*this)<=q); };
-    bool operator<=(const QType &q) const {
-       if (type!=q.type) return (type<q.type);
-       else return (sub<=q.sub);
-    };
-
-    bool operator== (const QType &q) const {
-        return (type==q.type && sub==q.sub);
-    };
-    bool operator!= (const QType &q) const {
-        return (type!=q.type || sub!=q.sub);
-    };
-
-    wbstring toStr(const char tflag=0) const {
-       wbstring s(8); 
-       char e=0; s[0]=0;
-
-       if (type==QTYPE_U1  ) { s=(tflag ? QTYPE_STR[type] : "U(1)"  ); } else
-       if (type==QTYPE_P   ) { s=(tflag ? QTYPE_STR[type] : "Parity"); } else
-       if (!type && !sub) { s=(tflag ? "???" : "unknown");}
-
-       if (s[0]) {
-          if (sub) wblog(FL,
-             "ERR invalid QType %s with sub=%d",s.data,sub);
-          return s;
-       }
-
-       if (sub<1 || sub>99) { e|=1; } 
-       else if (type==QTYPE_ZN) { if (sub<2) e|=2;
-          if (tflag)
-               { snprintf(s.data,s.len,"Z%d",  sub); }
-          else { snprintf(s.data,s.len,"Z(%d)",sub); }
-       }
-       else if (type==QTYPE_SUN) {
-          if (tflag) 
-               { snprintf(s.data,s.len,"SU%d",  sub+1); }
-          else { snprintf(s.data,s.len,"SU(%d)",sub+1); }
-       }
-       else if (type==QTYPE_SpN) { if (sub<2) e|=4;
-          if (!tflag)
-               { snprintf(s.data,s.len,"Sp(%d)",2*sub); }
-          else { snprintf(s.data,s.len,"Sp%d",  2*sub);
-             if (tflag=='u') { s[1]='P'; } 
-          }
-       }
-       else if (type==QTYPE_SON) {
-          if (!tflag)
-               { snprintf(s.data,s.len,"SO(%d)",2*sub+1); }
-          else { snprintf(s.data,s.len,"SO%d",  2*sub+1); }
-       }
-       else if (type==QTYPE_SEN) { if (sub<2) e|=8;
-          if (!tflag)
-               { snprintf(s.data,s.len,"SO(%d)",2*sub); }
-          else { snprintf(s.data,s.len,"SO%d",  2*sub); }
-       }
-       else {
-          if (type) wblog(FL,"ERR %s() invalid type=%d",FCT,type);
-          s=(tflag ? "???" : "unknown");
-       }
-
-       if (e) wblog(FL,
-          "ERR invalid QType %s with sub=%d", type < QTYPE_NUM_TYPES ?
-           QTYPE_STR[type] : "(type out of bounds)", sub
-       );
-
-       return s;
-    };
-
-    mxArray* mxCreateStruct(unsigned m, unsigned n) const;
-    void add2MxStruct(mxArray *S, unsigned i) const;
-
-    mxArray* toMx(const char tflag=0) const {
-       const size_t n=32; wbstring s(n); 
-       size_t l=snprintf(s.data,n,"%s",toStr(tflag).data);
-       if (l>=n) wblog(FL,
-          "WRN %s() QType too long (%s; %d)",FCT,s.data,l);
-       return s.toMx();
-    };
-
-    QTYPE_SET type;
-    unsigned sub; 
-
-  private:
-
-    int atoi(const char *s, int &k, unsigned n) {
-       if (s[0]!='(') { return Wb::atoi(s,k,n); } 
-       else {
-          unsigned l=strlen(++s);
-          if (l && s[l-1]==')') {
-             char x[l]; memcpy(x,s,l); x[l-1]=0;
-             return Wb::atoi(x,k,n);
-          }
-       }
-       return -6;
-    }
-};
-
-  QType SU2("SU2");
-
-bool operator!(const QType &q) {
-   if (q.type == QTYPE_UNKNOWN) {
-      if (q.sub) wblog(FL,
-         "ERR %s() invalid QType %s",FCT,STR(q));
-      return 1;
-   }
-   return 0;
-};
-
    map<QType, time_t> load_cstore;
 
 QType load_store_qtype(const char *F, int L, const Wb::matFile &M);
@@ -935,7 +1050,14 @@ class QVec : public wbvector<QType> {
         wbvector<QType>::init(l); return *this;
      };
 
+     QVec& init(const QType &t)  { 
+        wbvector<QType>::init(1,&t);
+        return *this;
+     };
+
      QVec& init(const char *F, int L, const char *s, unsigned d=0);
+
+     int checkInit() const; 
 
      unsigned Qlen(unsigned n=-1) const;
 
@@ -947,7 +1069,7 @@ class QVec : public wbvector<QType> {
         wbvector<unsigned> &dz  
      ) const;
 
-     unsigned Qpos(wbvector<unsigned> &dc) const; 
+     unsigned Qpos(wbvector<unsigned> &dc) const;
 
      unsigned Qlenz() const {
         unsigned i=0, n=0;
@@ -986,7 +1108,13 @@ class QVec : public wbvector<QType> {
         return qs;
      };
 
-     unsigned maxRank() const {
+     bool hasCG() const { 
+        for (unsigned i=0; i<len; ++i) {
+           if (!data[i].isAbelian()) { return 1; }}
+        return 0;
+     };
+
+     unsigned qrank() const {
         unsigned r=0, i=0, q=0;
         for (; i<len; ++i) { q=data[i].qrank(); if (r<q) { r=q; }}
         return r;
@@ -1032,7 +1160,7 @@ class QVec : public wbvector<QType> {
         char q=1; 
         for (unsigned i=0; i<len; ++i) {
            if (!data[i].isAbelian()) { q=0; break; }
-           if (data[i]!=QTYPE_U1) q|=2; 
+           if (data[i]!=QT_U1) q|=2; 
         }
         return q;
      };
@@ -1094,9 +1222,10 @@ class QVec : public wbvector<QType> {
         return 1;
      };
 
-     wbstring toStr(const char vflag=0) const;
+     wbstring toStr() const { return toStr(0); }; 
+     wbstring toStr(const char vflag) const;
      int print_qset(
-        const char *F, int L, const gTQ *qs, char *s, unsigned n) const;
+        const char *F, int L, const gTQ *qs, wbvec<char> &s) const;
 
 };
 
@@ -1286,7 +1415,7 @@ class QDir: public wbvector<char> {
 
      #ifndef WB_SKIP_ASSERT
        for (; i<len; ++i) if (!data[i]) {
-          wblog(FL,"ERR %s() invalid qdir '%s'",FCT,STR_(this));
+          wblog(FL,"ERR %s() invalid qdir '%s'",FCT,STR(*this));
        }; i=0;
      #endif
 
@@ -1366,151 +1495,273 @@ class QDir: public wbvector<char> {
 
 };
 
+   #define USR_CBUF_IDX 2
+
+   #define usr_cbuf_ACTIVE 1
+
 class cgdStatus { 
 
   public:
 
-    cgdStatus() : t(CGD_UNKNOWN), ctime(0), mtime(0), ID(0) {
-        memset(user,0,4); };
+    cgdStatus() : ctype(0), ctime(0), mtime(0), cID(0) {
+       memset(user,0,4); };
 
-    cgdStatus(CGD_TYPE t_) : cgdStatus() { t=t_; init_time(); };
+    explicit cgdStatus(CD_TYPE t) : cgdStatus() {
+       init_type_(t); 
+       init_time();
+    };
 
-    cgdStatus(double t_) : cgdStatus() {
-       if (double(t)!=t_ || t>=CGD_NUM_TYPES) wblog(FL,
-          "ERR %s() invalid CData type %g",FCT,t_);
-       t=CGD_TYPE(t_);
+    explicit cgdStatus(double f_) : cgdStatus() {
+       init_type_(f_); 
+       init_time();
     };
 
     cgdStatus(const char *F, int L, mxArray *a)
-     : cgdStatus() { t=CGD_UNKNOWN; init(F,L,a); };
+     : cgdStatus() { init(F,L,a); };
 
     template <class TQ>
     cgdStatus(const CDATA_TQ& C) { init(C.cstat); }
 
-    cgdStatus& init() {
-       t=CGD_UNKNOWN; ctime=0; mtime=0; ID=0;
+    cgdStatus& init() { 
+       ctype=0; ctime=mtime=0; cID=0;
        memset(user,0,2); 
        return *this;
     };
 
-    cgdStatus& init(const CGD_TYPE &t_) {
-       t=t_; init_time(); return *this;
+    cgdStatus& init(unsigned ct, char flag=0) {
+       ctype=ct;
+       return init_time(flag);
     };
 
-    cgdStatus& init0(const CGD_TYPE &t_) { 
-       t=t_; ctime=0; mtime=0; ID=0;
+    cgdStatus& init(CD_TYPE t, char flag=0) {
+       init_type_(t); 
+       return init_time(flag);
+    };
+
+    cgdStatus& init(CD_TYPE t1, CD_TYPE t2) { 
+       init_type_(t1); set(t2);
+       return init_time();
+    };
+
+    cgdStatus& init_(CD_TYPE t) { 
+       ctime=mtime=0; cID=0;
        memset(user,0,2); 
+       init_type_(t);   
        return *this;
     };
 
-    cgdStatus& update_m() { init_time('m'); return *this; };
-    cgdStatus& update_m(const CGD_TYPE &t_) {
-       t=t_; init_time('m'); return *this;
+    cgdStatus& update_m() { return init_time('m'); };
+    cgdStatus& update_m(CD_TYPE t) {
+       init_type_(t);   
+       return init_time('m');
+    };
+
+    void swap(cgdStatus &b) {
+       SWAP(ctype, b.ctype);
+       SWAP(ctime, b.ctime);
+       SWAP(mtime, b.mtime);
+       SWAP(cID,   b.cID  );
+
+       SWAP(user[0],b.user[0]); 
+       SWAP(user[1],b.user[1]); 
     };
 
     cgdStatus& operator=(const cgdStatus &b) { return init(b); };
 
     cgdStatus& init(const cgdStatus &b) {
-       if (ID && b.ID && (ID!=b.ID || ctime!=b.ctime)) wblog(FL,
-          "ERR got initialized cstat with ID mismatch\n%s\n%s",
-           STR2_(this,'V'),STR2(b,'V'));
-       t=b.t; ctime=b.ctime; mtime=b.mtime; ID=b.ID;
+       if (cID && b.cID && (cID!=b.cID || ctime!=b.ctime)) wblog(FL,
+          "ERR got initialized cstat with cID mismatch\n%s\n%s",
+           STR2(*this,'V'),STR2(b,'V'));
+       ctype=b.ctype; ctime=b.ctime; mtime=b.mtime; cID=b.cID;
 
-       user[0]=b.user[0];
+       user[0]=b.user[0]; 
        user[1]=b.user[1]; 
 
        return *this;
     };
 
-    CGR_TYPE init(const char *F, int L, const mxArray *a);
+    CR_TYPE init(const char *F, int L, const mxArray *a);
 
     int sameID(const cgdStatus &b) const { 
-       return (ID==b.ID && ctime==b.ctime);
+       return (cID==b.cID && ctime==b.ctime);
     };
 
-    int cmp(const char *F, int L, const cgdStatus &b) const {
-       if (ID!=b.ID || ctime!=b.ctime) { if (F) wblog(F,L,
-          "ERR %s() got CData status mismatch!%N   %s%N<> %s",
-          FCT, toStr('V').data, b.toStr('V').data);
-          else return -11;
+    inline void init_type_(CD_TYPE t) { 
+       if (!t) { ctype=0; }
+       else { int i=t; 
+          if (i) {
+             if (i<=0 || i>=CD_NUM_TYPES) wblog(FL,
+               "ERR %s() invalid CData flags i=%d",FCT,i);
+             ctype=(1<<(i-1));
+          }
        }
-       if (mtime<ctime || b.mtime<b.ctime) { if (F) wblog(F,L,
-          "ERR %s() invalid mtime",FCT);
-          else return -12;
-       }
-       return (mtime<b.mtime ? -1 : (mtime==b.mtime ? 0 : +1));
     };
+
+    inline void init_type_(double f_) { 
+       unsigned f=f_; 
+       if (double(f)!=f_) { wblog(FL,
+          "ERR %s() invalid CData flags f=%g",FCT,f_); }
+       ctype=f;
+    };
+
+    inline void init_type_( 
+       const char *F, int L, double c0, double cx) {
+
+       unsigned c2=cx;
+       if (c0<0 || c0>=(1<<CD_NUM_TYPES) || cx<0 || cx>=(1<<12)) wblog(F_L,
+          "ERR %s() invalid CData flags f=(%g,%g)",FCT,c0,cx);
+
+       c2<<=(CD_NUM_TYPES);
+       if (double(c2>>CD_NUM_TYPES)!=cx) wblog(F_L,
+          "ERR %s() invalid CData flags f=(%g,%g)",FCT,c0,cx);
+
+       init_type_(c0);
+       ctype|=c2;
+    };
+
+    cgdStatus& set(CD_TYPE t) {
+       if (t==CD_UNKNOWN || t>=CD_NUM_TYPES) wblog(FL, 
+          "ERR %s() got %s",FCT,CD_TYPE_STR[t]);
+       ctype|=(1<<(t-1)); 
+       return *this;
+    };
+
+    cgdStatus& set(unsigned i, unsigned q=1) {
+       if (i>=CD_NUM_TYPES_X)
+          wblog(FL,"ERR %s() invalid CGD flag i=%d",FCT,i);
+       ctype|=(q<<i);
+       return *this;
+    };
+
+    cgdStatus& setComplete(unsigned q=1) { 
+       if (q>7) { wblog(FL,"ERR %s() invalid q=%d",FCT,q); }
+       ctype|=(q<<CD_COMPLETE);
+       return *this;
+    };
+
+    cgdStatus& cpyComplete(const cgdStatus &S) { 
+       return setComplete( S.isComplete(7) );
+    };
+
+    int isComplete_() const {
+       int r=0; 
+       if (any(CD_IDENTITY, CD_1JSY_ST3, CD_1JSY_GEN)) { r=2; } else
+       if (any(CD_STD3, CD_STD3_X)) { r=3; } else
+       if ((*this)==CD_ABELIAN) { r=-1; }
+       return r;
+    };
+
+    unsigned isComplete(unsigned q=7) const { 
+       return ((ctype>>CD_COMPLETE) & q);
+    };
+
+    char setuser_BUF(unsigned char q=1) {
+       unsigned char &u=user[USR_CBUF_IDX];
+       if (q) { u|=q; } else { u=0; }
+       return u;
+    };
+
+    char setuser_BUF(unsigned char q, unsigned l) {
+       unsigned char &u=user[USR_CBUF_IDX];
+       if (l>7 || (!l && (q&1))) wblog(FL,"WRN got %s(%d,%d) u=%d",FCT,q,l,u);
+       if (q) { u |=  (q<<l); }  
+       else   { u &= ~(1<<l); }  
+       return u;
+    };
+
+    char setuser_BUF_active(unsigned char q=1) {
+       unsigned char &u=user[USR_CBUF_IDX];
+       if (!(u&1)) wblog(FL,"WRN %s() got u=%d (q=%d)",FCT,u,q);
+       if (q) 
+            { u |= ( q<<usr_cbuf_ACTIVE   ); }
+       else { u &= ((1<<usr_cbuf_ACTIVE)-1); };
+       return u;   
+    };
+
+    char setuser_BUF_passive() { 
+       unsigned char &u=user[USR_CBUF_IDX];
+       if (!(u&1)) wblog(FL, 
+          "WRN %s() got u=%s",FCT,BITS(u));
+       if (u>1) { setuser_BUF_active(0); }
+       if (!u ) { setuser_BUF(); }
+       return u;
+    };
+
+    char gotuser_BUF() const { return user[USR_CBUF_IDX]; };
+    char gotuser_BUF_active() const {
+       return (user[USR_CBUF_IDX] >> usr_cbuf_ACTIVE); };
+
+    int cmp(const char *F, int L, const cgdStatus &b) const;
 
     bool olderThan(const cgdStatus &b) const { return (cmp(FL,b)<0); };
     bool newerThan(const cgdStatus &b) const { return (cmp(FL,b)>0); };
 
     bool hasID(char lflag=0) const {
        if (!lflag)
-            return (ctime && mtime && ID); 
-       else return (ctime || mtime || ID);
+            return (ctime && mtime && cID); 
+       else return (ctime || mtime || cID);
     };
 
-    bool operator==(const CGD_TYPE t_) const { return (t==t_); };
-    bool operator!=(const CGD_TYPE t_) const { return (t!=t_); };
+    bool operator<=(CD_TYPE t) const {
+       if (t)
+            { return ((ctype&((1<<CD_NUM_TYPES)-1)) <= (1U<<(t-1)) ? 1 : 0); }
+       else { return (ctype ? 0 : 1); }
+    };
+
+    inline bool operator==(CD_TYPE t) const {
+       if (t)
+            { return (ctype & (1<<(t-1)) ? 1 : 0); }
+       else { return (ctype? 0 : 1); }
+    };
+
+    inline bool operator!=(CD_TYPE t) const { return !(*this==t); };
+
+    bool any(CD_TYPE t1, CD_TYPE t2) const {
+       return ((*this)==t1 || (*this)==t2);
+    };
+    bool any(CD_TYPE t1, CD_TYPE t2, CD_TYPE t3) const {
+       return ((*this)==t1 || (*this)==t2 || (*this)==t3);
+    };
 
     bool operator==(const cgdStatus &b) const {
-        return (ctime==b.ctime && mtime==b.mtime && ID==b.ID);
+        return (ctime==b.ctime && mtime==b.mtime && cID==b.cID);
     };
 
     bool operator!=(const cgdStatus &b) const { return !((*this)==b); };
 
-    bool isSet() const { return (ctime || mtime || ID); }; 
-    bool isEmpty() const {
-       return (!ctime && !mtime && !ID && t==CGD_UNKNOWN);
-    };
+    bool isSet() const { return (ctime || mtime || cID); }; 
+    bool isEmpty() const { return (!ctime && !mtime && !cID && !ctype); };
 
     int inValid() const { 
        int e=0; 
        if ((ctime!=0) ^ (mtime!=0)) { e|=1; }
-       if (t==CGD_EXPLICIT) {
-          if (ctime || ID>99) { e|=8; }
+       if ((*this)==CD_IMPLICIT) { 
+          if (ctime || cID>99) { e|=8; }
        }
        else {
-          if ((ctime!=0) ^ (ID!=0)) { e|=2; }
-          if ((ctime!=0) ^ (t!=CGD_UNKNOWN)) { e|=4; }
+          if ((ctime!=0) ^ (cID!=0)) { e|=2; }
+          if ((ctime!=0) ^ (ctype!=0)) { e|=4; }
        }
        return e;
     };
 
-    bool sameAs(const cgdStatus &b, char lflag=0) const {
-       if (ctime!=b.ctime || ID!=b.ID) { return 0; }
+    int sameAs(const cgdStatus &b, char lflag=0) const;
 
-       if (lflag>2) {
-          if (lflag=='l') lflag=1; else
-          if (lflag=='L') lflag=2; else
-          wblog(FL,"WRN %s() invalid lflag=%d (using 2='L')",FCT,lflag);
-       }
-       if (lflag<2 && mtime!=b.mtime) { return 0; }
-       if (lflag<1 && t!=b.t) { return 0; }
-       return 1;
-    };
-
-    const char* tstr() const {
-       if (t>=CGD_NUM_TYPES) wblog(FL,"ERR %s() "
-          "cgd type out of bounds (%d/%d)",FCT,t,CGD_NUM_TYPES);
-       return CGD_TYPE_STR[t];
-    };
-
-    wbstring toStr(char vflag=0) const;
+    wbstring tstr() const;
+    wbstring toStr() const { return toStr(0); }; 
+    wbstring toStr(char vflag) const;
     wbstring u2Str(const char *istr=NULL) const;
 
-    mxArray* toMx() const;
-    mxArray* toMx(CGR_TYPE rt) const;
+    mxArray* toMx(CR_TYPE rt=CR_DEFAULT) const;
 
     mxArray* mxCreateStruct(unsigned m, unsigned n) const;
     mxArray* add2MxStruct(mxArray *S, unsigned k) const;
 
-    CGD_TYPE t;
+    unsigned ctype; 
 
-    double ctime; 
-    double mtime; 
-
-    unsigned ID;  
+    double ctime;  
+    double mtime;  
+    unsigned cID;  
 
     unsigned char user[4]; 
 
@@ -1518,47 +1769,50 @@ class cgdStatus {
   private:
 
     cgdStatus& init_time(char flag=0);
+
     wbstring to_vstr(double t) const;
 
-    void setID() {
+    void setID() { 
        unsigned i=0, n=3; 
        for (; i<n; ++i) {
-          ID=(::rand() & ((1<<20)-1)); if (ID) break;
+          cID=(::rand() & ((1<<20)-1)); if (cID) break;
        }
-       if (!ID) wblog(FL,"ERR %s() got ID=%d (%d/%d)",FCT,ID,i,n);
+       if (!cID) wblog(FL,"ERR %s() got cID=%d (%d/%d)",FCT,cID,i,n);
     };
 };
 
 bool operator!(const cgdStatus &q) {
-   return (q.t==CGD_UNKNOWN && !q.ctime && !q.mtime && !q.ID);
+   return (!q.ctype && !q.ctime && !q.mtime && !q.cID);
 };
 
 class cgrType { 
 
   public:
 
-    cgrType(CGR_TYPE t_=CGR_DEFAULT) : t(t_) {};
+    cgrType(CR_TYPE t_=CR_DEFAULT) : t(t_) {};
 
     cgrType(double t_) { init(FL,t_); };
 
     template<class T>
     cgrType& init(const char *F, int L, T t_) {
-        t=CGR_TYPE(t_);
-        if (T(t)!=t_ || t>=CGR_NUM_TYPES) wblog(F_L,
+        t=CR_TYPE(t_);
+        if (T(t)!=t_ || t>=CR_NUM_TYPES) wblog(F_L,
            "ERR %s() invalid CRef type %g",FCT,double(t_)
         );
         return *this;
     };
 
     cgrType& operator=(const cgrType  &q) { t=q.t; return *this; };
-    cgrType& operator=(const CGR_TYPE &t_) { t=t_; return *this; };
+    cgrType& operator=(const CR_TYPE &t_) { t=t_; return *this; };
 
-    bool operator< (const CGR_TYPE t_) const { return (t< t_); };
-    bool operator<=(const CGR_TYPE t_) const { return (t<=t_); };
-    bool operator> (const CGR_TYPE t_) const { return (t> t_); };
-    bool operator>=(const CGR_TYPE t_) const { return (t>=t_); };
-    bool operator==(const CGR_TYPE t_) const { return (t==t_); };
-    bool operator!=(const CGR_TYPE t_) const { return (t!=t_); };
+    explicit operator bool() const { return (t!=0); };
+
+    bool operator< (const CR_TYPE t_) const { return (t< t_); };
+    bool operator<=(const CR_TYPE t_) const { return (t<=t_); };
+    bool operator> (const CR_TYPE t_) const { return (t> t_); };
+    bool operator>=(const CR_TYPE t_) const { return (t>=t_); };
+    bool operator==(const CR_TYPE t_) const { return (t==t_); };
+    bool operator!=(const CR_TYPE t_) const { return (t!=t_); };
 
     bool operator< (const cgrType &q) const { return (q.t< t); };
     bool operator<=(const cgrType &q) const { return (q.t<=t); };
@@ -1568,14 +1822,14 @@ class cgrType {
     bool operator!=(const cgrType &q) const { return (q.t!=t); };
 
     const char* tostr() const {
-       if (t>=CGR_NUM_TYPES) wblog(FL,"ERR %s() "
-          "cgrType out of bounds (%d/%d)",FCT,t,CGR_NUM_TYPES);
-       return CGR_TYPE_STR[t];
+       if (t>=CR_NUM_TYPES) wblog(FL,"ERR %s() "
+          "cgrType out of bounds (%d/%d)",FCT,t,CR_NUM_TYPES);
+       return CR_TYPE_STR[t];
     };
 
     wbstring toStr() const { return tostr(); }
 
-    CGR_TYPE t;
+    CR_TYPE t;
 
   protected:
   private:
@@ -1615,6 +1869,11 @@ class qset : public wbvector<TQ> {
     qset(const qset<TQ> &q1, const qset<TQ> &q2, const qset<TQ> &q3)
      : wbvector<TQ>() { init(q1,q2,q3); };
 
+    qset(
+       unsigned l1, const TQ *d1,
+       unsigned l2, const TQ *d2)
+     : wbvector<TQ>() { init(l1,d1,l2,d2); };
+
     qset(const qset<TQ> &q1, char op, const qset<TQ> &q2);
 
     qset& init(const qset<TQ> &q1) {
@@ -1650,7 +1909,7 @@ class qset : public wbvector<TQ> {
     };
 
     qset& init(const QVec &Q, const TQ *qq) {
-       init(Q.Qlen(),qq);
+       init(Q.Qlen(),qq); 
        return *this;
     };
 
@@ -1765,7 +2024,7 @@ class QSet {
 
   public:
 
-    QSet() : t(QTYPE_UNKNOWN) {}; 
+    QSet() : t(QT_UNKNOWN) {}; 
 
     QSet(const QSet &B) { t=B.t; qs=B.qs; qdir=B.qdir; };
 
@@ -1784,6 +2043,11 @@ class QSet {
 
     QSet(const CRef<TQ> &A) { init(A); };
 
+    template <class TD>
+    QSet(const char *F, int L,
+       const QSpace<TQ,TD> &A, unsigned i, unsigned isym=-1
+    ){ init(F,L,A,i,isym); }
+
     QSet(const char *F, int L, const mxArray *a) { init(F,L,a); };
     QSet(const mxArray *a) { init(0,0,a); };
 
@@ -1795,17 +2059,19 @@ class QSet {
     QSet(const char *F, int L, const char *s) { init_str(F,L,s); };
 
     QSet& init(const CRef<TQ> &A) {
-       if (!A.cgb) init();
-       else { init(*A.cgb);
-          if (A.gotPerm()) Permute(A.cgp);
-          if (A.gotConj()) Conj();
-       }
+       if (A.cgb)
+            { init(*A.cgb); Permute(A.cgp); }
+       else { init(); }
        return *this;
     };
 
     QSet& init(const char *F, int L, const mxArray *a, unsigned k=0);
 
-    QSet& init(const QType t_ = QTYPE_UNKNOWN) { t=QTYPE_UNKNOWN;
+    template <class TD>
+    QSet& init(const char *F, int L,
+       const QSpace<TQ,TD> &A, unsigned i, unsigned isym=-1);
+
+    QSet& init(const QType t_ = QT_UNKNOWN) { t=QT_UNKNOWN;
        t=t_; if (qs.len  ) qs.init();
              if (qdir.len) qdir.init();
        return *this;
@@ -1916,7 +2182,12 @@ class QSet {
        const CRef<TQ> &B, const ctrIdx &icb, wbperm *Pcgd=NULL
     );
 
+    QSet& init(const char *F, int L,
+       const QType &t_, const QDir &qd, std::initializer_list<TQ> ql);
+
     QSet& init_str(const char *F, int L, const char *s);
+
+    QSet& reduceTo1J(const char *F, int L, QSet &B) const;
 
     QSet& Conj() { qdir.Conj(); return *this; };
     QSet& Conj(unsigned i); 
@@ -1928,12 +2199,28 @@ class QSet {
        return qdir.len;
     };
 
-    QSet& permute(QSet &B, const wbperm &P, char iflag=0) const;
+    QSet& permute(QSet &B, const wbperm &P) const;
 
-    QSet& Permute(const wbperm &P, char iflag=0) {
-       QSet<TQ> X; permute(X,P,iflag);
-       return X.save2(*this);
+    QSet& Permute(const wbperm &P) {
+       QSet<TQ> X(*this); X.permute(*this,P);
+       return *this;
     };
+
+    inline TQ* rec(unsigned i) const {
+       unsigned r=rank(FL), n=t.qlen();
+       if (i>=r || r!=qdir.len || !qdir[i]) wblog(FL,
+          "ERR %s() invalid input (i=%d/%d/%d)",FCT,i,r,qdir.len);
+       if (qs.len!=r*n) wblog(FL,
+          "ERR %s() invalid input (len=%d = %d * %d ?)",FCT,qs.len,r,n);
+       return (qs.data+i*n);
+    };
+
+    QSet& Revert(unsigned i) {
+       t.setDual(rec(i)); qdir[i]=-qdir[i];
+       return *this;
+    };
+
+    unsigned qdim(unsigned i) const { return t.qdim(rec(i)); };
 
     void swap(QSet &X) {
        if (this!=&X) {
@@ -1958,15 +2245,16 @@ class QSet {
 
     char cmp(const QSet<TQ> &B) const { 
        char i=0;
-       if ((i=t.cmp(B.t))) { return i; }
-       if ((i=qdir.cmp(B.qdir))) { return i; }
-       return (i=qs.cmp(B.qs));
+       if (!(i=t.cmp(B.t))) {
+       if (!(i=qdir.cmp(B.qdir))) {
+            (i=qs.cmp(B.qs)); }}
+       return i;
     };
 
     bool operator<(const QSet<TQ> &B) const { return cmp(B)<0; }
 
     explicit operator bool() const { return !isEmpty(); } 
-    bool operator! () const { return isEmpty(); }
+    bool     operator!    () const { return  isEmpty(); }
 
     bool isEmpty(char check=3) const {
        if (check>3) {
@@ -1976,19 +2264,36 @@ class QSet {
        }
 
        if (qs.len || qdir.len) {
-          if ( ((check&1) && t==QTYPE_UNKNOWN) ||
+          if ( ((check&1) && t==QT_UNKNOWN) ||
                ((check&2) && qs.len!=qdir.len*t.qlen()) ) {
              wblog(FL,"ERR %s() mismatch itag / QSet %s (%d*%d / %d)",
-             FCT,STR_(this), qdir.len, t.qlen(), qs.len);
+             FCT,STR(*this), qdir.len, t.qlen(), qs.len);
           }
           return 0;
        }
-       return (t==QTYPE_UNKNOWN ? 1 : 0);
+       return (t==QT_UNKNOWN ? 1 : 0);
     };
 
     bool gotRCData() const;
 
     int isZero() const; 
+
+    int permissible(const char *F=NULL, int L=0) const {
+       int q=0; 
+
+       if (!qdir.len) { return q; }
+       if ((q=isZero())>=0) { return (q=(q>0 ? -2 : 1)); }
+
+       if (qdir.len<3) wblog(FL, 
+          "ERR isZero() returned q=%d for %s",FCT,q,STR(*this));
+       q=generateFullOM(F_L,'t'); 
+
+       if (q>=0) { q+=1; } 
+
+       return q;
+    };
+
+    char generateFullOM(const char *F=NULL, int L=0, char test=0) const;
 
     unsigned isStd3() const;
 
@@ -2002,7 +2307,7 @@ class QSet {
     wbstring sizeStr() const;
 
     bool isScalar() const; 
-    bool is1JSymbol() const;
+    bool is1J(unsigned r=2) const;
 
     bool isAbelian() const { return t.isAbelian(); };
     int  permitsOM() const { return t.permitsOM(rank(FL)); }; 
@@ -2011,7 +2316,13 @@ class QSet {
 
     int checkQ_SU2(const char *F, int L) const;
 
-    QSet& Sort(wbperm *cgp=NULL, char *conj=NULL, char iflag=0);
+    QSet& Sort(wbperm *cgp=NULL, char iflag=0);
+
+    QSet& sort(QSet &Qs, wbperm *cgp=NULL, char iflag=0) const {
+       Qs.init(*this);
+       return Qs.Sort(cgp,iflag);
+    };
+
     bool isSorted() const;
 
     size_t memSize() const {
@@ -2022,10 +2333,11 @@ class QSet {
     };
 
     wbstring QStrS(const wbperm *cgp=NULL, char sep='|') const;
-    wbstring QStr() const;
+    wbstring QStr(char compact=1) const;
 
-    wbstring toStr() const { return toStr(NULL); };
-    wbstring toStr(const char *istr) const;
+    wbstring toStr(const char *astr, char compact=0) const;
+
+    wbstring toStr() const { return toStr(NULL,0); };
 
     wbstring toTag() const;
 
@@ -2048,18 +2360,19 @@ unsigned QSet<TQ>::isStd3() const {
 
    unsigned q=0; { if (qdir!="++-") return q; } 
 
-   unsigned m=t.qlen(), l=t.maxDimLocal(),
-      d1=t.qdim(qs.data    ),
-      d2=t.qdim(qs.data+  m),
-      d3=t.qdim(qs.data+2*m), dmax=MAX(1U<<6,l); dmax*=dmax;
+   unsigned m=t.qlen(), d1,d2,d3, l=t.maxDimLocal(), D=MAX(1U<<6,l), D2=D*D;
+
+   d1=t.qdim(qs.data    );
+   d2=t.qdim(qs.data+  m);
+   d3=t.qdim(qs.data+2*m);
 
    if (qdir.len*m!=qs.len) wblog(FL,
-      "ERR %s %d*%d =? %d",FCT,STR_(this),qdir.len,m,qs.len);
+      "ERR %s %d*%d =? %d",FCT,STR(*this),qdir.len,m,qs.len);
 
-   q=(d1*d2<=dmax || d1<=l || d2<=l) ? 1 : 2;
+   q=(d1*d2<=D2 || d1<=l || d2<=l) ? 1 : 2;
 
-   if (d1>2*d3 && (d2*d3<=dmax || d2<=l || d3<=l)) q|=4; 
-   if (d2>2*d3 && (d1*d3<=dmax || d1<=l || d3<=l)) q|=8; 
+   if (d1>2*d3 && (d2*d3<=D2 || d2<=l || d3<=l)) q|=4; 
+   if (d2>2*d3 && (d1*d3<=D2 || d1<=l || d3<=l)) q|=8; 
 
    return q;
 };
@@ -2068,21 +2381,22 @@ template <class TQ>
 unsigned QSet<TQ>::checkStd3() const {
 
    unsigned q=0; { if (qdir.len!=3) return q; } 
-   unsigned m=t.qlen(), l=t.maxDimLocal(),
-      d1=t.qdim(qs.data    ),
-      d2=t.qdim(qs.data+  m),
-      d3=t.qdim(qs.data+2*m), dmax=MAX(1U<<6,l); dmax*=dmax;
+   unsigned m=t.qlen(), d1,d2,d3, l=t.maxDimLocal(), D=MAX(1U<<6,l), D2=D*D;
+
+   d1=t.qdim(qs.data    );
+   d2=t.qdim(qs.data+  m);
+   d3=t.qdim(qs.data+2*m);
 
    if (qdir.len*m!=qs.len) wblog(FL,
-      "ERR %s having %d*%d =? %d",FCT,STR_(this),qdir.len,m,qs.len);
+      "ERR %s having %d*%d =? %d",FCT,STR(*this),qdir.len,m,qs.len);
 
-      if (d1*d2<=dmax || d1*d3<=dmax || d2*d3<=dmax) q|=(1<<0);
+      if (d1*d2<=D2 || d1*d3<=D2 || d2*d3<=D2) q|=(1<<0);
 
-   if (!q) { dmax=1U<<16; 
-      if (d1*d2<=dmax || d1*d3<=dmax || d2*d3<=dmax) q|=(1<<1);
+   if (!q) { D2=1U<<16; 
+      if (d1*d2<=D2 || d1*d3<=D2 || d2*d3<=D2) q|=(1<<1);
    }
-   if (!q) { dmax=1U<<19; 
-      if (d1*d2<=dmax || d1*d3<=dmax || d2*d3<=dmax) q|=(1<<2);
+   if (!q) { D2=1U<<19; 
+      if (d1*d2<=D2 || d1*d3<=D2 || d2*d3<=D2) q|=(1<<2);
    }
 
    if (d1<=l) q|=(1<<3); 
@@ -2116,11 +2430,11 @@ int QSet<TQ>::init2opt3(
    if (w==2) P.init("132"); else 
    if (w==3) P.init();           
 
-   Q.permute(*this,P); 
-   Convert("++-",cflags);
+   Q.permute(*this,P);    
+   Convert("++-",cflags); 
 
    if (Wb::cmpRange(qs.data,qs.data+m,m)>0) {
-      wbperm p2="213"; Permute(p2);
+      wbperm p2("213"); Permute(p2);
       P.Permute(p2); cflags.Permute(p2);
    }
 
@@ -2135,7 +2449,7 @@ QSet<TQ>& QSet<TQ>::Convert(const char *s, wbvector<char> &cflags) {
    unsigned i=0, r=(!s || !s[0] ? 0 : strlen(s));
 
    if (r!=qdir.len) wblog(FL,
-      "ERR %s() size mismatch %s [0/%d]",FCT,STR_(this),qdir.len);
+      "ERR %s() size mismatch %s [0/%d]",FCT,STR(*this),qdir.len);
    if (!s || !s[0]) { cflags.init(); return *this; }
 
    cflags.init(r);
@@ -2156,9 +2470,9 @@ QSet<TQ>& QSet<TQ>::Conj(unsigned i) {
 
    unsigned m=t.qlen();
    if (i>=qdir.len || !qdir[i]) wblog(FL,"ERR %s() "
-      "index out of bounds %s (%d/%d)",FCT,STR_(this),i+1,qdir.len);
+      "index out of bounds %s (%d/%d)",FCT,STR(*this),i+1,qdir.len);
    if (m*qdir.len!=qs.len) wblog(FL,"ERR %s() "
-      "invalid  %s (%d*%d =? %d)",FCT,STR_(this),m,qdir.len,qs.len);
+      "invalid  %s (%d*%d =? %d)",FCT,STR(*this),m,qdir.len,qs.len);
 
    qdir[i]=-qdir[i];
    t.setDual(qs.data+i*m);
@@ -2171,7 +2485,7 @@ wbstring QSet<TQ>::sizeStr() const {
    unsigned m=t.qlen(), r=qdir.len;
 
    if (r*m!=qs.len) wblog(FL,
-      "ERR %s: %d != %d*%d",STR_(this),qs.len,r,m);
+      "ERR %s: %d != %d*%d",STR(*this),qs.len,r,m);
    try {
       if (qs.len) { wbvector<size_t> dd(r);
          for (unsigned i=0; i<r; ++i) { dd[i]=t.qdim(qs.data+i*m); }
@@ -2179,7 +2493,7 @@ wbstring QSet<TQ>::sizeStr() const {
       }
    }
    catch (...) {
-      wblog(FL,"ERR %s() failed to obtain size(Q)\n%s",FCT,STR_(this));
+      wblog(FL,"ERR %s() failed to obtain size(Q)\n%s",FCT,STR(*this));
    }
    return "";
 };
@@ -2194,8 +2508,8 @@ class QHash {
        unsigned i, j=1, r=S.qdir.len, nq=S.qs.len,
           l=1+(1+nq+r)/sizeof(long), 
           lb=l*sizeof(long); 
-       unsigned long  h=5381U, x[l];
-       char *s=(char*)x;
+       unsigned long  h=5381U; wbvec<unsigned long> x(l);
+       char *s=(char*)x.data;
 
        const TQ *qs=S.qs.data;
 
@@ -2217,7 +2531,7 @@ class QHash {
 
        memcpy(s+j,S.qdir.data,r); 
 
-       if (istr && istr[0]) {
+       if (istr && *istr) {
           unsigned n=strlen(istr); if (n>lb) {
              wblog(FL,"ERR %s() istr `%s' out of bounds (%d/%d*%d)",
              FCT,istr,n,l,sizeof(long));
@@ -2229,6 +2543,18 @@ class QHash {
 
        return h;
     };
+};
+
+template <class T,  ENABLE_IF_isINT(T)>
+unsigned hash_unsigned(T x, unsigned m=20) {
+
+   unsigned q=0, i=0, n=1+(8*sizeof(x)-1)/(m? m:1);
+
+   if (m<8 || m>32) wblog(FL,"ERR %s() got m=%d",FCT,m);
+   for (; i<n; ++i) { q^=x; x>>=m; }
+
+   q &= ((1<<m)-1);
+   return q;
 };
 
 template <class TD>
@@ -2260,8 +2586,8 @@ class cdata : public wbsparray<TD> {
        return *this;
     };
 
-    template <class TQ>  
-    cdata& init(const CRef<TQ> &R, unsigned l, char full=1); 
+    template <class TQ>
+    cdata& init(const CRef<TQ> &R, unsigned l=-1, char adapt=1); 
 
     template <class T2>
     cdata& init(const wbsparray<T2> &C) {
@@ -2288,15 +2614,13 @@ class cdata : public wbsparray<TD> {
 
     unsigned len() const { return this->SIZE.len; };
 
-    unsigned getOM( 
+    unsigned getOM(
        const char *F=NULL, int L=0, const char *istr=NULL) const;
 
-    cdata& Conj() { return *this; };
-
-    cdata& permute(cdata &B, const wbperm &P0, char iflag=0) const;
-    cdata& Permute(const wbperm &P0, char iflag=0) {
+    cdata& permute(cdata &B, wbperm P) const;    
+    cdata& Permute(const wbperm &P) {            
        cdata X; this->save2(X);
-       return X.permute(*this,P0,iflag);
+       return X.permute(*this,P);
     };
 
     cdata& Kron(const cdata &B){
@@ -2307,10 +2631,10 @@ class cdata : public wbsparray<TD> {
     TD contract( 
        const char *F, int L, const ctrIdx &ica,
        const cdata &B, const ctrIdx &icb, cdata &C,
-       cdata *Cx=NULL, wbperm *P=NULL, char normalize=1
+       cdata *Cx=NULL, const wbperm *P=NULL, char normalize=1
     ) const;
 
-    double SkipTiny(const char *F=NULL, int L=0);
+    double SkipTiny(const char *F=NULL, int L=0); 
 
     TD NormSignC(
        const char *F=NULL, int L=0, unsigned m=0,
@@ -2319,7 +2643,7 @@ class cdata : public wbsparray<TD> {
     );
 
     void info() const {
-       printf("\n data: %s\n",this->sizeStr().data);
+       printf("\n data: %s\n",SSTR(*this));
     };
 
  protected:
@@ -2331,14 +2655,16 @@ class CData : public QSet<TQ> {
 
  public:
 
-    CData() : cstat(CGD_UNKNOWN) { init(); };
+    CData() : cstat(CD_UNKNOWN) { init(); };
 
     CData(const CData &C)
      : QSet<TQ>((QSet<TQ>&)C), cgd(C.cgd), cstat(C.cstat) {};
 
     explicit CData(const QSet<TQ> &Q) : QSet<TQ>(Q) {};
 
-    explicit CData(const CRef<TQ> &R, unsigned l) { init(R,l); }
+    explicit CData(const CRef<TQ> &R) { init(R); }
+
+    explicit CData(const CRef<TQ> &R, unsigned l) { init(R,l); };
 
     CData& init() {
        this->t.init(); this->qs.init(); this->qdir.init();
@@ -2354,7 +2680,7 @@ class CData : public QSet<TQ> {
        return *this;
     };
 
-    CData& init(const CRef<TQ> &R, unsigned l); 
+    CData& init(const CRef<TQ> &R, unsigned l=-1); 
 
     CData& init(const CData &B) {
        this->t=B.t; this->qs=B.qs; this->qdir=B.qdir;
@@ -2373,11 +2699,13 @@ class CData : public QSet<TQ> {
 
     CData& operator=(const QSet<TQ> &Q) { return init(Q,0); };
 
+    void swap(CData &B); 
+
     CData& save2(CData &B);
 
     CData& initAbelian(const QSet<TQ> &Q) {
        this->t=Q.t; this->qs=Q.qs; this->qdir=Q.qdir;
-       cstat.init(CGD_ABELIAN); cgd.init();
+       cstat.init(CD_ABELIAN); cgd.init();
        return *this;
     };
 
@@ -2385,8 +2713,26 @@ class CData : public QSet<TQ> {
        if (!Q.t.isAbelian() && Q.qs.norm2()) { 
           wblog(FL,"ERR %s() got QSet %s",FCT,STR(Q)); }
        this->t=Q.t; this->qs=Q.qs; this->qdir=Q.qdir;
-       cstat.init(CGD_EXPLICIT); cgd.initScalar(1,Q.qdir.len);
+       cstat.init(CD_IMPLICIT); cgd.initScalar(1,Q.qdir.len);
        return *this;
+    };
+
+    unsigned getIQ(char flag=0) const; 
+
+    cgdStatus& cstat_init_(CD_TYPE t, char flag=0) {
+       unsigned iQ=getIQ(flag), id_=cstat.cID;
+       cstat.init(t,flag); 
+       if (cstat.cID!=id_) { cstat.cID=iQ; }
+
+       return cstat; 
+    };
+
+    cgdStatus& cstat_init_(unsigned ct, char flag=0) {
+       unsigned iQ=getIQ(flag), id_=cstat.cID;
+       cstat.init(ct,flag);
+       if (cstat.cID!=id_) { cstat.cID=iQ; }
+
+       return cstat; 
     };
 
     CData& init3(const QType &t_,
@@ -2394,7 +2740,7 @@ class CData : public QSet<TQ> {
        unsigned M=1 
     ){
        QSet<TQ>::init3(t_);
-       cgd.init(D1,D2,D, M); cstat=CGD_UNKNOWN;
+       cgd.init(D1,D2,D, M); cstat.init(CD_UNKNOWN);
        return *this;
     };
 
@@ -2403,8 +2749,7 @@ class CData : public QSet<TQ> {
        unsigned M=1 
     ){
        SPIDX_T D1,D2,D;
-       QSet<TQ>::init3(t_,J1,J2,J);
-       cstat.init(CGD_UNKNOWN);
+       QSet<TQ>::init3(t_,J1,J2,J); cstat.init(CD_UNKNOWN);
 
        D1=t_.qdim(J1.data);
        D2=t_.qdim(J2.data);
@@ -2418,9 +2763,19 @@ class CData : public QSet<TQ> {
     ){
        QSet<TQ>::init3(t_,J1,J2,J);
        cgd.init();
-       cstat.init(CGD_ABELIAN); 
+       cstat.init(CD_ABELIAN); 
        return *this;
     };
+
+    CData& init(const char *F, int L, 
+       const QType &t_, const QDir &qd, std::initializer_list<TQ> ql,
+       unsigned M=0); 
+
+    int init3FT(const char *F, int L, 
+       const QType &t_, const QDir &qd,
+       std::initializer_list<TQ> ql,
+       std::initializer_list<double> Dfull,  
+       char flags=0, char mp3=0);
 
     int RefInit(
        const char *F, int L, const CData<TQ,TD> &B,
@@ -2457,7 +2812,7 @@ class CData : public QSet<TQ> {
     bool olderThan(const CData &B) const {
        if ((QSet<TQ>&)*this!=(QSet<TQ>&)B) wblog(FL,
           "ERR %s() got incompatible CData\n   %s\n<> %s",
-          FCT, STR_(this), STR(B)
+          FCT, STR(*this), STR(B)
        );
        checkSameStat(FL,B);
        return cstat.olderThan(B.cstat);
@@ -2486,19 +2841,42 @@ class CData : public QSet<TQ> {
     bool operator!=(const cgdStatus &b) const { return (cstat!=b); };
     bool operator==(const cgdStatus &b) const { return (cstat==b); };
 
+    explicit operator bool() const { return !isEmpty(); } 
+
     bool isEmpty(char check=3) const {
-       return (QSet<TQ>::isEmpty(check) && cgd.isEmpty());
+       return (QSet<TQ>::isEmpty(check) && cgd.isEmpty() && cstat.isEmpty());
+    };
+
+    int isComplete(int q=7) const {
+        q=cstat.isComplete(q);
+        if (!q && !isEmpty() && isAbelian()) { q=3; }
+        return q;
+    };
+
+    bool valid() const { 
+       if (!cgd || cstat.isComplete(4)) { return 0; } 
+       unsigned r=this->qdir.len, l=cgd.SIZE.len;
+       return (l==r || (l==r+1 && r>2) ? 1 : 0);
+    };
+
+    bool NP_zero() const { 
+       if (cstat==CD_BSZ_INIT) {
+          if (cstat.isComplete(7)) wblog(FL,
+             "WRN %s() got %s",FCT,STR2(*this,2));
+          return 0;
+       }
+       return (!cgd && cstat.isComplete(4)); 
     };
 
     bool isAbelian(const char *F=NULL, int L=0) const {
        if (this->t.isAbelian()) {
-          if (cstat.t==CGD_ABELIAN) {
+          if (cstat==CD_ABELIAN) {
              if (cgd.D.len || cgd.SIZE.len) wblog(F_L,
-                "ERR %s() invalid abelian CData\n%s",FCT,STR_(this));
+                "ERR %s() invalid abelian CData\n%s",FCT,STR(*this));
              return 1;
           }
           if (!isScalar() || (cgd.D.len && (cgd.D.len>1 || cgd.D[0]!=1)))
-          wblog(F_L,"ERR %s() invalid abelian CData\n%s",STR_(this));
+          wblog(F_L,"ERR %s() invalid abelian CData\n%s",STR(*this));
           return 1;
        }
        return 0;
@@ -2512,7 +2890,7 @@ class CData : public QSet<TQ> {
 
     TD getScalar(const char *F=NULL, int L=0) const {
        if (!isScalar()) wblog(F_L,
-          "ERR %s() got non-scalar CData\n%s",FCT,STR_(this));
+          "ERR %s() got non-scalar CData\n%s",FCT,STR(*this));
        return (cgd.D.len ? cgd.D.data[0] : TD(1));
     };
 
@@ -2532,28 +2910,38 @@ class CData : public QSet<TQ> {
     SPIDX_T dim() const;
 
     bool isRefInit(char check=1) const {
-       if (cstat!=CGD_REF_INIT) { return 0; }
+       if (cstat!=CD_REF_INIT) { return 0; }
        if (check) { 
           const unsigned r=cgd.SIZE.len, m=cgd.D.len;
-          if (!r || (m>1 && m!=cgd.SIZE[r-1])) wblog(FL, 
+          if (!r || (m>1 && m!=cgd.SIZE[r-1])) { wblog(FL, 
              "ERR %s() invalid CData size ref (%s @ D.len=%d)",
-             FCT, SSTR(cgd), cgd.D.len
-          );
+             FCT, SSTR(cgd), cgd.D.len);
+          }
        }
        return 1;
     };
 
+    int reportRefInit( 
+       const char *F, int L, const char *fct, const char *istr) const {
+       if (isRefInit()) {
+          wblog(F_L,"WRN %s() got RefInit %s: %s",
+             fct?fct:"(null)", istr?istr:"(null)", STR(*this));
+          return 1;
+       }
+       return 0;
+    };
+
     bool checkValidStat(const char *F=0, int L=0) const {
        if (this->t.isAbelian()) {
-          if (cstat.hasID('l') || cstat.t!=CGD_ABELIAN) {
+          if (cstat.hasID('l') || cstat!=CD_ABELIAN) {
              if (F) wblog(F,L,"ERR %s() "
-                "abelian\n%s\n%s",FCT,STR_(this),STR2(cstat,'V'));
+                "abelian\n%s\n%s",FCT,STR(*this),STR2(cstat,'V'));
              return 0;
           }
        }
-       else if (cstat.inValid() || cstat.t<=CGD_ABELIAN) {
+       else if (cstat.inValid() || cstat<=CD_ABELIAN) {
           if (F) wblog(F,L,"ERR %s() "
-             "non-abelian\n%s\n%s",FCT,STR_(this),STR2(cstat,'V'));
+             "non-abelian\n%s\n%s",FCT,STR(*this),STR2(cstat,'V'));
           return 0;
        }
        return 1;
@@ -2563,13 +2951,13 @@ class CData : public QSet<TQ> {
        const char *F, int L, const CData &B, char lflag=1) const {
 
        int e=0;
-       if (!lflag) { if (cstat.t!=B.cstat.t) e=1; }
-       if (cstat.ID!=B.cstat.ID || cstat.ctime!=B.cstat.ctime) e|=2;
+       if (!lflag) { if (cstat.ctype!=B.cstat.ctype) e=1; }
+       if (cstat.cID!=B.cstat.cID || cstat.ctime!=B.cstat.ctime) e|=2;
 
        if (e && F) {
           wblog(F_L,"WRN %s() cstat mismatch (e=%d)",FCT,e);
           wblog(FL,"  > %s\n  > %s\n... having\n  > %s\n  > %s",
-             STR_(this), STR(B), STR2(cstat,'V'), STR2(B.cstat,'V'));
+             STR(*this), STR(B), STR2(cstat,'V'), STR2(B.cstat,'V'));
           if (e>1) wblog(FL,"ERR %s() e=%d",FCT,e);
        }
        return e;
@@ -2599,32 +2987,43 @@ class CData : public QSet<TQ> {
     unsigned getOM(const char *F=NULL, int L=0) const {
        unsigned m=0; 
 
-       if (cgd.SIZE) { if (!(m=gotOM(F,L))) { m=1; }} else
+       if (cgd.SIZE) { if (!(m=numOM(F,L))) { m=1; }} else
        if (this->qdir.len==2 && cgd.isDiag()) { m=1; } else
-       if (cgd.isEmpty() && cstat==CGD_ABELIAN) { m=1; } else
-       if (!isEmpty()) { wblog(FL, 
-          "WRN %s() got %s -> OM=%d",FCT,STR_(this),m); 
+       if (cgd.isEmpty()) {
+          if (cstat==CD_ABELIAN) { m=1; } else
+          if (cstat.isComplete()) { m=0; } 
+       }
+       else if (!isEmpty()) { wblog(FL, 
+          "WRN %s() got %s -> OM=%d",FCT,STR(*this),m); 
           this->rank(F_L); 
           cgd.wbsparray<TD>::checkSize(F_LF);
        }
        return m;
     };
 
-    unsigned gotOM(const char *F=NULL, int L=0) const {
-       if (this->qdir.len) {
-          unsigned l=cgd.SIZE.len, r=this->rank(F_L); 
-          if (l==r+1) {
-             SPIDX_T i=cgd.SIZE[r];
-             if (!i || (i>1 && !this->t.permitsOM(r))) wblog(FL,
-                "ERR %s() invalid OM setting (i=%d,r=%d)\n%s",
-                FCT,i,r,STR_(this));
-             return i;
+    unsigned numOM(const char *F=NULL, int L=0) const {
+       unsigned M=0, l=cgd.SIZE.len; 
+
+       if (this->qdir.len && l) {
+          unsigned r=this->rank(F_L); 
+          if (l==r+1) { M=cgd.SIZE[r];
+             if (!M || M>9999 || (M>1 && !this->t.permitsOM(r))) {
+                wblog(FL,"ERR %s() invalid OM (i=%d, r=%d)\n%s",
+                FCT,M,r,STR(*this));
+             }
           }
-          else if (l && l!=r) wblog(FL, 
-             "ERR %s() invalid OM setting\n%s",FCT,STR_(this)
-          );
+          else if (l!=r) { 
+             wblog(FL,"ERR %s() invalid OM setting\n%s",FCT,STR(*this));
+          }
        }
-       return 0;
+       return M;
+    };
+
+    unsigned Mdims() const { 
+       unsigned l=cgd.SIZE.len, r=this->qdir.len; 
+       if (l!=r) { if (l<r || l>r+1 || r<=2)
+           wblog(FL,"ERR %s() got r=%d with %s",FCT,r,SSTR(cgd)); }
+       return l-r;
     };
 
     unsigned checkOM(const char *F=NULL, int L=0) const {
@@ -2639,38 +3038,12 @@ class CData : public QSet<TQ> {
              return 1;
           }
           else if (this->cgd.SIZE.len>r) wblog(FL,
-          "ERR %s() CData with invalid OM\n%s",FCT,STR_(this));
+          "ERR %s() CData with invalid OM\n%s",FCT,STR(*this));
        }
        return 0;
     };
 
-    int gotFullOM(const char *F=NULL, int L=0) const {
-
-       unsigned r=this->qdir.len, m=getOM(F_L);
-
-       if (isEmpty()) { return -1; }
-
-       if (isAbelian(F_L)) { return 1; } 
-       if (r<=2 && m!=1) wblog(FL,"ERR %s() %s with m=%d",FCT,STR_(this),m);
-
-       if (r<2) { return -2; } 
-       if (r>3) { return -4; } 
-
-       if (r==2) {
-          if (cstat.t!=CGD_IDENTITY && cstat.t!=CGD_1JSY_ST3 &&
-              cstat.t!=CGD_1JSY_GEN)
-             wblog(FL,"WRN %s() got %s",FCT,STR_(this));
-          return 2;
-       }
-       else { 
-          if (cstat.t==CGD_STD3 || cstat.t==CGD_STD3_X 
-              || this->t.sub<2) { return +3; }
-          if (cstat.t!=CGD_FROM_CTR && cstat.t!=CGD_FROM_DEC &&
-              cstat.t!=CGD_GEN_X) wblog(FL,
-             "WRN %s() got %s",FCT,STR_(this));
-          return -3; 
-       }
-    };
+    int hasFullOM(const char *F=NULL, int L=0) const;
 
     int completeOM_DegQ(
        const char *F, int L, const wbperm &p,
@@ -2689,6 +3062,27 @@ class CData : public QSet<TQ> {
 
     double norm2(unsigned k=-1) const; 
 
+    wbvector<TD>& norm2(wbvector<TD> &x2, wbvector<char> *sgn=NULL) const;
+
+    CData& NormSignC(wbvector<TD> &x);
+
+    double NormSignC() { 
+       double x=1; 
+       wbvector<TD> nrm; NormSignC(nrm);
+
+       if (nrm.len) {
+          TD Dx=0, dx=0;
+          for (unsigned i=1; i<nrm.len; ++i) {
+             dx=Wb::abs(Wb::abs(nrm[i])-Wb::abs(nrm[i-1]));
+             if (Dx<dx) { Dx=dx; }
+          }
+          if ((x=double(Dx))>CG_EPS1) wblog(FL,
+             "ERR %s() got varying OM normalization @ %.3g",FCT,x);
+          x=double(Wb::abs(nrm[0]));
+       }
+       return x;
+    };
+
     wbvector<RTD>& trace(
        const char *F, int L, wbvector<RTD> &cgt) const;
 
@@ -2704,7 +3098,7 @@ class CData : public QSet<TQ> {
     CData& AddMultiplicity(const char *F, int L, const CData &C) {
        if (this->t!=C.t || this->qs!=C.qs) wblog(F_L,
           "ERR %s() incompatible CData\n[%s] <> [%s] (%s, %s)",
-          FCT, STR_(this), STR(C), sizeStr().data, C.sizeStr().data
+          FCT, STR(*this), STR(C), sizeStr().data, C.sizeStr().data
        );
        return AddMultiplicity(F_L,C.cgd); 
     };
@@ -2721,7 +3115,7 @@ class CData : public QSet<TQ> {
     int getCG_set(
        const char *F, int L, wbIndex &Idx, wbsparray<TD> &a) const;
 
-    CData& reduceto1JSymbol(const char *F, int L, CData<TQ,TD> &C) const;
+    CData& reduceTo1J(const char *F, int L, CData<TQ,TD> &C) const;
 
     int checkConsistency(const char *F=NULL, int L=0) const;
     int checkNormSign(const char *F=NULL, int L=0, char xflag=0) const;
@@ -2735,23 +3129,24 @@ class CData : public QSet<TQ> {
        TD eps=CG_EPS2
     ) const;
 
-    double SkipTiny(const char *F=NULL, int L=0);
+    double SkipTiny(const char *F=NULL, int L=0); 
 
-    CData& Permute(const wbperm &P, char iflag=0) {
+    CData& Permute(const wbperm &P) {
        CData<TQ,TD> X; this->save2(X);
-       return X.permute(*this,P,iflag);
+       return X.permute(*this,P);
     };
 
-    CData& permute(CData &B, const wbperm &P, char iflag=0) const {
-       QSet<TQ>::permute((QSet<TQ>&)B,P,iflag);
+    CData& permute(CData &B, wbperm P) const { 
+       QSet<TQ>::permute((QSet<TQ>&)B,P);
 
-       cgd.permute(B.cgd,P,iflag);
+       cgd.permute(B.cgd,P);
        B.cstat=cstat;
 
        return B;
     };
 
     CData& Conj() { QSet<TQ>::Conj(); return *this; }
+
     CData& Conj(unsigned i); 
 
     size_t memSize() const {
@@ -2768,8 +3163,7 @@ class CData : public QSet<TQ> {
     wbstring toStr() const { return toStr(0); }; 
     wbstring toStr(char vflag) const;
 
-    wbstring sizeStr() const { return sizeStr(0); } 
-    wbstring sizeStr(char xflag) const;  
+    wbstring sizeStr() const;
 
     mxArray* toMx() const;
 
@@ -2796,31 +3190,23 @@ class CData : public QSet<TQ> {
        mxDestroyArray(a);
     };
 
-    #define UBUF_ID  2   
-    #define UBUF_REF 2   
+    inline  char setuser_BUF(unsigned char q=1) {
+    return cstat.setuser_BUF(q); }
 
-    void setuser_BUF(unsigned char c=1) { cstat.user[UBUF_ID] = c; };
+    inline  char setuser_BUF(unsigned char q, unsigned l) {
+    return cstat.setuser_BUF(q,l); }
 
-    void setuser_BUF(unsigned char c, unsigned l) { unsigned k=UBUF_ID;
-       if (l>7 || (!l && c==1)) wblog(FL, 
-          "WRN %s() got u[%d]=%d (%d/%d)",FCT,k,cstat.user[k],l,c);
+    inline  char setuser_BUF_active(unsigned char q=1) {
+    return cstat.setuser_BUF_active(q); }
 
-       if (c) { cstat.user[k] |= (c<<l); } 
-       else   { c=(1<<l); cstat.user[k] &= ~c; };  
-    };
+    inline  char setuser_BUF_passive() {
+    return cstat.setuser_BUF_passive(); }
 
-    void setuser_BUF_ref(unsigned char c=1) {
-       if (c) { c=(1<<UBUF_REF); cstat.user[UBUF_ID] |=  c; }
-       else {
-          c=(1<<UBUF_REF)-1; cstat.user[UBUF_ID] &= c;
-       };
-    };
+    inline  char gotuser_BUF() const {
+    return cstat.gotuser_BUF(); };
 
-    bool gotuser_BUF() const { return cstat.user[UBUF_ID]; };
-
-    bool gotuser_BUF_ref() const { unsigned char c=(1<<UBUF_REF);
-       return (cstat.user[UBUF_ID] & c);
-    };
+    inline  char gotuser_BUF_active() const {
+    return cstat.gotuser_BUF_active(); }
 
     cdata<TD> cgd;   
 
@@ -2829,63 +3215,83 @@ class CData : public QSet<TQ> {
  private:
 };
 
+template <class TQ, class TD>
+unsigned CData<TQ,TD>::getIQ(char flag) const {
+
+   if (QSet<TQ>::rank(FL)<2) wblog(FL,
+      "ERR %s() unexpected (empty?) QSet %s",FCT,STR(*this));
+
+   if (flag!='f') {
+      if (flag && flag!='c' && flag!='m') wblog(FL,
+      "ERR %s() unexpected flag %s",FCT,cSTR(flag));
+      else if (cstat.cID) wblog(FL,
+      "WRN %s() already got initialized cID\n-> %s",FCT,STR(cstat));
+   }
+
+   size_t l=QHash<TQ>()( (QSet<TQ>&) *this );
+   unsigned q=hash_unsigned(l,20);
+
+   if (!q) wblog(FL,"ERR %s() got cID=%d (%lX)",FCT,q,l); 
+   return q;
+};
+
 template <class TQ>
 class CRef { 
 
  public:
 
-    CRef( CGR_TYPE rt_=CGR_DEFAULT ) : cgb(NULL), conj(0), rtype(rt_) {};
+    CRef( CR_TYPE rt_=CR_DEFAULT ) : cgb(NULL), rtype(rt_) {};
 
     CRef(const CRef &R) { init(R); };
     CRef(const CDATA_TQ &C, unsigned m=-1) : CRef() { initBase(C,m); };
 
-    CRef& init( CGR_TYPE rt_=CGR_DEFAULT ) {
-       cgb=NULL; conj=0; rtype=rt_; cgp.init(); cgw.init();
+    CRef& init( CR_TYPE rt_=CR_DEFAULT ) {
+       cgb=NULL; rtype=rt_; cgp.init(); cgw.init();
        return *this;
     };
 
-    CRef& init(const CRef &R, char full=1) {
-       if (this!=&R) {
-          cgb=R.cgb; rtype=R.rtype; conj=R.conj; cgp=R.cgp;
-          if (full) { cgw=R.cgw; }
+    CRef& init(const CRef &B, char full=1) {
+       if (this!=&B) {
+          cgb=B.cgb; rtype=B.rtype; cgp=B.cgp;
+          if (full) { cgw=B.cgw; }
        }
        return *this;
     };
 
-    CRef& operator=(const CRef &R) { return init(R); }
+    CRef& operator=(const CRef &B) { return init(B); }
 
-    void swap(CRef &R) { 
-       if (this!=&R) {     SWAP(cgb,  R.cgb  );
-          cgp.swap(R.cgp); SWAP(conj, R.conj );
-          cgw.swap(R.cgw); SWAP(rtype,R.rtype);
+    void swap(CRef &B) { 
+       if (this!=&B) {
+          cgp.swap(B.cgp); SWAP(cgb,  B.cgb  );
+          cgw.swap(B.cgw); SWAP(rtype,B.rtype);
        }
     };
 
-    CRef& save2(CRef &R) {
-       if (this!=&R) {     R.cgb=cgb;     cgb=0;
-          cgp.swap(R.cgp); R.conj=conj;   conj=0;
-          cgw.swap(R.cgw); R.rtype=rtype; rtype=0;
+    CRef& save2(CRef &B) {
+       if (this!=&B) {
+          cgp.swap(B.cgp); B.cgb=cgb;     cgb=0;
+          cgw.swap(B.cgw); B.rtype=rtype; rtype=0;
           cgp.init(); cgw.init(); 
-       }; return R;
+       }; return B;
     };
 
     double safeCpy(const char *F, int L, const CRef &B, CRef &C) const;
 
-    CRef& init_1(const CRef &R, unsigned j) {
-       unsigned m=R.wdim2(); if (j>=m) wblog(FL, 
-          "ERR %s() index out of bounds (%d/%d)\nhaving %s",FCT,j,m,STR(R));
-       init(R,0); R.cgw.getCol(j,cgw);
+    CRef& init_1(const CRef &B, unsigned j) {
+       unsigned m=B.wdim2(); if (j>=m) wblog(FL, 
+          "ERR %s() index out of bounds (%d/%d)\nhaving %s",FCT,j,m,STR(B));
+       init(B,0); B.cgw.getCol(j,cgw);
        return *this;
     };
 
-    CRef& init_wId(const CRef &R,
+    CRef& init_wId(const CRef &B,
         unsigned wid=1, unsigned l1=-1, const unsigned *d_=NULL
     ){
        double w=1;
-       unsigned m = (wid==1 ? R.wdim1() : R.wdim2());
+       unsigned m = (wid==1 ? B.wdim1() : B.wdim2());
        if (!wid || wid>2) { wblog(FL,"ERR %s() invalid wid=%d",FCT,wid); }
 
-       init(R,0); 
+       init(B,0); 
 
        if (int(l1)>=0) { unsigned d=qdim(l1);
           if (d_ && d!=(*d_)) wblog(FL, 
@@ -2929,20 +3335,26 @@ class CRef {
        return trace(F,L,cgt);
     };
 
-    double trace() const; 
+    double trace() const;
 
-    double trace(const char *F, int L,
-       const ctrIdx &i1, const ctrIdx &i2, CRef *Rt=NULL) const;
+    wbarray<double> trace(const char *F, int L,
+       ctrIdx i1, ctrIdx i2, CRef *Rt=NULL) const;
 
     CRef& initAbelian() {
-       cgb=NULL; rtype=CGR_ABELIAN; 
-       conj=0; cgp.init(); cgw.init();
+       cgb=NULL; rtype=CR_ABELIAN; 
+       cgp.init(); cgw.init();
+       return *this;
+    };
+
+    CRef& initAbelian(double w) {
+       cgb=NULL; rtype=CR_ABELIAN; 
+       cgp.init(); cgw.init(1,1); cgw[0]=w;
        return *this;
     };
 
     CRef& initCtrScalar(double x=1) {
-       cgb=NULL; rtype=CGR_CTR_SCALAR;
-       conj=0; cgp.init(); cgw.init(1,1,&x);
+       cgb=NULL; rtype=CR_CTR_SCALAR;
+       cgp.init(); cgw.init(1,1,&x);
        return *this;
     };
 
@@ -2951,7 +3363,7 @@ class CRef {
 
     int LoadRef(const char *F=0, int L=0, char force=1) const {
        if (!cgb) {
-          wblog(FL,"WRN %s() got cgb=null\n%s",FCT,STR_(this));
+          wblog(FL,"WRN %s() got cgb=null\n%s",FCT,STR(*this));
           return 0;
        }
        return ((CDATA_TQ*)cgb)->LoadRef(F,L,force); 
@@ -2959,7 +3371,7 @@ class CRef {
 
     int Reduce2Ref(const char *F=0, int L=0, char force=0) const {
        if (isRefInit(F,L,force)) { return 0; }
-       if (!cgb) wblog(FL,"ERR %s() got cgb=null\n%s",FCT,STR_(this));
+       if (!cgb) wblog(FL,"ERR %s() got cgb=null\n%s",FCT,STR(*this));
        return ((CDATA_TQ*)cgb)->Reduce2Ref(F,L,force);
     };
 
@@ -2971,16 +3383,24 @@ class CRef {
 
         size_t n=cgw.numel();           
         if (n>1 || cgp.len) wblog(FL,   
-           "ERR %s() invalid abelian cref (%d)",FCT,STR_(this));
-        return (rtype==CGR_DEFAULT && !n); 
+           "ERR %s() invalid abelian cref (%d)",FCT,STR(*this));
+        return (rtype==CR_DEFAULT && !n); 
+    };
+
+    int isComplete() const { int q=0; 
+        if (cgb) { return cgb->cstat.isComplete(); }
+        else {
+           if (!isAbelian()) wblog(FL,"ERR %s() got %s",FCT);
+           return q=3;
+        }
     };
 
     bool isSymmmetric(const char *F=0, int L=0) const;
 
     bool isRefInit(const char *F=0, int L=0, char check=1) const {
        if (cgb && cgb->isRefInit(check)) {
-          if (rtype!=CGR_DEFAULT) wblog(F_L,
-             "ERR %s() REF_INIT mismatch\n%s",FCT,STR_(this));
+          if (rtype!=CR_DEFAULT) wblog(F_L,
+             "ERR %s() REF_INIT mismatch\n%s",FCT,STR(*this));
           return 1;
        }
        return 0;
@@ -3026,8 +3446,9 @@ class CRef {
 
     unsigned wdim1(const char *F=NULL, int L=0) const {
        return isw2(F_L); }   
+
     unsigned wdim2(const char *F=NULL, int L=0) const { isw2(F_L);
-       return cgw.SIZE[1]; } 
+       return cgw.SIZE[1]; }
 
     unsigned wdim12_(const char *F, int L, unsigned &d2) const;
 
@@ -3055,8 +3476,8 @@ class CRef {
 
     int checkAbelian(const char *F=NULL, int L=0) const;
 
-    bool isDiagCSC(RTD eps=1E-14) const;
-    bool isIdentityCG(wbvector<double> *nrm=NULL, double eps=1E-14) const;
+    bool isDiagCSC(RTD eps=1e-14) const;
+    bool isIdentityCG(wbvector<double> *nrm=NULL, double eps=1e-14) const;
 
     int wisId() const;
 
@@ -3065,13 +3486,19 @@ class CRef {
     double NormSignW(
        const char *F=NULL, int L=0,
        char useExt=1, 
-       double eps =CG_SKIP_DEPS1,  
-       double eps2=CG_SKIP_DEPS2   
+       double eps =CG_SKIP_DEPS1, 
+       double eps2=CG_SKIP_DEPS2  
     );
 
-    char sameUptoFac(const CRef &B, double *fac=NULL, double eps=1E-12) const;
-    char sameAs(const CRef &B, double eps=1E-12) const;
-    char sameAs_fix(const char *F, int L, CRef &B, double eps=1E-12);
+    double getNormSignW( 
+       const char *F=NULL, int L=0,
+       char useExt=1, 
+       double eps =CG_SKIP_DEPS1  
+    ) const;
+
+    char sameUptoFac(const CRef &B, double *fac=NULL, double eps=1e-12) const;
+    char sameAs(const CRef &B, double eps=1e-12) const;
+    char sameAs_fix(const char *F, int L, CRef &B, double eps=1e-12);
 
     bool sameQSet(const QSet<TQ> &Q) const; 
     bool sameQSet(const CRef &B) const;
@@ -3092,13 +3519,9 @@ class CRef {
 
     double normExt(const char *F=NULL, int L=0) const;
 
-    int SortDegQ(const char *F=NULL, int L=0, QSet<TQ> *QS=NULL);
+    int SortDegQ(const char *F=NULL, int L=0, QSet<TQ> *Q=NULL);
 
-    bool isSortedDegQ(QSet<TQ> *QS, wbperm &pxt, char &cxt) const;
-    bool isSortedDegQ(QSet<TQ> *QS=NULL) const {
-       wbperm pxt; char cxt=0;
-       return isSortedDegQ(QS,pxt,cxt);
-    };
+    bool isSortedDegQ(wbperm *pxt, QSet<TQ> *Q=NULL) const;
 
     char got3(const char *F, int L,
        const QType &q, const qset<TQ> &J12, const qset<TQ> &J3
@@ -3127,51 +3550,38 @@ class CRef {
     unsigned rank(const char *F=NULL, int L=0, char lflag=0) const;
 
     CRef wget(unsigned j) const { 
-       CRef<TQ> R; 
-       return R.init(*this,j);
+       CRef<TQ> B; 
+       return B.init(*this,j);
     };
 
-    CRef& Permute(const wbperm &P, char iflag=0, char isnew=0); 
-    CRef& permute( 
-       const wbperm &P, CRef &B, char iflag=0, char isnew=0
-     ) const { B=(*this); return B.Permute(P,iflag,isnew); };
+    CRef& Permute(wbperm P, char isnew=0); 
+    CRef& permute(CRef &B, const wbperm &P, char isnew=0) const {
+        B=(*this); return B.Permute(P,isnew);
+    };
 
     CRef& Conj() {
-       if (cgb) { conj=(conj ? 0 : 1); } 
+       if (cgb) { cgp.Conj(); } else
+       if (cgp) { wblog(FL,"WRN %s() got %s",FCT,STR(cgp)); }
        return *this;
     };
 
     int HConjOpScalar();  
 
-    bool gotConj() const { return (conj!=0); };
+    bool gotConj() const { return Wb::conj2bool(cgp.conj); };
 
     bool gotPerm(const char *F=NULL, int L=0) const {
-       if (cgp.len) {
-          if (!cgb) wblog(F_L,"ERR %s() "
-             "invalid perm (len=%d; cgb=NULL)",FCT, cgp.len);
-          if (cgp.len!=cgb->qdir.len) wblog(F_L,"ERR %s() "
-             "invalid perm (len=%d/%d)",FCT, cgp.len, cgb->qdir.len);
-          return !cgp.isIdentityPerm(F_L,cgb->qdir.len);
+       if (cgp.relevant()) {
+          if (!cgb) wblog(F_L,
+            "ERR %s() invalid perm (len=%d; cgb=NULL)",FCT, cgp.len);
+          if (cgp.len!=cgb->qdir.len) wblog(F_L,
+            "ERR %s() invalid perm (len=%d/%d)",FCT, cgp.len, cgb->qdir.len);
+          return 1;
        }
        return 0;
     };
 
-    bool anyTrafo(char pflag=1) const {
-       if (conj || cgp.len) return 1;
-       if (pflag && !cgp.isIdentityPerm()) return 1;
-       return 0;
-    };
-
-    bool anyTrafo(char &ip, char &ic, char pflag=1) const {
-       if (pflag)
-            { ip=(cgp.len && !cgp.isIdentityPerm()); }
-       else { ip=(cgp.len ? 1 : 0); }
-       ic=(conj!=0);
-       return (ip || ic);
-    };
-
-    bool gotnoTrafos() const { 
-       return !anyTrafo(); };
+    bool anyTrafo() const { return (cgp ? 1 : 0); };
+    bool  noTrafo() const { return (cgp ? 0 : 1); };
 
     unsigned getP(unsigned k) const {
        if (cgp.len) {
@@ -3189,16 +3599,19 @@ class CRef {
     };
 
     char stat() const { char i=0; 
-       if (rtype!=CGR_DEFAULT) i ^= 1; 
-       if (conj) i ^= 2; 
-       if (cgp.len && !cgp.isIdentityPerm()) i ^= 4; 
+       if (rtype!=CR_DEFAULT) { i|=1; }
+       if (cgp.conj) { i|=2; }
+       if (cgp.len && !cgp.isIdentityPerm()) { i|=4; }
        return i;
     };
 
     bool affectsQDir() const;
 
     qset<TQ>& adapt(qset<TQ> &qs, char iflag=0) const {
-       if (cgp.len) qs.BlockPermute(cgp,iflag ? 0 : 'i');
+       if (cgp.len) {
+          wbperm P(cgp, iflag? 0:'i');
+          qs.BlockPermute(P);
+       }
        return qs;
     };
 
@@ -3207,14 +3620,9 @@ class CRef {
     ctrIdx& adapt(ctrIdx &I, char iflag=0) const;
 
     QDir& get_qdir(QDir &qd) const {
-       if (!cgb) { qd.init(); return qd; }
-
-       if (cgp.len) 
-            cgb->qdir.permute(qd,cgp);
-       else qd=cgb->qdir;
-
-       if (conj) qd.Conj();
-
+       if (cgb)
+            { cgb->qdir.permute(qd,cgp); }
+       else { qd.init(); }
        return qd;
     };
 
@@ -3224,29 +3632,23 @@ class CRef {
 
     wbstring qdir2Str(char vflag=0) const {
 
-       if (!cgb || !cgb->qdir.len) return "";
+       if (!cgb || !cgb->qdir.len) { return ""; }
 
-       if (vflag<=0) return get_qdir().toStr();
+       if (vflag<=0) { return get_qdir().toStr(); }
        if (vflag==1 || vflag=='v') {
-          unsigned l, n=2*(cgb->qdir.len)+5; char s[n];
-          l=snprintf(s,n,"%s => %s",
-             cgb->qdir.toStr().data, STR(get_qdir()));
-          if (l>=n) wblog(FL,
-             "ERR %s() string out of bounds (%d/%d)",FCT,l,n);
-          return s;
+          wbvec<char> s(2*(cgb->qdir.len)+5);
+          s.catf(FL,"%s => %s",STR(cgb->qdir), STR(get_qdir()));
+          return s.data;
        }
        else {
-          unsigned l, n=2*(cgb->qdir.len)+5; char s[n];
-          l=snprintf(s,n,"%s[%s]%s",
-             cgb->qdir.toStr().data, (cgp+1).toStr(1,"").data,
-             gotConj()?"*":"");
-          if (l>=n) wblog(FL,
-             "ERR %s() string out of bounds (%d/%d)",FCT,l,n);
-          return s;
+          wbvec<char> s(2*(cgb->qdir.len)+5);
+          s.catf(FL,"%s %s", STR(cgb->qdir), STR(cgp));
+          return s.data;
        }
     };
 
-    wbstring toStr(char lflag=0) const;
+    wbstring toStr() const { return toStr(0); }; 
+    wbstring toStr(char lflag) const;
 
     wbstring sizeStr() const;
 
@@ -3270,8 +3672,6 @@ class CRef {
 
     wbperm cgp; 
 
-    char conj;
-
     cgrType rtype; 
 };
 
@@ -3285,16 +3685,20 @@ class CRef {
    #define TP3_LDM   4  
    #define TP3_LDR   8  
    #define TP3_TST  16  
+   #define TP3_DBG  64  
    #define TP3_LOAD  (TP3_LDM|TP3_LDR)
 
    #define LB_LOAD   4  
    #define LB_UPD    8  
+
    #define LB_CALC  16  
    #define LB_REF   32  
 
-   #define LB_GEN (LB_LOAD | LB_CALC )  
-   #define LB_GET (LB_LOAD | LB_CALC | LB_UPD )
-   #define LB_ANY (31<<2) 
+   #define LB_UPD__  (LB_UPD  | LB_LOAD)          
+   #define LB_CALC__ (LB_CALC | LB_LOAD)          
+   #define LB_GEN    (LB_LOAD | LB_UPD | LB_CALC) 
+
+   #define LB_ANY    (31<<2)  
 
    #define QF_LOADC 128
 
@@ -3322,12 +3726,12 @@ class CStore {
 
     const CDATA_TQ& getIdentityC(const char *F, int L,
        const QType &t, const TQ *qs, unsigned dim=-1,
-       unsigned loadRC=LB_GEN 
+       unsigned loadRC=LB_CALC__ 
     );
     const CDATA_TQ& getIdentity1J(
        const char *F, int L, CRef<TQ> &C,
        const QType &t, const TQ *qs, unsigned dim=-1,
-       unsigned loadRC=LB_GEN 
+       unsigned loadRC=LB_CALC__ 
     );
 
     void add_CData_abelian( 
@@ -3377,7 +3781,7 @@ class CStore {
 
     unsigned LoadStore(const char *F, int L, const char *file);
 
-    mxArray* toMx(const QType &q=QTYPE_UNKNOWN) const;
+    mxArray* toMx(const QType &q=QT_UNKNOWN) const;
 
     void put(const char *F, int L,
        const char *vname, const char *ws="caller"
@@ -3529,7 +3933,7 @@ class cgc_contract_id : public wbvector<TM> {
 
     void wblog_(const char* F=0, int L=0, const char *istr=0) const {
        #ifdef QS_USING_OMP
-         Wb::ompGuard myLK(wblog_lock,1);
+         Wb::ompGuard myLK(wblog_lk,1);
        #endif
 
        CData<gTQ,RTD> a,b; ctrIdx ica,icb;
@@ -3550,9 +3954,9 @@ class cgc_contract_id : public wbvector<TM> {
 
        if (vflag&4) { 
           sout.init(256); snprintf(sout.data,sout.len,
-            "%-20s @%s #%05x | %-20s @%s #%05x",
-             STR2(a,1), STR(ica), a.cstat.ID,
-             STR2(b,1), STR(icb), b.cstat.ID
+            "%-20s @%s #%05X | %-20s @%s #%05X",
+             STR2(a,1), STR(ica), a.cstat.cID,
+             STR2(b,1), STR(icb), b.cstat.cID
           );
        }
        else if (vflag&2) {
@@ -3574,75 +3978,24 @@ class cgc_contract_id : public wbvector<TM> {
      template <class T1, class T2>
      unsigned set_val(const char *F, int L, T1* &s, const T2 &x) {
          s[0]=x;
-         if (T2(s[0])!=x) wblog(F_L,"ERR got non-%s data entry (%g)",
-            TSTR(T1), double(x)
-         );
+         if (T2(s[0])!=x) { wblog(F_L,
+            "ERR got non-%s data entry (%g)",TSTR(T1), double(x)); }
          s+=1; return 1;
+     };
+
+     template <class T1, class T2>
+     void get_val(
+        const char *F, int L, const T1* &s, T2 &x) const {
+        get_range(F,L,s,1,&x);
      };
 
      template <class T1, class T2>
      unsigned set_vec(const char *F, int L, T1* &s, const wbvector<T2> &x) {
          s[0]=x.len;
-         if (unsigned(s[0])!=x.len) wblog(F_L,"ERR unexpected size "
-            "(out of bounds %s @ %d)",TSTR(T1),x.len
-         );
+         if (unsigned(s[0])!=x.len) { wblog(F_L,
+            "ERR unexpected size (out of bounds %s @ %d)",TSTR(T1),x.len); }
          set_range(F_L,++s,x.len,x.data);
          return (1+x.len);
-     };
-
-     template <class T1, class T2>
-     unsigned set_range(const char *F, int L, T1* &s, unsigned n, const T2 *x) {
-         for (unsigned i=0; i<n; ++i) {
-            s[i]=x[i];
-            if (T2(s[i])!=x[i]) wblog(F_L,"ERR got non-%s data entry (%g)",
-               TSTR(T1), double(x[i])
-            );
-         }
-         s+=n; return n;
-     };
-
-     template <class TQ, class TD>
-     unsigned set_CData(const char *F, int L,
-        char* &s, unsigned n, const CData<TQ,TD> &A, char tflag=1
-     ){
-        char *s0=s;
-        unsigned r=A.rank(), l=4+A.qs.len+r+(4+r)*sizeof(unsigned);
-
-        wbvector<size_t> S;
-
-        if (l>=n) wblog(FL,"ERR %s() string out of bounds (%d/%d)",FCT,l,n);
-
-        if (tflag) {
-           set_val(FL,s, A.t.type);
-           set_val(FL,s, A.t.sub );
-        }
-
-        set_vec(FL,s, A.qs);
-        set_vec(FL,s, A.qdir);  
-
-        unsigned *u=(unsigned*)s;
-
-        set_vec(FL,u, A.getSize(S,'b'));
-
-        s+=(u-(unsigned*)s)*sizeof(unsigned); l=s-s0;
-        if (l>=n) wblog(F_L,
-           "ERR %s() string out of bounds (%d/%d)",FCT,l,n
-        );
-
-        return l;
-     };
-
-     template <class T1, class T2>
-     void get_range(
-        const char *F, int L, const T1* &s, unsigned n, T2 *x) const {
-
-        for (unsigned i=0; i<n; ++i) {
-           x[i]=s[i];
-           if (T1(x[i])!=s[i]) wblog(F_L,"ERR got non-%s data entry (%g)",
-              TSTR(T1), double(x[i])
-           );
-        }
-        s+=n;
      };
 
      template <class T1, class T2>
@@ -3655,29 +4008,72 @@ class cgc_contract_id : public wbvector<TM> {
      };
 
      template <class T1, class T2>
-     void get_val(
-        const char *F, int L, const T1* &s, T2 &x) const {
-        get_range(F,L,s,1,&x);
+     unsigned set_range(
+        const char *F, int L, T1* &s, unsigned n, const T2 *x) {
+        for (unsigned i=0; i<n; ++i) {
+           s[i]=x[i];
+           if (T2(s[i])!=x[i]) { wblog(F_L,
+              "ERR got non-%s data entry (%g)",TSTR(T1), double(x[i])); }
+        }
+        s+=n; return n;
+     };
+
+     template <class T1, class T2>
+     void get_range(
+        const char *F, int L, const T1* &s, unsigned n, T2 *x) const {
+        for (unsigned i=0; i<n; ++i) {
+           x[i]=s[i];
+           if (T1(x[i])!=s[i]) { wblog(F_L,
+              "ERR got non-%s data entry (%g)",TSTR(T1), double(x[i]));
+           }
+        }
+        s+=n;
      };
 
      template <class TQ, class TD>
-     unsigned get_CData(const char *F, int L,
-        const char* &s, CData<TQ,TD> &A, char tflag=1) const {
+     unsigned set_CData(const char *F, int L,
+        char* &s, unsigned n, const CData<TQ,TD> &A,
+        char incl_type=1 
+     ){
+        char *s0=s;
+        unsigned r=A.rank(), l=4+A.qs.len+r+(4+r)*sizeof(unsigned);
+
+        wbvector<size_t> S;
+
+        if (l>=n) wblog(FL,"ERR %s() string out of bounds (%d/%d)",FCT,l,n);
+
+        if (incl_type) {
+           set_val(FL,s, A.t.type);
+           set_val(FL,s, A.t.sub );
+        }
+
+        set_vec(FL,s, A.qs);
+        set_vec(FL,s, A.qdir);  
+
+        set_vec  (FL,(unsigned*&)s,A.getSize(S,'b')); 
+
+        if ((l=s-s0)>=n) wblog(F_L,
+           "ERR %s() string out of bounds (%d/%d)",FCT,l,n);
+        return l;
+     };
+
+     template <class TQ, class TD>
+     unsigned get_CData(
+        const char *F, int L, const char* &s, CData<TQ,TD> &A,
+        char incl_type=1 
+      ) const {
 
         A.init();
-        if (tflag) {
-           A.t.initx(QTYPE_SET(s[0]),unsigned(s[1]));
+        if (incl_type) {
+           A.t.initx(QT_QSPACE(s[0]),unsigned(s[1]));
            s+=2;
         }
 
         get_vec(F_L,s, A.qs);
         get_vec(F_L,s, A.qdir);  
 
-        const unsigned *u = (const unsigned*)s;
-        get_vec(F_L,u, A.cgd.SIZE); 
-        A.cstat.init0(CGD_BSZ_INIT);
-
-        s+=(u-(unsigned*)s)*sizeof(unsigned);
+        get_vec(F_L,(const unsigned*&)s, A.cgd.SIZE);
+        A.cstat.init_(CD_BSZ_INIT);
 
         return 0;
      };
@@ -3705,7 +4101,7 @@ class x3map {
 
   public:
 
-    x3map() : cgb(NULL), conj(0), zflag(0), rtype(CGR_DEFAULT)
+    x3map() : cgb(NULL), zflag(0), rtype(CR_DEFAULT)
     #ifndef QS_USING_MPFR
     , X3(x3)
     #endif
@@ -3713,28 +4109,27 @@ class x3map {
 
     x3map(const char *F, int L,
        const CRef<TQ> &A_, const ctrIdx &ica,
-       const CRef<TQ> &B_, const ctrIdx &icb, wbperm &cgp, char xflag=0
-     ) : x3map() { initCtr(F_L,A_,ica,B_,icb, cgp, xflag); };
+       const CRef<TQ> &B_, const ctrIdx &icb, wbperm &cgp,
+       char xCGR=1) 
+     : x3map() { contract_x3(F_L,A_,ica,B_,icb, cgp, xCGR); }; 
 
     x3map& init() {
        a.init(); b.init(); c.init(); pab.init(); x3.init();
        #ifdef QS_USING_MPFR
           X3.init();
        #endif
-       cgb=NULL; conj=0; zflag=0; rtype=CGR_DEFAULT;
+       cgb=NULL; zflag=0; rtype=CR_DEFAULT;
        return *this;
     };
 
-    int initCtr(const char *F, int L,
+    int contract_x3(const char *F, int L, 
        const CRef<TQ> &A_, const ctrIdx &ica_,
        const CRef<TQ> &B_, const ctrIdx &icb_, wbperm &cgp,
-       char xflag=1 
-    );
+       char xCGR=0); 
 
     x3map& init(
        const char *F, int L, const mxArray* S, unsigned k=0,
-       ctrIdx *ica=NULL, ctrIdx *icb=NULL, char recalc=1 
-    );
+       ctrIdx *ica=NULL, ctrIdx *icb=NULL, char recalc=1); 
 
     bool isEmpty() const {
        return (
@@ -3743,12 +4138,15 @@ class x3map {
        );
     };
 
-    void print(
-        const char *F=NULL, int L=0, const char *istr="", char vflag=0
-      ) const;
+    wbstring toStr() const { return toStr(0); }; 
+    wbstring toStr(char vflag) const;
 
-    wbstring toStr(char vflag=0) const;
-    wbstring x3Str(char vflag=0) const;
+    wbstring x3Str(char vflag=1) const;
+
+    void print(
+        const char *F=NULL, int L=0, const char *istr="", char vflag=0,
+        const ctrIdx *ica=NULL, const ctrIdx *icb=NULL
+      ) const;
 
     size_t memSize() const {
        return ( sizeof(cgb) + sizeof(char)
@@ -3775,18 +4173,16 @@ class x3map {
 
     const CDATA_TQ* cgb; 
 
-    wbperm pab;
-
-    char conj;
+    wbperm pab; 
 
     int zflag; 
 
     cgrType rtype;
 
-    wbarray<TD> x3; 
+    wbarray<TD> x3;  
 
 #ifdef QS_USING_MPFR
-    wbarray<RTD> X3;
+    wbarray<RTD> X3; 
 #else
     wbarray<TD> &X3; 
 #endif
@@ -3821,7 +4217,7 @@ class X3Map {
     int contractCGR(const char *F, int L, 
        const CRef<TQ> &A, const ctrIdx &ica,
        const CRef<TQ> &B, const ctrIdx &icb, CRef<TQ> &C,
-       char cg_preview=0
+       char xCGR=0 
     );
 
     CRef<TQ>& contractDegQ(const char *F, int L,
@@ -3875,8 +4271,8 @@ class QMap {
        const qset<TQ> *q3=NULL,     
        wbIndex *m3=NULL,  
        const wbvector<TD>* cc=NULL,
-       double eps1=1E-10,
-       double eps2=1E-14  
+       double eps1=1e-10,
+       double eps2=1e-14  
     ) const;
 
     void Skip(const wbindex &I);
@@ -3939,7 +4335,7 @@ bool QMap<TQ>::isConsistent(const char *F, int L, const QVec *qv) const {
    if (qv && (!qvec.sameType(*qv) || d!=(qv->Qlen()))) {
       if (!F) return 0; else wblog(F,L,
       "ERR QMap: Q type mismatch: %s; %s (%d/%d)",
-       qv->toStr().data, STR(qvec), qv->Qlen(), d);
+       STR_(qv), STR(qvec), qv->Qlen(), d);
    }
    return 1;
 };
@@ -3985,7 +4381,7 @@ class genRG_base{
         const char *F, int L, const genRG_base &B) const;
 
      genRG_base& Sort();
-     double SkipTiny(const char *F=0, int L=0);
+     double SkipTiny(const char *F=0, int L=0); 
 
      genRG_base& ApplyQFac(
         const wbvector<double> &qfac, const wbarray<double> *JM=NULL);
@@ -4016,6 +4412,14 @@ class genRG_base{
 
      void compareStdSU2(const char *F=NULL, int L=0) const;
 
+     unsigned block_decompose_Sm(const char *F, int L, char w,
+        wbMatrix< wbarray<TD> > &SM,
+        wbMatrix<unsigned> &IJ, WBINDEX *D=NULL) const;
+
+    int get1J_gen_aux(const char *F, int L,
+       const genRG_base<TQ,TD> &G2, const CData<TQ,TD> &Z,
+       wbsparray<TD> &C, double &dx, double &dn, char flag=0) const;
+
      genRG_base& save2(genRG_base& S) {
         S.q=q; J.save2(S.J); Z.save2(S.Z); q=0;
         Sp.save2(S.Sp); Sz.save2(S.Sz);
@@ -4027,13 +4431,10 @@ class genRG_base{
      };
 
      wbstring info() const { 
-        unsigned n=128; char s[n]; char sep[2]=" ";
-        if (!q.isAbelian() && J.wbvector<TQ>::allIn(0,9)) sep[0]=0;
-        unsigned l=snprintf(s,n,"%s [%s]",
-            q.toStr().data, J.toStrf("",sep,q.qlen(),";").data);
-        if (l>=n) wblog(FL,
-           "ERR %s() string out of bounds (%d/%d)",FCT,l,n);
-        return s;
+        wbvec<char> s(128); char sep[2]=" ";
+        if (!q.isAbelian() && J.wbvector<TQ>::allIn(0,9)) { sep[0]=0; }
+        s.catf(FL,"%s [%s]",STR(q), J.toStrf("",sep,q.qlen(),";").data);
+        return s.data;
      };
 
      mxArray* toMx() const {
@@ -4055,8 +4456,8 @@ class genRG_base{
 
      QType q;
 
-     wbvector< wbSparrayTD > Sp; 
-     wbvector< wbSparrayTD > Sz; 
+     wbvector< SPARRAY_TD > Sp; 
+     wbvector< SPARRAY_TD > Sz; 
 
      qset<TQ> J;
 
@@ -4095,6 +4496,8 @@ class genRG_struct {
     genRG_struct& SetupSym(
        const char *F, int L, const QType &q0, qset<TQ> *qs_=NULL);
 
+    genRG_struct& Setup_A4 (const char *F, int L, qset<TQ> *qs=NULL);
+
     genRG_struct& Setup_SUN(const char *F, int L, qset<TQ> *qs=NULL);
     genRG_struct& Setup_SpN(const char *F, int L, qset<TQ> *qs=NULL);
     genRG_struct& Setup_SON(const char *F, int L, qset<TQ> *qs=NULL);
@@ -4111,7 +4514,12 @@ class genRG_struct {
 
     void printStatus(const char *F, int L, const char *istr=NULL);
 
+    int get1J_gen_old(const char *F, int L, const qset<TQ> &q, char flag=0);
+
     int get1J_gen(const char *F, int L, const qset<TQ> &q, char flag=0);
+
+    unsigned block_decompose_Sm(const char *F, int L,
+      const qset<TQ> &J, char w, wbMatrix< wbarray<TD> > &SM);
 
     int getTensorProdReps_gen(
        const qset<TQ> &q1, const qset<TQ> &q2,
@@ -4174,16 +4582,16 @@ TQ getTensorProdReps_abelian(const QType &q, const TQ &J1, const TQ &J2) {
    TQ J=0; 
 
    switch (q.type) {
-      case QTYPE_U1: J=J1+J2; break;
+      case QT_U1: J=J1+J2; break;
 
-      case QTYPE_ZN: J=int(J1+J2)%q.sub;
+      case QT_ZN: J=int(J1+J2)%q.sub;
 
          if (TQ(int(J1)%q.sub)!=J1 || TQ(int(J2)%q.sub)!=J2)
             wblog(FL,"ERR %s() invalid %s labels (%g,%g)",
             FCT, STR(q), double(J1), double(J2));
          break;
 
-      case QTYPE_P: J=J1*J2;
+      case QT_P: J=J1*J2;
 
          if (fabs(double(J1))!=1 || fabs(double(J2))!=1)
             wblog(FL,"ERR %s() invalid %s labels (%g,%g)",
@@ -4288,7 +4696,7 @@ class RStore {
       return R.Z.dim1;
    };
 
-   mxArray* toMx(const QType &q=QTYPE_UNKNOWN, char bflag=1) const;
+   mxArray* toMx(const QType &q=QT_UNKNOWN, char bflag=1) const;
 
    unsigned LoadStore(const char *F, int L, const char *file);
    unsigned add(const QType &q, const mxArray* S, unsigned k);
@@ -4358,20 +4766,29 @@ class RCStore {
    };
 
    template <class TQ, class TD>
+   int save_1J(const char *F, int L,
+      const CData<TQ,TD> &A, const char *istr=0);
+
+   template <class TQ, class TD>
    int save_CData(const char *F, int L, const CData<TQ,TD> &A);
 
    template <class TQ, class TD>
    int load_CData(
       const char *F, int L, const QSet<TQ> &Q, CData<TQ,TD> &A,
-      char bflag=0);
+      char ref=0); 
 
    template <class TQ>
-   int save_Std3(
+   int save_mp3( 
       const char *F, int L, const QType &t, const qset<TQ> &J12,
       const wbvector<double> *c2eps=NULL) const;
 
    template <class TQ>
-   int load_Std3(const char *F, int L,
+   int save_mp3_extended(
+      const char *F, int L, const QType &t, const qset<TQ> &J12,
+      const wbvector<double> *c2eps=NULL) const;
+
+   template <class TQ>
+   int load_mp3(const char *F, int L, 
        const QType &t, const qset<TQ> &J1, const qset<TQ> &J2,
        unsigned loadRC=0) const;
 
@@ -4541,9 +4958,9 @@ namespace CG {
 
 template <class TQ, class TD>
 double getSymmetryStates(const char *F, int L, const QType &q, 
-   const wbvector< wbSparrayTD > &Sp,
-   const wbvector< wbSparrayTD > &Sz,
-   wbvector< wbSparrayTD > &U, 
+   const wbvector< SPARRAY_TD > &Sp,
+   const wbvector< SPARRAY_TD > &Sz,
+   wbvector< SPARRAY_TD > &U, 
    wbvector<unsigned> &dd, 
    wbvector<genRG_base<TQ,TD> > &RR,
    wbvector<double> &c2eps, 
@@ -4627,15 +5044,15 @@ class Guard {
      int acquire(const char *F, int L, 
         const FileLock &flk, const char *tag=NULL, const char *cond=NULL);
 
-     template<class TQ>
+     template<class TQ> 
      int acquire(const char *F, int L,
         const QSet<TQ> &Q, const char *tag=NULL, const char *cond=NULL);
 
-     template<class TM>
+     template<class TM> 
      int acquire(const char *F, int L,
         const cgc_contract_id<TM> &x, const char *cond=NULL);
 
-     template<class TQ>
+     template<class TQ> 
      void acquire(const char *F, int L, const QSet<TQ>* Q[], unsigned n);
 
      template<class TQ>
@@ -4648,15 +5065,15 @@ class Guard {
         const QSet<TQ> &QA, const QSet<TQ> &QB, const QSet<TQ> &QC)
       { const QSet<TQ>* QQ[3]={ &QA, &QB, &QC }; acquire(F_L,QQ,3); };
 
-     inline int acquire_set(const char *ss[], int ntry=-1) {
+     inline int acquire_set(const char *ss[], int ntry=-1) { 
         if (!hid.len) { return -1; }
 
-        int got[hid.len];
-        Wb::ompNLock *lk[hid.len];
+        wbvec<int> got(hid.len);
+        wbvec<Wb::ompNLock*> lk(hid.len);
 
-        int nlks=acquire_set_iter(got,lk,ss,0);
+        int nlks=acquire_set_iter(got.data,lk.data,ss,0);
         if (nlks<=0) { if (ntry==1 || !ntry) return nlks;
-           nlks=acquire_set_wait(got,lk,ss,ntry);
+           nlks=acquire_set_wait(got.data,lk.data,ss,ntry);
         }
 
         if (nlks<=0) {
@@ -4667,16 +5084,16 @@ class Guard {
 
         for (unsigned i=0; i<hid.len; ++i) {
             lk[i]->set_istr(ss[i]);
-            if (*got < got[i]) { *got=got[i]; } 
+            if (got[0]<got[i]) { got[0]=got[i]; } 
         }
         active=true;
 
-        return *got;
+        return got[0];
      };
 
-     int acquire_set_iter(
+     int acquire_set_iter( 
          int *got, Wb::ompNLock *lk[], const char *ss[], unsigned iter=0);
-     int acquire_set_wait(
+     int acquire_set_wait( 
          int *got, Wb::ompNLock *lk[], const char *ss[], int ntry=-1);
 
      void release();
@@ -4689,7 +5106,7 @@ class Guard {
         return l;
      };
 
-     int used() { int l=0;
+     int used() { int l=0; 
         for (unsigned i=0; i<hid.len; ++i) {
             const Wb::ompNLock *lp = Guard::find(hid[i]);
             if (lp && l<(lp->level)) {
@@ -4719,7 +5136,7 @@ class Guard {
 
      static Wb::ompNLock* find(size_t h);
 
-     static int print_CG_locks();
+     static int print_CG_locks(const char *F=NULL, int L=0);
 
   protected:
   private:
@@ -4802,22 +5219,22 @@ template<class TD>
 int BuildKrylovH(
    const QType &q,
    wbarray<TD> &HK, unsigned nk, 
-   wbSparrayTD &X,        
+   SPARRAY_TD &X,        
    wbvector<TD> &EK,
-   const wbSparrayTD &HL,            
-   const wbSparrayTD &HR,            
-   const wbvector< wbSparrayTD > SL, 
-   const wbvector< wbSparrayTD > SR,
+   const SPARRAY_TD &HL,            
+   const SPARRAY_TD &HR,            
+   const wbvector< SPARRAY_TD > SL, 
+   const wbvector< SPARRAY_TD > SR,
    double &xmin
 );
 
 template<class TD>
 void GetHPsi(
-   wbSparrayTD &HX, const wbSparrayTD &X,
-   const wbSparrayTD &HL, 
-   const wbSparrayTD &HR, 
-   const wbvector< wbSparrayTD > SL, 
-   const wbvector< wbSparrayTD > SR  
+   SPARRAY_TD &HX, const SPARRAY_TD &X,
+   const SPARRAY_TD &HL, 
+   const SPARRAY_TD &HR, 
+   const wbvector< SPARRAY_TD > SL, 
+   const wbvector< SPARRAY_TD > SR  
 );
 
 #endif

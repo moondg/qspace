@@ -24,18 +24,18 @@ template <class TQ, class TD> class QSpace;
 template <class TQ, class TD> class CPAT;
 
 template <class TQ, class TA, class TB, class TC>
-void contractDATA_plain(
+void contractDATA_plain( 
    const char *F, int L,
-   const QSpace<TQ,TA> &A, C_UVEC &Ia, const ctrIdx &ica,
-   const QSpace<TQ,TB> &B, C_UVEC &Ib, const ctrIdx &icb,
+   const QSpace<TQ,TA> &A, cUVEC &Ia, const ctrIdx &ica,
+   const QSpace<TQ,TB> &B, cUVEC &Ib, const ctrIdx &icb,
    QSpace<TQ,TC> &C, unsigned ic
 );
 
 template <class TQ, class TA, class TB, class TC>
-double contractDATA_group(
+double contractDATA_group( 
    const char *F, int L,
-   const QSpace<TQ,TA> &A, C_UVEC &Ia, const ctrIdx &ica,
-   const QSpace<TQ,TB> &B, C_UVEC &Ib, const ctrIdx &icb,
+   const QSpace<TQ,TA> &A, cMVEC &fA, cUVEC &Ia, const ctrIdx &ica,
+   const QSpace<TQ,TB> &B, cMVEC &fB, cUVEC &Ib, const ctrIdx &icb,
    QSpace<TQ,TC> &C, unsigned ic,
    char preview=0
 );
@@ -45,8 +45,8 @@ void mxInitQSpaceVec(
    const char *F, int L, const mxArray* C,
    wbvector< QSpace<TQ,TD> > &Fk,
    const char ref=0,
-   const unsigned *rmin=NULL, 
-   const unsigned *rmax=NULL  
+   const unsigned *rmin=nullptr, 
+   const unsigned *rmax=nullptr  
 );
 
 template<class TQ, class TD> 
@@ -106,24 +106,24 @@ int mxIsQSpace(
    const mxArray *a, unsigned &rank,
    char cflag=0,
    unsigned k=-1, 
-   const unsigned *rmin=NULL, 
-   const unsigned *rmax=NULL, 
-   const char *istr=NULL
+   const unsigned *rmin=nullptr, 
+   const unsigned *rmax=nullptr, 
+   const char *istr=nullptr
 );
 
 inline int mxIsQSpace(
    const char *F, int L, const mxArray *a, char cflag=0,
-   const char *istr=NULL
+   const char *istr=nullptr
 ){
    unsigned r=-1;
-   return mxIsQSpace(F,L,a,r,cflag,-1,NULL,NULL,istr);
+   return mxIsQSpace(F,L,a,r,cflag,-1,nullptr,nullptr,istr);
 };
 
 inline int mxIsQSpace(
-   const mxArray *a, char cflag=0, const char *istr=NULL
+   const mxArray *a, char cflag=0, const char *istr=nullptr
 ){
    unsigned r=-1;
-   return mxIsQSpace(NULL,0,a,r,cflag,-1,NULL,NULL,istr);
+   return mxIsQSpace(nullptr,0,a,r,cflag,-1,nullptr,nullptr,istr);
 };
 
 bool mxIsQSpaceArr(
@@ -131,8 +131,8 @@ bool mxIsQSpaceArr(
    const mxArray *S,
    unsigned rank=-1,
    int arrdim=2, 
-   const unsigned *rmin=NULL, 
-   const unsigned *rmax=NULL, 
+   const unsigned *rmin=nullptr, 
+   const unsigned *rmax=nullptr, 
    char cflag=0
 );
 
@@ -142,8 +142,8 @@ inline bool mxIsQSpaceVec(
    const char *F, int L,
    const mxArray *S,
    unsigned rank=-1,
-   const unsigned *rmin=NULL, 
-   const unsigned *rmax=NULL, 
+   const unsigned *rmin=nullptr, 
+   const unsigned *rmax=nullptr, 
    char cflag=0
 ){ return mxIsQSpaceArr(F,L,S,rank,1,rmin,rmax,cflag); }; 
 
@@ -160,8 +160,8 @@ inline bool mxIsQSpaceMat(
    const char *F, int L,
    const mxArray *S,
    unsigned rank=-1,
-   const unsigned *rmin=NULL, 
-   const unsigned *rmax=NULL, 
+   const unsigned *rmin=nullptr, 
+   const unsigned *rmax=nullptr, 
    char cflag=0
 ){ return mxIsQSpaceArr(F,L,S,rank,2,rmin,rmax,cflag); };
 
@@ -173,8 +173,8 @@ inline bool mxIsQSpaceScalar(
    const char *F, int L,
    const mxArray *S,
    unsigned rank=-1,
-   const unsigned *rmin=NULL, 
-   const unsigned *rmax=NULL, 
+   const unsigned *rmin=nullptr, 
+   const unsigned *rmax=nullptr, 
    char cflag=0
 ){ return mxIsQSpaceArr(F,L,S,rank,0,rmin,rmax,cflag); };
 
@@ -185,8 +185,8 @@ int mxIsQSpaceVec(
    const char *F, int L,
    const char *fname, const char *vname,
    unsigned rank=-1,
-   const unsigned *rmin=NULL, 
-   const unsigned *rmax=NULL, 
+   const unsigned *rmin=nullptr, 
+   const unsigned *rmax=nullptr, 
    char cflag=0,
    unsigned N=-1 
 );
@@ -195,20 +195,20 @@ int mxIsQSpaceVEC(
    const char *F, int L,
    const char *fname, const char *vname,
    unsigned rank=-1,
-   const unsigned *rmin=NULL, 
-   const unsigned *rmax=NULL, 
+   const unsigned *rmin=nullptr, 
+   const unsigned *rmax=nullptr, 
    char cflag=0
 );
 
 bool mxIsQSpaceVecOrEmpty(const mxArray *S, int rank, char cflag=0) {
    if (mxIsEmpty(S)) return 1;
-   return mxIsQSpaceVec(FL,S,rank,NULL,NULL,cflag);
+   return mxIsQSpaceVec(FL,S,rank,nullptr,nullptr,cflag);
 };
 
 inline int mxIsQSpaceOrEmpty(
    const mxArray *a, unsigned rank=-1, char cflag=0, unsigned k=-1
 ){ if (mxIsEmpty(a)) return 1;
-   else return mxIsQSpace(NULL,0,a,rank,cflag,k);
+   else return mxIsQSpace(nullptr,0,a,rank,cflag,k);
 };
 
 inline int mxIsQSpaceOrEmpty(const char *F, int L,

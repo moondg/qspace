@@ -6,11 +6,15 @@ function [sym,r]=check_sym(sym)
      sym=sym.type;
   end
 
-  if isempty(regexp(sym,'^S[UpO]\d+$'))
-     sym=regexprep(sym,'[()]','');
-     if isempty(regexp(sym,'^S[pON]\d+$'))
-        wberr('ERR invalid symmetry ''%s''',sym);
+  if numel(sym)>2
+     if isempty(regexp(sym,'^S[UOp]\d+$'))
+        sym=regexprep(sym,'[()]','');
+        if isempty(regexp(sym,'^S[UOp]\d+$'))
+           wbdie('ERR invalid symmetry ''%s''',sym);
+        end
      end
+  elseif ~isequal(sym,'A4')
+     wbdie('ERR invalid symmetry ''%s''',sym);
   end
 
   if nargout>1, r=get_rank(sym); end

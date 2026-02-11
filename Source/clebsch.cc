@@ -51,16 +51,16 @@ unsigned get_CG_FIXIT(const char *F, int L) {
 
    unsigned k=0,i;
 
-   if ((i=Wb::GetEnv(0,0,"CG_FIXIT",k))==0) {
-       if (F && k && (k!=CG_FIXIT || CG_VERBOSE>6)) {
-          wblog(F,L,"ENV %s() CG_FIXIT = (%d -> %d)",
-             myname, CG_FIXIT, k);
-          CG_FIXIT=k;
+   if ((i=Wb::GetEnv(0,0,"CG_FIX",k))==0) {
+       if (F && k && (k!=CG_FIX || CG_VERBOSE>6)) {
+          wblog(F,L,"ENV %s() CG_FIX = (%d -> %d)",
+             myname, CG_FIX, k);
+          CG_FIX=k;
        }
        return k;
    }
    else if (int(i)!=-1) wblog(F_L,
-      "WRN %s() invalid CG_FIXIT (e=%d)",FCT,i);
+      "WRN %s() invalid CG_FIX (e=%d)",FCT,i);
    return k;
 };
 
@@ -81,77 +81,77 @@ unsigned get_CG_PREVIEW(const char *F, int L) {
    return k;
 };
 
-inline bool QType::validType(const char *F, int L) const {
+inline char QType::validType(const char *F, int L) const {
+   char q=0; 
 
-   if (type<=0 || type==QTYPE_ASEP) {
-      if (F) wblog(F,L,
-         "ERR %s() unspecified symmetry (%d/%d; %s)",
-         FCT, type, QTYPE_NUM_TYPES, STR_(this));
-      return 0;
-   }
-   if (type>=QTYPE_NUM_TYPES) {
-      if (F) wblog(F,L,
-         "ERR %s() type out of bounds (%d/%d)",FCT,type,QTYPE_NUM_TYPES);
-      return 0;
-   }
+   if (!type && !sub) { return q; } 
 
-   if (type<QTYPE_ASEP) {
-      if (type==QTYPE_ZN) { if (sub>=2) return 1;
+   if (type<=0) { if (F) wblog(F,L,"ERR %s() "
+      "invalid symmetry (%d/%d; %s)",FCT,type,QT_NUM_TYPES,STR(*this));
+      q=-8;
+   }
+   else if (type>=QT_NUM_TYPES) { if (F) wblog(F,L,"ERR %s() "
+      "type out of bounds (%d/%d)",FCT,type,QT_NUM_TYPES);
+      q=-9;
+   }
+   else if (type>QT_RANK0) { 
+      if (sub>=1) { return (q=2); }
+      if (F) wblog(F,L, 
+         "ERR %s() invalid sub=%d for %s [>=2]",FCT,sub,QT_STR[type]);
+      q=-2; 
+   }
+   else { 
+      if (type==QT_ZN) {
+         if (sub>=2) { return (q=1); }
          if (F) wblog(F,L,
-            "ERR %s() invalid sub=%d for %s [>=2]",FCT,sub,QTYPE_STR[type]);
-         return 0;
+            "ERR %s() invalid sub=%d for %s [>=2]",FCT,sub,QT_STR[type]);
       }
-      if (!sub) return 1;
-      if (F) wblog(F,L,
-         "ERR %s() invalid sub=%d for %s [0]",FCT,sub,QTYPE_STR[type]);
-      return 0;
+      else if (!sub) { return (q=1); }
+      else if (F) wblog(F,L,
+         "ERR %s() invalid sub=%d for %s [0]",FCT,sub,QT_STR[type]);
+      q=-1; 
    }
 
-   if (type>QTYPE_ASEP && sub>=1) return 1;
-
-   if (F) wblog(F,L, 
-      "ERR %s() invalid sub=%d for %s [>=2]",FCT,sub,QTYPE_STR[type]);
-
-   return 0;
+   return q;
 };
 
 int QType::init_s(const char *s) {
 
    int k=1, e=0;
 
-   if (!s || !s[0]) { type=QTYPE_UNKNOWN; sub=0; return 1; }
+   if (!s || !s[0]) { type=QT_UNKNOWN; sub=0; return 1; }
 
-   for (; k<QTYPE_NUM_TYPES; ++k) {
-      if (!strcmp(s,QTYPE_STR[k])) {
-         type=QTYPE_SET(k); sub=0; 
+   for (; k<QT_NUM_TYPES; ++k) {
+      if (!strcmp(s,QT_STR[k])) {
+         type=QT_QSPACE(k); sub=0; 
          validType(FL); return 0;
       }
    }
 
    if (s[0]=='Z') {
       if ((e=this->atoi(s+1,k,3))>0 && k>1) {
-         type=QTYPE_ZN; sub=k; 
+         type=QT_ZN; sub=k; 
       }
       else return (-60+e);
    }
    else if (s[0]=='S') {
       if (s[1]=='U') { 
          if ((e=this->atoi(s+2,k,2))>0 && k>1) {
-            type=QTYPE_SUN; sub=k-1;
+            type=QT_SUN; sub=k-1;
          }
          else return (-70+e);
       }
       else if (s[1]=='p') { 
          if ((e=this->atoi(s+2,k,2))>0 && k>=4 && !(k%2)) {
-            type=QTYPE_SpN; sub=k/2;
+            type=QT_SpN; sub=k/2;
          }
          else return (-80+e);
       }
       else if (s[1]=='O') { 
          if ((e=this->atoi(s+2,k,2))>0 && k>=3) {
             if (k%2)
-                 { type=QTYPE_SON; sub=(k-1)/2; }
-            else { type=QTYPE_SEN; sub=(k  )/2; }
+                 { type=QT_SON; sub=(k-1)/2; }
+            else { type=QT_SEN; sub=(k  )/2; }
          }
          else return (-80+e);
       }
@@ -167,12 +167,20 @@ template <class TQ> inline
 unsigned QType::qdim(const TQ* q) const {
 
    if (isAbelian()) { return 1; }
+   if (isRank0()) {
+      if (type==QT_A4) {
+         if (abs(*q)<=1) { return 1; } else
+         if (*q==3) { return 3; }
+         else wblog(FL,"ERR %s() invalid q=%d for %s",FCT,*q,STR(*this));
+      }
+      else wblog(FL,"ERR %s() invalid symmetry %s",FCT,STR(*this));
+   }
 
    unsigned d=0;
    QSet<TQ> Q; { Q.init2(*this,q); }
 
    CDATA_TQ *C = gCS.BUF_find(Q);
-   if (C && !C->isEmpty()) { d=C->cgd.cgsparray::dim(); }
+   if (C && !C->isEmpty()) { d=C->cgd.SPARR_RTD::dim(); }
 
    if (!d) { 
       genRG_base<TQ,RTD> *R=gRS.find_RSet(*this,q);
@@ -197,7 +205,7 @@ unsigned QType::qdim(const TQ* q) const {
       if (isSU2()) { 
          int n=q[0]; 
          if (n<0 || double(n)!=q[0]) wblog(FL, 
-            "ERR invalid %s symmetry q=%g",STR_(this),double(q[0]));
+            "ERR invalid %s symmetry q=%g",STR(*this),double(q[0]));
          d=(n+1);
       }
       else wblog(FL,
@@ -231,496 +239,6 @@ wbvector<unsigned>& QType::QDim(
    return S;
 };
 
-template<class TQ>
-size_t DY::wdim_A(
-   unsigned n,  
-   const TQ *qs 
-){
-   unsigned i=0, j; long x,y, xa=1, ya=1;
-   TQ rho=1; 
-
-   for (; i<n; ++i) { x=y=0;
-      for (j=i; j<n; ++j) {
-         x+=(qs[j]+rho); y+=1;
-         xa*=x; ya*=y;
-      }
-   }
-
-   if (xa<=0 || ya<=0 || (x=xa/ya)*ya!=xa) wblog(FL,
-      "ERR %s() got invalid d=%ld/%ld = %.3f",FCT,xa,ya,xa/double(ya));
-   return size_t(x);
-};
-
-template<class TQ>
-size_t DY::wdim_C(
-   unsigned n,  
-   const TQ *qs 
-){
-
-   unsigned i=1, j; long x,y, xa=1, ya=1;
-   TQ rho=1; 
-
-   if (!n) wblog(FL,"ERR %s() got n=%d",FCT,n);
-
-   for (; i<=n; ++i) { x=y=0;
-      for (j=i; j<=n; ++j) {
-         x+=(j<n ? 1 : 2)*(qs[j-1]+rho); y+=(j<n ? 1 : 2);
-         xa*=x; ya*=y;
-      }
-      for (j=n-1; j>=i; --j) {
-         x+=(qs[j-1]+rho); y+=1;
-         xa*=x; ya*=y;
-      }
-   }
-
-   if (xa<=0 || ya<=0 || (x=xa/ya)*ya!=xa) wblog(FL,
-      "ERR %s() got invalid d=%ld/%ld = %.3f",FCT,xa,ya,xa/double(ya));
-
-   return size_t(x);
-};
-
-template<class TQ>
-size_t DY::wdim_B(
-   unsigned n,  
-   const TQ *q  
-){
-   unsigned i,k=0,l=1; long P, Q, P_,Q_;
-   if (!n) wblog(FL,"ERR %s() got n=%d",FCT,n);
-
-   i=n-1; P_=P=(q[i]+1); Q_=Q=1; 
-   for (--i; i<n; --i) {
-      P+=(q[i]+1)*2; Q+=2; 
-      P_*=P; Q_*=Q; l+=1;
-   }
-
-   for (k=1; k<n; ++k) {
-      for (P=Q=0, i=k-1; i<n; ++i) {
-          P+=(q[i]+1);   
-          Q+=1;          
-          P_*=P; Q_*=Q; l+=1;
-      }
-      for (i-=2; i>=k; --i) {
-          P+=(q[i]+1);  
-          Q+=1;         
-          P_*=P; Q_*=Q; l+=1;
-      }
-   }
-
-   if (l!=n*n) wblog(FL,
-      "ERR %s() got l=%d/%d (having n=%d)",FCT,l,n*n,n);
-   else {
-      double x=double(P_)/double(Q_);
-      if (x<=0 || fabs(x-round(x))>1E-6)
-         wblog(FL,"ERR %s() got d = %d/%d = %g",FCT,P_,Q_,x);
-   }
-
-   return size_t(P_/Q_);
-};
-
-template<class TQ>
-size_t DY::wdim_D(
-   unsigned n,  
-   const TQ *q  
-){
-   unsigned i,k=0,l=1; long P, Q, P_,Q_;
-   if (n<2) wblog(FL,"ERR %s() got n=%d",FCT,n);
-
-   i=n-2; P_=P=(q[i]+1); Q_=Q=1; 
-   i=n-1; P=(q[i]+1); Q=1; P_*=P; Q_*=Q; l+=1;
-   for (i=n-3; i<n; --i) {
-      P+=(q[i]+1); Q+=1; P_*=P; Q_*=Q; l+=1;
-   }
-
-   for (k=1; k<n-1; ++k) {
-      for (P=Q=0, i=k-1; i<n; ++i) {
-          P+=(q[i]+1);   
-          Q+=1;          
-          P_*=P; Q_*=Q; l+=1;
-      }
-      if (n>3) { for (i-=3; i>=k; --i) {
-          P+=(q[i]+1);  
-          Q+=1;         
-          P_*=P; Q_*=Q; l+=1;
-      }}
-   }
-
-   if (l!=n*(n-1)) wblog(FL,
-      "ERR %s() got l=%d/%d (having n=%d)",FCT,l,n*(n-1),n);
-   else {
-      double x=double(P_)/double(Q_); 
-      if (x<=0 || fabs(x-round(x))>1E-6)
-         wblog(FL,"ERR %s() got d = %d/%d = %g",FCT,P_,Q_,x);
-   }
-
-   return size_t(P_/Q_);
-};
-
-namespace DY {
-
-Symmetry& Symmetry::init(const QType &q) {
-
-   unsigned i=1;
-
-   if (q.type==QTYPE_SUN) { 
-      if (q.sub<1) wblog(FL,"ERR %s() got symmetry %s",FCT,STR(q));
-   } else
-   if (q.type==QTYPE_SpN) { 
-      if (q.sub<2) wblog(FL,"ERR %s() got symmetry %s",FCT,STR(q));
-   }
-   else wblog(FL,
-      "ERR %s() symmetry %s not implmented yet",FCT,STR(q));
-   if (q.sub>32) wblog(FL,"WRN %s() got symmetry %s",FCT,STR(q));
-
-   n=q.sub; n2.init2val(n,1);
-
-   A.init(n,n); A(0,0)=2;
-   for (; i<n; ++i) {
-      A(i,i)=2; 
-      A(i-1,i)=A(i,i-1)=-1;
-   }
-
-   R.init(n,n); R(0,0)=1; 
-   for (i=1; i<n; ++i) {
-      R(i-1,i)=-sqrt(double(i  )/double(2*(i+1)));
-      R(i,  i)= sqrt(double(i+2)/double(2*(i+1)));
-   }
-
-   if (q.type==QTYPE_SUN) {
-      unsigned i2,j, k=0, l=0;
-      M.init(n,(n*(n+1))/2); 
-      for (k=1; k<=n; ++k) { 
-         for (i2=n-k, i=0; i<=i2; ++i, ++l) {
-            for (j=0; j<k; ++j) { M(i+j,l)=1; }
-         }
-      }
-   }
-   else if (q.type==QTYPE_SpN) {
-      unsigned i2,j,p, k=0, l=0;
-      A(n-1,n-2)=-2; n2[n-1]=2;
-
-      R(n-2,n-1)=-2*double(n-1)/sqrt(double(2*n*(n-1)));
-      R(n-1,n-1)= sqrt(double(2)/double(n));
-
-      M.init(n,n*n); 
-      for (k=1; k<=n; ++k) { 
-         for (i2=n-k, i=0; i<=i2; ++i) {
-            for (j=0; j<k; ++j) { M(i+j,l)=1; }; ++l;
-         }
-         for (i=i2, p=2; p<=k; ++p) { 
-            for (j=0; j<k-p; ++j) { M(i+j,l)=1; }
-            for (; j<k; ++j) { M(i+j,l)=2; };
-            M(i+j-1,l)=1; ++l;
-         }
-      }
-   }
-
-   return *this;
-};
-
-template <class TQ>
-size_t Symmetry::getWeightsFT(const char *F, int L,
-   const qset<TQ> &qm, 
-   Weights<TQ> &R  
-){
-   size_t d=0; unsigned i,ip,np, iter=0, niter=99;
-   map < qset<TQ>, const weight_info<TQ>* > x2;
-   const TQ* md; int l;
-
-   if (!qm.len || qm.len!=q.qlen()) wblog(F_L,
-      "ERR %s() invalid qset %s (%s)",FCT,STR(q),STR2(qm,q));
-   if (qm.len!=A.dim2 || A.dim1!=A.dim2) wblog(F_L,
-      "ERR %s() invalid Cartan matrix A (%dx%d / %d; %s)",
-      FCT,A.dim1,A.dim2,qm.len,STR(q));
-   if (M.SIZE.len!=2 || M.SIZE[0]!=n || M.SIZE[1]<n) wblog(F_L,
-      "ERR %s() invalid M data (%s /%d)",FCT,SSTR(M),n);
-
-   qset<TQ> qs(n); np=M.SIZE[1];
-   R.init(qm);
-
-   while (++iter<niter) {
-      for (auto Il=R.X.begin(); Il!=R.X.end(); ++Il) { if (Il->second) {
-         weight_info<TQ> &w0=R.W[Il->first];
-
-         if (w0.p.len!=n || !w0.m) wblog(F_L,
-            "ERR %s() got missing weight (%s) @ m=%d",
-            FCT, Il->first.wbvector<TQ>::toStr(2).data, w0.m);
-
-         for (md=M.data, ip=0; ip<np; ++ip, md+=n) {
-
-            qs.init(Il->first); 
-            for (i=0; i<n; ++i) { if (md[i]) qs.Plus(A.rec(i),-md[i]); }
-
-            if (!qs.anyLT(0)) { 
-               weight_info<TQ> &w=R.W[qs];
-               if (!w.m) {
-                  w=w0; for (i=0; i<n; ++i) { w.p[i]+=md[i]; }
-                  ++x2[qs];
-
-                  w.m=-1;
-               }
-            }
-         }
-      }}
-      R.X.clear(); x2.swap(R.X); 
-      if (!R.X.size()) {
-         break;
-      }
-   }
-   if (iter>=niter) {
-      wblog(F_L,"ERR %s() got iter=%d",FCT,iter);
-   }
-   else if (F) wblog(F_L," *  %s() got iter=%d",FCT,iter);
-
-   map<int,   
-      map<qset<TQ>,   
-         weight_info<TQ>*  
-      >
-   > Ml;
-
-   for (auto I=R.W.begin(); I!=R.W.end(); ++I) {
-      l=I->second.p.sum();
-      if (I->first.anyLT(0)) wblog(F_L,"ERR %s() got w=[%s] "
-         "outside dominant Weyl chamber",FCT,STR(I->first));
-      if (!I->second.p.len || !I->second.m) wblog(F_L,
-         "ERR %s() got w=[%s] with p=[%s], m=%d", FCT,
-         STR(I->first), STR(I->second.p), I->second.m);
-      Ml[l][I->first]=&I->second;
-   }
-
-   for (auto Il=Ml.begin(); Il!=Ml.end(); ++Il) {
-      auto &M2=Il->second;
-      for (auto I2=M2.begin(); I2!=M2.end(); ++I2) {
-         weight_info<TQ> &w=*I2->second;
-         if (w.m<0)
-         w.m=getInnerMultFT(I2->first,w,R);
-      }
-   }
-
-   if (F) wblog(F_L,"==> %s[%s]: q=(%s) ",FCT,STR(q),STR2(qm,q));
-                  if (F) R.print(F_L,q); 
-   wExpand(F_L,R); if (F) R.print(F_L,q);
-
-   d=R.dim();
-   i=q.wdim(qm.data); 
-   if (d!=i) wblog(F_L,
-      "WRN %s() got %s (%s) @ d=%d/%d",FCT,STR(q),STR2(qm,q),d,i);
-   return d;
-};
-
-template <class TQ>
-int Symmetry::getInnerMultFT(
-   const qset<TQ> &qs, const weight_info<TQ> &w,
-   Weights<TQ> &R, char vflag
-){
-   int m=1, mk, l=w.p.nnz();
-
-   if (!n || qs.len!=n || w.p.len!=n || n2.len!=n) wblog(FL,
-      "ERR %s() got qs=(%s), p=(%s), %d/%d",
-      FCT,STR(qs),STR(w.p),n,n2.len);
-   if (M.SIZE.len!=2 || M.SIZE[0]!=n || M.SIZE[1]<n) wblog(FL,
-      "ERR %s() got M (%s), n=%d",FCT,SSTR(M),n);
-   if (w.p.anyLT(0)) wblog(FL,"ERR %s() got p=(%s)",FCT,STR(w.p));
-   if (!R.W.size()) wblog(FL,"ERR %s() got empty W",FCT);
-
-   if (l<=1) { return m; }
-
-   unsigned i, ip=0, np=M.SIZE[1];
-   qset<TQ> ap,qk; const TQ *md=M.data;
-
-   double P=0, Q=0;
-
-   qk=qs; qk+=R.qm; qk+=2;
-   for (i=0; i<n; ++i) {
-      Q+=qk[i]*w.p[i]*n2[i]; 
-   }
-
-   for (ip=0; ip<np; ++ip, md+=n) {
-      ap.init(n); qk=qs;
-      for (i=0; i<n; ++i) { if (md[i]) { ap.Plus(A.rec(i),md[i]); }}
-      if (vflag>1) printf("  ip=%d/%d, a=[%s]: ",ip+1,np,STR(ap));
-      while (1) { 
-         qk.Plus(ap.data);
-         if (!(mk=Get(qk,R.W,vflag))) { break; }
-         for (i=0; i<n; ++i) {
-            P+=mk*qk[i]*md[i]*n2[i]; 
-         }
-      }
-      if (vflag>1 && ip+1<np) printf("\n");
-   }
-
-   if (Q) { m=2*P/Q; if (m*Q!=2*P)
-      wblog(FL,"ERR %s() got m=2*%g/%g = %g !?",FCT,P,Q,2*P/Q);
-   } else wblog(FL,"ERR %s() got m=2*%g/%g (div/0)",FCT,P,Q);
-
-   if (vflag>1) printf(": (%s) => m=2*%g/%g = %g\n",STR(qs),P,Q,2*P/Q);
-
-   return m;
-};
-
-template <class TQ>
-int Symmetry::Get(
-   const qset<TQ> &qk, map < qset<TQ>, weight_info<TQ> > &W,
-   char vflag
-){
-   auto it0 = W.find(qk);
-
-   if (it0!=W.end()) {
-      int m=it0->second.m;
-      if (m>0) {
-         if (vflag>1) printf(" => [%s]^%d",STR(qk),m);
-         return m;
-      }
-   }
-
-   if (!qk.anyLT(0)) { 
-      if (it0==W.end()) {
-         if (vflag>1) printf("  # [%s]",STR(qk));
-         return 0;
-      }
-      const weight_info<TQ> &w0=it0->second;
-      if (w0.m<=0) wblog(FL,"ERR %s() "
-         "missing inner multiplicity value m=%d [%s]!?",FCT,w0.m,STR(qk));
-      else {
-         if (vflag>1) printf(" => [%s]^%d",STR(qk),w0.m);
-         return w0.m;
-      }
-   }
-
-   if (!n || qk.len!=n) wblog(FL,
-      "ERR %s() got empty qk=[%s] /%d",FCT,STR(qk),n);
-   if (n!=A.dim1 || n!=A.dim2) wblog(FL,
-      "ERR %s() invalid Cartan matrix %s /%d",FCT,SSTR(A),n);
-
-   unsigned i, iter=0;
-   qset<TQ> qs(qk); TQ *qd=qs.data;
-
-   while (1) {
-      for (i=0; i<n; ++i) { if (qd[i]<0) break; }
-      if (i<n) { qs.Plus(A.rec(i),-qd[i]); }
-      else { break; }
-
-      if (++iter>30) wblog(FL,"ERR %s() got iter=%d",FCT,iter);
-   }
-
-   auto it = W.find(qs);
-   if (it!=W.end()) {
-      const weight_info<TQ> &w = it->second;
-      if (w.m<=0) wblog(FL,"WRN %s() "
-         "missing inner multiplicity value m=%d [%s]!?",FCT,w.m,STR(qs));
-      else {
-         weight_info<TQ> &wk=W[qk];
-         wk.m=w.m;
-      }
-      return w.m;
-   }
-   return 0; 
-};
-
-template <class TQ>
-int Symmetry::wExpand(const char *F, int L, Weights<TQ> &R) const {
-
-   unsigned i,iter=0, niter=999; int m0, nX=0;
-   qset<TQ> qs; TQ *qd;
-
-   map <
-      qset<TQ>,  
-      const weight_info<TQ>* 
-   > W0,X,X_;
-
-   if (!n || n!=A.dim1 || n!=A.dim2) wblog(F_L,
-      "ERR %s() invalid Cartan matrix %s /%d",FCT,SSTR(A),n);
-
-   for (auto Iw=R.W.begin(); Iw!=R.W.end(); ++Iw) { if (Iw->second.m>0) {
-      W0[Iw->first]=&(Iw->second);
-   }}
-
-   for (auto Iw=W0.begin(); Iw!=W0.end(); ++Iw) {
-      X.clear(); X[Iw->first]=Iw->second; m0=Iw->second->m; iter=0;
-      while (++iter<niter) {
-         for (auto Ik=X.begin(); Ik!=X.end(); ++Ik) { if (Ik->second) {
-            if (Ik->second->m<=0) wblog(F_L,
-               "ERR %s() [%s] got m=%d",FCT,STR(Ik->first),Ik->second->m);
-            qs.init(Ik->first); qd=qs.data;
-
-            for (i=0; i<n; ++i) { if (qd[i]>0) {
-               qs.Plus(A.rec(i),-qd[i]);
-               weight_info<TQ> &wi=R.W[qs]; if (wi.m<=0) {
-                  wi.m=m0;
-                  X_[qs]=&wi; ++nX; 
-               }
-               qs.Plus(A.rec(i),-qd[i]); 
-            }}
-         }}
-         X.clear(); X.swap(X_); 
-         if (!X.size()) break;
-      }
-      if (iter>=niter) wblog(F_L,
-         "ERR %s() got iter=%d/%d",FCT,iter,niter);
-   }
-   return nX;
-};
-
-template <class TQ>
-void Weights<TQ>::print(
-   const char *F, int L, const QType &q, char vflag) const {
-
-   const unsigned flen=64;
-   size_t n=W.size(); int l, isn;
-   char fmt[flen];
-   unsigned mtot=0, merr=0, ndom=0;
-
-   map<int,   
-      map<qset<TQ>,   
-         const weight_info<TQ>*  
-      >
-   > M;
-
-   for (auto I=W.begin(); I!=W.end(); ++I) {
-      if (I->second.m>0) { mtot+=I->second.m; } else { ++merr; }
-      isn=I->first.anyLT(0); if (!isn) { ++ndom; }
-      if (vflag || !isn) {
-         l=I->second.p.sum(); if (!l && !I->second.p.len) l=-1;
-         M[l][I->first]=&I->second;
-      }
-   }
-
-   if (F) {
-      char s[128];
-      snprintf(s,128,"%s: total of %d + %d = %d weight%s (%d state%s)",
-         STR(q), ndom, n-ndom, n, n!=1 ? "s":"", mtot, mtot!=1 ? "s":"",
-         merr ? ", incomplete!":"");
-      if (!merr) wblog(F_L," *  %s",s); else wblog(F_L,"WRN %s",s);
-   }
-   else PRINTF("\n");
-
-   if (n) { n=3*W.begin()->first.len; 
-      snprintf(fmt,flen,"\n  level  %%-%ds %%-%ds     m    # weights",n+3,n+3);
-      PRINTF(fmt,"dcoeffs","pcoeffs"); 
-      snprintf(fmt,flen,"\n  %%5d%%1s (%%%ds ) [%%%ds ] %%5d",n,n);
-   }
-   else fmt[0]=0;
-
-   for (auto Il=M.begin(); Il!=M.end(); ++Il) {
-      auto &M2=Il->second; n=M2.size();
-      unsigned i=0;
-
-      for (auto I2=M2.begin(); I2!=M2.end(); ++I2) {
-         const weight_info<TQ> &w=*I2->second;
-
-         PRINTF(fmt, Il->first,
-            X.find(I2->first)==X.end() ? "" : "*",
-            I2->first.wbvector<TQ>::toStr(2).data,
-            w.p.wbvector<TQ>::toStr(2).data, w.m
-         );
-
-         if (++i==1) { PRINTF("   %4d",n); }
-      }
-   }
-   PRINTF("\n\n");
-};
-
-}; 
-
 QVec& QVec::init(
    const char *F, int L, const char *s,
    unsigned D0 
@@ -732,7 +250,8 @@ QVec& QVec::init(
 
    unsigned l,i, n=strlen(s), i1=0, i2=0;
    unsigned D=(D0 ? 2*D0 : 8); 
-   char sep=0, sx[n+1];
+   char sep=0;
+   wbvec<char> sx(n+1);
    QType q;
 
    init(D);
@@ -744,7 +263,7 @@ QVec& QVec::init(
       if (sep || s[i]==0) {
          if (l>=D) { l++; break; } 
 
-         sx[i2]=0; q.init(F,L,sx+i1);
+         sx[i2]=0; q.init(F,L,sx.data+i1);
          data[l++]=q; i1=i2; sep=0;
       }
       sx[i2++]=s[i];
@@ -761,6 +280,20 @@ QVec& QVec::init(
    "ERR qtype length inconsistency (%d/%d; %d)",D0,l,Qlen());
 
    return *this;
+};
+
+int QVec::checkInit() const { 
+   int nsym=0; 
+
+   for (unsigned i=0; i<len; ++i) {
+      if (data[i].isNonAbelian()) {
+         auto it=gRS.buf.find(data[i]);
+         if (it==gRS.buf.end() || !it->second.q.isKnown()) { ++nsym;
+            gRS.buf[data[i]].checkInit(FL,data[i]);
+         }
+      }
+   }
+   return nsym;
 };
 
 unsigned QVec::Qlen(unsigned n) const {
@@ -788,10 +321,9 @@ unsigned QVec::Qlen(wbvector<unsigned> &dd, wbvector<unsigned> &dz) const {
 
 unsigned QVec::Qpos(wbvector<unsigned> &dc) const {
 
-   dc.init(len); if (len) { unsigned i=1;
-      for (; i<len; ++i) {
-         dc[i] = dc[i-1] + data[i-1].qlen();
-      }
+   dc.init(len);
+   if (len) { unsigned i=1;
+      for (; i<len; ++i) { dc[i] = dc[i-1] + data[i-1].qlen(); }
       return (dc[i-1] + data[i-1].qlen());
    }
    return 0;
@@ -929,10 +461,12 @@ wbstring QVec::toStr(const char vflag) const {
 };
 
 int QVec::print_qset(
-   const char *F, int L, const gTQ *qs, char *s, unsigned n) const {
+   const char *F, int L, const gTQ *qs, wbvec<char> &sout) const {
 
    unsigned l=0; 
-   unsigned k=0, m=0, i;
+   unsigned k=0, m=0, i, n;
+
+   char *s=sout.current(n);
 
    if (!qs) { wblog(F_L,"ERR %s() got null qs",FCT); }
    if (! s) { wblog(F_L,"ERR %s() got null string buffer (n=%d)",FCT,n); }
@@ -969,19 +503,13 @@ int QVec::print_qset(
       }
    }
 
-   if (l<n) { s[l]=0; }
-   else if (F) { s[n-1]=0; wblog(F,L,
-      "ERR %s() string out of bounds (%s, l=%d/%d",FCT,s,l,n); }
-
-   return l;
+   return sout.shift(FL,l); 
 };
 
 QDir& QDir::init(const iTags& it) {
 
    init2val(it.len,+1);
-   for (unsigned i=0; i<len; ++i) {
-      if (it[i].isConj()) data[i]=-1;
-   }
+   for (unsigned i=0; i<len; ++i) { if (it[i].isConj()) { data[i]=-1; }}
    return *this;
 };
 
@@ -1164,7 +692,7 @@ qset<TQ>& qset<TQ>::init(const char *F, int L, const char *s, QType *t) {
       "ERR %s() got unexpected string `%s'",FCT,s);
    }
 
-   Str2Idx(F_L,s,(wbvector<TQ>&)(*this),0,0); 
+   Wb::Str2Idx(F_L,s,*this,TQ(0),0); 
 
    if (!this->len || (l && this->len!=l)) wblog(FL,"ERR %s() "
       "got unexpected qset `%s' (len=%d/%d)",FCT,s,this->len,l);
@@ -1264,18 +792,20 @@ QSet<TQ>& QSet<TQ>::init(const char *F, int L,
       ra=A.rank(F_L), rb=B.rank(F_L), 
       nab=ra+rb;
    const wbperm &pa=A_.cgp, &pb=B_.cgp;
-   char ma[nab], *mb=ma+ra; memset(ma,0,nab*sizeof(char));
+   std::vector<char> Ma(nab); 
+   char *ma=Ma.data(), *mb=ma+ra;
+   int q;
 
-   char sa=((A_.conj!=0) ^ (ica.conj!=0) ? -1 : +1),
-        sb=((B_.conj!=0) ^ (icb.conj!=0) ? -1 : +1), xd=-sa*sb;
+   char sa = (A_.cgp.conj + (ica.conj!=0))%2 ? -1 : +1,
+        sb = (B_.cgp.conj + (icb.conj!=0))%2 ? -1 : +1, xd=-sa*sb;
 
    if (A.t!=B.t || !nq) wblog(F_L,
       "ERR %s() got symmetry mismatch (%s, %s)",FCT,QSTR(A),QSTR(B));
 
-   if (pa.len && !pa.isValidPerm(ra)) wblog(F_L,
-      "ERR %s() invalid permutation (len=%d/%d)",FCT,pa.len,ra);
-   if (pb.len && !pb.isValidPerm(rb)) wblog(F_L,
-      "ERR %s() invalid permutation (len=%d/%d)",FCT,pb.len,rb);
+   if (pa.len && (q=pa.isValidPerm(ra))<=0) wblog(F_L,
+      "ERR %s() invalid permutation (len=%d/%d, q=%d)",FCT,pa.len,ra,q);
+   if (pb.len && (q=pb.isValidPerm(rb))<=0) wblog(F_L,
+      "ERR %s() invalid permutation (len=%d/%d, q=%d)",FCT,pb.len,rb,q);
 
    if (ica.len!=icb.len) wblog(F_L,"ERR %s() "
       "invalid set of contraction indices (%d/%d)",FCT,ica.len,icb.len);
@@ -1284,24 +814,24 @@ QSet<TQ>& QSet<TQ>::init(const char *F, int L,
    if (B.qdir.len!=rb) wblog(F_L,
       "ERR %s() invalid qdir set (B: %d/%d)",FCT,B.qdir.len,rb);
 
-   for (i=0; i<ica.len; ++i) { j=pa.el1(ica[i]);
+   for (i=0; i<ica.len; ++i) { j=pa.at_(ica[i]);
       if (j>=ra) wblog(F_L, 
          "ERR %s() index out of bounds (%d/%d)",FCT,j+1,ica.len);
       if ((++ma[j])>1) wblog(F_L,
          "ERR %s() index not unique (%d/%d)",FCT,j+1,ica.len
       );
    }
-   for (i=0; i<icb.len; ++i) { j=pb.el1(icb[i]);
+   for (i=0; i<icb.len; ++i) { j=pb.at_(icb[i]);
       if (j>=rb) wblog(F_L, 
          "ERR %s() index out of bounds (%d/%d)",FCT,j+1,icb.len);
       if ((++mb[j])>1) wblog(F_L,
          "ERR %s() index not unique (%d/%d)",FCT,j+1,icb.len
       );
-      if (A.qdir[pa.el1(ica[i])] != xd*B.qdir[j]) wblog(F_L,
+      if (A.qdir[pa.at_(ica[i])] != xd*B.qdir[j]) wblog(F_L,
          "ERR invalid CRef contraction [conj=-(%d,%d)(%d,%d)=%d]\n"
          "having %s @ [%s](%s) <> %s @ [%s](%s)\n"
          "hint: only pairs of {in/out} indices accepted",
-         A_.conj, ica.conj, B_.conj, icb.conj, xd,
+         A_.cgp.conj, ica.conj, B_.cgp.conj, icb.conj, xd,
          A.qdir.toStr().data, STR(pa), STR(ica),
          B.qdir.toStr().data, STR(pb), STR(icb)
       );
@@ -1330,30 +860,30 @@ QSet<TQ>& QSet<TQ>::init(const char *F, int L,
       l=0;
 
       if (na) { for (i=0; i<ra; ++i) {
-         j=pa.el1(i); if (ma[j]<=0) { Pcgd->data[l++]=-ma[j]; }
+         j=pa.at_(i); if (ma[j]<=0) { Pcgd->data[l++]=-ma[j]; }
       }}
       if (nb) { for (i=0; i<rb; ++i) {
-         j=pb.el1(i); if (mb[j]<=0) { Pcgd->data[l++]=-mb[j]; }
+         j=pb.at_(i); if (mb[j]<=0) { Pcgd->data[l++]=-mb[j]; }
       }}
       l=0;
    }
 
    if (nq==1) {
-      if (ra) { for (i_=0; i_<ra; ++i_) { i=pa.el1(i_); if (ma[i]<=0) {
+      if (ra) { for (i_=0; i_<ra; ++i_) { i=pa.at_(i_); if (ma[i]<=0) {
          c[l]=sa*a[i]; qc[l]=qa[i]; ++l;
       }}}
-      if (rb) { for (i_=0; i_<rb; ++i_) { i=pb.el1(i_); if (mb[i]<=0) {
+      if (rb) { for (i_=0; i_<rb; ++i_) { i=pb.at_(i_); if (mb[i]<=0) {
          c[l]=sb*b[i]; qc[l]=qb[i]; ++l;
       }}}
    }
    else {
-      if (ra) { for (i_=0; i_<ra; ++i_) { i=pa.el1(i_); if (ma[i]<=0) {
+      if (ra) { for (i_=0; i_<ra; ++i_) { i=pa.at_(i_); if (ma[i]<=0) {
          c[l]=sa*a[i];
          for (j=0; j<nq; ++j) { qc[j]=qa[i*nq+j]; }
          qc+=nq; ++l;
       }}}
 
-      if (rb) { for (i_=0; i_<rb; ++i_) { i=pb.el1(i_); if (mb[i]<=0) {
+      if (rb) { for (i_=0; i_<rb; ++i_) { i=pb.at_(i_); if (mb[i]<=0) {
          c[l]=sb*b[i];
          for (j=0; j<nq; ++j) { qc[j]=qb[i*nq+j]; }
          qc+=nq; ++l;
@@ -1409,7 +939,7 @@ QSet<TQ>& QSet<TQ>::init(
    unsigned n=t_.qlen();
    t=t_; qs.init(r*n);
 
-   if (qs_ && qs.len) Wb::cpyStride(qs.data,qs_,n,NULL,r,-1,N);
+   if (qs_ && qs.len) Wb::cpyStride(qs.data,qs_,n,nullptr,r,-1,N);
 
    qdir.init_iout(FL, iout? r : 0, iout);
 
@@ -1424,7 +954,7 @@ QSet<TQ>& QSet<TQ>::init(
    unsigned n=t_.qlen();
 
    t=t_; qs.init(r*n);
-   if (qs_ && qs.len) Wb::cpyStride(qs.data,qs_,n,NULL,r,-1,N);
+   if (qs_ && qs.len) Wb::cpyStride(qs.data,qs_,n,nullptr,r,-1,N);
 
    if (itags.len!=r) {
       if (!itags.len) wblog(FL,
@@ -1439,6 +969,22 @@ QSet<TQ>& QSet<TQ>::init(
 };
 
 template <class TQ>
+QSet<TQ>& QSet<TQ>::init(const char *F, int L,
+   const QType &t_, const QDir &qd, std::initializer_list<TQ> ql) {
+
+   unsigned m=t_.qlen(), r=qd.len, n=ql.size();
+
+   if (n!=m*r) wblog(F_L,
+      "ERR %s() size mismatch (qs.len=%d =? %d*%d)",FCT,n,m,r);
+
+   t=t_;
+   qdir=qd;
+   qs.init(n,ql.begin());
+
+   return *this;
+};
+
+template <class TQ> 
 QSet<TQ>& QSet<TQ>::init_str(const char *F, int L, const char *s_) {
 
    unsigned i=0, nd=0, nc=0, r=0, rs, nw=0, n, e=0;
@@ -1448,6 +994,11 @@ QSet<TQ>& QSet<TQ>::init_str(const char *F, int L, const char *s_) {
    s=S.data; n=(S.len? S.len-1 : 0);
 
    while (isspace(s[i])) { ++s; --n; }
+
+   for (i=n-1; i<n; --i) {
+      if (isspace(s[i]) || s[i]==',' || s[i]==';') { s[i]=0; --n; }
+      else { break; }
+   }
 
    for (i=0; i<n; ++i) { if (isspace(s[i])) { s[i]=0; break; }}
    if (i>=n || i<2 || i>6) wblog(F_L,
@@ -1467,7 +1018,7 @@ QSet<TQ>& QSet<TQ>::init_str(const char *F, int L, const char *s_) {
          if (isalnum(s[i])) { ++nd;     } else
          if (s[i]==',') { ++r;          } else
          if (s[i]==';') { ++r; ++cflag; } else
-         if (s[i]=='*') { ++nc;         } else
+         if (IDX_IS_CONJ(s[i])) { ++nc; } else
          if (bflag) {
             if ((s[i]==')' && bflag=='(') ||
                 (s[i]=='}' && bflag=='{') ||
@@ -1493,7 +1044,7 @@ QSet<TQ>& QSet<TQ>::init_str(const char *F, int L, const char *s_) {
          if (!CG::cstr2qset(s+i,qs.data+l,1)) { ++l; } else
          if (s[i]==',') { ++r; } else
          if (s[i]==';') { cflag=(++r); } else
-         if (s[i]=='*') { qdir[r]=-1; }
+         if (IDX_IS_CONJ(s[i])) { qdir[r]=-1; } 
       }
    }
    else { unsigned l=0;
@@ -1507,7 +1058,9 @@ QSet<TQ>& QSet<TQ>::init_str(const char *F, int L, const char *s_) {
          }
          if (s[i]==',') { ++r; } else
          if (s[i]==';') { cflag=(++r); } else
-         if (s[i]=='*') { if (r<qdir.len) qdir[r]=-1; else { e=4; break; }}
+         if (IDX_IS_CONJ(s[i])) { 
+            if (r<qdir.len) { qdir[r]=-1; } else { e=4; break; }
+         }
       }
 
       if (e) wblog(F_L, 
@@ -1521,13 +1074,90 @@ QSet<TQ>& QSet<TQ>::init_str(const char *F, int L, const char *s_) {
 };
 
 template <class TQ>
+template <class TD>
+QSet<TQ>& QSet<TQ>::init(
+   const char *F, int L, const QSpace<TQ,TD> &A, unsigned i, unsigned isym) {
+
+   unsigned r=A.rank(FL), nsym=A.qtype.len;
+
+   if (i>=A.QIDX.dim1) wblog(F_L,
+      "ERR %s() index out of bounds (i=%d/%d)",FCT,i,A.QIDX.dim1);
+
+   if (int(isym)<0) {
+      if (nsym!=1) wblog(FL,
+         "ERR %s() unspecified isym=%d/%d",FCT,isym,nsym);
+      isym=0;
+   }
+   else if (isym>=nsym) { wblog(FL,
+      "ERR %s() index out of bounds (isym=%d/%d)",FCT,isym,nsym);
+   }
+
+   t=A.qtype[isym];
+   qdir.init(A.itags);
+
+   if (nsym==1) {
+      qs.init(A.QIDX.dim2,A.QIDX.rec(i));
+   }
+   else {
+      wbvector<unsigned> dc;
+      unsigned n=A.qtype.Qpos(dc), j=dc[isym], l=isym+1;
+
+      if (n!=A.QDIM) wblog(FL,
+         "ERR %s() invalid QSpace QDIM=%d/%d",FCT,A.QDIM,n);
+      n = (l<nsym ? dc[l] : n) - j;
+
+      qs.init(n*r);
+      Wb::cpyStride(qs.data,A.QIDX.rec(i)+j,n,r,A.QDIM);
+   }
+
+   return *this;
+};
+
+template <class TQ>
+QSet<TQ>& QSet<TQ>::reduceTo1J(const char *F, int L, QSet<TQ> &B) const {
+
+   unsigned i,j, l=0, nnz=0, m=(qdir.len? qs.len/qdir.len : 0);
+   TQ *b, *q=qs.data;
+   wbvector<char> mark(qdir.len);
+
+   if (qdir.len<=2 || qs.len!=m*qdir.len) wblog(F_L,
+      "ERR %s() got %s",FCT,STR(*this));
+
+   for (i=0; i<qdir.len; ++i, q+=m) {
+   for (j=0; j<m; ++j) { if (*q) { ++nnz; mark[i]=1; break; }}}
+
+   if (nnz<2) {
+      for (i=0; i<mark.len && nnz<2; ++i) {
+         if (!mark[i]) { mark[i]|=2; ++nnz; }
+      }
+   }
+   if (nnz!=2) wblog(F_L, 
+     "ERR %s() QSet cannot be reduced to 1j:\n%s",FCT,STR(*this));
+
+   B.init(*this); b=B.qs.data; q=qs.data;
+
+   for (i=0; i<qdir.len; ++i, q+=m) {
+      if (mark[i]) {
+         for (j=0; j<m; ++j) { b[j]=q[j]; B.qdir[l]=qdir[i]; }
+         b+=m; ++l;
+      }
+   }
+
+   if (l!=2) wblog(FL,"ERR %s() l=%d",FCT,l);
+   B.qdir.len=l;
+   B.qs.len=l*m;
+
+   return B;
+};
+
+template <class TQ>
 bool QSet<TQ>::isScalar() const {
 
    unsigned i=0, r=rank(FL), r2=r/2, m=t.qlen(), n2=r2*m;
 
    if (r<2) wblog(FL,"ERR %s() got r=%d QSet",FCT,r);
    if (qdir.len!=r || qs.len!=r*m) wblog(FL,
-      "ERR %s() got invalid QSet %s",FCT,STR_(this));
+      "ERR %s() got invalid QSet %s",FCT,STR(*this));
 
    for (; i<r2; ++i) { if (qdir[i]<=0 || qdir[i+r2]>=0) return 0; }
 
@@ -1540,18 +1170,20 @@ bool QSet<TQ>::isScalar() const {
 };
 
 template <class TQ>
-bool QSet<TQ>::is1JSymbol() const {
+bool QSet<TQ>::is1J(unsigned r_) const {
 
-   unsigned r=rank(FL), m=t.qlen();
+   unsigned i, r=rank(FL), m=t.qlen();
 
-   if (r<2) wblog(FL,"ERR %s() got r=%d QSet",FCT,r);
    if (qdir.len!=r || qs.len!=r*m) wblog(FL,
-      "ERR %s() got invalid QSet %s",FCT,STR_(this));
-   if (r!=2) return 0;
+      "ERR %s() got invalid QSet %s",FCT,STR(*this));
+   if (r!=r_ || r<2) { return 0; }
 
-   for (unsigned i=0; i<r; ++i) { if (qdir[i]<=0) return 0; };
+   for (i=0; i<2; ++i) { if (qdir[i]<=0) { return 0; }}
 
-   return t.isDual(qs.data,qs.data+m);
+   if (!t.isDual(qs.data,qs.data+m)) { return 0; }
+   for (i=2*m; i<qs.len; ++i) { if (qs[i]) { return 0; }}
+
+   return 1;
 };
 
 template <class TQ>
@@ -1559,23 +1191,26 @@ bool QSet<TQ>::gotRCData() const {
 
    wbstring fs;
    if (gStore.get_file_name(FL,fs,*this,"cgd")>0 &&
-      Wb::getFileSize(fs.data)>0) return 0;
-   return -1;
+      Wb::getFileSize(fs.data)) { return 1; }
+   return 0;
 };
 
 template <class TQ>
-int QSet<TQ>::isZero() const {
+int QSet<TQ>::isZero() const { 
 
    const TQ *q=qs.data;
    unsigned i=0, i1=0, i2=1, id=0, l,m, r=rank(FL);
 
    if (!r) { return 0; } 
-   m=qs.len/r;
 
-   if (r==1) {
-      return (qs.norm2() ? 1 : 0);
+   if (r==1) { 
+      if (qs.norm2()==0) { return 0; }
+      wblog(FL,"WRN %s() got rank-%d QSet %s",FCT,r,STR(*this));
+      return 1;
    }
-   else if (r==2) { l=qs.len-1;
+
+   m=qs.len/r;
+   if (r==2) { l=qs.len-1;
       if (qdir=="+-") { id=1; } else
       if (qdir=="++" || qdir=="--") id=2; else
       wblog(FL,"ERR %s() invalid (unsorted) qdir='%s'",FCT,STR(qdir));
@@ -1608,73 +1243,225 @@ int QSet<TQ>::isZero() const {
       return 0; 
    }
 
-   if (r==1) { 
-      if (qs.norm2()==0) return 0;
-      wblog(FL,"ERR %s() got rank-%d QSet %s",FCT,r,STR_(this));
+   const CDATA_TQ *Cb=gCS.BUF_find(*this);
+   if (Cb) {
+      if (Cb->NP_zero()) { return 1; }
+      if (Cb->cgd) { return 0; }
    }
 
-   if (r!=3) { return gotRCData() ? 0 : -1; }
-
-   if (qdir.len!=3 || qdir[0]<=0 || qdir[1]<=0) wblog(FL,
-      "ERR %s() got invalid (unsorted) QSet %s",FCT,STR_(this));
-   m=qs.len/r;
-
-   int n3; qset<TQ> J1,J2,J3,J12;
-
-   J1.init2ref(m,qs.data );  J3 .init2ref(m,qs.data+2*m);
-   J2.init2ref(m,qs.data+m); J12.init2ref(2*m, qs.data );
-
-   n3=gCS.find_map3(t,J12); 
-   if (n3<=0) {
-      n3=gStore.load_Std3(0,0,t,J1,J2,0); 
-   }
-
-   if (n3<=0) {
-      return gotRCData() ? 0 : -1;
-   }
-
-   char rflag=0;    
-   if (qdir[2]>0) { 
-      if (t.isSUN()) rflag=1; else
-      if (!t.isSelfDual()) wblog(FL,"ERR %s() "
-         "got non-self-dual %s to checkout mp3 data",FCT,STR(t)
-      );
-   }
-   if (gCS.valid_mp3_data(t,J1,J2,J3,rflag)) { return 0; }
-
-   return (10*r+3);
+   return gotRCData() ? 0 : -1;
 };
 
-template <class TQ> 
-QSet<TQ>& QSet<TQ>::Sort(wbperm *cgp, char *conj, char iflag) {
+template <class TQ>
+char QSet<TQ>::generateFullOM(const char *F, int L, char test) const {
+
+   int fOM;
+   unsigned i=0, n1=0, n2=0, r=qdir.len, nq=t.qlen(), nconj=0, ncc=0;
+   size_t d1=1, d2=1; TQ *dq;
+   char qdir1, fconj=0; 
+
+   wbMatrix<TQ> dQ, Q1, Q2;
+   wbindex I(r);
+   QSet<TQ> Qd(*this), Qs;
+
+   QSpace<TQ,double> A;
+
+   wbperm Pd, Ps;
+
+   if (r<3) wblog(F_L,"ERR %s() invalid usage (r=%d)",FCT,r);
+   if (!nq || qs.len!=r*nq) wblog(F_L,
+      "ERR %s() invalid input (r=%d, nq=%d / %d)",FCT,r,nq,qs.len);
+
+   dQ.init(r,4); 
+   dq=dQ.data;
+
+   for (; i<r; ++i, dq+=dQ.dim2) {
+      dq[0]=qdim(i);
+      dq[1]=-i; 
+      dq[3]=qdir[i]; 
+      if (abs(dq[3])!=1) wblog(FL,"ERR %s() invalid qdir",FCT,STR(qdir));
+   }
+
+   dQ.SortRecs(Pd,-1); dq=dQ.data;
+   Qd.Permute(Pd);
+
+   qdir1=dq[r>3 ? 3 : 3+dQ.dim2];
+   if (abs(qdir1)!=1) wblog(FL,"ERR %s() qdir1=%d !?",FCT,qdir1);
+
+   for (i=0; i<r; ++i, dq+=dQ.dim2) {
+      if (r==3) {
+         dq[2]=(i ? 1 : 2); 
+      }
+      else {
+         if (i<4)
+              { dq[2] = (i==0 || i==3 ? 1 : 2); }
+         else { dq[2] = (d1<d2 || (d1==d2 && n1<=n2) ? 1 : 2); }
+      }
+
+      if (dq[2]==1)
+           { d1*=dq[0]; ++n1; if ((dq[3]=(dq[3]!=qdir1))) { ++nconj; }}
+      else { d2*=dq[0]; ++n2; if ((dq[3]=(dq[3]==qdir1))) { ++nconj; }}
+   }
+
+   if (nconj>(r+1)/2) { 
+      qdir1=-2*qdir1;
+
+      nconj=r-nconj; dq=dQ.data;
+      for (i=0; i<r; ++i, dq+=dQ.dim2) { dq[3]=!dq[3]; }
+   }
+
+   if (!n1 || !n2 || n1+n2!=r) wblog(FL,
+      "ERR %s() n=(%d+%d / %d)",FCT,n1,n2,r);
+   Q1.init(n1,nq);  dq=dQ.data;
+   Q2.init(n2,nq);  n1=n2=0; 
+
+   for (i=0; i<r; ++i, dq+=dQ.dim2) {
+      if (dq[3]) {
+         Qd.Revert(i); 
+         ncc+=qdir[-dq[1]]; 
+      }
+
+      if (dq[2]==1)
+           { Q1.recSetP(n1++,Qd.rec(i)); }
+      else { Q2.recSetP(n2++,Qd.rec(i)); }
+   }
+
+   Qd.sort(Qs,&Ps);
+
+   gStore.rclog(this->t, PF_L,CG_VERBOSE>6,
+      "FOM %s (r=%d+%d, nconj=%d)\nfor %s\n -> %s",
+       FCT,n1,n2,nconj,STR(*this),STR(Qs));
+
+   const CData<gTQ,RTD> &Cb = gCS.getBUF(0,0,Qs,LB_UPD__);
+
+   fOM=Cb.hasFullOM(); fOM=(fOM>0? (fOM>>5) : 0);
+   if (fOM) {
+      if (!Cb.valid()) {
+         if (!Cb.NP_zero()) wblog(FL,
+            "ERR %s() invalid input %s",FCT,STR(Cb));
+         return -1; 
+      }
+      if (test) { return nconj; }
+
+      A.init(Cb).Permute(wbperm(Ps,'i')); 
+   }
+   else {
+      wbindex Ia,Ib;
+      ctrIdx ica(n1,' '), icb(0,' '); 
+
+      Wb::iterLevel<int> wd(&CG::thread_fOM.me());  
+
+      if (qdir1<0) { fconj='*'; }
+
+      QSpace<TQ,double> B, AX, BX; 
+      A.FusionTree(FL,t,Q1, &AX);
+      if (Q1!=Q2) {
+             B.FusionTree(FL,t,Q2, &BX); }
+      else { B.init(A,'r'); BX.init(AX,'r'); }
+
+      i=matchIndex(A.QIDX,B.QIDX,Ia,Ib);
+      if (i) wblog(FL,"ERR %s() got degenerate QS records (i=%d)",FCT,i);
+      if (!Ia ) { return -1; } 
+      if (test) { return nconj; }
+
+      for (i=0; i<Ia.len; ++i) {
+         wbarray<double> *Ai=A.DATA.at(Ia[i]), *Bi=B.DATA.at(Ib[i]);
+         wbvector<size_t> Sa=Ai->SIZE, &Sb=Bi->SIZE;
+         if (Sa.len!=2) wblog(FL,"ERR %s() "
+            "unexpected A.DATA[%d/%d] %s",FCT,Ia[i],A.DATA.len,SSTR_(Ai));
+         if (Sb.len!=2) wblog(FL,"ERR %s() "
+            "unexpected B.DATA[%d/%d] %s",FCT,Ib[i],B.DATA.len,SSTR_(Bi));
+
+         Sa[1]=Sb[0]; Ai->Resize(Sa);
+      }
+
+      if (r==3 && n2==1) {
+         if (Ia.len!=1) wblog(FL,
+            "ERR %s() unexpected match Ia.len=%d for r=%d",FCT,Ia.len,r);
+         AX.getSub(Ia,A); 
+      }
+      else {
+         if (n1<2 || n2<2) wblog(FL, 
+            "ERR %s() r = %d / %d+%d",FCT,r,n1,n2);
+
+         AX.contract(FL,ica, A,icb,B); icb.init1(n2,'*'); 
+         B .contract(FL,ica,BX,icb,A);
+      }
+   }
+
+   if (A.CGR.numel()!=1) wblog(FL,
+      "ERR %s() got target CGR of size %s",FCT,SSTR(A.CGR));
+   if (!A.CGR[0].cgb || (i=A.CGR[0].isComplete())<=1) wblog(FL,
+      "ERR %s() failed to generate complete OM (q=%d)\n%s",FCT,i,STR(A.CGR[0]));
+
+   if (!nconj) { return 0; } else
+   if (ncc) {
+      QSet<TQ> Qs_(*this); Qs_.Sort();
+      if (Qs_==Qs) { return 0; } 
+   }
+
+   Wb::iterLevel<int> wd(&CG::thread_fOM.me());  
+
+   dq=dQ.data;
+   if (fOM) { 
+      for (i=0; i<r; ++i, dq+=dQ.dim2) { if (dq[3]) {
+         A.RevertLeg(FL,i);
+      }}
+   }
+   else {
+      unsigned l; n1=n2=-1;
+      for (i=0; i<r; ++i, dq+=dQ.dim2) {
+         l=dq[2]==1 ? (++n1) : (Q1.dim1+(++n2));
+         Pd.at(l)=-dq[1]; 
+
+         if (dq[3]) { A.RevertLeg(FL,l); }
+      }
+      ++n1; ++n2;
+   }
+
+#ifndef WB_SKIP_ASSERT
+   Pd.Invert(fconj);
+   A.Permute(Pd);
+
+   Qd.init(FL,A,0); 
+   if (Qd!=(*this)) wblog(FL,
+      "ERR %s() QSet inconsistency\nthis  %s\nvs.A  %s",FCT,STR(*this),STR(Qd));
+#endif
+
+   return nconj;
+};
+
+template <class TQ>
+QSet<TQ>& QSet<TQ>::Sort(wbperm *cgp, char iflag) {
 
    if (isEmpty() || isSorted()) {
-      if (cgp) { cgp->init(); }; if (conj) { (*conj)=0; }
+      if (cgp) { cgp->init(); }
       return *this;
    }
 
-   unsigned i=0, l=0, m=t.qlen(), r=(m ? qs.len/m : 0);
-   wbMatrix<TQ> dQ(r,1+m); 
+   unsigned m=t.qlen(), r=(m ? qs.len/m : 0);
    char cflag=0, *d=qdir.data;
-   TQ *dq=dQ.data;
-   wbperm P;
 
    if (!m || r*m!=qs.len || qdir.len!=r || r>127) wblog(FL,
-      "ERR %s() got invalid QSet %s",FCT,STR_(this));
+      "ERR %s() got invalid QSet %s",FCT,STR(*this));
 
    if (r<2) {
       if (r==1) {
          if (d[0]<=0) { cflag=1; d[0]=(-d[0]); } 
-         if (conj) { (*conj)=cflag; }
-         if (cgp ) { cgp->init();   };
+         if (cgp) { cgp->init(); cgp->conj=cflag; }
          return *this;
       }
       wblog(FL,"ERR %s() got rank-%d QSet",FCT,r);
    }
 
+   unsigned i=0, l=0;
+   wbMatrix<TQ> dQ(r,1+m); 
+   TQ *dq=dQ.data;
+   wbperm P;
+
    for (; i<r; ++i, dq+=dQ.dim2) {
       if (d[i]>0) ++l; else
-      if (!d[i]) wblog(FL,"ERR %s() invalid qdir\n%s",FCT,STR_(this));
+      if (!d[i]) wblog(FL,"ERR %s() invalid qdir\n%s",FCT,STR(*this));
       dq[0]=(d[i]>0 ? 0 : 1); 
       MEM_CPY<TQ>(dq+1, m, qs.data+i*m);
    }
@@ -1685,40 +1472,31 @@ QSet<TQ>& QSet<TQ>::Sort(wbperm *cgp, char *conj, char iflag) {
    }
    dQ.SortRecs(P);
 
-   if (2*l==r) { int q=0;
+   if (2*l==r) { int q=0; 
       dq=dQ.data+1;
       for (i=0; i<l; ++i, dq+=dQ.dim2) {
          if ((q=Wb::cmpRange(dq,dq+l*dQ.dim2,m))) {
             if (q>0) { P.Rotate(l); cflag=(2+!cflag); }
-            else { i=r; }; break;
+            break;
          }
       }
    }
 
-   if (cflag%2) {
-      if (conj) { (*conj)=1; }
-      for (i=0; i<r; ++i) d[i]=-d[i]; 
-   }
-   else {
-      if (conj) { (*conj)=0; }
-   }
-
-   qdir.Permute(P);
-
-   if (P.isIdentityPerm()) {
-      if (cgp) { cgp->init(); }
-      return *this;
-   }
-   else if (cgp) {
-      if (iflag) {
-         P.invert(*cgp);
+   if (P.isIdentityPerm()) { P.init(); }
+   else { qdir.Permute(P);
+      dq=dQ.data+1; if (cflag<2) { l=0; }
+      for (i=0; i<r; ++i) {
+         MEM_CPY<TQ>(qs.data+i*m, m, dq+((i+l)%r)*dQ.dim2);
       }
-      else P.save2(*cgp);
    }
 
-   dq=dQ.data+1; if (cflag<2) l=0;
-   for (i=0; i<r; ++i) {
-      MEM_CPY<TQ>(qs.data+i*m, m, dq+((i+l)%r)*dQ.dim2);
+   P.conj=cflag%2;
+   if (P.conj) { for (i=0; i<r; ++i) { d[i]=-d[i]; }} 
+
+   if (cgp) {
+      if (iflag && P.len)
+           { P.invert(*cgp); }
+      else { P.save2 (*cgp); }
    }
 
    return *this;
@@ -1730,19 +1508,19 @@ bool QSet<TQ>::isSorted() const {
    if (isEmpty() || !qdir.isSorted()) { return 0; }
    if (!qdir.len) {
       if (qs.len) wblog(FL,
-         "ERR %s() got invalid empty QSet\n%s",FCT,STR_(this));
+         "ERR %s() got invalid empty QSet\n%s",FCT,STR(*this));
       return 1; 
    }
 
    unsigned i=0, l=0, m=t.qlen(), r=(m ? qs.len/m : 0);
    if (!m || qs.len%m) wblog(FL,
-      "ERR %s() got invalid QSet %s",FCT,STR_(this));
+      "ERR %s() got invalid QSet %s",FCT,STR(*this));
 
    if (r<2) { 
       if (r==1) { 
          return (qdir[0]>0 ? 1 : 0);
       }
-      wblog(FL,"ERR %s() got rank-%d QSet %s",FCT,r,STR_(this));
+      wblog(FL,"ERR %s() got rank-%d QSet %s",FCT,r,STR(*this));
    }
 
    for (; i<r; ++i) { if (qdir[i]<=0) break; }
@@ -1776,7 +1554,7 @@ int QSet<TQ>::checkQ_abelian(const char *F, int L) const {
    unsigned i=0; TQ q=0;
 
    if (qdir.len!=qs.len) { if (F) wblog(FL,
-      "ERR %s() qdir inconsistency (%s)",FCT,STR_(this));
+      "ERR %s() qdir inconsistency (%s)",FCT,STR(*this));
       return -3;
    }
    if (!qdir.len) { return 0; } 
@@ -1786,15 +1564,15 @@ int QSet<TQ>::checkQ_abelian(const char *F, int L) const {
    }
 
    switch (t.type) {
-      case QTYPE_U1:
-      case QTYPE_ZN:
+      case QT_U1:
+      case QT_ZN:
 
          for (i=0; i<qdir.len; ++i) {
             if (qdir[i]>0) { q+=qs[i]; } else { q-=qs[i]; }};
-         if (q && t.type==QTYPE_ZN) { q=int(q)%t.sub; }
+         if (q && t.type==QT_ZN) { q=int(q)%t.sub; }
          break;
 
-      case QTYPE_P :
+      case QT_P :
          q=qs.prod()-1; break;
 
       default:
@@ -1813,16 +1591,16 @@ int QSet<TQ>::checkQ_abelian(const char *F, int L) const {
 template <class TQ>
 int QSet<TQ>::checkQ_SU2(const char *F, int L) const {
 
-   if (t.type!=QTYPE_SUN || t.sub!=1) { if (F) wblog(F,L,
+   if (t.type!=QT_SUN || t.sub!=1) { if (F) wblog(F,L,
       "ERR %s() got invalid type %s",FCT,STR(t));
       return -1;
    }
    if (qdir.len<2) { if (F) wblog(FL,
-      "WRN %s() got rank-%d QSet (%s)",FCT,qdir.len,STR_(this));
+      "WRN %s() got rank-%d QSet (%s)",FCT,qdir.len,STR(*this));
       return -2;
    }
    if (qdir.len!=qs.len) { if (F) wblog(FL,
-      "ERR %s() qdir inconsistency (%s)",FCT,STR_(this));
+      "ERR %s() qdir inconsistency (%s)",FCT,STR(*this));
       return -3;
    }
 
@@ -1840,7 +1618,7 @@ int QSet<TQ>::checkQ_SU2(const char *F, int L) const {
 
    if (qdir.len==2) {
       if (qs[0]!=qs[1]) { if (F) wblog(FL,
-         "ERR %s() got scalar CGC data %s",FCT,STR_(this));
+         "ERR %s() got scalar CGC data %s",FCT,STR(*this));
          return 3;
       }
    }
@@ -1860,7 +1638,7 @@ int QSet<TQ>::checkQ_SU2(const char *F, int L) const {
       if (qs[i3] > qs[i1]+qs[i2] || qs[i3] < qs[i1]-qs[i2]) {
          if (F) wblog(F,L,"ERR %s() "
             "invalid SU2 addition rule (%g + %g = %g!)\n%s",FCT,
-            double(qs[i1]),double(qs[i2]),double(qs[i3]),STR_(this));
+            double(qs[i1]),double(qs[i2]),double(qs[i3]),STR(*this));
          return 4;
       }
    }
@@ -1869,19 +1647,20 @@ int QSet<TQ>::checkQ_SU2(const char *F, int L) const {
 };
 
 template <class TQ>
-QSet<TQ>& QSet<TQ>::permute(
-   QSet<TQ> &B, const wbperm &P, char iflag) const {
+QSet<TQ>& QSet<TQ>::permute(QSet<TQ> &B, const wbperm &P_) const {
 
-   if (P.len) {
-      unsigned r=rank(FL);
-      if (!P.isValidPerm(FL,r)) wblog(FL,
-         "ERR invalid permute on CData (%d/%d)",P.len,r);
+   if (!P_.relevant(FL)) { return B=*this; }
+   if (P_.fac!=1) wblog(FL,"ERR %s() got permutation %s",pFCT,STR(P_));
 
-      B.t=t;
-      qdir.permute(B.qdir,P,iflag);
-      qs.blockPermute(P,B.qs,iflag);
-   }
-   else { B=*this; } 
+   unsigned r=rank(FL);
+
+   wbperm P(P_);
+   char conj=P.conj; P.conj=0;
+   if (P.len && P.len!=r) P.Extend(r); 
+
+   B.t=t;
+   qdir.permute(B.qdir,P); if (conj) { B.qdir.Conj(); }
+   qs.blockPermute(B.qs,P);
 
    return B;
 };
@@ -1906,7 +1685,7 @@ wbstring QSet<TQ>::QStrS(const wbperm *cgp, char s_) const {
    k=Q.qdir.isSorted();
    if (!k) wblog(FL,"WRN %s() got unsorted QSet",FCT);
 
-   if (CG::gotQAlpha(qs.data,qs.len)) {
+   if (CG::gotQAlpha(qs.data,qs.len, &t)) {
       unsigned i=0, l=0, r=qdir.len; TQ *q=Q.qs.data;
       if (r*m!=qs.len || !r) wblog(FL,
          "ERR %s() got invalid QSet (%d*%d=%d)",FCT,r,m,qdir.len);
@@ -1933,7 +1712,7 @@ wbstring QSet<TQ>::QStrS(const wbperm *cgp, char s_) const {
 };
 
 template <class TQ>
-wbstring QSet<TQ>::QStr() const {
+wbstring QSet<TQ>::QStr(char compact) const {
    wbstring sout; 
 
    unsigned i=0, j=0, l=0, n, m=t.qlen();
@@ -1951,27 +1730,33 @@ wbstring QSet<TQ>::QStr() const {
    }
    if (!qdir.len) { sout.init(1); return sout; }
 
-   if (CG::gotQAlpha(qs.data,qs.len)) {  
+   if (CG::gotQAlpha(qs.data,qs.len,&t)) {  
       n=qs.len+2*qdir.len; 
       sout.init(n+1); s=sout.data;
       for (; i<qdir.len; ++i, q+=m) {
          if (CG::qset2cstr(q,s+l,m)) wblog(FL, 
             "ERR %s() failed to obtain compact qset string",FCT);
-         l+=m; if (qdir[i]<0) { s[l++]='*'; }
-         s[l++]=',';
+         l+=m;
+         if (qdir[i]<0)
+              { s[l++]='*'; } 
+         else { if (!compact) { s[l++]=' '; }} 
+         s[l++]=(compact? ',':' ');
       }
       s[l-1]=0; 
    }
    else {
-      wbstring fmt; fmt.init2Fmt(qs[0]);
+      wbstring fmt;
+      fmt.init2Fmt(qs[0], t.signedLabels() ? 2 : -1); 
+
       n=5*qs.len+qdir.len; sout.init(n+1); s=sout.data;
 
-      for (; i<qdir.len && l<n; ++i, q+=m) { if (i) { s[l++]=','; }
+      for (; i<qdir.len && l<n; ++i, q+=m) {
+         if (i) { s[l++]=(m>1 ? ',':' '); }
          for (j=0; j<m && l<n; ++j) {
             if (j) { s[l++]=' '; }
             l+=snprintf(s+l,n-l,fmt.data,q[j]);
          }
-         if (qdir[i]<0 && l<n) { s[l++]='*'; }
+         if (qdir[i]<0 && l<n) { s[l++]='*'; } 
       }
 
       if (l>n) { s[n]=0; wblog(FL,
@@ -1983,12 +1768,13 @@ wbstring QSet<TQ>::QStr() const {
 };
 
 template <class TQ>
-wbstring QSet<TQ>::toStr(const char *istr) const {
-   wbstring sout; 
+wbstring QSet<TQ>::toStr(
+   const char *astr, 
+   char compact) const {
 
-   unsigned m=t.qlen(), n=16+4*qs.len;
+   unsigned m=t.qlen();
 
-   if (istr && !istr[0]) istr=0;
+   if (astr && *astr) { astr=0; }
 
    if (qs.len!=m*qdir.len) {
       if (qdir.len) wblog(FL,"ERR %s() severe QSet inconsistency "
@@ -1998,25 +1784,20 @@ wbstring QSet<TQ>::toStr(const char *istr) const {
          FCT,STR(t),qs.len,m,qdir.len
       );
    }
-   sout.init(n);
 
-   char *s=sout.data;
-   unsigned l=snprintf(s,n,"%5s (",STR(t));
+   wbvec<char> s( (astr? strlen(astr):0) + 16 + 4*qs.len);
 
-   if (l<n) {
-      l+=snprintf(s+l,n-l,"%s",QStr().data);
-   }
-   if (l<n) {
-      if (istr)
-           { l+=snprintf(s+l,n-l,") %s",istr); }
-      else { s[l]=')'; s[++l]=0; }
-   }
+   s.catf(0,0,"%5s {",STR(t));
 
-   if (l>=n) { s[n]=0; wblog(FL,
-      "ERR %s() string out of bounds (%d/%d)\n%s",FCT,l,n,s); }
-   sout.len=l+1;
+   if (!compact && !t.signedLabels()) { s.append(0,0,' '); }
 
-   return sout;
+   s.cat(0,0,QStr(compact).data);
+
+   if (astr)
+        { s.catf(FL,"} %s",astr); }
+   else { s.append(FL,'}'); }
+
+   return s.data;
 };
 
 template <class TQ>
@@ -2027,8 +1808,8 @@ wbstring QSet<TQ>::toTag() const { wbstring s(64);
    char sep[2]=",";
    if (t.qlen()<=1 || qs.wbvector<TQ>::allIn(0,9)) sep[0]=0;
 
-   if (!t.validType() || !qdir.len || !qs.len) wblog(FL,
-      "ERR %s() got empty CData\n%s",FCT,STR_(this));
+   if (!t.validType(FL) || !qdir.len || !qs.len) wblog(FL,
+      "ERR %s() got empty CData\n%s",FCT,STR(*this));
 
    l=snprintf(s.data,n,"%s[%s: %s]",
      t.toStr('t').data, STR(qdir),
@@ -2042,21 +1823,19 @@ wbstring QSet<TQ>::toTag() const { wbstring s(64);
 
 template <class TD>
 template <class TQ>
-cdata<TD>& cdata<TD>::init(const CRef<TQ> &R, unsigned k, char full) {
+cdata<TD>& cdata<TD>::init(const CRef<TQ> &R, unsigned k, char adapt) {
 
    if (!R.cgb) wblog(FL,"ERR %s() got NULL cref",FCT);
    if (!R.cgw) wblog(FL,"ERR %s() got empty cgw",FCT);
+   if (R.isRefInit()) { R.LoadRef(FL); }
 
-   if (R.isRefInit()) { 
-      R.LoadRef(FL);
-   }
-
-   unsigned r=R.cgb->rank(FL), m=R.cgb->gotOM(FL);
+   unsigned r=R.cgb->rank(FL), m=R.cgb->numOM(FL); 
    unsigned m1,m2; m1=R.wdim12(FL,m2);
 
-   if (m<m1 || m1<m2) wblog(FL,
+   if ((m && m<m1) || m1<m2) wblog(FL,
       "ERR %s() inconsistent OM m=%d / %d / %d",FCT,m2,m1,m);
-   if (k>=m) wblog(FL,"ERR %s() index out of bounds (k=%d/%d)",FCT,k,m);
+   if (int(k)>=0 && k>=m) wblog(FL,
+      "ERR %s() index out of bounds (k=%d/%d)",FCT,k,m);
 
    if (m<=1) { init(R.cgb->cgd) *= R.wget0();
       if (m) {
@@ -2071,16 +1850,15 @@ cdata<TD>& cdata<TD>::init(const CRef<TQ> &R, unsigned k, char full) {
          }
       }
    }
+   else if (int(k)<0) { init(R.cgb->cgd); } 
    else {
       wbvector<double> wk;
       wk.initp(m, R.cgw.col(k), m1, 1); 
-      R.cgb->cgd.cgsparray::contract(FL,r,wk, (cgsparray&)(*this));
+      R.cgb->cgd.SPARR_RTD::contract(FL,r,wk, (SPARR_RTD&)(*this));
    }
 
-   if (full) {
-      if (R.cgp.len) { Permute(R.cgp); }
-      if (R.conj) { Conj(); }
-   }
+   if (adapt && R.cgp) { Permute(R.cgp); }
+
    return *this;
 };
 
@@ -2114,9 +1892,10 @@ unsigned cdata<TD>::getOM(
    const char *F, int L, const char *istr) const {
 
    double x2=double(this->norm2()), e=std::fabs(x2-std::round(x2));
-   unsigned m=(x2+0.5), r=this->SIZE.len;
+   unsigned m=(x2+0.5); 
+   unsigned r=this->SIZE.len;
 
-   if (e>1E-12) wblog(F_L,"ERR %s() "
+   if (e>1e-12) wblog(F_L,"ERR %s() "
       "got non-integer |cgc|^2 (%s%g @ %.3g)",FCT,istr?istr:"",x2,e);
    if (!r) {
       if (this->isDiag()) { 
@@ -2131,7 +1910,7 @@ unsigned cdata<TD>::getOM(
 
    const SPIDX_T *sd=this->SIZE.data;
 
-   for (unsigned s=1, i=r-1; i<r; --i) { 
+   for (unsigned s=1, i=r-1; i<r; --i) {
       if ((s*=sd[i])==m) {
          if (r-i>1) wblog(FL, 
             "WRN %s() got %d OM dimensions",FCT,r-i);
@@ -2173,7 +1952,7 @@ TD cdata<TD>::NormSignC(
    TD *d=this->D.data; 
 
    if (m>2 || m>r || r<2 || (r!=l && l && r!=2)) wblog(FL,
-      "ERR got OM=%d (r=%d/%d)",m,r,l);
+      "ERR got Mdims=%d (r=%d/%d)",m,r,l);
 
    nrm=this->D.norm2(); 
 
@@ -2204,25 +1983,28 @@ TD cdata<TD>::NormSignC(
    return nrm;
 };
 
-template <class TD>
-cdata<TD>& cdata<TD>::permute(
-   cdata<TD> &B, const wbperm &P0, char iflag
-) const {
+template <class TD>  
+cdata<TD>& cdata<TD>::permute(cdata<TD> &B, wbperm P) const {
 
-   if (isScalar() || !P0.len) { B.init(*this); } else
-   if (!this->SIZE.len && this->D.len>1) {
-      if (!this->isDiag() || P0.len!=2) wblog(FL,"ERR %s() "
-         "invalid diagonal (%s, D=%d)",FCT,STR(P0),this->D.len);
+   if (isScalar() || !P.len) {
+      if (P.len>2 && P.len>this->SIZE.len) wblog(FL,
+         "ERR %s() got P=%s with %s",FCT,STR(P),SSTR(*this));
+      B.init(*this);
+   }
+   else if (!this->SIZE.len && this->D.len>1) {
+      if (!this->isDiag() || P.len>2) wblog(FL,
+         "ERR %s() invalid diagonal (%s, D=%d)",FCT,STR(P),this->D.len);
       B.init(*this);
    }
    else {
-      const unsigned l=this->SIZE.len, r=P0.len;
-      if ((l<=2 && l!=r) || (l>2 && (l<r || l>r+1))) wblog(FL,
+      unsigned l=this->SIZE.len, r=P.len;
+      if ((l<=2 && l!=r) || (l>2 && (l<r || l>r+1))) { wblog(FL,
          "ERR %s() invalid permutation %s [%s @ %.3g]",
-         FCT,STR(P0),SSTR_(this),double(this->norm()));
+         FCT,STR(P),SSTR(*this),double(this->norm()));
+      }
+      P.flatten(this->SIZE.len);
 
-      wbperm P(P0,this->SIZE.len);
-      wbsparray<TD>::permute(P,B,iflag);
+      wbsparray<TD>::permute(B,P);
    }
 
    return B;
@@ -2232,7 +2014,7 @@ template <class TD>
 TD cdata<TD>::contract(const char *F, int L,
    const ctrIdx &ica, const cdata<TD> &B,
    const ctrIdx &icb, cdata<TD> &Cin,
-   cdata<TD> *Cx, wbperm *P, char normalize
+   cdata<TD> *Cx, const wbperm *P, char normalize
  ) const {
 
    TD nrm=1; 
@@ -2243,18 +2025,18 @@ TD cdata<TD>::contract(const char *F, int L,
          if (Cx) wblog(FL,"ERR %s() got Cx for scalar C",FCT);
          if (!Cin.isEmpty()) wblog(FL, 
             "ERR %s() got non-empty Cin (%s)",FCT,this->sizeStr().data);
-         if (normalize) nrm=C.NormSignC(F,L); 
+         if (normalize) { nrm=C.NormSignC(F,L); } 
          C.save2(Cin); return nrm;
       }
-      else wblog(FL,"WRN %s() " 
+      else { wblog(FL,"WRN %s() " 
          "got non-scalar contraction for D.len=%d/%d",
-         FCT,this->D.len, B.D.len
-      );
+         FCT,this->D.len, B.D.len); 
+      }
    }
 
    unsigned ma=this->getOM(FL,"A: "), mb=B.getOM(FL,"B: ");
 
-   this->cgsparray::contract(F,L,ica, B, icb, C, P ? *P : wbperm());
+   this->SPARR_RTD::contract(F,L,ica, B, icb, C, P? *P:wbperm());
 
    if (normalize) {
       nrm=C.NormSignC(F,L,ma+mb);
@@ -2274,7 +2056,7 @@ TD cdata<TD>::contract(const char *F, int L,
          }
       }
 
-      if (fabs(double(nrm))<1E-14) return nrm;
+      if (fabs(double(nrm))<1e-14) { return nrm; }
 
       double d=MAX(SPIDX_T(1),C.numel()), e,e2=std::sqrt(C.normDiff2(Cin)/d);
       if (e2>CG_EPS1) {
@@ -2294,16 +2076,138 @@ TD cdata<TD>::contract(const char *F, int L,
 };
 
 template <class TQ, class TD>
+CData<TQ,TD>& CData<TQ,TD>::init(const char *F, int L,
+   const QType &t_, const QDir &qd, std::initializer_list<TQ> ql,
+   unsigned M) {
+
+   unsigned i=0, r=qd.len;
+
+   if (M>32) wblog(FL,"WRN %s() got M=%d",FCT,M);
+   QSet<TQ>::init(F,L,t_,qd,ql);
+
+   cgd.SIZE.init(r+(M?1:0));
+      for (; i<r; ++i) { cgd.SIZE[i]=t_.qdim(this->qs.data+i); }
+      if (M) { cgd.SIZE[i]=M; }
+   return *this;
+};
+
+template <class TQ, class TD>
+int CData<TQ,TD>::init3FT(const char *F, int L,
+   const QType &t_, const QDir &qd,
+   std::initializer_list<TQ> ql,
+   std::initializer_list<double> Dfull, char flags, char mp3) {
+
+   unsigned i=0, r=qd.len, N,M, NM=Dfull.size();
+   int gotnew=0;
+
+   if (qd.len!=3) wblog(FL, 
+      "ERR %s() rank-3 CGT expected (r=%d)",FCT,qd.len);
+   QSet<TQ>::init(F,L,t_,qd,ql);
+
+   cgd.SIZE.init(r+1); 
+      for (; i<r; ++i) { cgd.SIZE[i]=t_.qdim(this->qs.data+i); }
+      cgd.SIZE[i]=1;
+
+      N=cgd.SIZE.prod(0);
+      M=(N ? NM / N : 0); if (NM != N*M) wblog(FL,
+         "ERR %s() size mismatch of Dfull (%d =? %d x %d)",FCT,NM,N,M);
+
+      if (M>1)
+           { cgd.SIZE[i]=M; }
+      else { cgd.SIZE.len=r; }  
+
+   if (flags>7) {
+      if (flags=='n') { flags=1; } else 
+      if (flags=='b') { flags=3; } else 
+      if (flags=='B') { flags=7; } else 
+      if (flags=='0') { flags=0; } 
+      else { wblog(FL,"WRN %s() got flags=%s",FCT,cSTR(flags)); flags=3; }
+   }
+   else if (!flags && cstat.gotuser_BUF()) { flags=3; } 
+
+   cgd.wbsparray<TD>::init3FT(FL,Dfull);
+   if (flags&1) {
+      wbvector<TD> nrm2;
+      NormSignC(nrm2);
+
+      if (M) { 
+         wbsparray<TD> x2;
+         ctrIdx ic; ic.Index(3);
+
+         cgd.wbsparray<TD>::contract(FL,ic,cgd,ic,x2);
+         if (!x2.isIdentityMatrix()) {
+            MXPut(FL,"Idbg","base").add(*this,"C").add(x2,"x2");
+            wblog(FL,"ERR %s() invalid Dfull (not orthogonal)",FCT);
+         }
+      }
+   }
+   if (flags&2) { 
+      cstat_init_(CD_EXPLICIT,'f');
+         if (this->isStd3()) { cstat.set(CD_STD3); }
+      cstat.setComplete(3); 
+   }
+
+   if (flags&4) { char q; CData<TQ,TD> B;
+      if (flags!=7) wblog(FL,"ERR %s() unexpected flag=%s",FCT,cSTR(flags));
+      q=gStore.load_CData(0,0,*this,B);
+      if (q>0) {
+         if ((q=gotDiff(B,4))) { wblog(FL,
+            "WRN %s() got differing CData (q=%d)\n   %s\n<> %s",
+            FCT,q,STR2(*this,3),STR2(B,3));
+         }
+         B.swap(*this);
+      }
+      else if (!q) {
+         gotnew=1; 
+         gStore.save_CData(FL,*this);
+
+         if (this->is1J(3)) {
+            gStore.save_1J(FL,*this,"init3FT() ");
+         }
+      }
+      else wblog(FL,"ERR %s() got q=%d",FCT,q);
+   }
+
+   if (!mp3 || !gotnew) { return gotnew; }
+
+   if (flags!=7) wblog(FL,"ERR %s() unexpected flag=%s",FCT,cSTR(flags));
+   if (qd.len!=3 || !this->isStd3()) wblog(FL,
+      "ERR %s() unexpected %s (flags=%d)",FCT,STR(*this),flags);
+
+   unsigned m=t_.qlen();
+   const TQ *qs=this->qs.data;
+
+   qset<TQ> J12(2*m,qs), J(m,qs+2*m);
+
+   CRef<TQ> &R=gCS.map3[t_][J12][J];
+   R.initBase(*this).NormStd(FL,3); 
+
+   if (mp3>1) { 
+      wbvector<double> c2eps(1);
+      gStore.save_mp3_extended(0,0,t_,J12,&c2eps);
+   }
+
+   if (gStore.load_RSet(0,1,t_,J)<=0) {
+      genRG_base<TQ,TD> &R = gRS.Buf(t_).RSet[J];
+      if (!R.J) {
+         R.q=t_; R.J=J;
+         R.Z.init(cgd.SIZE[2],m); 
+      }
+      gStore.save_RSet(FL,R);
+   }
+
+   return gotnew;
+};
+
+template <class TQ, class TD>
 CData<TQ,TD>& CData<TQ,TD>::init(const CRef<TQ> &R, unsigned l) {
 
-   cgd.init(R,l); 
+   cgd.init(R,l);  
 
-   cstat.t=CGD_FROM_CGR;
-   if (R.cgp.len)
-        R.cgb->QSet<TQ>::permute((QSet<TQ>&)(*this),R.cgp);
-   else (*this)=(QSet<TQ>&)(*R.cgb); 
-
-   if (R.conj) this->QSet<TQ>::Conj();
+   cstat.init_type_(CD_FROM_CGR);
+   if (R.cgp)
+        { R.cgb->QSet<TQ>::permute((QSet<TQ>&)(*this),R.cgp); }
+   else { (*this)=(QSet<TQ>&)(*R.cgb); } 
 
    return *this;
 };
@@ -2316,18 +2220,18 @@ int CData<TQ,TD>::RefInit(
  ){
    int err=0; 
 
-   if (cstat.ID && !cstat.sameID(B.cstat)) {
+   if (cstat.cID && !cstat.sameID(B.cstat)) {
       gStore.rclog(this->t, PF_L,1,
-        "WRN CData::%s() got ID mismatch (#%05x <> #%05x)"
-        "%N   %-32s %s%N   %-32s %s%N", FCT, cstat.ID, B.cstat.ID,
-         STR_(this),STR2(cstat,'V'), STR(B),STR2(B.cstat,'V'));
+        "WRN CData::%s() got cID mismatch (#%05X <> #%05X)"
+        "%N   %-32s %s%N   %-32s %s%N", FCT, cstat.cID, B.cstat.cID,
+         STR(*this),STR2(cstat,'V'), STR(B),STR2(B.cstat,'V'));
       if (!lflag) wblog(FL,"ERR see warning / error above");
 
       cstat.init(); err=1; 
    }
    cstat=B.cstat;
 
-   cstat.t=( B.cstat!=CGD_EXPLICIT ? CGD_REF_INIT : CGD_EXPLICIT );
+   cstat.set(CD_REF_INIT);
 
    (*this)=(QSet<TQ>&)B; 
 
@@ -2349,50 +2253,50 @@ int CData<TQ,TD>::Reduce2Ref(const char *F, int L,
    char force
  ){
 
-   if (cstat.t==CGD_REF_INIT) { return 0; }
-   if (cstat.t==CGD_EXPLICIT) { return 0; } 
+   if (cstat==CD_REF_INIT) { return 0; }
+   if (cstat==CD_IMPLICIT) { return 0; } 
 
 #ifdef QS_USING_OMP
    CG::Guard qLK, qLX;
    if (force) {
       qLK.acquire(FL,*this,"buf");    
-      qLX.acquire(FL,*this,NULL,"?");
+      qLX.acquire(FL,*this,nullptr,"?");
    }
    else { int i;
       i=qLK.acquire(FL,*this,"buf","1"); if (i<=0) return -1; 
-      i=qLX.acquire(FL,*this,NULL,"?1"); if (i<=0) return -1;
+      i=qLX.acquire(FL,*this,nullptr,"?1"); if (i<=0) return -1;
    }
 #endif
 
-   if (cstat.t==CGD_REF_INIT) { return 0; } 
+   if (cstat==CD_REF_INIT) { return 0; } 
 
    if (gotuser_BUF()) { double x2=double(cgd.norm2());
-      if (x2<1E-12) {
+      if (x2<1e-12) {
          wblog(F_L,"ERR %s() got |BUF->CData|^2=%g for %s\n%s",
-         FCT,x2,STR_(this));
+         FCT,x2,STR(*this));
       }
    }
 
-   setuser_BUF_ref(2); 
+   setuser_BUF_active();
 
 #if defined(DBG_QSX_BUF) && (DBG_QSX_BUF & 1)
    BFF.blogf(FL,"--> %-10s %3ld %p  %s%s %p", FCT, gCS.BUF.size(), this,
-   STR_(this), cstat.u2Str(" ").data, this->qs.data);
+   STR(*this), cstat.u2Str(" ").data, this->qs.data);
 #endif
 
    wbvector<SPIDX_T> S; getSize(S);
-   if (CG_VERBOSE>6) wblog(F_L," *  %s() %s",FCT,STR_(this));
+   if (CG_VERBOSE>6) wblog(F_L," *  %s() %s",FCT,STR(*this));
 
    if (!isSymmmetric()) {
       cgd.wbsparray<RTD>::init(S,0); 
-      cstat.t=CGD_REF_INIT;
+      cstat.set(CD_REF_INIT); 
    }
    else {
       wbvector<RTD> cgt; trace(FL,cgt);
       RefInit_auxtr(FL,S,cgt);
    }
 
-   setuser_BUF_ref(0); 
+   setuser_BUF_passive();
    return 1;
 };
 
@@ -2426,7 +2330,7 @@ CData<TQ,TD>& CData<TQ,TD>::RefInit_auxtr(
       }
    }
 
-   cstat.t=CGD_REF_INIT;
+   cstat.set(CD_REF_INIT); 
 
    return *this;
 };
@@ -2434,7 +2338,7 @@ CData<TQ,TD>& CData<TQ,TD>::RefInit_auxtr(
 template <class TQ, class TD>
 int CData<TQ,TD>::LoadRef(const char *F, int L, char force) {
 
-   if (cstat!=CGD_REF_INIT && !force) {
+   if (cstat!=CD_REF_INIT && !force) {
       return 0;
    }
 
@@ -2442,10 +2346,10 @@ int CData<TQ,TD>::LoadRef(const char *F, int L, char force) {
 
    if (C!=this) wblog(FL,"ERR %s() got different CData space"
       "\n > %lx\n > %lx",FCT,this,C);
-   if (C->isEmpty() || C->isRefInit()) wblog(FL, 
+   if (C->isEmpty() || C->isRefInit()) { wblog(FL, 
       "ERR %s() got non-existing CData\n  %s\n> %s",
-      FCT,STR_(this), C->toStr().data
-   );
+      FCT,STR(*this), C->toStr().data);
+   }
 
    return 1;
 };
@@ -2462,11 +2366,17 @@ CData<TQ,TD>& CData<TQ,TD>::initX3(const char *F, int L,
    bool force=(flag & CX3_FORCE ? 1 : 0);
 
    CDATA_TQ &C0=gCS.getBUF(
-      force ? (F ? F : __FILE__) : 0,
-      force ? (L ? L : __LINE__) : 0, Q0, loadRC);
+      force? (F? F:__FILE__) : 0,
+      force? (L? L:__LINE__) : 0, Q0, loadRC);
 
    if (C0.isEmpty()) {
-      if (force && F) wblog(F,L,"ERR %s[%s] got empty C0",FCT,STR(Q0));
+      if (force && F) wblog(F,L,
+         "ERR %s() got empty C0 for %s",FCT,STR(Q0));
+      this->init(C0); return *this;
+   }
+   else if (C0.cgd.isEmpty()) { 
+      if (!C0.NP_zero()) wblog(F_L, 
+         "ERR %s() got empty cgd for %s\n%s",FCT,STR(Q0),STR2(C0,2));
       this->init(C0); return *this;
    }
    else if (C0.isRefInit()) { 
@@ -2478,7 +2388,9 @@ CData<TQ,TD>& CData<TQ,TD>::initX3(const char *F, int L,
       if (cflags.len!=Q0.qdir.len) wblog(FL,
          "ERR %s() size mismatch (%d/%d)",FCT,cflags.len,Q0.qdir.len);
       for (unsigned i=0; i<cflags.len; ++i) {
-         if (cflags[P.el1(i)]) this->Conj(i);  
+         if (cflags[P.at_(i)]) {
+            this->Conj(i); 
+         }
       }
    }
 
@@ -2489,20 +2401,21 @@ CData<TQ,TD>& CData<TQ,TD>::initX3(const char *F, int L,
       "ERR %s() got om=%d [%s]\n%s",FCT,m,SSTR(cgd),SSTR(Q0));
 
    { double x=double(cgd.NormSignC(F,L,m));  
-     if (fabs(fabs(x)-1)>1E-12) wblog(FL,
+     if (fabs(fabs(x)-1)>1e-12) wblog(FL,
         "ERR %s() norm changed by factor %.5g/%.5g\n  %s "
         "p=(%s) c=[%s] l=%s,%s\n  %s\n> %s",FCT, x, double(C0.cgd.norm()),
         STR(Q0), STR(P), cflags.toStr(-1,"").data, BITS(loadRC),
-        cSTR(flag), STR(C0), STR_(this)
+        cSTR(flag), STR(C0), STR(*this)
      );
    }
 
    cstat.init(); 
-   cstat.init(C0.cstat==CGD_STD3 ? CGD_STD3_X : CGD_GEN_X);
+   cstat.init(C0.cstat==CD_STD3 ? CD_STD3_X : CD_GEN3_X);
+   cstat.cpyComplete(C0.cstat); 
 
    gStore.rclog(this->t, PF_L, CG_VERBOSE>6,"C3X initialize "
      "rank-3 tensor via 1j+perm trafo\n--> %s P=(%s), c=[%s]",
-     STR_(this),STR(P),cflags.toStr(-1,"").data); 
+     STR(*this),STR(P),cflags.toStr(-1,"").data); 
 
    if (store)
    gStore.save_CData(FL,*this);  
@@ -2514,16 +2427,16 @@ template <class TQ, class TD>
 unsigned CData<TQ,TD>::rank(const char *F, int L) const {
 
    unsigned r=0; 
-   if (isEmpty()) return r; 
+   if (isEmpty() || NP_zero()) { return r; } 
 
    unsigned i1=-1, i2=-1; 
    unsigned m=this->t.qlen();
    unsigned l=this->qs.len, r_=cgd.SIZE.len, r0=this->qdir.len;
 
 #ifdef QS_USING_OMP
-   if (gotuser_BUF_ref() || !r_) {
+   if (gotuser_BUF_active() || !r_) {
       CG::Guard qLK(FL,*this,"buf","?");  i1=qLK.used(); 
-      CG::Guard qLX(FL,*this, NULL,"?9"); i2=qLX.used();
+      CG::Guard qLX(FL,*this, nullptr,"?9"); i2=qLX.used();
 
       l=this->qs.len; r_=cgd.SIZE.len; r0=this->qdir.len; 
    }
@@ -2531,34 +2444,78 @@ unsigned CData<TQ,TD>::rank(const char *F, int L) const {
 
    if (!l && !r_ && !r0) {
       if (gotuser_BUF()) wblog(F_L,
-         "WRN %s() got empty CData (r=%d) %s",FCT,r,STR_(this));
+         "WRN %s() got empty CData (r=%d) %s",FCT,r,STR(*this));
       return r;
    }
 
    if (!m || l%m) wblog(F_L,
       "ERR %s() invalid CData (%d @ %d)",FCT,l,m);
    if ((r=l/m)!=r0) wblog(F_L,
-      "ERR %s() inconsistent qdir (%d/%d) %s",FCT,r,r0,STR_(this));
+      "ERR %s() inconsistent qdir (%d/%d) %s",FCT,r,r0,STR(*this));
 
    if (r_==r+1) {
       if (r<3 || !this->t.permitsOM(r)) {
-         if (cgd.SIZE[r]!=1) { MXPut(FL,"y").add(cgd,"c");
+         if (cgd.SIZE[r]!=1) { MXPut(FL,"Irk1").add(cgd,"c");
             wblog(F_L,"ERR %s() got OM for rank-%d CGS\n%s: %s",
-            FCT, r, STR_(this), cgd.sizeStr().data);
+            FCT, r, STR(*this), cgd.sizeStr().data);
          }
       }
    }
    else if (r_!=r) {
-      if (r==2 && cgd.isDiag()) return r; 
+      if (r==2 && cgd.isDiag()) { return r; } 
       if (!isAbelian()) {
-         MXPut(FL,"Irk") 
+         MXPut(FL,"Irk2") 
            .add(*this,"A").add(cgd,"cgd").add(r_,"r_").add(r,"r")
            .add(i1,"i1").add(i2,"i2").add(cgd.isDiag(),"isd");
-         wblog(F_L,"ERR CData %s() rank mismatch (%s r=%d/%d/%d)",
-         FCT, qStr().data, r_, cgd.SIZE.len, r);
+         wblog(F_L,"ERR %s() mismatch %s r=%d/%d/%d",
+         FCT, STR(*this), r_, cgd.SIZE.len, r);
       }
    }
    return r;
+};
+
+template <class TQ, class TD>
+int CData<TQ,TD>::hasFullOM(const char *F, int L) const {
+
+   int rval; 
+   unsigned r=this->qdir.len, m=getOM(F_L), q=cstat.isComplete(7);
+   rval=-r; 
+
+   if (q>=4) { 
+      if (cgd || q!=5) wblog(FL,"WRN %s() -> q=%d",FCT,STR2(*this,7),q);
+      return (rval=r|32); 
+   }
+
+   if (isEmpty() || cgd.isEmpty()) { 
+      if (!q) { return (rval=-1); }
+      else {
+         wblog(FL,"WRN %s() -> q=%d",FCT,STR2(*this,7),q);
+         return (rval=r|32); 
+      }
+   }
+
+   if (isAbelian(F_L)) { return (rval=0); } 
+
+   if (r<=2) { 
+      if (m!=1) wblog(FL,"ERR %s() %s with m=%d",FCT,STR(*this),m);
+      if (r==2 && !cstat.any(CD_IDENTITY, CD_1JSY_ST3, CD_1JSY_GEN))
+         wblog(FL,"WRN %s() got %s",FCT,STR(*this));
+      rval=r;
+   }
+   else if (r==3) { 
+      if (cstat.any(CD_STD3, CD_STD3_X) || this->t.sub<2) {
+         rval=r; }
+      else if (!cstat.any( CD_FROM_CTR, CD_FROM_DEC, CD_GEN3_X )) {
+         wblog(FL,"WRN %s() got %s",FCT,STR(*this));
+      }
+   }
+
+   if (cstat.isComplete()) { 
+      if (rval>=0) { rval|=64; } else { rval=r; }
+      rval|=32;
+   }
+
+   return rval;
 };
 
 template <class TQ, class TD>
@@ -2574,7 +2531,7 @@ wbvector<T>& CData<TQ,TD>::getSize(
    CG::Guard qLK;
    if (gotuser_BUF()) {
       int q=qLK.acquire(FL,*this,"buf","?");
-      if (q<=0) qLK.acquire(FL,*this,NULL,"?8");
+      if (q<=0) qLK.acquire(FL,*this,nullptr,"?8");
    }
 #endif
 
@@ -2584,29 +2541,27 @@ wbvector<T>& CData<TQ,TD>::getSize(
       cgd.wbsparray<TD>::getSize(S);
       if (S.len==2 && this->qdir.len==2) {
          if (l && l!=2) wblog(FL,
-            "ERR %s() invalid cgp=[%s] (2)",FCT,cgp->toStr().data);
+            "ERR %s() invalid cgp=[%s] (2)",FCT,STR_(cgp));
          return S;
       }
       if (!S.len && isScalar()) {
-         if (l && l!=this->qdir.len) wblog(FL,"ERR %s() "
-            "invalid cgp=[%s] (%d)",FCT,cgp->toStr().data,this->qdir.len);
+         if (l>this->qdir.len) wblog(FL,
+            "ERR %s() invalid cgp=[%s] (%d)",FCT,STR_(cgp),this->qdir.len);
          return S.init2val(this->qdir.len,1);
       }
-      if (S.len || l) wblog(FL,
-         "ERR %s() got %s",FCT,STR_(this));
+      if (S.len || l) wblog(FL,"ERR %s() got %s",FCT,STR(*this));
       return S;
    }
 
    const SPIDX_T *sz=cgd.SIZE.data; 
 
    if (l) {
-      if (l+1<S.len || l>S.len) wblog(FL,
+      if (l>S.len) wblog(FL,
          "ERR %s() cgp/SIZE mismatch (%d/%d)",FCT,l,S.len);
       if (!cgp->isIdentityPerm()) {
          for (; i<l; ++i) { S.data[i]=sz[cgp->data[i]]; }
       }
    }
-
    for (; i<S.len; ++i) { S.data[i]=sz[i]; }
 
    if (bare) { i=0;
@@ -2617,7 +2572,7 @@ wbvector<T>& CData<TQ,TD>::getSize(
 
       if (i) wblog(FL,
          "ERR %s() got invalid OM setting (%d/%d)\n%s",
-         FCT,S.len,this->qdir.len, STR_(this)
+         FCT,S.len,this->qdir.len, STR(*this)
       );
    }
 
@@ -2638,29 +2593,29 @@ template <class TQ, class TD>
 SPIDX_T CData<TQ,TD>::dim() const {
 
    if (this->qdir.len!=2) wblog(FL,
-      "ERR %s() got %s (r=%d)",FCT,STR_(this),this->qdir.len);
+      "ERR %s() got %s (r=%d)",FCT,STR(*this),this->qdir.len);
 
    if (cgd.SIZE.len) {
       const SPIDX_T *s=cgd.SIZE.data;
       if (cgd.SIZE.len!=2 || s[0]!=s[1] ||
          (this->t.isAbelian() && s[0]!=1)) wblog(FL,
-         "ERR %s() unexpected scalar %s (%s)",FCT,STR_(this),SSTR(cgd));
+         "ERR %s() unexpected scalar %s (%s)",FCT,STR(*this),SSTR(cgd));
       return s[0];
    }
 
    if (this->t.isAbelian()) {
       if (cgd.D.len) {
          if (cgd.D.len>1) wblog(FL,
-            "ERR %s() got %s (D.len=%d)",FCT,STR_(this),cgd.D.len);
+            "ERR %s() got %s (D.len=%d)",FCT,STR(*this),cgd.D.len);
          else wblog(FL,"WRN %s() "
-            "got %s (D[0]=%.4g)",FCT,STR_(this),double(cgd.D[0])
+            "got %s (D[0]=%.4g)",FCT,STR(*this),double(cgd.D[0])
          );
       }
       return 1;
    }
    else {
       if (!cgd.D.len) wblog(FL,
-         "ERR %s() got %s (empty D)",FCT,STR_(this));
+         "ERR %s() got %s (empty D)",FCT,STR(*this));
       return cgd.D.len;
    }
 };
@@ -2690,13 +2645,15 @@ int CData<TQ,TD>::checkConsistency(const char *F, int L) const {
       }
    }
    if (!e && r && cgd.SIZE.len>r) {
-      if (int(cgd.SIZE[i])>MAX_OM && CG_VERBOSE) { char s[128];
-         snprintf(s,128,"%s => max(OM)=%ld",STR_(this),cgd.SIZE[i]);
+      if (int(cgd.SIZE[i])>CG::MAX_OM && CG_VERBOSE) { char s[128];
+         snprintf(s,128,"%s => max(OM)=%ld",STR(*this),cgd.SIZE[i]);
          if (cgd.SIZE[i]<256)
               { gStore.rclog(this->t, PF_L,CG_VERBOSE>5 && F,"MOM %s",s); }
          else { gStore.rclog(this->t, PF_L,CG_VERBOSE   && F,"WRN %s",s); }
 
-         while (MAX_OM<int(cgd.SIZE[i]) && MAX_OM<9999) { MAX_OM+=16; }
+         while (CG::MAX_OM<int(cgd.SIZE[i]) && CG::MAX_OM<9999) {
+            CG::MAX_OM+=16;
+         }
       }
       if (cgd.SIZE[i]>=9999) e=9999;
    }
@@ -2744,7 +2701,7 @@ int CData<TQ,TD>::checkNormSign(
    }
    if (!m || !cgd.D.len) {
       if (F) wblog(FL,
-         "ERR %s() got empty CData\n%s",FCT,STR_(this));
+         "ERR %s() got empty CData\n%s",FCT,STR(*this));
       return 3;
    }
    if (r==2 && m>1) {
@@ -2754,7 +2711,7 @@ int CData<TQ,TD>::checkNormSign(
    }
    if (CG::signFirstVal(F_L,cgd.D.data, cgd.D.len)<0) {
       if (F) wblog(F_L,"ERR %s() "
-         "got unconventional sign of CData\n%s",FCT,STR_(this));
+         "got unconventional sign of CData\n%s",FCT,STR(*this));
       return 5;
    }
 
@@ -2770,7 +2727,7 @@ int CData<TQ,TD>::checkNormSign(
       RTD cn2=cgd.D.norm2(); if (m>1) { cn2/=m; }
       double e=std::fabs(double(cn2-1));
 
-      if (e>1E-12) {
+      if (e>1e-12) {
          if (F) wblog(F_L,"ERR %s() "
             "got |cgc|^2 = %g (r=%d; OM=%d)",FCT,double(cn2),r,m);
          return 11;
@@ -2797,7 +2754,7 @@ int CData<TQ,TD>::checkNormSign(
             return 23;
          }
       }
-      if (e>1E-12) {
+      if (e>1e-12) {
          if (F) wblog(FL,"ERR %s() got "
             "unexpected normalization %g (@ %g)",FCT,double(cn2),e);
          return 24;
@@ -2806,7 +2763,7 @@ int CData<TQ,TD>::checkNormSign(
    else {
       cdata__ E;
       ctrIdx ia; ia.Index(r); 
-      cgd.cgsparray::contract(F_L,ia,cgd,ia, E);
+      cgd.SPARR_RTD::contract(F_L,ia,cgd,ia, E);
       if (!E.isIdentityMatrix()) { if (F) {
          MXPut(F_L,"Ix").add(cgd,"cgd").add(E,"E");
          wblog(F_L,"ERR %s() CRef got non-orthonormal CData",FCT); }
@@ -2826,7 +2783,7 @@ int CData<TQ,TD>::checkQ(
       if (F || istr) wblog(F_L,
          "ERR %s() CRef inconsistency %s %s\n(%s <> %s)",
          FCT, istr? "in":"", istr? istr : "",
-         STR_(this), STR(Q)
+         STR(*this), STR(Q)
       );
       return 1;
    }
@@ -2923,19 +2880,19 @@ int CData<TQ,TD>::completeOM_DegQ(
    unsigned level 
 ) {
 
-   unsigned dm=0, m=1, r=this->qdir.len; double e;
+   unsigned dM=0, m=1, r=this->qdir.len; double e;
 
 #ifdef QS_USING_OMP
    CG::Guard qLK, qLX;
    if (gotuser_BUF()) {
       qLK.acquire(FL,*this,"buf");
-      qLX.acquire(FL,*this,NULL,"?");
+      qLX.acquire(FL,*this,nullptr,"?");
    }
 #endif
 
    if (p.len!=r || p.isIdentityPerm()) wblog(FL,"ERR %s() %s %s p=%s",
-      FCT,STR_(this), p.len!=r? "invalid":"trivial", STR(p));
-   if (!cgd) { return dm; }
+      FCT,STR(*this), p.len!=r? "invalid":"trivial", STR(p));
+   if (!cgd) { return dM; }
 
    cdata<TD> x3;
    ctrIdx ica(p,'*'); ctrIdx icb; icb.Index(r);
@@ -2956,7 +2913,7 @@ int CData<TQ,TD>::completeOM_DegQ(
    if (m<=1) {
       TD x2=x3.norm2(); e=Wb::abs(double(x2-m));
       if (e<CG_SKIP_EPS1) {
-         return dm;
+         return dM;
       }
 
       cdata<TD> a(cgd); a.Permute(p);
@@ -2965,21 +2922,21 @@ int CData<TQ,TD>::completeOM_DegQ(
 
          a.Plus(FL,cgd,-x3.D[0]); 
 
-         if (Wb::abs(e=double(a.NormSignC(FL)))<1E-8) wblog(FL,
+         if (Wb::abs(e=double(a.NormSignC(FL)))<1e-8) wblog(FL,
            "ERR %s() got small OM weight (cfac=%g)",FCT,e);
       }
 
       this->AddMultiplicity(FL,a); 
-      this->cstat.t=CGD_FROM_DEC; ++dm;
+      this->cstat.init_type_(CD_FROM_DEC); ++dM;
    }
    else { 
-      cdata<TD> a,b,E; wbvector<TD> x; TD n2;
-      char update=1;
+      unsigned k=0; char gotnew=1; TD n2;
+      cdata<TD> a,b,E; wbvector<TD> x;
 
       if (r<3) wblog(FL,"ERR %s() got r=%d",FCT,r);
 
-      for (unsigned k=0; k<m; ++k) {
-         if (update) { if (k) {
+      for (; k<m; ++k) {
+         if (gotnew) { if (k) {
             cgd.wbsparray<TD>::contract(FL,ica,cgd,icb,x3); }
             x3.wbsparray<TD>::contract(FL,"2",x3,"2*",E);
             if (E.isIdentityMatrix(CG_SKIP_EPS1)) {
@@ -2988,8 +2945,8 @@ int CData<TQ,TD>::completeOM_DegQ(
          }
          n2=E.getDiag(FL,k);
 
-         if ((e=Wb::abs(double(n2-1)))<CG_SKIP_EPS1) { update=0; continue; }
-         if (e<1E-8) wblog(FL,"ERR %s() e=%g",FCT,e);
+         if ((e=Wb::abs(double(n2-1)))<CG_SKIP_EPS1) { gotnew=0; continue; }
+         if (e<1e-8) wblog(FL,"ERR %s() e=%g",FCT,e);
 
          getMultiplicity(k,a).Permute(p);
          x3.getRow(k,x);
@@ -2997,27 +2954,27 @@ int CData<TQ,TD>::completeOM_DegQ(
          cgd.wbsparray<TD>::contract(FL,r,x, b); 
          a-=b;
 
-         if (Wb::abs(e=double(a.NormSignC(FL)))<1E-8) {
+         if (Wb::abs(e=double(a.NormSignC(FL)))<1e-8) {
             MXPut(FL,"Idb").add(x3,"x3").add(k,"k").add(x,"x")
             .add(E,"E").add(*this,"C").add(n2,"n2").add(k,"k").add(e,"e");
             wblog(FL,"ERR %s() got small OM weight (cfac=%g)",FCT,e);
          }
-         update=1; ++dm;
+         gotnew=1; ++dM;
 
          this->AddMultiplicity(FL,a); 
-         this->cstat.t=CGD_FROM_DEC;
+         this->cstat.init_type_(CD_FROM_DEC);
       }
    }
 
-   if (dm) {
-      dm+=completeOM_DegQ(F,L,p,level+1); 
+   if (dM) {
+      dM+=completeOM_DegQ(F,L,p,level+1); 
    }
 
    if (!level) {
-      if (dm && gotuser_BUF()) { gStore.save_CData(FL,*this); }
+      if (dM && gotuser_BUF()) { gStore.save_CData(FL,*this); }
    }
 
-   return dm;
+   return dM;
 };
 
 template <class TQ, class TD>
@@ -3029,15 +2986,14 @@ CData<TQ,TD>& CData<TQ,TD>::Project(const char *F, int L,
    char bflag=gotuser_BUF();
 
    if (this->t.isAbelian()) wblog(FL,
-      "WRN %s() got Abelian CData %s",FCT,STR_(this));
+      "WRN %s() got Abelian CData %s",FCT,STR(*this));
 
    if (!bflag) wblog(FL,"WRN %s() got non-BUF object",FCT);
 
    if (cgd.isEmpty()) {
-
       x=c.NormSignC(F,L); 
 
-      if ((e=fabs(double(x)))<1E-3) {
+      if ((e=fabs(double(x)))<1e-3) {
          MXPut(FL,"a").add(c,"c").add(double(x),"x");
          wblog(FL,"WRN %s() got small new coefficient (%.3g)",FCT,e);
       }
@@ -3050,7 +3006,7 @@ CData<TQ,TD>& CData<TQ,TD>::Project(const char *F, int L,
       if (bflag) {
          gStore.rclog(this->t, PFL,
             (CG_VERBOSE>8 || (CG_VERBOSE>6 && rank(FL)<4)) && F,
-            "[+] CBUF[%d] new %s",gCS.BUF.size(),STR_(this));
+            "[+] CBUF[%d] new %s",gCS.BUF.size(),STR(*this));
          gStore.save_CData(FL,*this); 
       }
       return *this;
@@ -3061,13 +3017,13 @@ CData<TQ,TD>& CData<TQ,TD>::Project(const char *F, int L,
 
    if (r<=2) { w.init(1);
       if (!r || (r==1 && this->qs.norm2())) wblog(FL, 
-         "ERR %s() got CData %s",FCT,STR_(this));
+         "ERR %s() got CData %s",FCT,STR(*this));
       if (m!=1 || c.sameUptoFac(cgd, w.data)!=0) wblog(FL,
-         "ERR %s() invalid scalar CData\n%s",FCT,STR_(this));
+         "ERR %s() invalid scalar CData\n%s",FCT,STR(*this));
       return *this;
    }
 
-   if (r<2) wblog(FL,"ERR %s() invalid CData %s",FCT,STR_(this));
+   if (r<2) wblog(FL,"ERR %s() invalid CData %s",FCT,STR(*this));
    if (c.SIZE.len!=r) wblog(FL,
       "ERR %s() got OM in input CData (%d/%d)",FCT,c.SIZE.len,r);
 
@@ -3086,11 +3042,11 @@ CData<TQ,TD>& CData<TQ,TD>::Project(const char *F, int L,
 
       for (unsigned it=0; it<2; ++it) {
 
-         c.cgsparray::contract(F_L,ia,cgd,ia, X);
+         c.SPARR_RTD::contract(F_L,ia,cgd,ia, X);
          if (!X.isVector()) wblog(FL,
             "ERR %s() got rank-%d object (%s)",FCT,X.sizeStr().data);
 
-         cgd.cgsparray::contract(F_L,im,X,i1,c,wbperm(),-1,1);
+         cgd.SPARR_RTD::contract(F_L,im,X,i1,c,wbperm(),-1,1);
 
          if (it==0) { w.init(X);
             e=double(c.norm()); if (e<CG_SKIP_EPS2) { break; }
@@ -3099,7 +3055,7 @@ CData<TQ,TD>& CData<TQ,TD>::Project(const char *F, int L,
    }
    else {
       for (unsigned it=0; it<2; ++it) {
-         x=c.cgsparray::dotProd(F_L,cgd);
+         x=c.SPARR_RTD::dotProd(F_L,cgd);
 
          c.Plus(FL,cgd,-x);
          if (it==0) { w.init(1,&x);
@@ -3108,10 +3064,10 @@ CData<TQ,TD>& CData<TQ,TD>::Project(const char *F, int L,
       }
    }
 
-   if (e<1E-8) {
+   if (e<1e-8) {
       if (e>CG_SKIP_EPS2) { char estr[64];
          snprintf(estr,64,"CGC ortho @ %.3g / %.3g",e,CG_SKIP_EPS2);
-         if (e>1E-16) wblog(FL,"ERR %s() %s",FCT,estr);
+         if (e>1e-16) wblog(FL,"ERR %s() %s",FCT,estr);
          else wblog(FL,"WRN %s() %s\nw=[%s]",FCT,estr,STR(w));
       }
       return *this;
@@ -3119,28 +3075,28 @@ CData<TQ,TD>& CData<TQ,TD>::Project(const char *F, int L,
 
    x=c.NormSignC(F,L); 
 
-   if ((e=fabs(double(x)))<1E-3) wblog(FL,
+   if ((e=fabs(double(x)))<1e-3) wblog(FL,
       "WRN %s() got small new coefficient (%.3g)",FCT,e);
    w.Append(x);
 
    if (largeD) { Wb::MemStat(FL); } 
 
    AddMultiplicity(FL,c); 
-   cstat.t=CGD_FROM_DEC;
+   cstat.set(CD_FROM_DEC); 
 
    checkConsistency(FL);
 
    if (r==2) { 
       if (!cgd.isProptoId()) wblog(FL,"ERR %s() "
-         "got non-scalar rank-%d CGC (%s)",FCT,r,SSTR_(this));
+         "got non-scalar rank-%d CGC (%s)",FCT,r,SSTR(*this));
       else wblog(FL,"ok. %s() got scalar rank-%d CGC\n"
-         "%s @ %s",FCT, r, SSTR_(this), STR_(this)
+         "%s @ %s",FCT, r, SSTR(*this), STR(*this)
       );
    }
 
    if (bflag) {
       gStore.rclog(this->t, PFL, CG_VERBOSE>6,
-       "[u] CBUF[%d] project #%05x %s",gCS.BUF.size(),cstat.ID,STR_(this));
+       "[u] CBUF[%d] project #%05X %s",gCS.BUF.size(),cstat.cID,STR(*this));
       gStore.save_CData(FL,*this); 
    }
 
@@ -3178,12 +3134,100 @@ double CData<TQ,TD>::norm2(unsigned k) const {
 
    if (m<2) { return double(cgd.D.norm2()); }
    else {
-      RTD x2=0; const size_t *i4=cgd.IDX.data+3;
-      for (SPIDX_T i=0; i<cgd.D.len; ++i, i4+=cgd.IDX.dim2) {
-          if ((*i4)==k) x2+=(Wb::CONJ(cgd.D[i])*cgd.D[i]);
-      }
+      TD x2=0;
+      unsigned r=this->qdir.len;
+      const size_t *i4=cgd.IDX.data+r;
+
+      if (cgd.IDX.dim2!=(++r)) wblog(FL,
+         "ERR %s() unexpected OM setting (%d =? %d+1)",FCT,cgd.IDX.dim2,r-1);
+
+      for (SPIDX_T i=0; i<cgd.D.len; ++i, i4+=r) { if ((*i4)==k) {
+          x2+=Wb::norm2(cgd.D[i]);
+      }}
       return double(x2);
    }
+};
+
+template <class TQ, class TD>
+wbvector<TD>& CData<TQ,TD>::norm2(
+    wbvector<TD> &x2, wbvector<char> *sgn) const {
+
+   unsigned m=numOM(FL); if (m<1) { m=1; }
+
+   x2.init(m); if (sgn) { sgn->init(m); }
+
+   if (m==1) {
+      if (!sgn) { x2[0]=this->cgd.D.norm2(); }
+      else {
+         SPIDX_T i=0, N=cgd.D.len;
+         for (; i<N; ++i) {
+            if (fabs(double(cgd.D[i]))>CG_EPS1) { break; }
+            x2[0]+=Wb::norm2(cgd.D[i]);
+         }
+         sgn[0]=(i<N && cgd.D[i]<0? -1:+1);
+         for (; i<N; ++i) { 
+            x2[0]+=Wb::norm2(cgd.D[i]);
+         }
+      }
+   }
+   else {
+      SPIDX_T i=0, N=cgd.D.len;
+      unsigned r=this->qdir.len;
+      const size_t *i4=cgd.IDX.data+r;
+
+      if (cgd.IDX.dim2!=(++r)) wblog(FL,
+         "ERR %s() unexpected OM setting (%d =? %d+1)",FCT,cgd.IDX.dim2,r-1);
+
+      if (!sgn) {
+         for (; i<N; ++i, i4+=r) {
+            x2[*i4]+=Wb::norm2(cgd.D[i]);
+         }
+      }
+      else {
+         char *s=sgn->data;
+         for (; i<N; ++i, i4+=r) {
+            x2[*i4]+=Wb::norm2(cgd.D[i]);
+            if (!s[*i4] && fabs(double(cgd.D[i]))>CG_EPS1) {
+               s[*i4]=(cgd.D[i]<0? -1:+1);
+            }
+         }
+         for (i=0; i<m; ++i) { if (!s[i]) { s[i]=+1; }}
+      }
+   }
+   return x2;
+};
+
+template <class TQ, class TD>
+CData<TQ,TD>& CData<TQ,TD>::NormSignC(wbvector<TD> &nrm) {
+
+   double xi; SPIDX_T i=0;
+   wbvector<TD> x2;
+   wbvector<char> sgn;
+   norm2(x2,&sgn); nrm.init(x2.len);
+
+   for (; i<x2.len; ++i) {
+      if ((xi=fabs(double(x2[i])))<1e-8) {
+         if (x2.len>1)
+              wblog(FL,"WRN %s() got small |C(:,%d/%d)|=%.3g",FCT,i,x2.len,xi);
+         else wblog(FL,"WRN %s() got small |C|=%.3g",FCT,xi);
+      }
+      nrm[i]=Wb::sqrt(TD(1)/x2[i]);
+      if (sgn[i]<0) { nrm[i]=-nrm[i]; }
+   }
+
+   if (nrm.len<=1) { cgd.D*=nrm[0]; }
+   else {
+      unsigned r=this->qdir.len;
+      const size_t *i4=cgd.IDX.data+r, N=cgd.D.len;
+
+      if (cgd.IDX.dim2!=(++r)) wblog(FL,
+         "ERR %s() unexpected OM setting (%d =? %d+1)",FCT,cgd.IDX.dim2,r-1);
+
+      for (i=0; i<N; ++i, i4+=r) {
+         cgd.D[i]*=nrm[*i4];
+      }
+   }
+   return *this;
 };
 
 template <class TQ, class TD>
@@ -3243,7 +3287,7 @@ int CData<TQ,TD>::sameSizeR(
       return 0;
    }
 
-   unsigned i=0, ra=this->rank(FL), m=gotOM(FL), m2=1;
+   unsigned i=0, ra=this->rank(FL), m=numOM(FL), m2=1;
    const SPIDX_T *sa=this->cgd.SIZE.data;
 
    if (S.len==ra+1) { m2=S[ra]; } else
@@ -3261,7 +3305,7 @@ int CData<TQ,TD>::sameSizeR(
    else { 
       SPIDX_T s=cgd.dim();
       if (ra!=2) wblog(FL,
-         "ERR %s() invalid CData\n%s",FCT,STR_(this));
+         "ERR %s() invalid CData\n%s",FCT,STR(*this));
       for (; i<ra; ++i) { if (S.data[i]!=s) { return 0; }}
    }
 
@@ -3283,8 +3327,7 @@ bool CData<TQ,TD>::sameSizeR(
    if (ra!=rb || ra<2) {
       if (F) wblog(F_L,
          "ERR %s() invalid input CG sets (%s: %s <> %s; %d/%d)",
-          FCT, this->qStr().data,
-          this->cgd.sizeStr().data, b.sizeStr().data, ra, rb);
+         FCT, this->qStr().data, SSTR(this->cgd), SSTR(b), ra, rb);
       return 0;
    }
 
@@ -3330,14 +3373,14 @@ CData<TQ,TD>& CData<TQ,TD>::AddMultiplicity(
    c.checkSize(F_LF,"C");
 
    if (!sameSizeR(c,&r)) wblog(F_L,
-      "ERR %s() got incompatible CData\n%s: %s <> %s",FCT,
-      STR_(this), a.sizeStr().data, c.sizeStr().data);
+      "ERR %s() got incompatible CData\n%s: %s <> %s",
+      FCT, STR(*this), SSTR(a), SSTR(c));
    if (r<3) wblog(FL,"ERR %s() unexpected rank-%d CData",FCT,r);
 
    wbvector<SPIDX_T> s(r+1);
 
-   for (i=0; i<a.SIZE.len; ++i) s[i]=a.SIZE[i];
-   for (; i<s.len; ++i) s[i]=1;
+   for (i=0; i<a.SIZE.len; ++i) { s[i]=a.SIZE[i]; }
+   for (   ; i<s.len;      ++i) { s[i]=1; }
    m=(s[r]++); 
 
    X.init(s, a.IDX.dim1 + c.IDX.dim1);
@@ -3361,7 +3404,7 @@ CData<TQ,TD>& CData<TQ,TD>::AddMultiplicity(
         MXPut(FL,"a").add(*this,"A")
         .add(c,"c").add(X,"X").add(E,"E").add(icm,"ic");
         wblog(FL,"ERR %s() got non-orthonormal OM space\n%s\n%s",
-        FCT,STR_(this),STR2(cstat,'V'));
+        FCT,STR(*this),STR2(cstat,'V'));
      }
    }
 #endif
@@ -3370,7 +3413,7 @@ CData<TQ,TD>& CData<TQ,TD>::AddMultiplicity(
    cstat.update_m(); 
 
    gStore.rclog(this->t, PFL, CG_VERBOSE>6, 
-   " +  %s() #%05x %s",FCT,cstat.ID,STR_(this));
+   " +  %s() #%05X %s",FCT,cstat.cID,STR(*this));
 
    return *this;
 };
@@ -3378,7 +3421,7 @@ CData<TQ,TD>& CData<TQ,TD>::AddMultiplicity(
 template <class TQ, class TD> 
 cdata<TD>& CData<TQ,TD>::getMultiplicity(unsigned im, cdata<TD> &c) const {
 
-   unsigned m=gotOM(FL), r=rank(FL);
+   unsigned m=numOM(FL), r=rank(FL);
 
    if (im && im>=m) wblog(FL,
       "ERR %s() OM index out of bounds (%d/%d)",FCT,im,m);
@@ -3395,7 +3438,7 @@ cdata<TD>& CData<TQ,TD>::getMultiplicity(unsigned im, cdata<TD> &c) const {
 
    if (!c.D) wblog(FL,
       "ERR %s() got empty OM component l=%d/%d\n%s -> S=%s",
-      FCT,im,m,STR_(this),SSTR(cgd));
+      FCT,im,m,STR(*this),SSTR(cgd));
    return c;
 };
 
@@ -3416,13 +3459,13 @@ CData<TQ,TD>& CData<TQ,TD>::save2(CData<TQ,TD> &B) {
    else {
       if ((QSet<TQ>&)B != *this) wblog(FL,
          "ERR %s() got change in BUF data\n%s -> %s",
-         FCT,STR(B),STR_(this)
+         FCT,STR(B),STR(*this)
       );
 
       if (this->t.isAbelian()) { 
          if (cgd!=B.cgd) wblog(FL,
             "ERR %s() BUF change in abelian cdata %s\n%s -> %s",
-            FCT, STR_(this), SSTR(B.cgd), SSTR(cgd));
+            FCT, STR(*this), SSTR(B.cgd), SSTR(cgd));
          cflag=-1; 
       }
    }
@@ -3433,7 +3476,7 @@ CData<TQ,TD>& CData<TQ,TD>::save2(CData<TQ,TD> &B) {
 
       if (!r || q<-1) { wblog(FL,
          "ERR %s() BUF unexpected CData (r=%d, q=%d)\n%s / %s",
-         FCT,r,q, STR_(this), SSTR(cgd));
+         FCT,r,q, STR(*this), SSTR(cgd));
       }
       if (q<0) { wblog(FL,
          "ERR %s() BUF reduces rank/OM (q=%d, r=%d)\n%s -> %s",
@@ -3445,7 +3488,7 @@ CData<TQ,TD>& CData<TQ,TD>::save2(CData<TQ,TD> &B) {
          cgd.IDX.swap(B.cgd.IDX);
          cgd.D  .swap(B.cgd.D);
 
-         cflag=(cstat!=CGD_REF_INIT && B.cstat.t!=CGD_REF_INIT);
+         cflag=(cstat!=CD_REF_INIT && B.cstat!=CD_REF_INIT);
       }
       else if (cgd.isDiag()) { cgd.diag2reg(); 
          if (cgd.SIZE!=B.cgd.SIZE) { wblog(FL,
@@ -3465,7 +3508,7 @@ CData<TQ,TD>& CData<TQ,TD>::save2(CData<TQ,TD> &B) {
       ctrIdx ic; ic.Index(r);
       cdata<TD> X,E; TD x;
 
-      B.cgd.cgsparray::contract(FL,ic,cgd,ic,X);
+      B.cgd.SPARR_RTD::contract(FL,ic,cgd,ic,X);
 
       if (X.SIZE.len==2) { unsigned m=X.SIZE[1];
          if (!m || m>X.SIZE[0]) wblog(FL,"ERR %s() "
@@ -3483,12 +3526,25 @@ CData<TQ,TD>& CData<TQ,TD>::save2(CData<TQ,TD> &B) {
             "ERR %s() X=%s (n=%d)",FCT,SSTR(X),X.D.len);
          e=Wb::abs(double(X.D[0]-1)); 
       }
-      if (e>1E-20) wblog(FL,
+      if (e>1e-20) wblog(FL,
          "ERR %s() got CG difference @ %.3g",FCT,sqrt(e));
    }
 
    this->init();  
    return B;
+};
+
+template <class TQ, class TD>
+void CData<TQ,TD>::swap(CData<TQ,TD> &B) {
+
+   if (&B!=this) {
+      this->t   .swap(B.t   );
+      this->qs  .swap(B.qs  );
+      this->qdir.swap(B.qdir);
+
+      cgd  .swap(B.cgd  ); 
+      cstat.swap(B.cstat); 
+   }
 };
 
 template <class TQ, class TD>
@@ -3507,13 +3563,13 @@ template <class TQ, class TD>
 bool CData<TQ,TD>::isScalar(char dflag) const {
 
    if (!cgd.SIZE.len) {
-      if (cgd.D.len==1 || (!cgd.D.len && CGD_ABELIAN)) return 1;
+      if (cgd.D.len==1 || (!cgd.D.len && CD_ABELIAN)) return 1;
    }
    else if (cgd.isScalar()) { return 1; }
 
    if (cgd.D.len<1) {
       if (!isRefInit()) wblog(FL,
-         "WRN %s() got empty CRef data\n%s",FCT,STR_(this));
+         "WRN %s() got empty CRef data\n%s",FCT,STR(*this));
       return 0;  
    }
 
@@ -3522,11 +3578,11 @@ bool CData<TQ,TD>::isScalar(char dflag) const {
    if (dflag) { double x;
       if (isRefInit()) { 
          if (cgd.D.len!=1) wblog(FL,
-        "ERR %s() invalid CRef data\n%s",FCT,STR_(this));
+        "ERR %s() invalid CRef data\n%s",FCT,STR(*this));
       }
       else { RTD q; if (!cgd.isProptoId(q,CG_EPS1))
          wblog(FL,"ERR %s() got invalid scalar CData\n%s\ncdata: %s [%d]",
-         FCT, STR_(this), cgd.info2Str().data, cgd.isDiag(FL));
+         FCT, STR(*this), cgd.info2Str().data, cgd.isDiag(FL));
       }
       if (fabs(x=double(cgd.D[0]))<CG_EPS1) wblog(FL,
          "WRN %s() got small scalar CData (%.4g)",FCT,x);
@@ -3630,9 +3686,9 @@ int CData<TQ,TD>::getCG_set(
       FCT,IDX.dim1,IDX.dim2,D.len,S2.len);
 
    widx_t
-      i1=Wb::findfirst_sorted(NULL,0,
+      i1=Wb::findfirst_sorted(nullptr,0,
          Idx.data, IDX.data+r, rm, IDX.dim1,IDX.dim2,-1),
-      i2=Wb::findlast_sorted(NULL,0,
+      i2=Wb::findlast_sorted(nullptr,0,
          Idx.data, IDX.data+r, rm, IDX.dim1,IDX.dim2,-1),
       i=0, l=i2-i1+1;
 
@@ -3653,53 +3709,52 @@ int CData<TQ,TD>::getCG_set(
 };
 
 template <class TQ, class TD>
-CData<TQ,TD>& CData<TQ,TD>::reduceto1JSymbol(
+CData<TQ,TD>& CData<TQ,TD>::reduceTo1J(
    const char *F, int L, CData<TQ,TD> &C) const {
 
    unsigned i=0, m=this->qs.len/3, l=2*m;
    const cdata__ &c=this->cgd;
 
-   if (!this->isStd3()) wblog(F_L,"ERR %s() "
-      "got invalid CData %s",FCT, ((QSet<TQ>*)this)->toStr().data);
-   if (c.SIZE.len!=3 || c.SIZE[2]!=1) wblog(FL,"ERR %s() "
-      "incompatible cgdata (%s)",FCT, c.sizeStr().data);
-   if (c.IDX.dim2!=3) wblog(FL,"ERR %s() invalid cgdata (%s; %s)",
-      FCT, c.IDX.sizeStr().data, c.sizeStr().data);
-   for (; i<m; ++i) { if (this->qs.data[l+i]) {
-      wblog(FL,"ERR %s() incompatible CData\n%s",
-      FCT, ((QSet<TQ>*)this)->toStr().data); }
-   }
+   if (!this->isStd3()) wblog(F_L,
+      "ERR %s() got invalid CData %s",FCT, SSTR_((QSet<TQ>*)this));
+   if (c.SIZE.len!=3 || c.SIZE[2]!=1) wblog(FL,
+      "ERR %s() incompatible cgdata (%s)",FCT,SSTR(c));
+   if (c.IDX.dim2!=3) wblog(FL,
+      "ERR %s() invalid cgdata (%s; %s)",FCT,SSTR(c.IDX),SSTR(c));
+   for (; i<m; ++i) { if (this->qs.data[l+i]) wblog(FL,
+      "ERR %s() incompatible CData\n%s",FCT,STR_((QSet<TQ>*)this)); }
 
-   C=(const QSet<TQ>&)(*this); {
-      C.cstat.init(CGD_1JSY_ST3);
+   C=(const QSet<TQ>&)(*this);
+
       C.qs.len=l;
       C.qdir.len=2;
+      C.cstat_init_(CD_1JSY_ST3).setComplete(3);
       cgd.skipTrailingSingletons(FL,C.cgd,2);
-   }
+
    return C;
 };
 
 template <class TQ, class TD>
-CData<TQ,TD>& CData<TQ,TD>::Conj(unsigned k) {
+CData<TQ,TD>& CData<TQ,TD>::Conj(unsigned k) { 
 
    unsigned m=this->t.qlen(); ctrIdx ia,ib;
    cdata<TD> c;
 
    if (this->qdir.len*m!=this->qs.len) wblog(FL,"ERR %s "
-      "having %d*%d =? %d",FCT,STR_(this),this->qdir.len,m,this->qs.len);
+      "having %d*%d =? %d",FCT,STR(*this),this->qdir.len,m,this->qs.len);
    if (k>=this->qdir.len) wblog(FL,
       "ERR %s() index out of bounds (%d/%d)",FCT,k,this->qdir.len);
 
    wbperm P;
    CRef<TQ> R;
-   gCS.getIdentity1J(FL,R,this->t,this->qs.data+k*m,-1,LB_GEN); 
+   gCS.getIdentity1J(FL,R,this->t,this->qs.data+k*m,-1,LB_CALC__); 
 
    ia.init1(k);
    ib.init1(R.cgp.isEmpty() ? 0 : 1, this->qdir[k]>0 ? '*' : 0);
 
-   cgd.contract(FL,ia,R.cgb->cgd,ib,c,NULL,NULL,0);  
+   cgd.contract(FL,ia,R.cgb->cgd,ib,c,nullptr,nullptr,0);  
    { double e=R.cgw[0]; unsigned d=R.cgb->cgd.dim(); e=fabs(e*e-d);
-     if (e>1E-12) wblog(FL,
+     if (e>1e-12) wblog(FL,
         "ERR %s() unexpected cgw^2 = %g / %d @ %.3g",FCT,R.cgw[0],d,e);
      c*=Wb::sqrt(RTD(d));
    }
@@ -3708,6 +3763,7 @@ CData<TQ,TD>& CData<TQ,TD>::Conj(unsigned k) {
    c.permute(this->cgd,P); 
 
    QSet<TQ>::Conj(k);
+
    return *this;
 };
 
@@ -3717,18 +3773,22 @@ int CData<TQ,TD>::gotDiff(const CData &B, char lflag) const {
    if (lflag<=0) { return ((*this)==B ? 0 : 1); }
    if (this->t!=B.t || this->qs!=B.qs || this->qdir!=B.qdir) { return 2; }
 
-   if (lflag>2) {
+   if (lflag>4) {
       if (lflag=='l') lflag=1; else 
       if (lflag=='L') lflag=2; else
       wblog(FL,"WRN %s() unexpected lflag=%d",FCT,lflag);
    }
 
-   if (lflag<2) { int got=0;
-      if (!((cstat==CGD_REF_INIT) ^ (B.cstat.t==CGD_REF_INIT))) {
-         if (!checkOM(FL)) { if (cgd!=B.cgd) { got|=4; }}
-         if (cstat.t!=B.cstat.t) { got|=8; }
+   if (lflag==4) {
+      return (cgd==B.cgd? 0 : 4); 
+   }
+
+   if (lflag<2) { int q=0;
+      if (!((cstat==CD_REF_INIT) ^ (B.cstat==CD_REF_INIT))) {
+         if (!checkOM(FL)) { if (cgd!=B.cgd) { q|=4; }}
+         if (cstat.ctype!=B.cstat.ctype) { q|=8; }
       }
-      if (got) return got;
+      if (q) { return q; }
    }
 
    return (cstat.sameAs(B.cstat,2) ? 0 : 16); 
@@ -3758,80 +3818,53 @@ void CData<TQ,TD>::info(const char *istr, const char *F, int L) const {
 template <class TQ, class TD>
 wbstring CData<TQ,TD>::toStr(char vflag) const { 
 
-   wbstring s_; 
-   if (isEmpty()) { return (s_="(empty)"); }
+   unsigned r=this->qdir.len, m, ise=isEmpty();
+   wbvec<char> sout((vflag? 96:64) + r*(this->t.qlen()+4)); 
 
-   s_.init(128);
-   unsigned n=s_.len-1; char *s=s_.data;
+   if (vflag>3) { 
+      if (vflag=='v') { vflag=1; } else
+      if (vflag=='V') { vflag=2; } else {
+      wblog(FL,"WRN %s() got vflag=%s",FCT,cSTR(vflag)); vflag=2; }
+   }
 
-   unsigned l=0, m=1; 
-   m=cgd.SIZE.prod(this->qdir.len, -1, 1); 
-
-   if (cstat.t>=CGD_NUM_TYPES) wblog(FL,"ERR %s() "
-      "ctype out of range (%d/%d)",FCT,cstat.t,CGD_NUM_TYPES
-   );
-
-   l=snprintf(s,n,"%s",STR_((const QSet<TQ>*)this));
-   if (!vflag) { if (m>1 && l<n) l+=snprintf(s+l,n-l," @ %d",m); }
+   if (ise) { sout.catf(0,0,"(empty)"); }
    else {
-      if (cstat.t!=CGD_UNKNOWN && l<n) l+=snprintf(s+l,n-l,
-         " %s",CGD_TYPE_STR[cstat.t]);
-      if (l<n) 
-         l+=snprintf(s+l,n-l,"%s",cstat.u2Str(" ").data);
+      sout.catf(0,0,"%s",STR_((const QSet<TQ>*)this));
+
+      m=cgd.SIZE.prod(r,-1,0); 
+      if (m) { sout.catf(0,0,"_%d",m); } 
    }
 
-   if (vflag&4 && l<n) {
-      for (; l<32; ++l) { s[l]=' '; } 
-      l+=snprintf(s+l,n-l," %s",SSTR(cgd));
+   if (vflag) { if (cstat!=CD_UNKNOWN) {
+      sout.catf(0,0," %s",cstat.tstr().data); }
+      sout.catf(0,0,"%s",cstat.u2Str(" ").data);
    }
 
-   if (l>=n) wblog(FL,
-      "ERR %s() string out of bounds (%d/%d)",FCT,l,n);
-   return s_;
+   if (!ise && vflag&2) {
+      sout.pad(' ',32); 
+      sout.catf(0,0," %s",cgd.sizeStr(r,"_").data);
+   }
+
+   sout.check_bounds(FL,0); 
+   return sout.data;
 };
 
 template <class TQ, class TD>
-wbstring CData<TQ,TD>::sizeStr(char xflag) const {
+wbstring CData<TQ,TD>::sizeStr() const {
 
    unsigned r=rank(FL);
 
-   if (!r) {
+   if (r) { return cgd.sizeStr(r,"_"); } 
+   else {
       if (cgd.SIZE.len) wblog(FL,
          "ERR %s() got r=%d/%d",FCT,r,cgd.SIZE.len);
       return "(empty)";
    }
-
-   unsigned l=0, n=128; char s[n];
-
-   if (xflag && r>2) { 
-      if (cgd.SIZE.len==r+1) {
-         l+=snprintf(s+l,n-l,"%s", cgd.sizeStr().data);
-      }
-      else if (cgd.SIZE.len==r) {
-         wbvector<SPIDX_T> s1(1); s1[0]=1; 
-         wbvector<SPIDX_T> S(cgd.SIZE,s1);
-         l+=snprintf(s+l,n-l,"%s", SSTR(S));
-      }
-      else wblog(FL,"ERR %s() invalid rank %d/%d",FCT,cgd.SIZE.len,r);
-   }
-   else {
-      if (cgd.SIZE.len!=r+1) {
-         l+=snprintf(s+l,n-l,"%s", cgd.sizeStr().data);
-      }
-      else {
-         wbvector<SPIDX_T> S(cgd.SIZE); --S.len;
-         l+=snprintf(s+l,n-l,"%s",SSTR(S)); if (l<n) {
-         l+=snprintf(s+l,n-l," @%ld", cgd.SIZE[r]); }
-      }
-   }
-   if (l>=n) wblog(FL,
-      "ERR %s() string out of bounds (%d/%d)",FCT,l,n);
-   return s;
 };
 
 template <class TQ> inline
 CRef<TQ>& CRef<TQ>::initBase(
-   const CDATA_TQ* cgr_, unsigned m,
+   const CDATA_TQ* cgr_, unsigned m, 
    const CDATA_TQ* x 
 ) {
 
@@ -3845,10 +3878,10 @@ CRef<TQ>& CRef<TQ>::initBase(
    if (x && x->t.isNonAbelian()) {
       cgb=(CDATA_TQ*)cgr_; 
 
-      if (int(m)<0) { m=cgb->getOM(FL); } else {
+      if (int(m)<0) { m=cgb->getOM(FL); } else
       if (!cgb->isEmpty() && m>(cgb->getOM(FL))) wblog(FL,"ERR %s() "
          "OM out of bounds (%d/%d) %s",FCT,m,cgb->getOM(FL),STR_(cgb));
-      }
+
       cgw.initIdentity(m);
    }
    else {
@@ -3857,7 +3890,7 @@ CRef<TQ>& CRef<TQ>::initBase(
       cgw.init();
    }
 
-   cgp.init(); conj=0; rtype=0;
+   cgp.init(); rtype=0;
 
    return *this;
 };
@@ -3890,10 +3923,10 @@ CRef<TQ>& CRef<TQ>::initIdentityR(
    unsigned dim, 
    char xflag    
 ){
-   char isa=t.isAbelian(); cgp.init(); conj=0;
+   char isa=t.isAbelian(); cgp.init();
 
    if (isa && !xflag) {
-      cgw.init(); cgb=NULL; rtype=CGR_ABELIAN;
+      cgw.init(); cgb=NULL; rtype=CR_ABELIAN;
    }
    else {
       cgb=&gCS.getIdentityC(F_L,t,qs,dim);
@@ -3917,10 +3950,10 @@ CRef<TQ>& CRef<TQ>::initIdentity1J(
    const char *F, int L, const QType &t, const TQ *qs, unsigned dim,
    char xflag
 ){
-   cgp.init(); conj=0;
+   cgp.init();
 
    if (t.isAbelian() && !xflag)
-        { cgw.init(); cgb=NULL; rtype=CGR_ABELIAN; }
+        { cgw.init(); cgb=NULL; rtype=CR_ABELIAN; }
    else { gCS.getIdentity1J(F_L,*this,t,qs,dim); }
 
    return *this;
@@ -3931,7 +3964,7 @@ CRef<TQ>& CRef<TQ>::Reduce2Identity(char xflag) {
 
    if (!cgb) {
       if (cgp || cgw) { 
-         wblog(FL,"ERR %s() invalid CRef\n%s",FCT,STR_(this)); }
+         wblog(FL,"ERR %s() invalid CRef\n%s",pFCT,STR(*this)); }
       return *this;
    }
 
@@ -3939,13 +3972,13 @@ CRef<TQ>& CRef<TQ>::Reduce2Identity(char xflag) {
 
    if (r<=2) { 
       if (r<2)
-           { wblog(FL,"ERR %s() got rank-%d CRef",FCT,r); }
-      else { wblog(FL,"WRN %s() got rank-%d CRef",FCT,r); }
+           { wblog(FL,"ERR %s() got rank-%d CRef",pFCT,r); }
+      else { wblog(FL,"WRN %s() got rank-%d CRef",pFCT,r); }
       return *this;
    }
    if (isScalar()) {
-      if (!cgb->cgd.SIZE.len && cgb->cstat!=CGD_ABELIAN) wblog(FL,
-         "ERR %s() invalid CData\n%s",FCT,STR_(cgb));
+      if (!cgb->cgd.SIZE.len && cgb->cstat!=CD_ABELIAN) wblog(FL,
+         "ERR %s() invalid CData\n%s",pFCT,STR_(cgb));
    }
 
    double cfac=1.;
@@ -3954,18 +3987,18 @@ CRef<TQ>& CRef<TQ>::Reduce2Identity(char xflag) {
 
    if (!Q.isScalar() || !wscalar()) {
       MXPut(FL,"a").add(*this,"R").add(*cgb,"C").add(cgb->cgd,"c");
-      wblog(FL,"ERR %s() unexpected scalar CRef\n%s",FCT,STR_(this));
+      wblog(FL,"ERR %s() unexpected scalar CRef\n%s",FCT,STR(*this));
    }
 
    if (!cgb->cgd.SIZE.len) {
       cfac=double(cgb->getScalar());
    }
    else { RTD x=1;
-      d=cgb->cgd.SIZE.el(k);
+      d=cgb->cgd.SIZE.at(k);
       if (cgb->cgd.isIdentity(cgp,&x)!=0) {
          MXPut(FL,"a").add(*cgb,"cgr").add(cgb->cgd,"cgd");
          wblog(FL,"ERR %s() failed to reduce to Id (%g)",
-         FCT,cgb->cgd.D.len? double(cgb->cgd.D[0]) : -1.);
+         pFCT,cgb->cgd.D.len? double(cgb->cgd.D[0]) : -1.);
       }
       cfac=double(x);
    }
@@ -3985,7 +4018,7 @@ template <class TQ, class TD>
 wbvector<RTD>& CData<TQ,TD>::trace(
    const char *F, int L, wbvector<RTD> &cgt) const {
 
-   if (cgd.isEmpty() && cstat==CGD_ABELIAN) {
+   if (cgd.isEmpty() && cstat==CD_ABELIAN) {
       TD x=1; return cgt.init(1,&x);
    }
 
@@ -3998,14 +4031,14 @@ wbvector<RTD>& CData<TQ,TD>::trace(
    else {
       if (cgd.SIZE.len!=r+1) wblog(F_L,"ERR %s() "
          "invalid OM data (%d/%d)",FCT,cgd.SIZE.len, r);
-      return cgd.trace(r,cgt);
+      return cgd.trace(r,cgt); 
    }
 };
 
 template <class TQ>
 bool CRef<TQ>::isSymmmetric(const char *F, int L) const {
 
-   if (!cgb) wblog(F_L,"ERR %s() got %s",FCT,STR_(this));
+   if (!cgb) wblog(F_L,"ERR %s() got %s",FCT,STR(*this));
 
    if (!cgb->isSymmmetric() || cgp.len%2) { return 0; }
 
@@ -4024,7 +4057,7 @@ bool CRef<TQ>::isAbelian(const char *F, int L) const {
 
    if (cgb) 
         { if (!cgb->isAbelian() ) { return 0; }}
-   else { if (rtype!=CGR_ABELIAN) { return 0; }}
+   else { if (rtype!=CR_ABELIAN) { return 0; }}
 
    if (cgp.len) {
       if (cgp.len!=cgb->qdir.len) wblog(F_L,
@@ -4045,11 +4078,11 @@ template <class TQ>
 bool CRef<TQ>::isScalar(char dflag) const {
 
    if (!cgb) { unsigned n=wnumel();
-      if (rtype<CGR_ABELIAN ||  
-         (rtype!=CGR_CTR_SCALAR && rtype!=CGR_CTR_ZERO)) { wblog(FL,
+      if (rtype<CR_ABELIAN ||  
+         (rtype!=CR_CTR_SCALAR && rtype!=CR_CTR_ZERO)) { wblog(FL,
          "ERR %s() got unexpected rtype=%d (cgw %s)",FCT,rtype.t,SSTR(cgw));
       }
-      if (cgp || conj || n>(rtype==CGR_CTR_SCALAR ? 1:0)) {
+      if (cgp || n>(rtype==CR_CTR_SCALAR ? 1:0)) {
          char s[32]; if (n==1)
               { snprintf(s,32,"cgw=%g, %s",cgw[0],SSTR(cgw)); }
          else { snprintf(s,32,"|cgw|=%g, %s",cgw.norm(),SSTR(cgw)); }
@@ -4075,7 +4108,7 @@ int CRef<TQ>::checkQ( const char *F, int L,
    }
    else if (!sameQSet(Q)) {
       if (F) wblog(F,L,
-         "ERR %s() QSet mismatch\n   %s\n<> %s",FCT,STR_(this),STR(Q));
+         "ERR %s() QSet mismatch\n   %s\n<> %s",FCT,STR(*this),STR(Q));
       return 2;
    }
    return 0;
@@ -4085,7 +4118,7 @@ template <class TQ>
 unsigned CRef<TQ>::numel() const {
 
    if (!cgb) {
-      if (rtype==CGR_ABELIAN || rtype==CGR_CTR_SCALAR) return 1;
+      if (rtype==CR_ABELIAN || rtype==CR_CTR_SCALAR) return 1;
       else {
          wblog(FL,"WRN %s() got rtype=%d",FCT,rtype.t);
          return 0;
@@ -4110,19 +4143,15 @@ unsigned CRef<TQ>::Size(unsigned k, unsigned r) const {
       return c.D.len; 
    }
 
-   if (int(r)<0) r=cgb->qdir.len;
-   if (k>r) wblog(FL,"ERR %s() index out of bounds (%d/%d)",FCT,k,r);
+   if (int(r)<0) { r=cgb->qdir.len; }
 
-   if (r<2 || (S.len!=r && S.len!=r+1)) wblog(FL,
+   if (r<2 || (S.len!=r && S.len!=r+1)) { wblog(FL,
       "ERR %s() rank mismatch (%s; %d/%d/%d; d=%d)",
-       FCT,c.sizeStr().data, k+1,r,S.len, c.D.len
-   );
-
-   if (k<r && cgp.len) {
-      if (cgp.len!=r) wblog(FL,"ERR %s() "
-         "invalid cgp=(%s/%d)",FCT,STR(cgp),r);
-      k=cgp.data[k];
+      FCT,c.sizeStr().data, k+1,r,S.len, c.D.len);
    }
+
+   if (k<r) { if (cgp.len) { k=cgp.at_(k); }} else
+   if (k>r) wblog(FL,"ERR %s() index out of bounds (%d/%d)",FCT,k,r);
 
    return (k<S.len ? S.data[k] : 1);
 };
@@ -4142,7 +4171,7 @@ unsigned CRef<TQ>::getOM(const char *F, int L, char wflag) const {
       }
    }
    else if (isAbelian()) { m=1; }
-   else { wblog(F_L,"ERR %s() unknown OM [%s]",FCT,STR_(this)); }
+   else { wblog(F_L,"ERR %s() unknown OM [%s]",FCT,STR(*this)); }
 
    return m;
 };
@@ -4182,6 +4211,7 @@ unsigned CRef<TQ>::rank(const char *F, int L, char lflag) const {
       }
       return r;
    }
+   else if (rtype==CR_CTR_SCALAR) { return 0; } 
    else {
       wblog(F_L,"ERR %s() unknown rank (since cref=NULL)",FCT);
       return 0;
@@ -4193,7 +4223,7 @@ template <class T>
 wbvector<T>& CRef<TQ>::getSize(wbvector<T> &S, char bare) const {
 
    if (cgb) {
-      cgb->getSize(S, bare, cgp.len ? &cgp : NULL);
+      cgb->getSize(S, bare, cgp.len ? &cgp : nullptr);
    }
    else {
       if (cgp || cgw) wblog(FL,"ERR %s() "
@@ -4207,21 +4237,21 @@ wbvector<T>& CRef<TQ>::getSize(wbvector<T> &S, char bare) const {
 template <class TQ>
 int CRef<TQ>::HConjOpScalar() {
 
-   if (cgp.len) { wblog(FL,
-      "WRN %s() expecting scalar operator\ngot %s with cgp=[%s]",
-         STR_(this),FCT,STR(cgp));
-      cgp.init();
-   }
-
    if (!cgb || cgb->isEmpty()) {
-      if (conj) {
-         wblog(FL,"WRN %s() got conj=%d for scalar",FCT,conj);
-         conj=0;
+      if (cgp) {
+         wblog(FL,"WRN %s() got %s for scalar",FCT,STR(cgp));
+         cgp.init();
       }
       return 0; 
    }
 
-   conj=0; 
+   if (cgp.len) { wblog(FL,
+      "WRN %s() expecting scalar operator\ngot %s with cgp=%s",
+         STR(*this),FCT,STR(cgp));
+      cgp.WBPERM::init();
+   }
+
+   cgp.conj=0; 
 
    unsigned i=0, r=cgb->qdir.len, n=(r ? cgb->qs.len/r : 0);
 
@@ -4258,17 +4288,17 @@ int CRef<TQ>::checkAbelian(const char *F, int L) const {
          return 1;
       }
       if (cgp.len && cgp.len!=cgb->qdir.len) wblog(FL,
-         "ERR %s() got invalid abelian CRef\n%s",FCT,STR_(this));
+         "ERR %s() got invalid abelian CRef\n%s",FCT,STR(*this));
    }
 
    int e=0;
 
    if (cgp.len && cgp.len!=cgb->qdir.len) { e=2; } else
-   if (!cgw) { if (rtype!=CGR_ABELIAN) e=3; } else
+   if (!cgw) { if (rtype!=CR_ABELIAN) e=3; } else
    if (!wscalar1()) { e=4; }
 
    if (e && F) wblog(F,L,
-      "ERR %s() invalid scalar CRef (e=%d)\n%s",FCT,e,STR_(this));
+      "ERR %s() invalid scalar CRef (e=%d)\n%s",FCT,e,STR(*this));
    return e;
 };
 
@@ -4278,16 +4308,16 @@ int CRef<TQ>::check(const char *F, int L) const {
    int e=0; 
 
    if (!cgb) {
-      if (rtype==CGR_ABELIAN) {
+      if (rtype==CR_ABELIAN) {
          if (cgp || cgw) { e=1; }
       }
-      else if (rtype==CGR_CTR_SCALAR) {
+      else if (rtype==CR_CTR_SCALAR) {
          if (cgp || !wscalar1()) { e=2; }
       }
       else if (cgp || cgw) { e=3; }
 
       if (e && F) { wblog(F_L,
-         "ERR %s() invalid scalar CRef (e=%d)\n%s",FCT,e,STR_(this));
+         "ERR %s() invalid scalar CRef (e=%d)\n%s",FCT,e,STR(*this));
       }
    }
    else {
@@ -4296,7 +4326,7 @@ int CRef<TQ>::check(const char *F, int L) const {
 
       if (e && F) { wblog(F_L,
          "ERR %s() invalid CRef data (e=%d, m=%d)\n%s",
-         FCT,e,cgb->getOM(), STR_(this));
+         FCT,e,cgb->getOM(), STR(*this));
       }
    }
 
@@ -4325,29 +4355,25 @@ int CRef<TQ>::check(const char *F, int L,
          }
       }
    }
-   else {
-      if (!cgb) {
-         if (rtype==CGR_CTR_SCALAR && wscalar1()) {
-            return e;
-         }
-         if (qdir.len) { 
-            if (F) wblog(F,L,"ERR %s() got NULL cref for %s: %s (%s)",
-               FCT,STR(q),STR(qdir),STR(cgw));
-            return (e=12);
-         }
-         return (e=11);
+   else if (!cgb) {
+      if (rtype==CR_CTR_SCALAR && wscalar1()) {
+         return e;
       }
-      if (sameQDir(FL,qdir)) { return (e=12); }
+      if (qdir.len) { 
+         if (F) wblog(F,L,"ERR %s() got NULL cref for %s: %s (%s)",
+            FCT,STR(q),STR(qdir),STR(cgw));
+         return (e=12);
+      }
+      return (e=11);
    }
+   else if (sameQDir(F,L,qdir)) { return (e=12); }
 
    return e;
 };
 
 template <class TQ>
 QSet<TQ>& CRef<TQ>::adapt(QSet<TQ> &Q, char iflag) const {
-   if (cgp.len) Q.Permute(cgp,iflag ? 0 : 'i'); 
-   if (conj) Q.qdir.Conj();
-   return Q;
+   return Q.Permute(wbperm(cgp,!iflag)); 
 };
 
 template <class TQ>
@@ -4355,15 +4381,14 @@ ctrIdx& CRef<TQ>::adapt(ctrIdx &I, char iflag) const {
 
    if (cgp.len && !cgp.isIdentityPerm()) {
       unsigned i=0; wbvector<unsigned> x(I.len,I.data);
-      if (I.len>cgp.len) wblog(FL,"ERR %s() "
-         "unexpected index length (%d/%d)",FCT,I.len,cgp.len);
-      if (iflag==0) {
-         for (; i<I.len; ++i) { I[i]= cgp.el(x[i]); }}
-      else { wbperm cpi(cgp,'i');
-         for (; i<I.len; ++i) { I[i]= cpi.el(x[i]); }
-      }
+      if (I.len>cgp.len) wblog(FL,
+         "ERR %s() unexpected index length (%d/%d)",FCT,I.len,cgp.len);
+
+      if (iflag) { wbperm cpi(cgp,'i');
+             for (; i<I.len; ++i) { I[i]= cpi.at_(x[i]); }}
+      else { for (; i<I.len; ++i) { I[i]= cgp.at_(x[i]); }}
    }
-   if (conj) I.Conj();
+   if (cgp.conj) { I.Conj(); }
    return I;
 };
 
@@ -4401,7 +4426,7 @@ unsigned CRef<TQ>::wdim12_(const char *F, int L, unsigned &d2) const {
    if (cgw) { d1=isw2(F_L); d2=cgw.SIZE[1]; }
    else if (!F)
         { d2=0; }
-   else { wblog(F,L,"ERR %s() got empty wdim: %s",FCT,STR_(this)); }
+   else { wblog(F,L,"ERR %s() got empty wdim: %s",FCT,STR(*this)); }
    return d1;
 };
 
@@ -4414,7 +4439,7 @@ unsigned CRef<TQ>::wdim12(const char *F, int L, unsigned &d2,
    if (cgw) { d1=isw2(F_L); d2=cgw.SIZE[1]; }
    else {
       if (!isAbelian(F,L)) wblog(FL,
-         "ERR %s() non-abelian CRef got empty cgw\n%s",FCT,STR_(this));
+         "ERR %s() non-abelian CRef got empty cgw\n%s",FCT,STR(*this));
       d2=d0;
    }
    return d1;
@@ -4488,14 +4513,14 @@ unsigned CRef<TQ>::Reduce_w3Id(unsigned d_, char lflag) {
    }
    else if (cgw.SIZE.len==2) {
       if (!wscalar()) wblog(FL,
-         "ERR %s() invalid x3 %s for %s",FCT,SSTR(cgw),STR_(this));
+         "ERR %s() invalid x3 %s for %s",FCT,SSTR(cgw),STR(*this));
       cgw.data[0]=1; 
    }
    else if (cgb || cgw) wblog(FL,
-      "ERR %s() invalid x3 CRef %s: %s (%p)",FCT,STR_(this),SSTR(cgw),cgb);
+      "ERR %s() invalid x3 CRef %s: %s (%p)",FCT,STR(*this),SSTR(cgw),cgb);
    else if (!isAbelian()) {
-      if (lflag || rtype==CGR_CTR_ZERO) { d=0; }
-      else wblog(FL,"ERR %s() invalid x3 CRef %s",FCT,STR_(this));
+      if (lflag || rtype==CR_CTR_ZERO) { d=0; }
+      else wblog(FL,"ERR %s() invalid x3 CRef %s",FCT,STR(*this));
    }
 
    return d;
@@ -4539,7 +4564,7 @@ int CRef<TQ>::cgw_check_std3(
       "ERR %s() cgw index out of bounds (%d/%d)",im,cgw.SIZE[0]); }
 
    double x=cgw(im,im); x*=x;
-   if (x<1 || fabs(x-round(x))>1E-12) { e|=8; if (fflag)  wblog(F_L,
+   if (x<1 || fabs(x-round(x))>1e-12) { e|=8; if (fflag)  wblog(F_L,
       "ERR %s() got cgw(%d,%d)=%.3g",FCT,im,im,cgw(im,im)); }
 
    if (int(d3)<=0) {
@@ -4548,7 +4573,7 @@ int CRef<TQ>::cgw_check_std3(
    }
 
    if (d3) {
-      if (fabs(x-d3)>1E-12 && (x!=1 || im)) { e|=16; if (fflag)
+      if (fabs(x-d3)>1e-12 && (x!=1 || im)) { e|=16; if (fflag)
          wblog(F_L,"ERR %s() got cgw[%d]=%.3g [expecting ±sqrt(%d)]",
          FCT,im,cgw(im,im),d3);
       }
@@ -4598,7 +4623,7 @@ bool CRef<TQ>::isDiagCSC(RTD eps) const {
    else {
       unsigned m=getOM(FL);
       if (cgb->cgd.D.len!=m) wblog(FL,"ERR %s() "
-         "got invalid CGD_REF data (%d/%d)",FCT,cgb->cgd.D.len,m);
+         "got invalid CD_REF data (%d/%d)",FCT,cgb->cgd.D.len,m);
       return (cgb->cgd.isSMatrix());
    }
    return 1;
@@ -4633,12 +4658,12 @@ bool CRef<TQ>::isIdentityCG(
 
    if (!ip.len || 2*ip.len!=cgb->qdir.len) { return rval; }
 
-   if (cgb->cstat!=CGD_REF_INIT) {
+   if (cgb->cstat!=CD_REF_INIT) {
 
       trace(FL,cgt);
 
-      if (cgb->cstat==CGD_REF_INIT) wblog(FL,
-         "ERR %s() got mixed ref_init\n%s",FCT,STR_(this));
+      if (cgb->cstat==CD_REF_INIT) wblog(FL,
+         "ERR %s() got mixed ref_init\n%s",FCT,STR(*this));
       if (cgt.len && cgt.len!=wdim()) wblog(FL,
          "ERR %s() got OM mismatch (%d; %s)",FCT,cgt.len,SSTR(cgw));
 
@@ -4651,7 +4676,7 @@ bool CRef<TQ>::isIdentityCG(
    }
    else {
       if (!isRefInit() || !cgb->cgd.SIZE.len) wblog(FL,
-         "ERR %s() got invalid CGD_REF data\n%s",FCT,STR_(this));
+         "ERR %s() got invalid CD_REF data\n%s",FCT,STR(*this));
       if (nrm) {
          cgt.init2ref(cgb->cgd.D); 
          if (!cgt) { nrm=NULL; }
@@ -4699,7 +4724,7 @@ double CRef<TQ>::NormStd(const char *F, int L, unsigned r)  {
    if (ip.len==1) { i=ip[0]; }
    else {
       if (F) { wblog(F_L,
-         "ERR %s() got unexpected CRef %s",FCT,STR_(this)); }
+         "ERR %s() got unexpected CRef %s",FCT,STR(*this)); }
       return nrm;
    }
 
@@ -4746,7 +4771,7 @@ double CRef<TQ>::norm2(char checks) const {
    if (!cgb || isAbelian()) {
       unsigned n=cgw.numel();
       if (n>1 || (n==1 && fabs(cgw[0]-1)>CG_SKIP_DEPS1)) wblog(FL,
-         "ERR %s() invalid CRef %s (n=%d)",FCT,STR_(this),n);
+         "ERR %s() invalid CRef %s (n=%d)",FCT,STR(*this),n);
       return (w2=1);
    }
 
@@ -4780,76 +4805,134 @@ double CRef<TQ>::norm2(char checks) const {
 };
 
 template <class TQ> inline
-bool CRef<TQ>::isSortedDegQ(QSet<TQ> *QS, wbperm &pxt, char &cxt) const {
+bool CRef<TQ>::isSortedDegQ(wbperm *pxt, QSet<TQ> *Q_) const {
 
    if (!cgb) {
-      if (pxt.len) { pxt.init(); }; cxt=0;
-      return 1;
+       if (pxt) { pxt->init(); }
+       if (Q_ ) { Q_ ->init(); }
+       return 1;
+   }
+   else {
+      QSet<TQ> Q(*cgb);
+      wbperm pxt_; if (!pxt) { pxt=&pxt_; }
+
+      adapt(Q,'i');   if (Q_) { Q_->init(Q); }
+      Q.Sort(pxt,'i'); 
+
+      if (cgp==*pxt) {
+         return 1;
+      }
    }
 
-   QSet<TQ> Q(*cgb);
-      adapt(Q,'i'); if (QS) QS->init(Q); 
-      Q.Sort(&pxt, &cxt,'i');
-
-   if (cgp.sameAs(pxt) && conj==cxt) {
-      return 1;
-   }
    return 0;
 };
 
 template <class TQ>
-int CRef<TQ>::SortDegQ(const char *F, int L, QSet<TQ> *QS) {
+int CRef<TQ>::SortDegQ(const char *F, int L, QSet<TQ> *Q) {
 
-   wbperm pxt; char cxt=0;
-   if (isSortedDegQ(QS,pxt,cxt)) { return 0; }
+   wbperm pxt;
+   if (isSortedDegQ(&pxt,Q)) { return 0; }
 
    if (cgb) {
       if (cgb->t.isAbelian()) {
-         if (cgb->cgd.D.len && (cgb->cgd.D.len>1 || cgb->cgd.D[0]!=1))
+         if (cgb->cgd.D.len && (cgb->cgd.D.len>1 || cgb->cgd.D[0]!=1)) {
             wblog(F_L,"ERR %s() invalid abelian CRef data\n%s",FCT,
-            STR_(this)
-         );
+            STR(*this));
+         }
       }
       else if (cgb->qdir.len==2 && cgb->qdir.prod()<0) {
          if (isRefInit()) {
             const wbvector<unsigned> &S=cgb->cgd.SIZE;
-            if (S.len!=2 || S[0]!=S[1] || cgb->cgd.D.len>1) wblog(F_L,
+            if (S.len!=2 || S[0]!=S[1] || cgb->cgd.D.len>1) { wblog(F_L,
                "ERR %s() invalid ref CData (%d,%d)\n%s",
-               FCT, cgb->cgd.SIZE.len, cgb->cgd.D.len, STR_(this)
-            );
+               FCT, cgb->cgd.SIZE.len, cgb->cgd.D.len, STR(*this));
+            }
          }
-         else {
+         else { 
             if ((cgb->cgd.SIZE.len && cgb->cgd.SIZE.len!=cgb->qdir.len) ||
                !cgb->cgd.D.len || !wscalar()) { wblog(F_L,
                "ERR %s() invalid scalar CData (%d,%d)\n%s",
-            FCT, cgb->cgd.SIZE.len, cgb->cgd.D.len, STR_(this)); }
+               FCT, cgb->cgd.SIZE.len, cgb->cgd.D.len, STR(*this));
+            }
          }
       }
+      else if (cgb->qdir.len<2) { wblog(FL,"ERR %s()",FCT,STR(*this)); }
       else {
-         CRef<TQ> R=*this;
-         pxt.save2(R.cgp); R.conj=cxt;
+         CRef<TQ> R=*this;  
+         pxt.save2(R.cgp);
 
-         if (cgb->qdir.len<2) wblog(FL,"ERR %s()",FCT,STR_(this));
-
-         gXS.contractDegQ(FL,*this,R); 
+         gXS.contractDegQ(FL,*this,R);
 
          R.save2(*this);
          return 2;
       }
    }
 
-   pxt.save2(cgp); conj=cxt;
+   pxt.save2(cgp);
    return 1;
 };
 
 template <class TQ>
-double CRef<TQ>::trace(const char *F, int L,
-   const ctrIdx &i1  QS_UNUSED_VAR,
-   const ctrIdx &i2  QS_UNUSED_VAR,
-   CRef<TQ>     *Rt  QS_UNUSED_VAR) const {
+wbarray<double> CRef<TQ>::trace(const char *F, int L,
+   ctrIdx I1, ctrIdx I2, 
+   CRef<TQ> *Rt) const {
 
-   double q=0; wblog(F_L,"ERR %s() to be cont'd",FCT);
-   return q;
+   wbarray<double> x2(1,1); x2[0]=1; 
+   unsigned n=cgw.numel(), r=rank(FL);
+
+   if (!cgb) {
+      if (n>1) wblog(FL,"ERR %s() invalid abelian CRef\n%s",FCT,STR(*this));
+      x2[0]=(n ? cgw[0] : 1);
+      if (Rt) { *Rt = *this; if (n) Rt->cgw[0]=1; }
+      return x2;
+   }
+
+   if (I1.len!=I2.len) wblog(FL,
+      "ERR %s() length mismatch (ctrIdx: %s / %s)",FCT,STR(I1),STR(I2));
+
+   unsigned i, i1,i2, i1_,i2_,  i0=I1.len-1, nq=cgb->t.qlen();
+   const TQ *q1, *q2; char d1=0;
+   ctrIdx ia(2), ib(2);
+   CRef<TQ> A(*this), Id, Cr;
+   wbarray<double> x3;
+
+   for (i=i0; i<I1.len; --i) { q1=q2=A.cgb->qs.data;
+      i1=I1[i];  i1_=A.cgp.at_(i1);  q1+=i1_*nq;  d1=A.cgb->qdir[i1_];
+      i2=I2[i];  i2_=A.cgp.at_(i2);  q2+=i2_*nq;
+
+      if (i1==i2 || i1>=r || i2>=r) wblog(FL,
+         "ERR %s() invalid ctrIdx: %s / %s (r=%d)",FCT,STR(I1),STR(I2));
+      if (memcmp(q1,q2,nq) || d1!=-A.cgb->qdir[i2_]) wblog(FL,
+         "ERR %s() cannot contract across different qlabels\n%s @ (%s,%s)",
+         FCT,STR(*this),STR(I1),STR(I2));
+
+      Id.initIdentityR(FL,cgb->t, q1,-1,'x');
+
+      ia[0]=i1; ia[1]=i2;
+      if (d1<0)
+           { ib[0]=0; ib[1]=1; } 
+      else { ib[0]=1; ib[1]=0; } 
+
+      gXS.contractCGR(FL,A,ia,Id,ib,Cr);  
+
+      Cr.cgw.save2(x3);    if (x3.rank()==3) {
+      x3.SkipSingleton(FL,2); }
+      Cr.cgw.initIdentity( x3.dim(2) ); 
+
+      if (i==i0) { x2 =x3; }
+      else       { x2*=x3; }
+
+      if (i) {
+         I1.Shift_x(i1,i2);  
+         I2.Shift_x(i1,i2);
+         Cr.save2(A); r=A.rank();
+      }
+      else if (Rt) { 
+         Cr.save2(*Rt);
+      }
+   }
+
+   return x2;
 };
 
 template <class TQ>
@@ -4858,13 +4941,13 @@ wbvector<RTD>& CRef<TQ>::trace(
 
    if (!cgb) { return cgt.init(); }
    if (!cgb->isSymmmetric()) {
-      if (F) wblog(F_L,"ERR %s() got %s",FCT,STR_(this));
+      if (F) wblog(F_L,"ERR %s() got %s",FCT,STR(*this));
       return cgt.init();
    }
    else {
       if (isRefInit())
-           { return cgt.init(cgb->cgd.D); }
-      else { return cgb->trace(F_L, cgt); }
+           { return cgt.init(cgb->cgd.D); } 
+      else { return cgb->trace(F_L, cgt); } 
    }
 };
 
@@ -4876,44 +4959,58 @@ double CRef<TQ>::trace() const {
          "ERR %s() invalid cgw %s (cgb=0)",FCT,SSTR(cgw));
       return 1;
    }
-   if (!isSymmmetric()) wblog(FL,
-      "ERR %s() got %s\ncgp=%s",FCT,STR_(this),STR(cgp));
+   if (!isSymmmetric()) wblog(FL,    
+      "ERR %s() got %s\ncgp=%s",FCT,STR(*this),STR(cgp));
 
-   unsigned i,j,m, n=cgb->gotOM(FL);
+   unsigned i,j,m, n=cgb->numOM(FL); double e;
    wbvector<RTD> cgt;
 
    if (!n) n=1; else 
    if (n<2) wblog(FL,"ERR %s() got OM=%d",FCT,n);
 
    if (isRefInit())
-        cgt.init2ref(cgb->cgd.D); 
-   else cgb->trace(FL,cgt);
+        { cgt.init2ref(cgb->cgd.D); } 
+   else { cgb->trace(FL,cgt); }
 
-   if ((m=wdim1())>n || cgt.len!=n) wblog(FL,"ERR %s() "
-      "got OM size mismatch (%s %d/%d)",FCT,SSTR(cgw),cgt.len,n);
-   n=wdim2();
-   wbvector<double> x1(n); double tj, *x=x1.data;
+   if ((m=wdim1())>n || cgt.len!=n) wblog(FL, 
+      "ERR %s() got OM size mismatch (%s %d/%d)",FCT,SSTR(cgw),cgt.len,n);
 
-   for (j=0; j<m; ++j) { tj=double(cgt[j]);
-   for (i=0; i<n; ++i) { x[i]+=(cgw(i,j)*tj); }}
+   n=wdim2(); 
+   if (!n) wblog(FL,"ERR %s() got n=%d",FCT,n);
 
-   for (j=1; j<m; ++j) { if (fabs(x[j]-x[0])>1E-12) wblog(FL,
-      "ERR %s() got varying trace %g @ %.3g",FCT,x[j],fabs(x[j]-x[0]));
-   }
+   wbvector<double> x1(n); double ti, *x=x1.data;
+
+   for (i=0; i<m; ++i) { ti=double(cgt[i]);   
+   for (j=0; j<n; ++j) { x[j]+=(ti*cgw(i,j)); }}
+
+   for (j=1; j<n; ++j) { if ((e=fabs(x[j]-x[0]))>1e-12) {
+      wbvec<char> s(64);
+      if (n<4) { s.catf(FL,"[");
+         for (j=0; j<n; ++j) { s.catf(0,0," %g",x[j]);
+         s.catf(0,0," ] (%d)",n); }
+      }
+      else {
+         s.catf(0,0,"[ %g",x[0]);
+         s.catf(0,0,"%s %g",j  >1?", ...":"",x[j  ]); if (j+1<n) {
+         s.catf(0,0,"%s %g",j+2<n?", ...":"",x[n-1]); }
+         s.catf(0,0," ] (%d/%d)",j+1,n);
+      }
+      wblog(FL,"ERR %s() varying trace(cgt)*cgw %s @ %.3g",FCT,s.data,e);
+   }}
 
    return x[0];
 };
 
 template <class TQ> 
 CRef<TQ>& CRef<TQ>::Permute(
-   const wbperm &P, char iflag,
+   wbperm P,  
    char isnew 
 ) {
 
    if (!P.len) { return *this; }
    if (!cgb) { 
       if (cgw || cgp) wblog(FL,   
-         "ERR %s() invalid CRef\n%s",FCT,STR_(this));
+         "ERR %s() invalid CRef\n%s",FCT,STR(*this));
       return *this;
    }
 
@@ -4926,9 +5023,9 @@ CRef<TQ>& CRef<TQ>::Permute(
       "ERR %s() got cgw %s having %s",FCT,SSTR(cgw),cgb->QStr().data);
    }
 
-   cgp.Permute(P,iflag,r);
+   cgp.Permute(P,r);
 
-   if (cgp.isIdentityPerm()) {
+   if (!cgp.relevant()) {
       cgp.init();
    }
    else {
@@ -4951,7 +5048,7 @@ double CRef<TQ>::NormSignW(
 
    if (n==1 && m==1) { 
       if (fabs(cgw[0])<1-eps) wblog(F_L,"ERR %s() "
-         "got cgw=%.3g without OM\nhaving %s",FCT,cgw[0],STR_(this));
+         "got cgw=%.3g without OM\nhaving %s",FCT,cgw[0],STR(*this));
       if (useExt) 
            { wnrm=cgw[0]/normExt(F_L); cgw[0]/=wnrm; }
       else { wnrm=cgw[0]; cgw[0]=1; }
@@ -4964,14 +5061,14 @@ double CRef<TQ>::NormSignW(
    unsigned i;
    double a, w2=0;
 
-   if (!cgw.isOrthoCols(&w2,'t',CG_SKIP_DEPS1) || w2<1E-8) wblog(F_L,
+   if (!cgw.isOrthoCols(&w2,'t',CG_SKIP_DEPS1) || w2<1e-8) wblog(F_L,
       "ERR %s() got non-orthogonal cgw (w2=%.3g)",FCT,w2);
 
    wnrm=sqrt(w2);
    if (useExt) { wnrm/=normExt(F_L); } 
 
    if (wnrm<=eps) wblog(F_L,
-      "ERR %s() got small wnrm %.3g (%s)",FCT,wnrm,STR_(this));
+      "ERR %s() got small wnrm %.3g (%s)",FCT,wnrm,STR(*this));
 
    for (n=wnumel(), i=0; i<n; ++i) { if (fabs(cgw[i])>eps) {
       if (cgw[i]<0) { wnrm=-wnrm; }
@@ -4986,6 +5083,48 @@ double CRef<TQ>::NormSignW(
    }}
 
    if (wnrm!=1) { cgw /= wnrm; }
+
+   return wnrm;
+};
+
+template <class TQ>
+double CRef<TQ>::getNormSignW(
+   const char *F, int L, char useExt, 
+   double eps) const {
+
+   double wnrm=1; 
+   if (!cgb || cgb->isAbelian()) { checkAbelian(F_L); return wnrm; }
+
+   unsigned n=wdim1(), m=cgb->getOM(F_L);
+
+   if (n==1 && m==1) { 
+      if (fabs(cgw[0])<1-eps) wblog(F_L,"ERR %s() "
+         "got cgw=%.3g without OM\nhaving %s",FCT,cgw[0],STR(*this));
+      if (useExt) 
+           { wnrm=cgw[0]/normExt(F_L); }
+      else { wnrm=cgw[0]; }
+
+      return wnrm;
+   }
+   if (n>m) wblog(F_L,
+      "ERR %s() cgw out of bounds (%d/%d)",FCT,SSTR(cgw),m);
+
+   unsigned i;
+   double w2=0;
+
+   if (!cgw.isOrthoCols(&w2,'t',CG_SKIP_DEPS1) || w2<1e-8) wblog(F_L,
+      "ERR %s() got non-orthogonal cgw (w2=%.3g)",FCT,w2);
+
+   wnrm=sqrt(w2);
+   if (useExt) { wnrm/=normExt(F_L); } 
+
+   if (wnrm<=eps) wblog(F_L,
+      "ERR %s() got small wnrm %.3g (%s)",FCT,wnrm,STR(*this));
+
+   for (n=wnumel(), i=0; i<n; ++i) { if (fabs(cgw[i])>eps) {
+      if (cgw[i]<0) { wnrm=-wnrm; }
+      break;
+   }}
 
    return wnrm;
 };
@@ -5075,7 +5214,7 @@ char CRef<TQ>::sameAs_fix(
    if (cgb!=B.cgb) {
 	  if ((cgb && B.cgb) || !isAbelian() || !B.isAbelian()) {
          if (F || L) wblog(F_L,"ERR CGR mismatch (%p/%p)\n%s <> %s",
-            cgb,B.cgb,STR_(this), STR(B));
+            cgb,B.cgb,STR(*this), STR(B));
          return (q=7);
       }
       else {
@@ -5125,7 +5264,7 @@ char CRef<TQ>::got3(const char *F, int L,
          "invalid cgp=[%s] %d",FCT,STR(cgp),C.qdir.len);
 
       unsigned i=0, l=J12.len;
-      qset<TQ> qx; C.qs.blockPermute(cgp,qx);
+      qset<TQ> qx; C.qs.blockPermute(qx,cgp);
       const TQ *qs=qx.data;
 
       for (; i<J12.len; ++i) {
@@ -5159,39 +5298,35 @@ char CRef<TQ>::got3(const char *F, int L,
 template <class TQ>
 bool CRef<TQ>::sameQDir(const char *F, int L, const QDir &qd) const {
 
-   if (!cgb) return 1;
+   if (!cgb) { return 1; }
 
-   if (cgb->qdir.len!=qd.len) wblog(F_L,"ERR %s() QDir length mismatch "
-      "(%s <> %s)",FCT, STR(cgb->qdir), STR(qd));
-   if (cgp.len && cgp.len!=qd.len) wblog(F_L,
-      "ERR %s() got length mismatch (%d/%d/%d)",
-      FCT,cgb->qdir.len, qd.len, cgp.len
-   );
+   if (cgb->qdir.len!=qd.len) wblog(F_L,
+      "ERR %s() length mismatch (%s <> %s)",FCT, STR(cgb->qdir), STR(qd));
+   if (cgp.len && cgp.len>qd.len) wblog(F_L,
+      "ERR %s() length mismatch (%d/%d/%d)", 
+      FCT,cgb->qdir.len, qd.len, cgp.len);   
 
-   char e=0, cflag=gotConj(), pflag=gotPerm(); 
-   if (!cflag && !pflag) return qd==cgb->qdir;
+   char e=0, q=cgp.relevant(FL,4); 
+   if (!q) { return qd==cgb->qdir; }
 
-   unsigned i=0;
+   unsigned i=0, r=qd.len;
    const char *d=cgb->qdir.data, *d0=qd.data;
 
-   if (pflag) {
-      const wperm_t *p=cgp.data;
-
-      if (cflag) {
-         for (; i<qd.len; ++i) { if (d[p[i]]!=-d0[i]) { e=1; break; }}
-      }
-      else {
-         for (; i<qd.len; ++i) { if (d[p[i]]!= d0[i]) { e=2; break; }}
-      }
+   if (q&1) {  
+      if (q>1) 
+           { for (; i<r; ++i) { if (d[cgp.at_(i)]!=-d0[i]) { e=1; break; }}}
+      else { for (; i<r; ++i) { if (d[cgp.at_(i)]!= d0[i]) { e=2; break; }}}
    }
    else { 
-      for (; i<qd.len; ++i) { if (d[i]!=-d0[i]) { e=3; break; }}
+      for (; i<r; ++i) { if (d[i]!=-d0[i]) { e=3; break; }}
    }
 
-   if (e) { char s[128]; snprintf(s,128,
-      "%s <> %s (e=%d)", STR_(this), STR(qd), e);
-      if (F) wblog(F,L,"ERR %s() got\n%s",FCT,s);
-      else   wblog(FL, "WRN %s() got\n%s",FCT,s);
+   if (e && (F || L)) { char s1[64];
+      wbstring s2=this->toStr('l');
+      snprintf(s1,64,"CGR::%s() got mismatch with '%s' (e=%d)",FCT,STR(qd),e);
+
+      if (F) wblog(F,L,"ERR %s\n%s",s1,s2.data); else
+      if (L) wblog(F_L,"WRN %s\n%s",s1,s2.data);
    }
 
    return (e? 0:1);
@@ -5200,12 +5335,15 @@ bool CRef<TQ>::sameQDir(const char *F, int L, const QDir &qd) const {
 template <class TQ>
 bool CRef<TQ>::sameQSet(const CRef &B) const {
 
-   bool ipa=gotPerm(FL), ipb=B.gotPerm(FL);
-
    if (cgb!=B.cgb) { return 0; } 
    if (!cgb) { return 1; }       
 
-   if (!ipa && !ipb) { return (conj==B.conj); } 
+   if (cgp.sameAs(B.cgp)) { return 1; }
+
+   char qa=cgp.relevant(FL,4), qb=B.cgp.relevant(FL,4);
+   char cflag = (qa>1) ^ (qb>1); 
+
+   if (!(qa&1) && !(qb&1)) { return (qa==qb); } 
 
    const QSet<TQ> &Q=(QSet<TQ>&)(*cgb);
    unsigned i=0, r=Q.qdir.len;
@@ -5220,21 +5358,21 @@ bool CRef<TQ>::sameQSet(const CRef &B) const {
    const wperm_t *pa=cgp.data, *pb=B.cgp.data;
    const char *d=Q.qdir.data;
 
-   if (ipa) {
-      if (ipb) {
-         if (conj ^ B.conj)
+   if (qa&1) { 
+      if (qa&1) {
+         if (cflag)
               for (; i<r; ++i) { if (d[pa[i]]!=-d[pb[i]]) return 0; }
          else for (; i<r; ++i) { if (d[pa[i]]!=+d[pb[i]]) return 0; }
       }
       else {
-         if (conj ^ B.conj)
+         if (cflag)
               for (; i<r; ++i) { if (d[pa[i]]!=-d[i]) return 0; }
          else for (; i<r; ++i) { if (d[pa[i]]!=+d[i]) return 0; }
       }
    }
    else {
-      if (ipb) {
-         if (conj ^ B.conj)
+      if (qa&1) {
+         if (cflag)
               for (; i<r; ++i) { if (d[i]!=-d[pb[i]]) return 0; }
          else for (; i<r; ++i) { if (d[i]!=+d[pb[i]]) return 0; }
       }
@@ -5258,7 +5396,7 @@ int CRef<TQ>::gotSameCData(
    }
 
    if (!cgb) {
-      if (cgw || B.cgw || rtype!=CGR_ABELIAN || rtype!=B.rtype)
+      if (cgw || B.cgw || rtype!=CR_ABELIAN || rtype!=B.rtype)
          wblog(FL,"ERR %s() invalid scalar cref (%s/%s; %d/%d)",
          FCT, SSTR(cgw),SSTR(B.cgw), rtype.t, B.rtype.t);
       return (rval=0);
@@ -5279,10 +5417,9 @@ int CRef<TQ>::gotSameCData(
       return (rval=-3);
    }
 
-   if (!cgp.sameAs(B.cgp) || conj!=B.conj) {
+   if (!cgp.sameAs(B.cgp)) {
       if (F) wblog(FL,
-         "ERR %s() got cgp+conj mismatch (%s%s <> %s%s)",
-         FCT, STR(cgp), conj?"*":"", STR(B.cgp), B.conj?"*":"");
+         "ERR %s() cgp[.conj] mismatch (%s / %s)",FCT,STR(cgp),STR(B.cgp));
       return (rval=-4);
    }
 
@@ -5302,16 +5439,14 @@ template <class TQ>
 bool CRef<TQ>::sameQSet(const QSet<TQ> &Q) const {
 
    if (!cgb || cgb->isEmpty()) {
-      if (cgp.len || conj) wblog(FL,
-         "WRN %s() invalid scalar (0x%lX)\ncgp.len=%d, conj=%d : %s",
-         FCT, cgb, cgp.len, conj, STR(Q));
+      if (cgp) wblog(FL,"WRN %s() "
+         "invalid scalar (%p) with cgp=%s:\n%s",FCT,cgb,STR(cgp),STR(Q));
       return Q.isEmpty();
    }
 
    if (anyTrafo()) {
-      QSet<TQ> X((QSet<TQ>&)(*cgb));
-         if (cgp.len) X.Permute(cgp);
-         if (conj) X.Conj();
+      QSet<TQ> X( (QSet<TQ>&)(*cgb) );
+      X.Permute(cgp);
       return X==Q;
    }
 
@@ -5322,8 +5457,7 @@ template <class TQ>
 bool CRef<TQ>::sameQDir(const iTags& b) const {
 
    if (!cgb) {
-      if (cgp.len || conj) {
-         wblog(FL,"ERR %s() %s",FCT,STR_(this)); }
+      if (cgp) wblog(FL,"ERR %s() %s",FCT,STR(*this));
       return 1;
    }
    if (cgb->qdir.len!=b.len) { return 0; }
@@ -5332,8 +5466,8 @@ bool CRef<TQ>::sameQDir(const iTags& b) const {
       if (cgp.len && cgp.len!=b.len) wblog(FL,"ERR %s() "
          "invalid permutation (len=%d/%d)",FCT,cgp.len,b.len);
       for (; i<b.len; ++i) {
-         a=cgb->qdir.el(cgp.el1(i));  
-         c=b.data[i].isConj() ^ conj; 
+         a=cgb->qdir.at(cgp.at_(i));  
+         c=b.data[i].isConj() ^ (cgp.conj%2);
          if ((c && a>=0) || ((!c) && a<=0)) { return 0; }
       }
    }
@@ -5344,28 +5478,21 @@ bool CRef<TQ>::sameQDir(const iTags& b) const {
 template <class TQ>
 bool CRef<TQ>::affectsQDir() const {
 
-   if (!cgb || !cgb->qdir.len || !cgp.len) return 0;
+   if (!cgb || !cgb->qdir.len || !cgp.len) { return 0; }
+
    if (cgp.len && cgp.len!=cgb->qdir.len) wblog(FL,
-      "ERR %s() got length mismatch (%d/%d)",FCT,cgp.len,cgb->qdir.len
-   );
+      "ERR %s() length mismatch (%d/%d)",FCT,cgp.len,cgb->qdir.len);
 
-   char cflag=gotConj(), pflag=gotPerm(); 
-   if (!cflag && !pflag) return 0;
+   char q=cgp.relevant(FL,4); 
+   if (!q) { return 0; }
+   if (!(q&1)) { return 1; }  
 
-   if (pflag) {
-      const char *d=cgb->qdir.data;
-      const wperm_t *p=cgp.data; unsigned i=0;
+   const char *d=cgb->qdir.data;
+   const wperm_t *p=cgp.data; unsigned i=0;
 
-      if (cflag) {
-         for (; i<cgp.len; ++i) { if (d[i]!=-d[p[i]]) return 1; }
-      }
-      else {
-         for (; i<cgp.len; ++i) { if (d[i]!= d[p[i]]) return 1; }
-      }
-   }
-   else { 
-      return 1;
-   }
+   if (q>1)
+        { for (; i<cgp.len; ++i) { if (d[i]!=-d[p[i]]) return 1; }}
+   else { for (; i<cgp.len; ++i) { if (d[i]!= d[p[i]]) return 1; }}
 
    return 0;
 };
@@ -5451,110 +5578,124 @@ double CRef<TQ>::safeCpy(
 template <class TQ>
 wbstring CRef<TQ>::toStr(char lflag) const {
 
-   wbstring sout; 
-   unsigned l=0, n; char *s;
+   wbvec<char> sout;
 
-   if (!cgb) { sout.init(32); s=sout.data; n=sout.len;
-
+   if (!cgb) { sout.init(64);
       if (!cgw) {
-         if (rtype==CGR_ABELIAN)
-              { l=snprintf(s,n,"(abelian @ [1])"); }
-         else { l=snprintf(s,n,"(%s @ [])", rtype.tostr()); }
+         if (rtype==CR_ABELIAN)
+              { sout.catf(FL,"(abelian @ [1])"); }
+         else { sout.catf(FL,"(%s @ w=[])", rtype.tostr()); }
       }
       else {
-         if (wnumel()>1 && rtype!=CGR_CTR_SCALAR) { wblog(FL,"ERR %s() "
+         if (wnumel()>1 && rtype!=CR_CTR_SCALAR) { wblog(FL,"ERR %s() "
             "got cgw %s for %s (cgb=0)",FCT,SSTR(cgw),rtype.tostr());
          }
-         l=snprintf(s,n,"%s to %s", 
-         rtype==CGR_CTR_SCALAR ? "fully contracted": rtype.tostr(), STR(cgw));
+         sout.catf(FL,"%s @ w=%s", 
+         rtype==CR_CTR_SCALAR ? "fully contracted": rtype.tostr(), STR(cgw));
       }
-
-      if (l>=n) wblog(FL,
-         "ERR %s() string out of bounds (%d/%d)",FCT,l,n);
    }
    else {
       unsigned m=cgb->getOM();
       int is2=isw2(); 
 
-      if (rtype>=CGR_NUM_TYPES) wblog(FL,"ERR %s() "
-         "cgrType out of range (%d/%d)",FCT,rtype.t,CGR_NUM_TYPES);
+      if (rtype>=CR_NUM_TYPES) wblog(FL,"ERR %s() "
+         "cgrType out of range (%d/%d)",FCT,rtype.t,CR_NUM_TYPES);
 
-      if (is2) { sout.init(118+10*wdim2()); } else  
-      if (lflag) {sout.init(128); } 
+      if (is2  ) { sout.init(118+10*wdim2()); } else  
+      if (lflag) { sout.init(128); } 
       else { isw2(FL); } 
-      s=sout.data; n=sout.len;
 
       QSet<TQ> Q(*cgb); adapt(Q,'i');
-      l=snprintf(s,n,"%s", Q.toStr(statStr().data).data);
+      sout.cat(FL,STR(Q)); if (m!=1) sout.catf(FL,"_%d",m); 
+      sout.catf(FL,"  %s",statStr().data); 
 
-      if (l<n) {
-         if (wscalar() && m==1) {
-            l+=snprintf(s+l,n-l,", w=%g",cgw[0]); if (!is2 && l<n) {
-            l+=snprintf(s+l,n-l," %s",SSTR(cgw)); } 
+      if (cgp) {
+         wbperm iP(cgp,'i');
+         sout.catf(FL,", p=%s",STR(iP));
+      }
+
+      if (wscalar() && m==1) {
+         sout.catf(FL," w=%s",RATS(cgw[0])); if (!is2) {
+         sout.catf(FL," %s",SSTR(cgw)); } 
+      }
+      else if (is2) {
+         char sm[8]=""; if (wdim1()!=m) { snprintf(sm,8,"%d/",m); }
+
+         if (cgw.isIdentityMatrix()) { 
+            sout.catf(FL,", w=Id^%s%d",sm,m); 
          }
-         else if (is2) {
-            bool isd=cgw.isDiagMatrix();
-            char sm[8]=""; if (wdim1()!=m) snprintf(sm,8,"%d/",m);
-            wbvector<double> cc = (isd ? cgw.getDiag() : cgw.normCols());
-
-            l+=snprintf(s+l,n-l,", %s=[%s] %s%s", 
-               isd? "w=diag":"|w|",cc.toStrf("%.4g"," ").data,sm,SSTR(cgw)
-            );
+         else if (cgw.isDiagMatrix()) {
+            wbvector<double> dd=cgw.getDiag();
+            if (dd.normDiff()<1e-14)
+                 sout.catf(FL,", w=%s*Id^%d",dd? RATS(dd[0]):"(null)",m);
+            else sout.catf(FL,", w=diag[%s]",dd.toStrf("%.4g"," ").data);
          }
          else {
-            l+=snprintf(s+l,n-l,", |w|=%.4g %s",cgw.norm(),SSTR(cgw));
-         }
+            char Sflag=1;
+            wbvector<double> cc=cgw.normCols();
+
+            if (cc.normDiff()<1e-14 && cc.len) {
+               if (abs(cc[0]-1)<1e-14 && cgw.isSMatrix()) { Sflag=0;
+                    sout.catf(FL,", w=U^%d",m); } 
+               else sout.catf(FL,", |w|_cols=%s", cc? RATS(cc[0]) : "[]");
+            }
+            else {
+               sout.catf(FL,", |w|=[%s]",cc.toStrf("%.4g"," ").data);
+            }
+            if (Sflag) sout.catf(FL," %s%s",sm,SSTR(cgw));
+         }  
       }
-      if ((cgp.len || conj) && l<n) { wbperm P(cgp,'i');
-         l+=snprintf(s+l,n-l,", p=%s%s",
-         (P+1).toStrf("%d","").data, conj?"*":"");
+      else {
+         sout.catf(FL,", |w|=%.4g %s",RATS(cgw.norm()),SSTR(cgw));
       }
-      if (l>=n) wblog(FL,"ERR %s() "
-      "string out of bounds (%d/%d)%N%N%s%N%N",FCT,l,n,s);
    }
-   return sout;
+   return sout.data;
 };
 
 template <class TQ>
 wbstring CRef<TQ>::sizeStr() const {
 
-   if (cgb) { return cgb->sizeStr(); }
-
-   if (cgw) wblog(FL,
-      "ERR %s() inconsistent cgw %s",FCT,SSTR(cgw));
-   return (rtype==CGR_ABELIAN ? "(scalar)" : "[]");
+   wbstring sout; 
+   if (cgb) {
+      char q=cgp.relevant();
+      if ((q&1) && cgb->cgd.SIZE.len) { 
+         wbvector<size_t> S(cgb->cgd.SIZE);
+         Wb::perm_data(FL,S.data,cgb->cgd.SIZE.data,S.len,cgp.data,cgp.len);
+         sout=S.toStrf("","x",cgb->rank(FL),"_");
+      }
+      else { sout=cgb->sizeStr(); 
+         if (q&1) { 
+            if (!cgb->cgd.D.len || cgp.len>2) wblog(FL,
+           "ERR %s() got cgp=%s with %s",FCT,STR(cgp),sout.data);
+         }
+      }
+   }
+   else {
+      if (cgw) wblog(FL,
+         "ERR %s() got cgw %s with cgb=0",FCT,SSTR(cgw));
+      sout=(rtype==CR_ABELIAN ? "(scalar)" : "[]");
+   }
+   return sout;
 };
 
 template <class TQ>
 wbstring CRef<TQ>::statStr(char vflag) const {
-   wbstring s(32); 
-   unsigned l=0, n=s.len;
+   wbvec<char> s(32);
 
    if (vflag) {
-      l=snprintf(s.data,n,"%s",rtype.tostr());
-      if ((cgp.len || conj) && l<n) l+=snprintf(s.data+l,n-l,
-         " %s%s",STR(cgp), conj?"*":"");
-      if (cgb && l<n) l+=snprintf(s.data+l,n-l," 0x%lX",(long)cgb);
+      s.catf(FL,"%s",rtype.tostr());
+      if (cgp) s.catf(FL," %s%s",STR(cgp));
+      if (cgb) s.catf(FL," 0x%lX",(long)cgb);
    }
 
-   if (l<n) {
-   if (cgb && cgb->cstat.t) {
-      if (rtype.t) {
-         l+=snprintf(s.data+l,n-l,"%s;%s",
-         rtype.tostr(), STR(cgb->cstat));
-      } else {
-         l+=snprintf(s.data+l,n-l,"%s",STR(cgb->cstat));
-      }
+   if (cgb && cgb->cstat.ctype) {
+      if (rtype.t)
+           { s.catf(FL,"%s;%s",rtype.tostr(), STR(cgb->cstat)); }
+      else { s.catf(FL,"%s",STR(cgb->cstat)); }
    }
-   else {
-      if (rtype.t) {
-         l+=snprintf(s.data+l,n-l,"%s",rtype.tostr());
-      }
-   }}
+   else if (rtype.t) { s.catf(FL,"%s",rtype.tostr()); }
 
-   if (l>=n) wblog(FL,
-      "ERR %s() string out of bounds (%d/%d)",FCT,l,n);
-   return s;
+   return s.data;
 };
 
 template <class TQ, class TD>
@@ -5596,7 +5737,7 @@ double genRG_base<TQ,TD>::normDiff(const char *F, int L,
       }
       emax=MAX(e,emax);
    }
-   if (emax && emax>1E-12) wblog(FL,"TST %s() e=%g",FCT,emax);
+   if (emax && emax>1e-12) wblog(FL,"TST %s() e=%g",FCT,emax);
 
    for (unsigned i=0; i<Sz.len; i++) {
       e=Sz[i].normDiff2(B.Sz[i]);
@@ -5606,7 +5747,7 @@ double genRG_base<TQ,TD>::normDiff(const char *F, int L,
       }
       emax=MAX(e,emax);
    }
-   if (emax && emax>1E-12) wblog(FL,"TST %s() e=%g",FCT,emax);
+   if (emax && emax>1e-12) wblog(FL,"TST %s() e=%g",FCT,emax);
 
    return emax;
 };
@@ -5622,8 +5763,8 @@ void genRG_base<TQ,TD>::checkOrthoCommRel(
    }
 
    unsigned i=Sp.len+Sz.len, j=B.Sp.len+B.Sz.len, e=0;
-   wbvector< const wbSparrayTD* > S1(i), S2(j);
-   wbSparrayTD C; double x; char s[64];
+   wbvector< const SPARRAY_TD* > S1(i), S2(j);
+   SPARRAY_TD C; double x; char s[64];
 
    for (j=i=0; i<  Sp.len; ++i, ++j) S1[j]=&(  Sp[i]);
    for (  i=0; i<  Sz.len; ++i, ++j) S1[j]=&(  Sz[i]);
@@ -5634,12 +5775,12 @@ void genRG_base<TQ,TD>::checkOrthoCommRel(
    for (i=0; i<S1.len; ++i) {
    for (j=0; j<S2.len; ++j) {
       S1[i]->comm(FL,*S2[j],C);
-      if ((x=double(C.norm()))>1E-10) {
+      if ((x=double(C.norm()))>1e-10) {
          snprintf(s,64,"[ S(%d), S(%d) ] @ %.3g",i+1,j+1,x);
          e=1; break;
       }
       S1[i]->comm(FL,*S2[j],C,'N','C');
-      if ((x=double(C.norm()))>1E-10) {
+      if ((x=double(C.norm()))>1e-10) {
          snprintf(s,64,"[ S(%d), S(%d)' ] @ %.3g",i+1,j+1,x);
          e=2; break;
       }
@@ -5716,7 +5857,7 @@ genRG_base<TQ,TD>& genRG_base<TQ,TD>::ApplyQFac(
 template <class TQ, class TD>
 void genRG_base<TQ,TD>::compareStdSU2(const char *F, int L) const {
 
-   cgsparray xSp,xSz,xS2,xE;
+   SPARR_RTD xSp,xSz,xS2,xE;
    wbvector<double> xsz; 
    double e1,e2,e3;
 
@@ -5733,14 +5874,71 @@ void genRG_base<TQ,TD>::compareStdSU2(const char *F, int L) const {
    e2=Sz[0].normDiff(xSz);
    e3=Z.normDiff(wbMatrix<double>().init2ref(xsz,'t'));
 
-   if (e1>1E-12 || e2>1E-12 || e3>1E-12) {
+   if (e1>1e-12 || e2>1e-12 || e3>1e-12) {
       char s[]="got SU(2) inconsistency";
       MXPut(FL,"q").add(Sz[0],"Sz").add(xSz,"Sz_")
          .add(Sp[0],"Sp").add(xSp,"Sp_").add(Z,"Z").add(xsz,"xsz");
-      if (e1>1E-12) wblog(F_L,"ERR %s (Sp @ %.3g)",s,e1);
-      if (e2>1E-12) wblog(F_L,"ERR %s (Sz @ %.3g)",s,e2);
-      if (e3>1E-12) wblog(F_L,"ERR %s ( Z @ %.3g)",s,e3);
+      if (e1>1e-12) wblog(F_L,"ERR %s (Sp @ %.3g)",s,e1);
+      if (e2>1e-12) wblog(F_L,"ERR %s (Sz @ %.3g)",s,e2);
+      if (e3>1e-12) wblog(F_L,"ERR %s ( Z @ %.3g)",s,e3);
    }
+};
+
+template <class TQ, class TD>
+unsigned genRG_base<TQ,TD>::block_decompose_Sm(const char *F, int L,
+   char w, 
+   wbMatrix< wbarray<TD> > &SM,
+   wbMatrix<unsigned> &IJ,
+   WBINDEX *D_
+) const {
+
+   unsigned nblks=0;
+   if (J.len!=q.qlen()) wblog(F_L,"ERR %s() "
+      "got invalid qset [%s] having %s",FCT,STR(J),STR(q));
+
+   WBINDEX D,I2,Ig;
+
+   if (!Sp.len || Sp.len!=Sz.len) { wblog(FL,
+      "ERR %s() Sp/Sz not yet available for %s [%s] (%d/%d)",
+      FCT,STR(q),STR(J), Sp.len, Sz.len);
+   }
+
+   Z.groupSortedRecs(D,-1,-1,Ig,I2);
+
+   unsigned k, rsym=Sp.len;
+   size_t i,j,i_,j_,l,*idx, N=D.sum(); widx_t *ig=Ig.data;
+   const TD *x;
+
+   if (N!=Z.dim1 || N!=Ig.len) wblog(FL,
+      "ERR %s() length mismatch (%d/%d/%d/%d)",FCT,N,Z.dim1,Ig.len,I2.len);
+
+   SM.init(D.len,rsym);
+   IJ.init2val(D.len,rsym,-1); 
+
+   for (k=0; k<rsym; ++k) {
+      if (Sp[k].IDX.dim2!=2) wblog(FL,
+         "ERR %s() Sp[%d] of invalid rank-%d",FCT,k,Sp[k].IDX.dim2);
+      idx=Sp[k].IDX.data; N=Sp[k].IDX.dim1; x=Sp[k].D.data;
+      for (l=0; l<N; ++l, idx+=2) {
+         i_=idx[1]; i=ig[i_];  
+         j_=idx[0]; j=ig[j_];  
+
+         if (i<=j) wblog(FL,"ERR %s() "  
+            "lowering operator raising weights (i,j)=(%d,%d) !?",FCT,i,j);
+         if (w==1)
+              { IJ(i,k)=j; } 
+         else { IJ(j,k)=i; }
+
+         wbarray<TD> &Sm=SM(w==1?i:j,k);
+         if (!Sm) { Sm.init(D[i],D[j]); ++nblks; }
+
+         Sm(I2[i_],I2[j_])+=Wb::CONJ(x[l]); 
+      }
+   }
+
+   if (D_) { D.save2(*D_); }
+
+   return nblks;
 };
 
 template <class TQ, class TD>
@@ -5761,7 +5959,7 @@ void genRG_struct<TQ,TD>::initCommRel(
          "ERR %s() got empty R.Sp[%d/%d]",FCT,i+1,np);
 
       R.Sp[i].comm(FL,R.Sp[i],C,'N','C');
-      if (C.norm2()<(TD)(1E-10)) {
+      if (C.norm2()<(TD)(1e-10)) {
          MXPut(FL,"ans").add(R,"R").add(i+1,"i");
          wblog(F_L,"ERR %s() [Sp,Sp'] has norm 0",FCT);
       }
@@ -5773,7 +5971,7 @@ void genRG_struct<TQ,TD>::initCommRel(
 
       for (p=k=0; k<nz; ++k) {
          x=double(C.froNorm2(R.Sz[k])/R.Sz[k].froNorm2(R.Sz[k]));
-         if (Wb::abs(x)>1E-10) { kk[p]=k; fac[p++]=x; }
+         if (Wb::abs(x)>1e-10) { kk[p]=k; fac[p++]=x; }
       }
       if (!p) {
          MXPut(FL,"i").add(R,"R").add(CR,"CR").add(C,"C")
@@ -5816,15 +6014,15 @@ double genRG_struct<TQ,TD>::checkCommRel(
 
    unsigned i,j,p,l,m, n=CR.len, np=R.Sp.len, nz=R.Sz.len;
    wbsparray<TD> C; double e2, r2=0;
-   QType qt=(q==QTYPE_UNKNOWN ? R.q : q);
+   QType qt=(q==QT_UNKNOWN ? R.q : q);
 
    if (q!=R.q) { char s[64];
       snprintf(s,64,"got QType mismatch: %s <> %s",STR(q),STR(R.q));
-      if (q!=QTYPE_UNKNOWN)
+      if (q!=QT_UNKNOWN)
            wblog(F_L,"ERR %s() %s",FCT,s);
    }
 
-   if (qt!=QTYPE_UNKNOWN && (np!=nz || nz!=qt.sub)) wblog(F_L, 
+   if (qt!=QT_UNKNOWN && (np!=nz || nz!=qt.sub)) wblog(F_L, 
       "ERR %s() unexpected Sz[%d], Sp[%d], sub=%d\nhaving symmetry='%s'",
       FCT, nz, np, qt.sub, STR(qt));
    if (!R.Sp.len || !R.Sz.len) wblog(F_L,
@@ -5833,13 +6031,13 @@ double genRG_struct<TQ,TD>::checkCommRel(
    for (i=0; i<nz; ++i) {
    for (j=i+1; j<nz; ++j) {
       e2=double(R.Sz[i].froNorm2(R.Sz[j]));
-      if (e2>1E-10) { if (F) {
+      if (e2>1e-10) { if (F) {
           MXPut(FL,"I_").add(R,"R").add(i+1,"i").add(j+1,"j").add(C,"C");
           wblog(F_L,"ERR %s() CR inconsistency:\n"
          "z-ops not mutually orthogonal (@ e=%.3g)",FCT,e2);
       }}
       R.Sz[i].comm(FL,R.Sz[j],C); e2=double(C.norm2()); r2+=e2;
-      if (e2>1E-10) { if (F) {
+      if (e2>1e-10) { if (F) {
          MXPut(FL,"I_").add(R,"R").add(i+1,"i").add(j+1,"j").add(C,"C");
          wblog(F_L,"ERR %s() CR inconsistency ([Z,Z] @ e=%.3g)",FCT,e2);
       }}
@@ -5857,7 +6055,7 @@ double genRG_struct<TQ,TD>::checkCommRel(
 
       for (p=0; p<m; ++p) { C.Plus(FL,R.Sz[k[p]],-fac[p]); }
 
-      e2=double(C.norm2()); r2+=e2; if (e2>1E-10) { if (F) {
+      e2=double(C.norm2()); r2+=e2; if (e2>1e-10) { if (F) {
           MXPut(FL,"q").add(R,"R").add(i+1,"i").add(j+1,"j")
              .add(CR[l].k+1,"k").add(fac,"fac").add(C,"C");
           wblog(F_L,"ERR %s() CR inconsistency (%d,%d: e=%.3g)",
@@ -5873,7 +6071,7 @@ double genRG_struct<TQ,TD>::checkCommRel(
       R.Sz[j].comm(FL,R.Sp[i],C); C.Plus(FL,R.Sp[i],-DZ(i,j));
       e2=double(C.norm2()); r2+=e2;
 
-      if (e2>1E-10) { if (F) {
+      if (e2>1e-10) { if (F) {
          MXPut(FL,"q").add(R,"R") 
          .add(R.Sz[j],"Sz").add(R.Sp[i],"Sp").add(DZ(i,j),"sfac")
          .add(*this,"I").add(i+1,"i").add(j+1,"j").add(C,"C");
@@ -5941,7 +6139,7 @@ unsigned genRG_struct<TQ,TD>::genTensorProds(
        if ((e=SIG.check911('t'))) {
           wblog(FL,"TST %s(%g,%s,%s) interrupt %d at (%d,%d)/%d",
              FCT,double(dmax),cSTR(sdig),cSTR(vflag),e,i+1,j+1,l);
-          if (e>1) { SIG.check911(); }
+          if (e) { SIG.check911(); } 
        }
        n3+=getTensorProdReps_gen(*qq[i],*qq[j],TP3_LDR);
     }}
@@ -6000,9 +6198,9 @@ void genRG_struct<TQ,TD>::initSU2(const qset<TQ> &J) {
       );
 
       double e;
-      if ((e=R.Sp[0].normDiff(Sp))>1E-12)
+      if ((e=R.Sp[0].normDiff(Sp))>1e-12)
          wblog(FL,"ERR got SU(2) inconsistency (Sp @ %.3g)",e);
-      if ((e=R.Sz[0].normDiff(Sz))>1E-12)
+      if ((e=R.Sz[0].normDiff(Sz))>1e-12)
          wblog(FL,"ERR got SU(2) inconsistency (Sz @ %.3g)",e);
    }
    else {
@@ -6019,7 +6217,19 @@ void genRG_struct<TQ,TD>::initSU2(const qset<TQ> &J) {
 };
 
 template <class TQ, class TD>
-int genRG_struct<TQ,TD>::get1J_gen(
+unsigned genRG_struct<TQ,TD>::block_decompose_Sm(const char *F, int L,
+   const qset<TQ> &J, char w, wbMatrix< wbarray<TD> > &SM) {
+
+   wbMatrix<unsigned> IJ;
+
+   const genRG_base<TQ,TD> &G=RSet[J];
+   if (G.isEmpty()) gStore.load_RSet(F_L,q,J);
+
+   return G.block_decompose_Sm(F,L,w,SM,IJ);
+};
+
+template <class TQ, class TD>
+int genRG_struct<TQ,TD>::get1J_gen_old(
    const char *F, int L, const qset<TQ> &J1,
    char flag 
 ){
@@ -6036,14 +6246,11 @@ int genRG_struct<TQ,TD>::get1J_gen(
    Q.init1J(q,J.data); 
 
    CData<TQ,TD> &Z=gCS.getBUF(0,0,Q,
-      (flag & TP3_LOAD) ? ((flag & TP3_ITER) | LB_GEN) : 0);
+      (flag & TP3_LOAD) ? ((flag & TP3_ITER) | LB_CALC__) : 0);
 
-   if (Z.isEmpty() || Z.cstat.t==CGD_REF_INIT) {
-      if (flag & TP3_TST) return 0;
-   }
-   else {
-      return 0;
-   }
+   if (Z.isEmpty() || Z.cstat==CD_REF_INIT)
+      { if (  flag & TP3_TST ) { return 0; }}
+   else if (!(flag & TP3_DBG)) { return 0; } 
 
    CG::FileLock flk; 
    if (flk.init(q,J,J_,"c1j")<=0) wblog(FL,
@@ -6060,7 +6267,7 @@ int genRG_struct<TQ,TD>::get1J_gen(
          &Sz1=G1.Sz, &Sz2=G2.Sz;
 
    if (!Sp1.len || !Sp2.len || !Sz1.len || !Sz2.len) {
-      if (flag & TP3_TST) return -1;
+      if (flag & TP3_TST) { return -1; }
       if (q.isSU2()) {
          if (!Sp1.len || !Sz1.len) initSU2(J );
          if (!Sp2.len || !Sz2.len) initSU2(J_);
@@ -6084,10 +6291,10 @@ int genRG_struct<TQ,TD>::get1J_gen(
    );
 
    SPIDX_T d=G1.dim(), rs=G1.Sp.len;
-   wbvector< wbSparrayTD > SL(2*rs), SR(2*rs);
-   wbSparrayTD HL,HR,X,Xbest,HX;
+   wbvector< SPARRAY_TD > SL(2*rs), SR(2*rs);
+   SPARRAY_TD HL,HR,X,Xbest,HX;
 
-   if (d!=G2.dim()) wblog(F_L,"ERR %s() invalid dual irrep\n"
+   if (d!=G2.dim()) wblog(F_L,"ERR %s() invalid dual irep\n"
       "%s: [%s] <> [%s]",FCT,STR(q),STR(G1.J),STR(G2.J));
 
    for (i=0; unsigned(i)<rs; ++i) {
@@ -6101,12 +6308,12 @@ int genRG_struct<TQ,TD>::get1J_gen(
        Wb::MatProd(G2.Sp[i],G2.Sp[i], HR,'C','N',TD(0.5),TD(1));
    }
 
-   X.initDiag2(d).setRand_data(1.,'s'); 
-   X.Normalize();
-
    unsigned iter=0, nK=8, nmax=d*d, eflag=0, neps=32;
    wbarray<TD> HK; wbvector<TD> EK;
-   double xmin=1E99, x1=1, Ebest=1, e2=0;
+   double xmin=1E99, x1=1, Ebest=1, e2=0; 
+
+   X.initDiag2(d).setRand_data(1.,'s'); 
+   X.Normalize();
 
    gStore.rclog(q, FL, CG_VERBOSE>6 && F,
       "%N--> %s() J=(%s) %d x %d = %d (K=%d)",FCT,STR2(J1,q), d,d,d*d,nK);
@@ -6146,120 +6353,121 @@ int genRG_struct<TQ,TD>::get1J_gen(
       FCT,STR2(J1,q),iter,nmax,i, EK.len ? double(EK[0]) : NAN, Ebest);
    }
 
-   Z=Q; Z.cgd.init(X); Z.cstat.init(CGD_1JSY_GEN); {
+   if (flag & TP3_DBG) {
+      wblog(FL,"TST %s() k=%2d/%d @ E0=%.3g; %.3g, %.3g (i=%d/%d)",
+      FCT,iter,d,Ebest,double(xmin),Wb::sqrt(e2),i,nK);
+      return 0;
+   }
+
+   Z=Q;
+   Z.cstat_init_(CD_1JSY_GEN).setComplete(3);
+   Z.cgd.init(X); {
       e2=Z.SkipTiny(FL);
       Z.cgd.NormSignC(FL);
    }
 
    gStore.rclog(q, FL, i<2 && CG_VERBOSE>6 && F,
       " *  %s() k=%2d/%d @ E0=%.3g; %.3g, %.3g (i=%d/%d)",
-      FCT,iter,d,Ebest,double(xmin),Wb::sqrt(e2),i,nK
-   );
+      FCT,iter,d,Ebest,double(xmin),Wb::sqrt(e2),i,nK);
 
    i=gStore.save_CData(0,0,Z);
 
    gStore.rclog(q, PFL, CG_VERBOSE>6 && F,
-      "[+]  %c CBUF[%03d] 1J symbol #%05x %s ", i? 'W':'w',
-      gCS.BUF.size(), Z.cstat.ID, STR((QSet<TQ>&)Z)
+      "[+]  %c CBUF[%03d] 1J symbol #%05X %s ", i? 'W':'w',
+      gCS.BUF.size(), Z.cstat.cID, STR((QSet<TQ>&)Z)
    );
 
    return 1;
 };
 
-template<class TD>
-int BuildKrylovH(
-   const QType &q,  
-   wbarray<TD> &HK, unsigned nk, 
-   wbSparrayTD &X,        
-   wbvector<TD> &EK,
-   const wbSparrayTD &HL,            
-   const wbSparrayTD &HR,            
-   const wbvector< wbSparrayTD > SL, 
-   const wbvector< wbSparrayTD > SR,
-   double &xmin_
+template <class TQ, class TD>
+int genRG_struct<TQ,TD>::get1J_gen(
+   const char *F, int L, const qset<TQ> &J1,
+   char flag 
 ){
-   unsigned rval=0, ik=0, d=HL.dim();
-   wbSparrayTD HX, U;
-   wbarray<TD> UK;
-   wbvector<TD> v;
-   TD x=0; double xmin=1E99;
+   if (J1.len!=q.qlen()) wblog(F_L,"ERR %s() "
+      "got invalid qset [%s] having %s",FCT,STR(J1),STR(q));
 
-   if (nk<2) wblog(FL,"ERR %s() got invalid nk=%d",FCT,nk);
+   qset<TQ> J2(J1.len); {  q.getDual(J1.data,J2.data); }
 
-   if (nk>d) nk=d; 
-   HK.init(nk,nk); X.Normalize();
+   int i=(J1<J2); double dx,dn,eps=WbUtil<TD>().eps(); 
+   const qset<TQ> &J  (i ? J1 : J2);
+   const qset<TQ> &J_ (i ? J2 : J1);
+   QSet<TQ> Q;
 
-   for (; ik<nk; ++ik) {
-      GetHPsi(HX,X,HL,HR,SL,SR);
-      HK(ik,ik)=X.dotProd(FL,HX);
-      if (ik) {
-         TD d=Wb::abs(HK(ik-1,ik-1))+Wb::abs(HK(ik,ik));
-         if (d+x==d) { rval=2; 
-            HK.Resize(ik,ik);  
+   Q.init1J(q,J.data); 
 
-            gStore.rclog(q, FL, CG_VERBOSE>6," *  %s() "
-              "converged @ %.4g (ik=%d/%d)",FCT,double(x),ik,nk);
-            break;
-         }
+   CData<TQ,TD> &Z=gCS.getBUF(0,0,Q,
+      (flag & TP3_LOAD) ? ((flag & TP3_ITER) | LB_CALC__) : 0);
+
+   if (Z.isEmpty() || Z.cstat==CD_REF_INIT) {
+        if (  flag & TP3_TST ) { return 0; }}
+   else if (!(flag & TP3_DBG)) { return 0; } 
+
+   CG::FileLock flk; 
+   if (flk.init(q,J,J_,"c1j")<=0) wblog(FL,
+      "ERR %s() failed to setup c1j file lock\n%s: [%s], [%s]",
+      FCT, STR(q), STR(J), STR(J_));
+
+   const genRG_base<TQ,TD> &G1=RSet[J], &G2=RSet[J_];
+   wbsparray<TD> C;
+
+      if (G1.isEmpty()) gStore.load_RSet(F_L,q,J );
+      if (G2.isEmpty()) gStore.load_RSet(F_L,q,J_);
+
+   if (!G1.Sp.len || !G2.Sp.len || !G1.Sz.len || !G2.Sz.len) {
+      if (flag & TP3_TST) { return -1; }
+      if (q.isSU2()) {
+         if (!G1.Sp.len || !G1.Sz.len) initSU2(J );
+         if (!G2.Sp.len || !G2.Sz.len) initSU2(J_);
       }
-
-      if (!ik){
-         X.save2(U); 
-      }
-      else { U.Cat(FL,X,3); }
-
-      if (ik+1==nk) { break; }
-
-      for (unsigned io=0; io<2; ++io) { 
-         U.contract(FL,"12*",HX,"12",X); X.toFull(v);
-         U.contract(FL,2,v,X); HX-=X;  
-      }
-
-      x=HX.norm(); if (xmin>double(x)) { xmin=double(x); }
-      if (x>0) {
-         HX*=(TD(1)/x); HK(ik+1,ik)=HK(ik,ik+1)=x;
-      }
-      else {
-         HK.Resize(ik+1,ik+1);  
-         gStore.rclog(q, FL, CG_VERBOSE>6," *  %s() "
-            "converged @ %.4g (ik=%d/%d)",FCT,double(x),ik+1,nk);
-         rval=3; break;
-      }
-
-      HX.save2(X);
+      else wblog(F_L,
+        "ERR %s() Sp/Sz not yet generated for %s\n"
+        "[%s]*[%s]: %d/%d; %d/%d",FCT,STR(q),STR(J1),STR(J2),
+         G1.Sp.len, G2.Sp.len, G1.Sz.len, G2.Sz.len
+      );
    }
 
-   HK.eigTriDiag(FL,EK,&UK,CG_EPS2);
-   UK.getCol(0,v);
-   U.contract(FL,2,v,X); 
+   if (G1.get1J_gen_aux(F_L,G2,Z,C,dx,dn,flag)) { 
+      double ep,em; TD one(1); wbsparray<TD> X;
 
-   if (xmin<CG_EPS1 && xmin>xmin_) rval=1;
-   xmin_=xmin;
+      for (unsigned i=0; i<G1.Sp.len; ++i) {
+         Wb::MatProd(G1.Sp[i],C, X,'N','N');
+         Wb::MatProd(C,G2.Sp[i], X,'N','C',one,one);
+         ep=sqrt(double(X.norm2()));
 
-   return rval;
-};
+         Wb::MatProd(G1.Sp[i],C, X,'C','N');
+         Wb::MatProd(C,G2.Sp[i], X,'N','N',one,one);
+         em=sqrt(double(X.norm2()));
 
-template<class TD>
-void GetHPsi(
-   wbSparrayTD &HX, const wbSparrayTD &X,
-   const wbSparrayTD &HL, 
-   const wbSparrayTD &HR, 
-   const wbvector< wbSparrayTD > SL, 
-   const wbvector< wbSparrayTD > SR  
-){
-   wbSparrayTD Q; HX.init();
-   TD one(1);
+         dx=MAX(ep,em);
+         wblog(FL," *  Sp[%d] @ %8.3g = %6.3g eps",i,dx,dx/eps);
+      }
 
-   if (SL.len!=SR.len) wblog(FL,"ERR %s() "
-      "got length mismatch (%d/%d)",FCT,SL.len,SR.len);
-
-   Wb::MatProd(HL, X, HX, 'N','N',one,one); 
-   Wb::MatProd(X, HR, HX, 'N','N',one,one); 
-
-   for (unsigned i=0; i<SL.len; ++i) {
-   Wb::MatProd(SL[i],X, Q,'N','N');
-   Wb::MatProd(Q,SR[i],HX,'N','N',one,one); 
+      return 0;
    }
+
+   Z=Q; Z.cgd.init(C); Z.cstat_init_(CD_1JSY_GEN).setComplete(3);
+      wbvec<char> sout(64);
+      sout.catf(FL,"dC=[ sp=%.3g",dx/eps);
+
+   dx=Z.SkipTiny(FL); 
+      if (dx) sout.catf(FL," + %.4g",sqrt(dx)/eps);
+      sout.catf(FL,", ck=%.3g ] * %.3g",dn/eps,eps);
+
+   Z.cgd.NormSignC(FL);
+
+   gStore.rclog(q, FL, CG_VERBOSE>6 && F,
+      "C1J %s (%s) d=%d @ %s",STR(q),STR2(J1,q),G1.dim(),sout.data);
+
+   i=gStore.save_CData(0,0,Z);
+
+   gStore.rclog(q, PFL, CG_VERBOSE>6 && F,
+      "[+]  %c CBUF[%03d] 1J symbol #%05X %s ", i? 'W':'w',
+      gCS.BUF.size(), Z.cstat.cID, STR((QSet<TQ>&)Z)
+   );
+
+   return 1;
 };
 
 template <class TQ, class TD>
@@ -6287,11 +6495,11 @@ int genRG_struct<TQ,TD>::getTensorProdReps_gen(
 
    if (flag & TP3_LDR) flag|=TP3_LDM;
 
-   mp=(J1!=J2 ? 2 : 1); 
+   mp=(J1!=J2 ? 2:1); 
 
    n1=gCS.find_map3(q,J12);
    if (n1<=0 && !(flag & TP3_TST)) {
-      gStore.load_Std3(0,0,q,J1,J2, loadR);
+      gStore.load_mp3(0,0,q,J1,J2, loadR);
       n1=gCS.find_map3(q,J12);
       if (n1>0) { n3+=n1; }
    }
@@ -6299,7 +6507,7 @@ int genRG_struct<TQ,TD>::getTensorProdReps_gen(
    if (mp>1) {
       n2=gCS.find_map3(q,J21);
       if (n2<=0 && (n1>0 || (flag & TP3_LOAD))) {
-         gStore.load_Std3(0,0,q,J2,J1, loadR);
+         gStore.load_mp3(0,0,q,J2,J1, loadR);
          n2=gCS.find_map3(q,J21);
          if (n2>0) { n3+=n2; }
       }
@@ -6355,12 +6563,10 @@ int genRG_struct<TQ,TD>::getTensorProdReps_gen(
          if (!Sp1.len || !Sz1.len) initSU2(J1);
          if (!Sp2.len || !Sz2.len) initSU2(J2);
       }
-      else wblog(FL,
-        "ERR %s() Sp/Sz not yet generated\n"
-        "for %s ([%s]*[%s]: %d/%d; %d/%d)", FCT,
-         q.toStr().data, STR(J1), STR(J2),
-         Sp1.len, Sp2.len, Sz1.len, Sz2.len
-      );
+      else { wblog(FL,"ERR Sp/Sz unavailable for tensor product\n"
+        "%s [%s] x [%s], having Sp(%d/%d), Sz(%d/%d)",
+        STR(q),STR(J1),STR(J2), Sp1.len,Sp2.len,Sz1.len,Sz2.len);
+      }
    }
 
    if (Sp1.len!=Sp2.len || Sz1.len!=Sz2.len) wblog(FL,
@@ -6388,7 +6594,7 @@ int genRG_struct<TQ,TD>::getTensorProdReps_gen(
    wbsparray<TD> X1,E1,E2;
    wbvector< wbsparray<TD> > U;
    wbMatrix<TQ> ssz,ss,sx,sz,Z;
-   wbperm P, p213("2,1,3");
+   wbperm P, p213("213");
    wbindex I;
 
    const wbMatrix<double> &Z1=G1.Z, &Z2=G2.Z;
@@ -6465,8 +6671,9 @@ int genRG_struct<TQ,TD>::getTensorProdReps_gen(
       genRG_base<TQ,TD> G, &G0=RSet[J]; d3=dd[it];
       int ioR=-1, ioC=-1, saveR=0, saveC=0, xflag=0;
 
-      X.init3(q,d1,d2,d3); X.cstat.init(CGD_STD3); 
+      X.init3(q,d1,d2,d3);
       X.qs.init(J1,J2,J);
+      X.cstat_init_(CD_STD3).setComplete(3); 
 
       if (!U[it].hasSize(d1*d2,d3)) wblog(FL,
          "ERR %s() size mismatch (%s <> %dx%dx%d)",
@@ -6498,8 +6705,8 @@ int genRG_struct<TQ,TD>::getTensorProdReps_gen(
 
       if (G0.isEmpty()) gStore.load_RSet(0,0,q,J,RCL_V2); 
       if (!G0.Sp.isEmpty() || !G0.Sz.isEmpty()) {
-         double e=G.normDiff(0,0,G0,1E-10);
-         if (e>1E-10) {
+         double e=G.normDiff(0,0,G0,1e-10);
+         if (e>1e-10) {
             MXPut(FL).add(J1,"J1").add(J2,"J2").add(J,"J")
               .add(G1,"G1").add(G2,"G2").add(G,"G").add(G0,"G0");
             wblog(FL,"ERR %s()\n"
@@ -6521,23 +6728,20 @@ int genRG_struct<TQ,TD>::getTensorProdReps_gen(
 
       if (saveR) {
          char sflag=(saveR>1 && G0.istr.data && G0.istr.data[0]);
-         unsigned l=0, n=64 + (sflag ? strlen(G0.istr.data) : 0);
-         char istr[n];
+         wbvec<char> istr(64 + (sflag ? strlen(G0.istr.data) : 0));
 
-         if (sflag  ) { l=snprintf(istr,n,"%s; ",G0.istr.data); } else
-         if (saveR>1) { l=snprintf(istr,n,"e=%.3g; ", e0); }
-         l+=snprintf(istr+l,n-l,"(%s,%s) @ e=%.3g",
+         if (sflag  ) { istr.catf(0,0,"%s; ",G0.istr.data); } else
+         if (saveR>1) { istr.catf(0,0,"e=%.3g; ", e0); }
+         istr.catf(FL,"(%s,%s) @ e=%.3g",
              J1.toStr(q).data, J2.toStr(q).data, e2);
-         if (l>=n) wblog(FL,"WRN %s() "
-            "string out of bounds (%d/%d)\n%s",FCT,l,n,istr);
 
          G.save2(G0);
-         G0.istr=istr; G0.err=e2;
+         G0.istr=istr.data; G0.err=e2;
 
          ioR=gStore.save_RSet(0,0,G0);
       }
 
-      if (G0.q.validType()) {
+      if (G0.q.validType(FL)>0) {
          gCS.getIdentityC(FL,q,J.data);
       }
 
@@ -6596,22 +6800,33 @@ if (im>1) {
             if (m<m2) { m=m2; n3+=mp; saveC|=1; }
          }
          else {
-            double e=X.normDiff(FL,Cb,1E-10);
-            if (e<1E-10) { m=1;
-               if (CG_VERBOSE>6) wblog(FL, 
-                  "ok. %s() %s @ e=%.3g",FCT,STR(Cb),e);
-
-               if (Cb.cstat!=CGD_STD3_X) {
+            double e=X.normDiff(FL,Cb,1e-10);
+            if (e<CG_EPS1) { m=1;
+               if (Cb.cstat==CD_STD3_X) {
+                  if (CG_VERBOSE>6) wblog(FL, 
+                     "ok. %s() %s @ e=%.3g",FCT,STR(Cb),e);
+               }
+               else {
                   X.checkAdditivityZ(FL,G1.Z,G2.Z,R.Z);
 
-                  X.cstat.ID   =Cb.cstat.ID;
+                  X.cstat.cID  =Cb.cstat.cID;
                   X.cstat.ctime=Cb.cstat.ctime;
 
+                  if (Cb.isComplete()==3) { 
+                     X.cstat.ctype |= Cb.cstat.ctype; 
+                  }
+
+                  char sx[128];
+                  snprintf(sx,128,"%s",STR2(Cb.cstat,1));
+
                   X.save2(Cb);
+
+                  gStore.rclog(Cb.t, PFL, CG_VERBOSE>6, 
+                   "\b[x] CBUF[%03d] substituting #%05X %s @ e=%.3g\n"
+                     "       %s\n    -> %s", gCS.BUF.size(),
+                  Cb.cstat.cID, STR(Cb), e, sx, STR2(Cb.cstat,1));
                }
 
-               if (im>=M) wblog(FL,
-                  "ERR %s() index out of bounds (%d/%d)",FCT,im,M);
                R3.cgw_check_std3(FL,d3,im);
             }
             else {
@@ -6629,7 +6844,7 @@ if (im>1) {
          }
       }
       else { n3+=mp; saveC|=2;
-         if (im>m || m>=R3.wdim(FL) || (im && Cb.cstat.t!=CGD_STD3))
+         if (im>m || m>=R3.wdim(FL) || (im && Cb.cstat!=CD_STD3))
             wblog(FL,"ERR %s() im=%d/%d (it=%d)\n%s\n%s",
             FCT, im,m,it, SSTR(R3), STR(Cb)
          );
@@ -6648,13 +6863,13 @@ if (im>1) {
          R3.cgw_check_std3(FL,d3,im);
       }
 
-      if (xflag && (Cb.cstat!=CGD_STD3 && Cb.cstat!=CGD_STD3_X)) {
-         char s[128];
-         snprintf(s,128,"converting %s : %s -> %s",
-            STR(Cb), Cb.cstat.tstr(), CGD_TYPE_STR[CGD_STD3_X]);
-         wblog(FL,Cb.cstat==CGD_FROM_DEC ? "CHK %s":"WRN %s",s);
+      if (xflag && !Cb.cstat.any(CD_STD3, CD_STD3_X)) {
+         char s[128]; snprintf(s,128,"converting %s : %s -> %s",
+            STR(Cb), Cb.cstat.tstr().data, CD_TYPE_STR[CD_STD3_X]);
+         wblog(FL,Cb.cstat==CD_FROM_DEC? "CHK %s":"WRN %s",s);
 
-         Cb.cstat=CGD_STD3_X; saveC|=4; 
+         Cb.cstat.init_type_(CD_STD3_X); saveC|=4; 
+         Cb.cstat.setComplete(1);
       }
 
       if (normR3) {
@@ -6667,7 +6882,7 @@ if (im>1) {
          if (R3p.cgw) { if (!R3p.cgw.sameSize(R3.cgw)) wblog(FL,
             "ERR %s() CRef size mismatch (%s/%s)",FCT,SSTR(R3p),SSTR(R3)); }
          else {
-            R3.permute(p213,R3p);
+            R3.permute(R3p,p213);
          }
 
          R3p.cgw.setCol(im, R3.cgw.col(im), sr<0 ? -1:1);
@@ -6685,42 +6900,13 @@ if (xflag && im>1) {
          ioC=gStore.save_CData(0,0,Cb);
 
          if (J.allZero()) { 
-            QSet<TQ> Q1(Cb);
-            if (!J.len || Q1.qdir.len!=3) wblog(FL,"ERR %s()",FCT);
             if (m!=1) wblog(FL,"ERR %s() got 1J symbol @ om=%d",FCT,m);
-            Q1.qdir.len=2;
-            Q1.qs.len=2*J.len;
-
-            CData<TQ,TD> &S1=gCS.getBUF(0,0,Q1,LB_LOAD);
-            if (S1.isEmpty()) {
-               Cb.reduceto1JSymbol(FL,S1);
-               int io1=gStore.save_CData(0,0,S1); 
-
-               gStore.rclog(q, PFL, CG_VERBOSE>6,
-                  "[+]  %c CBUF[%03d] 1J symbol #%05x %s", io1? 'W':'w',
-                  gCS.BUF.size(), S1.cstat.ID, STR(Q1)
-               );
-            }
-            else {
-               CData<TQ,TD> Z;
-               Cb.reduceto1JSymbol(FL,Z); double e=S1.normDiff(FL,Z);
-
-               if (e>CG_EPS2 || CG_VERBOSE>2) { char s[256];
-                  snprintf(s,256,"tensorProd() got existing 1J symbol "
-                     "@ %.3g\n   %s %s\n<> %s %s",e, STR(Z),
-                     STR2(Z.cstat,'v'), STR(S1), STR2(S1.cstat,'v'));
-                  if (e>CG_EPS2) { MXPut(FL,"x1j")
-                     .add(Cb,"Cb").add(S1,"Z1").add(Z,"Z2").add(e,"e");
-                     wblog(FL,"ERR %s",s);
-                  }
-                  gStore.rclog(Cb.t, FL, CG_VERBOSE>6,"ok. %s",s);
-               }
-            }
+            gStore.save_1J(FL,Cb,"tensorProd() ");
          }
       }
 
       if (1) { 
-         unsigned l=16; char s[l];
+         wbvec<char> s(16);
 
          if (it==0) {
             gStore.rclog(q,PFL,CG_VERBOSE>6,
@@ -6730,14 +6916,14 @@ if (xflag && im>1) {
          }
 
          if (iOM.dim1 && iOM(it,1)>1)
-              { snprintf(s,l,"%4d x%d",d3,iOM(it,1)); }
-         else { snprintf(s,l,"d=%d",d3); }
+              { s.catf(0,0,"%4d x%d",d3,iOM(it,1)); }
+         else { s.catf(0,0,"d=%d",d3); }
 
          gStore.rclog(q,PFL,CG_VERBOSE>6,
-            "[+] %c%c map3[%03d] #%05x %-6s (%s) %s",
+            "[+] %c%c map3[%03d] #%05X %-6s (%s) %s",
             ioR<0? ' ': (ioR?'W':'w'), ioC<0? ' ': (ioC?'W':'w'),
-            gCS.map3[q].size(), Cb.cstat.ID, STR(q),
-            Cb.QStr().data, s
+            gCS.map3[q].size(), Cb.cstat.cID, STR(q),
+            Cb.QStr().data, s.data
          );
          doflush();
       }
@@ -6747,8 +6933,8 @@ if (xflag && im>1) {
    if (nel && nel!=d12*d12) wblog(FL, 
       "ERR %s() state space inconsistency (%d/%dx%d)",FCT,nel,d12,d12);
 
-   io3 =   gStore.save_Std3(0,0,q,J12,&c2eps); if (mp>1) { 
-   io3+=10*gStore.save_Std3(0,0,q,J21,&c2eps); }
+   io3 =   gStore.save_mp3(0,0,q,J12,&c2eps); if (mp>1) { 
+   io3+=10*gStore.save_mp3(0,0,q,J21,&c2eps); }
 
    if (CG_VERBOSE>8 || isLargeD || q.isLargeD(dd)) {
       if (dd.sum()!=d1*d2) wblog(FL,"ERR %s() "
@@ -6756,7 +6942,7 @@ if (xflag && im>1) {
 
       gStore.rclog(q, PFL, CG_VERBOSE>6 && (isLargeD || q.isLargeD(dd)),
          "%s  %c %s %dx%d = %d, CR @ %.3g", io3%2 ? "WRN":"[+]",
-         io3%2 ? 'W':'w', q.type==QTYPE_UNKNOWN ? "general" : STR(q),
+         io3%2 ? 'W':'w', q.type==QT_UNKNOWN ? "general" : STR(q),
          d1, d2, d1*d2, sqrt(r2)
       );
       fflush(0); doflush();
@@ -6777,321 +6963,24 @@ if (xflag && im>1) {
 };
 
 template <class TQ, class TD>
-double CG::getSymmetryStates(const char *F, int L, const QType &q, 
-   const wbvector< wbSparrayTD > &Sp,
-   const wbvector< wbSparrayTD > &Sz,
-   wbvector< wbSparrayTD > &UK, 
-   wbvector<unsigned> &dd, 
-   wbvector<genRG_base<TQ,TD> > &RR,
-   wbvector<double> &c2eps,  
-   wbMatrix<unsigned> *iOM,  
-   char vflag
-){
-   unsigned i,j,ip,i0=0, D,d0=0, nu=0, m,found,
-        it=0, nt, r=q.sub, np=Sp.len, nz=Sz.len;
-   double c2=0, r2=0; int largeD;
-
-   wbvector< wbSparrayTD* > uk;
-   wbSparrayTD U,x1,x2,v0,vi;
-   wbMatrix<TQ> z2,JJ;
-   wbvector<widx_t> dJ;
-   wbvector<TD> sz;
-   wbperm P;
-
-   TD x,x12,vi2;
-
-   TD eps=1E-8, eps2=1E-10;
-
-#ifdef WB_CLK_SPARSE
-   Wb::Clock clk("cgs:getSymStates",0); 
-#endif
-
-   if (!nz || np>nz) wblog(F_L,
-      "ERR got invalid or empty Sp/Sz sets for %s (%d/%d)",
-       q.toStr().data, np, nz);
-   if (q.isNonAbelian(0,0,'l') && (np!=r || nz!=r)) wblog(FL,
-      "ERR invalid number of Sz/Sp operators for %s (%d,%d/%d)",
-       q.toStr().data, np,nz,r
-   );
-
-   D=Sz[0].dim();
-
-   largeD=q.isLargeD(D);
-
-   gStore.rclog(q, PFL, CG_VERBOSE>6 && largeD,
-      "CGS %s() %s having D=%d",
-      FCT, q.type==QTYPE_UNKNOWN ? "general" : STR(q), D);
-
-   U.init(D,0); 
-
-   dd.init(D);  
-   uk.init(D);
-
-   for (it=0; it<D; ++it) {
-      v0.initz(D,1,1); c2=0;
-      for (; i0<D; ++i0) {
-         v0.setRec(0, i0,0, 1.); if (!i0 && !it) break;
-
-         Wb::MatProd(U,v0,x1,'C'); x=x1.norm();
-         if (Wb::abs(x-1)<eps) {
-            if (Wb::abs(x-1)>eps2) wblog(FL,"WRN %s() "
-               "%g (%g,%g)",FCT,double(x),double(eps),double(eps2));
-            continue;
-         } else break;
-      }
-
-      if (i0==D) break; 
-      if (it) {
-         Wb::MatProd(U,x1,x2); 
-         v0-=x2; v0.Normalize();
-         Wb::MatProd(U,Wb::MatProd(U,v0,x1,'C'),x2);
-         v0-=x2; v0.Normalize();
-      }
-
-      for (i=0; i<Sz.len; i++) {
-          Wb::MatProd(Sz[i],v0,vi); if (vi.norm()<eps) continue;
-          if (vi.sameUptoFac(v0)) wblog(FL,
-             "ERR %s() failed to determine symmetry labels\n"
-             "for starting vector (%d: %d,%d)",FCT,it+1,i0+1,i+1
-          );
-      }
-
-      m=0; found=1;
-
-      while (found) { found=0;
-         for (ip=0; ip<Sp.len; ++ip) {
-            Wb::MatProd(Sp[ip],v0,vi); x=vi.norm();
-            if (x>eps) {
-               vi*=(1/x); vi.save2(v0);
-               ++found; ++m;
-            }
-         }
-      }
-
-      if (m && vflag && vflag!='v') wblog(FL,
-      " *  applied %d Sp ops to get MW seed",m);
-
-      wbSparrayTD V(v0); 
-      wbSparrayTD Vi;    
-      m=0; found=1;
-
-      while (found) { found=0;
-      for (ip=0; ip<Sp.len; ++ip) {
-
-          Wb::MatProd(Sp[ip],v0,vi,'C'); 
-
-          vi2=vi.norm2(); x=Wb::sqrt(vi2/vi.SIZE[1]);
-          if (x<eps) { 
-             if (x>eps2) wblog(FL,"WRN %s() got %.3g [%g %g]",
-                 FCT,double(x),double(eps),double(eps2));
-             continue;
-          }
-
-          Wb::MatProd(Vi,vi,x1,'C'); 
-          x12=x1.norm2(); x=fabs(1-sqrt(x12/vi2));
-          if (x<eps) { 
-             if (x>eps2) wblog(FL,"WRN %s() got %.3g [%g %g]",
-                 FCT,double(x),double(eps),double(eps2));
-             continue;
-          }
-
-          if (x12) {
-             vi-=Wb::MatProd(Vi,x1,x2);  
-          }
-
-          Wb::MatProd(V,vi,x1,'C'); 
-          x=fabs(sqrt(x1.norm2()/vi2)); if (x>eps) {
-            MXPut(FL,"q").add(U,"U").add(V,"V").add(Vi,"Vi")
-               .add(vi,"vi").add(x1,"x1").add(double(x),"x");
-            wblog(FL,"ERR %s() got overlap with V space (%.3g / %g)",
-            FCT,double(x),double(eps));
-          }
-          vi-=Wb::MatProd(V,x1,x2); 
-
-          Wb::MatProd(U,vi,x1,'C');
-          x=x1.aMax(); if ((x*x)>eps) {
-             MXPut(FL,"qU").add(U,"U").add(V,"V").add(vi,"vi")
-               .add(Sp[ip],"Sp").add(x2,"x2");
-             wblog(FL,"ERR %s() got overlap with U (%.3g / %g)",
-             FCT,double(x),double(eps));
-          }
-          vi-=Wb::MatProd(U,x1,x2); 
-
-          vi.SkipTinyCols(eps);
-
-          vi.OrthoNormalizeColsQR(FL,CG_EPS1);
-
-          if (CG_EPS1 < double(WbUtil<TD>().eps())) wblog(FL,
-             "ERR %s() got eps=%.3g / %.3g (%s)",FCT,double(CG_EPS1),
-             double(WbUtil<TD>().eps()),TSTR(TD)
-          );
-
-          vi-=Wb::MatProd(U, Wb::MatProd(U, vi,x1,'C'),x2); 
-
-          vi-=Wb::MatProd(V, Wb::MatProd(V, vi,x1,'C'),x2); 
-          vi-=Wb::MatProd(Vi,Wb::MatProd(Vi,vi,x1,'C'),x2); 
-          vi.OrthoNormalizeColsQR(FL,CG_EPS1);          
-
-          Vi.Cat(FL,vi,2); ++found;
-
-          if (Vi.SIZE[1]>D) wblog(FL,
-          "ERR %s() Vi space out of bounds (%s / %d)",FCT,SSTR(Vi),D);
-      }
-          if (found) {
-             V.Cat(FL,Vi,2); Vi.save2(v0); ++m;
-             if (V.SIZE[1]>D) wblog(FL,
-             "ERR %s() V space out of bounds (%s / %d)",FCT,SSTR(V),D);
-          }
-      }
-
-      U.Cat(FL,V,2); d0=V.SIZE[1]; dd[it]=d0;
-
-      gStore.rclog(q, FL, CG_VERBOSE>6 && largeD,
-         "  > d(%02d) =%6d @ %3.0f%% |%8d ... ",
-         it+1, V.SIZE[1], 100.*U.SIZE[1]/double(U.SIZE[0]),
-         U.SIZE[0]-U.SIZE[1]
-      );
-
-      WB_NEW_1(uk[it]);
-      V.save2(*uk[it]);
-
-      if (U.SIZE.len && U.SIZE[1]==D) {
-         ++it; break;
-      }
-      else if (U.SIZE[1]>D) {
-         MXPut(FL).add(U,"U").add(V,"V").add(vi,"vi").add(x1,"x1")
-         .add(it+1,"it").add(ip+1,"ip").add(dd,"dd");
-         wblog(FL,"ERR %s() D=%d/%d",FCT,U.SIZE[1],D);
-      }
-   }
-
-   nt=it;
-   if (U.SIZE[1]!=D || !nt) wblog(FL,
-      "ERR %s() failed to obtain symmetry multiplets (%s/%d; %d)",
-       FCT,U.sizeStr().data,D,nt);
-   dd.len=nt;
-   UK.init(nt);
-   for (it=0; it<nt; ++it) {
-      uk[it]->save2(UK[it]); WB_DELETE_1(uk[it]);
-   }
-
-#ifndef WB_SKIP_ASSERT
-   Wb::MatProd(U,U,x1,'C'); 
-   if (!x1.isIdentityMatrix(eps2)) {
-      MXPut(FL,"q").add(Sp,"SP").add(Sz,"SZ").add(U,"U").add(UK,"UK");
-      wblog(FL,"ERR %s() new space not orthogonal (%d)",FCT,nt+1);
-   }
-#endif
-
-   RR.init(nt); JJ.init(nt,nz); c2eps.init(nt);
-
-   for (i=0; i<nt; ++i) {
-      genRG_base<TQ,TD> &R=RR[i];
-      wbSparrayTD &V=UK[i]; d0=dd[i];
-
-      R.Sp.init(np);
-      for (j=0; j<np; j++) { 
-         Wb::MatProd(V,Wb::MatProd(Sp[j],V,x1),R.Sp[j],'C');
-         c2eps[i]+=R.Sp[j].Compress(0,0,CG_SKIP_REPS); 
-      }
-
-      R.Sz.init(nz); R.Z.init(d0,nz);
-      for (j=0; j<nz; j++) { 
-         Wb::MatProd(V,Wb::MatProd(Sz[j],V,x1),R.Sz[j],'C');
-         if (!R.Sz[j].isDiagMatrix(eps2)) wblog(FL,
-            "ERR %s() got non-diagonal z-operator",FCT);
-         c2eps[i]+=R.Sz[j].Compress(0,0,CG_SKIP_REPS); 
-
-         R.Sz[j].getDiag(FL,sz);
-         R.Z.setCol(j,sz);
-      }
-
-      CG::FixRational(FL,R.Z.data,R.Z.numel(),4);
-
-      CG::findMaxWeight(q,R.Z,&R.J,&P); R.q=q;
-
-      if (P.len && P.data[0]!=0 && vflag) {
-
-          wblog(FL,"WRN state #1 in IREP-decomp is not MW "
-            "(%s,%d; %d: %d/%d)", q==QTYPE_UNKNOWN ? 
-            "*":q.toStr('t').data, P.data[0]+1,i+1,d0,D);
-
-          MXPut X(FL,"a"); X.add(Sp,"Sp").add(Sz,"Sz").add(UK,"UK")
-           .add(dd,"dd"); if (iOM) X.add(*iOM,"M");
-          X.add(D,"D").add(V,"V").add(R.Z,"Z").add(P,"P"); X.put();
-      }
-
-      if (!P.isIdentityPerm()) {
-          R.Z.recPermute(P);
-          V.ColPermute(P); 
-
-          for (j=0; j<np; ++j) R.Sp[j].MatPermute(P);
-          for (j=0; j<nz; ++j) R.Sz[j].MatPermute(P);
-
-          CG::rangeSignConvention(FL,V.D.data, V.D.len);
-      }
-
-      c2=CG::FixRational(
-          FL, V.D.data, V.D.len, 4, CG_SKIP_EPS1, CG_SKIP_EPS2
-      );
-      r2+=c2; c2eps[i]+=c2;
-
-      nu+=V.D.len;
-
-      r2+=V.Compress(FL,CG_SKIP_EPS2); 
-
-      JJ.recSetP(i,R.J.data);
-
-#ifdef CG_CHECK_MW_PERM
-      R.P0=P;
-#endif
-   }
-
-   r2/=nu; { double r=sqrt(r2);
-      if (r<=CG_EPS2) gStore.rclog(q, FL, CG_VERBOSE>6 && largeD,
-         "CGS ok @ e=%.3g",r);
-      else gStore.rclog(q, FL, CG_VERBOSE>6 && largeD,
-         "WRN e=%.3g/%.3g",r,CG_EPS2
-      );
-   }
-
-   z2=JJ; z2.groupRecs(P,dJ);
-   if (dJ.anyGT(1)) {
-      if (iOM) {
-         unsigned d, *iom; wperm_t *p=P.data;
-         iOM->init(P.len,2);
-
-         for (i=0; i<dJ.len; ++i) { d=dJ[i];
-         for (j=0; j<d; ++j, ++p) { iom=iOM->rec(*p); iom[0]=j; iom[1]=d; }}
-      }
-      else {
-         wblog(FL,"NB! %s() "
-           "got outer multiplicity (OM<=%d)",FCT,dJ.max());
-      }
-      return r2;
-   }
-   else if (iOM) iOM->init();
-
-   return r2;
-};
-
-template <class TQ, class TD>
 genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::SetupSym(
    const char *F, int L,
    const QType &q0, qset<TQ> *qs_
 ){
-   q0.validType(F_L);
+   if (!q0.validType(FL)) wblog(FL,
+      "ERR %s() unspecified symmetry '%s'",FCT,STR(q0));
 
    if (qdef.isEmpty()) { int ep=0; Wb::LogException e;
-     #pragma omp critical (within_initBase) 
+      #pragma omp critical (within_initBase) 
       if (qdef.isEmpty()) { 
          try {
             gStore.setupDirs(F_L); q=q0;
             switch (q.type) {
-               case QTYPE_SUN: Setup_SUN(F_L,&qdef); break;
-               case QTYPE_SpN: Setup_SpN(F_L,&qdef); break;
-               case QTYPE_SON: Setup_SON(F_L,&qdef); break;
-               case QTYPE_SEN: Setup_SEN(F_L,&qdef); break;
+               case QT_SUN: Setup_SUN(F_L,&qdef); break;
+               case QT_SpN: Setup_SpN(F_L,&qdef); break;
+               case QT_SON: Setup_SON(F_L,&qdef); break;
+               case QT_SEN: Setup_SEN(F_L,&qdef); break;
+               case QT_A4 : Setup_A4 (F_L,&qdef); break;
                default: wblog(FL,
                "ERR %s() type '%s' not implemented yet",FCT,STR(q));
             }
@@ -7125,7 +7014,7 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SUN(
    TD z;
 
    genRG_base<TQ,TD> R;
-   cgsparray X;
+   SPARR_RTD X;
 
    if (N<2 || N>10) wblog(FL,"ERR %s() invalid SU(%d)",FCT,N);
 
@@ -7161,8 +7050,8 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SUN(
       FCT,STR(q),R0.Sp.len,R0.Sz.len
    );
    else if (gStore.load_RSet(0,1,q,R.J)>0) {
-      double e=R.normDiff(0,0,R0,1E-10);
-      if (e>1E-10) wblog(FL,
+      double e=R.normDiff(0,0,R0,1e-10);
+      if (e>1e-10) wblog(FL,
          "ERR %s() inconsistent %s generators (e=%.3g)",FCT,STR(q),e);
       wbstring fs; gStore.get_file_name(F_L,fs,R,"rep",RC_SAVE);
    }
@@ -7177,9 +7066,9 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SUN(
       if (!ioR) { ++nrep; }
 
       gStore.rclog(q,PF_L,CG_VERBOSE>5 || (nrep && CG_VERBOSE>2),
-         "%s defining irep (%s) for %s",
+         "%s defining irep of %s is (%s)",
          ioR ? (ioR>1? "ok.":"[+] W/") : "[+] w/",
-         QSet<TQ>().init1(q,R0.J.data).QStr().data, STR(R0.q)
+         STR(R0.q), QSet<TQ>().init1(q,R0.J.data).QStr().data
       ); doflush();
 
    }
@@ -7202,7 +7091,7 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SUN(
       if (Rd.Sp.len || Rd.Sz.len) wblog(FL,"WRN %s() " 
          "already got existing RSet (%d,%d)",FCT,Rd.Sp.len,Rd.Sz.len);
       else if (gStore.load_RSet(0,1,q,R.J)>0) {
-         double e=R.normDiff(0,0,Rd,1E-10); if (e>1E-10) wblog(FL,
+         double e=R.normDiff(0,0,Rd,1e-10); if (e>1e-10) wblog(FL,
         "ERR %s() inconsistent %s generators (e=%.3g)",FCT,STR(q),e);
       }
       else {
@@ -7215,7 +7104,7 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SUN(
          if (!ioR) { ++nrep; }
 
          gStore.rclog(q,PF_L,CG_VERBOSE>5 || (nrep && CG_VERBOSE>2),
-            "%s dual to defining irep for %s is (%s)",
+            "%s dual to defining irep of %s is (%s)",
             ioR ? (ioR>1 ? "ok." : "[+] W/") : "[+] w/",
             STR(Rd.q), QSet<TQ>().init1(q,Rd.J.data).QStr().data
          ); doflush();
@@ -7224,7 +7113,7 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SUN(
 
    unsigned m=0;
 
-   unsigned dmax=pow(10,r);
+   unsigned dmax=pow(10,MIN(2U,r));
 
    j=nrep; 
 
@@ -7255,7 +7144,7 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SpN(
    unsigned i,j, nrep=0, r=q.sub, D=2*r;
 
    genRG_base<TQ,TD> R;
-   cgsparray X;
+   SPARR_RTD X;
 
    if (D<2 || D>10) wblog(FL,"ERR %s() invalid Sp(%d)",FCT,D);
 
@@ -7302,8 +7191,8 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SpN(
       FCT,STR(q),R0.Sp.len,R0.Sz.len
    );
    else if (gStore.load_RSet(0,1,q,R.J)>0) {
-      double e=R.normDiff(0,0,R0,1E-10);
-      if (e>1E-10) wblog(FL,
+      double e=R.normDiff(0,0,R0,1e-10);
+      if (e>1e-10) wblog(FL,
          "ERR %s() inconsistent %s generators (e=%.3g)",FCT,STR(q),e);
       wbstring fs; gStore.get_file_name(F_L,fs,R,"rep",RC_SAVE);
    }
@@ -7319,7 +7208,7 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SpN(
 
       gStore.rclog(q,PF_L,CG_VERBOSE>5 || (nrep && CG_VERBOSE>2),
          "%s defining irep for %s is (%s)",
-         ioR ? (ioR>1 ? "ok." : "[+]  W") : "[+]  w",
+         ioR ? (ioR>1 ? "ok." : "[+] W/") : "[+] w/",
          STR(R0.q), QSet<TQ>().init1(q,R0.J.data).QStr().data
       ); doflush();
 
@@ -7327,7 +7216,7 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SpN(
 
    unsigned m=0; int l;
 
-   unsigned dmax=pow(10,r); 
+   unsigned dmax=pow(10,MIN(2U,r)); 
 
    j=nrep; 
 
@@ -7356,7 +7245,7 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SON(
    unsigned i=1, j, i2=0, nrep=0, r=q.sub, D=2*r+1;
 
    genRG_base<TQ,TD> R;
-   cgsparray X;
+   SPARR_RTD X;
 
    if (D<3 || D>12) wblog(FL,"ERR %s() invalid SO(%d)",FCT,D);
 
@@ -7413,20 +7302,20 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SON(
       if (CG_VERBOSE>5) { i|=4; }
 
    if (i) {
-      unsigned n=64; char s[n];
-      snprintf(s,n,"%s defining irep for %s is (%s)",
+      wbvec<char> s(64);
+      s.catf(0,0,"%s defining irep for %s is (%s)",
          ioR ? (ioR>1 ? "ok." : "[+]  W") : "[+]  w",
          STR(R0.q), QSet<TQ>().init1(q,R0.J.data).QStr().data);
 
       if (i&1) {
-         gStore.rclog(q,PF_L,CG_VERBOSE>5 || (nrep && CG_VERBOSE>2),s);
-      }  else { wblog(PF_L,s); }
+         gStore.rclog(q,PF_L,CG_VERBOSE>5 || (nrep && CG_VERBOSE>2),s.data);
+      }  else { wblog(PF_L,s.data); }
       doflush();
    }
 
    unsigned m=0; int l;
 
-   unsigned dmax=pow(10,r); 
+   unsigned dmax=pow(10,MIN(2U,r)); 
 
    j=nrep; 
 
@@ -7460,7 +7349,7 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SEN(
    unsigned i=1, j, i2=0, nrep=0, r=q.sub, D=2*r;
 
    genRG_base<TQ,TD> R;
-   cgsparray X;
+   SPARR_RTD X;
 
    if (D<3 || D>12) wblog(FL,"ERR %s() invalid SO(%d)",FCT,D);
 
@@ -7517,15 +7406,15 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SEN(
       if (CG_VERBOSE>5) { i|=4; }
 
    if (i) {
-      unsigned n=64; char s[n];
-      snprintf(s,n,"%s defining irep for %s is (%s)",
+      wbvec<char> s(64);
+      s.catf(0,0,"%s defining irep for %s is (%s)",
          ioR ? (ioR>1 ? "ok." : "[+]  W") : "[+]  w",
          STR(R0.q), QSet<TQ>().init1(q,R0.J.data).QStr().data
       );
 
       if (i&1) {
-         gStore.rclog(q,PF_L,CG_VERBOSE>5 || (nrep && CG_VERBOSE>2),s);
-      }  else { wblog(PF_L,s); }
+         gStore.rclog(q,PF_L,CG_VERBOSE>5 || (nrep && CG_VERBOSE>2),s.data);
+      }  else { wblog(PF_L,s.data); }
       doflush();
    }
 
@@ -7535,7 +7424,7 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SEN(
 
    unsigned m=0; int l;
 
-   unsigned dmax=pow(10,r); 
+   unsigned dmax=pow(10,MIN(2U,r)); 
 
    j=nrep; 
 
@@ -7559,6 +7448,52 @@ genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_SEN(
       snprintf(s_,64,"I_SO%d",D); put(F_L,s_);
    }
 
+   return *this;
+};
+
+template <class TQ, class TD>
+genRG_struct<TQ,TD>& genRG_struct<TQ,TD>::Setup_A4(
+   const char *F, int L, qset<TQ> *qs) {
+
+   CData<TQ,TD> C; wbvector<TD> nrm2;
+
+   QType t("A4");
+   char store=7; 
+   int q=0, mp3=1, mp3_done=2;
+
+   q+=C.init3FT(FL,t,"++-",{ 0, 0, 0},{1}, store, mp3_done); 
+   q+=C.init3FT(FL,t,"++-",{-1, 1, 0},{1}, store, mp3_done); 
+   q+=C.init3FT(FL,t,"++-",{ 1, 1,-1},{1}, store, mp3_done);
+   q+=C.init3FT(FL,t,"++-",{-1,-1, 1},{1}, store, mp3_done);
+
+   q+=C.init3FT(FL,t,"++-",{3,3,0}, 
+     { 0, 0, 1,    
+       0,-1, 0,
+       1, 0, 0 },store,mp3); 
+
+   q+=C.init3FT(FL,t,"++-",{3,3,+1}, 
+     { 1, 0, 0,
+       0, 0,-1,
+       0,-1, 0 },store,mp3);
+
+   q+=C.init3FT(FL,t,"++-",{3,3,-1},
+     { 0, 1, 0,
+       1, 0, 0,
+       0, 0, 1 },store,mp3);
+
+   q+=C.init3FT(FL,t,"++-",{3,3,3},
+     { 0,-1, 0,   0, 0,-1,   0, 0, 0, 
+       1, 0, 0,   0, 0, 0,   0, 0,-1,
+       0, 0, 0,   1, 0, 0,   0, 1, 0,
+
+       0, 1, 0,   0, 0,-1,   2, 0, 0, 
+       1, 0, 0,   0,-2, 0,   0, 0, 1,
+       0, 0,-2,  -1, 0, 0,   0, 1, 0 },store,mp3_done);
+
+   if (qs) { qs->init(1); qs->data[0]=1; }
+
+   if (q && F) wblog(F,L,
+     "<i> %s() having ireps q ∈ {0,±1,3} where -1 ≡ dual(1)",FCT);
    return *this;
 };
 

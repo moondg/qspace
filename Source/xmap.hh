@@ -83,7 +83,7 @@ class XMAP_Node {
 
 class XMAP : public wbvector<XMAP_Node> {
   public:
-     XMAP(unsigned n) : isref(1) { initDef(n); }; 
+     XMAP(unsigned n) : isref(1) { init(n); }; 
 
     ~XMAP()  {}; 
 
@@ -92,7 +92,7 @@ class XMAP : public wbvector<XMAP_Node> {
         data[i].free();
      };
 
-     void init(unsigned n) { free(); initDef(n); };
+     void init(unsigned n) { free(); init(n); };
 
      template<class T>
      void set(

@@ -216,10 +216,11 @@ class WbListMTRACK {
 WbListMTRACK gML;
 
 template<class T> inline
-void NEW(const char* F, int L, T* &p, size_t n) {
+void NEW(const char* F, int L, T* &p, size_t n, char bare) {
 
-   if (n) {
-      try { p = new T[n]; } catch (...) { p=NULL; }
+   if (n) { 
+      try { p = (bare ? new T[n] : new T[n]()); }}
+      catch (...) { p=NULL; }
       if (!p) {
          MemStat(FL); 
          wblog(FL,"ERR out of memory (%ld * %d = %.1fG) !?",
@@ -238,7 +239,8 @@ void NEW(const char* F, int L, T* &p, size_t n) {
 template<class T> inline
 void NEW_1(const char* F, int L, T* &p) { 
 
-   try { p = new T; } catch (...) { p=NULL; }
+   try { p = new T(); } catch (...) { p=NULL; }
+
    if (!p) {
       MemStat(FL); 
       wblog(F_L,"ERR failed to allocate instance");

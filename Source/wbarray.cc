@@ -20,14 +20,14 @@
 #ifndef __WB_ARRAY_COL_MAJOR_CC__
 #define __WB_ARRAY_COL_MAJOR_CC__
 
-//-------------------------------------------------------------------//
+// ----------------------------------------------------------------- //
 // wbarray - N-D Array class
 //
 //    generic N-dimensional class that allows permutations
 //    and reshaping; index order is column-major.
 //
 // Wb,Sep14,09 ;  Wb,Aug11,05
-//-------------------------------------------------------------------//
+// ----------------------------------------------------------------- //
 
 template<class T>
 wbindex& wbarray<T>::ind2sub(size_t k, wbindex &I) const { 
@@ -37,7 +37,7 @@ wbindex& wbarray<T>::ind2sub(size_t k, wbindex &I) const {
    I.init(n); idx=I.data; 
    for (i=0; i<n; ++i) {
        if (!s[i]) wblog(FL,
-          "ERR wbarray::%s() got size %s",FCT,SSTR_(this));
+          "ERR wbarray::%s() got size %s",FCT,SSTR(*this));
 
        r=k/s[i]; idx[i]=k-r*s[i]; k=r;
        if (idx[i]>=s[i]) e++;
@@ -45,7 +45,7 @@ wbindex& wbarray<T>::ind2sub(size_t k, wbindex &I) const {
 
    if (e || k) wblog(FL,
       "ERR wbarray::%s() out of bounds (%d => [%s; %s])",
-       FCT, STR(I+1), SSTR_(this)
+       FCT, STR(I+1), SSTR(*this)
    );
 
    return I;
@@ -53,20 +53,20 @@ wbindex& wbarray<T>::ind2sub(size_t k, wbindex &I) const {
 
 template<class T>
 void wbarray<T>::setRand(const char pnflag) {
-    static int firstcall=1; size_t i,s=numel(); double fac;
+   static int firstcall=1; size_t i,s=numel(); double fac;
 
-    if (WbUtil<T>::isFloat())
-         fac = 1.  /(double)RAND_MAX;
-    else fac = 100./(double)RAND_MAX;
+   if (WbUtil<T>::isFloat())
+        fac = 1.  /(double)RAND_MAX;
+   else fac = 100./(double)RAND_MAX;
 
-    if (firstcall) { wb_srand(); firstcall=0; } 
-    for (i=0; i<s; ++i) data[i] = (T)(fac*::rand()); 
+   if (firstcall) { wb_srand(); firstcall=0; } 
+   for (i=0; i<s; ++i) data[i] = (T)(fac*::rand()); 
 
-    if (pnflag) {
-       fac *= (0.5*(double)RAND_MAX);
-       for (i=0; i<s; ++i) data[i] -= fac;
-    }
-}
+   if (pnflag) {
+      fac *= (0.5*(double)RAND_MAX);
+      for (i=0; i<s; ++i) data[i] -= fac;
+   }
+};
 
 template<class T>
 double wbarray<T>::SkipTiny(double eps_) {
@@ -164,8 +164,8 @@ T wbarray<T>::normDiff2(const wbarray<T> &B, char sflag) const {
 
    if (!sflag || SIZE.len!=2 || B.SIZE.len!=2) {
       if (sflag) wblog(FL,"ERR %s() size mismatch\n"
-         "(sflag=%d for matrices only: %s / %s",FCT,sflag,SSTR_(this),SSTR(B));
-      else wblog(FL,"ERR size mismatch (%s; %s)",SSTR_(this),SSTR(B));
+         "(sflag=%d for matrices only: %s / %s",FCT,sflag,SSTR(*this),SSTR(B));
+      else wblog(FL,"ERR size mismatch (%s; %s)",SSTR(*this),SSTR(B));
    }
 
    char b1=1, b2=1; 
@@ -198,24 +198,25 @@ T wbarray<T>::normDiff2(const wbarray<T> &B, char sflag) const {
 template<class T> inline
 T wbarray<T>::normDiff2(const wbvector<T> &b) const {
    if (!isVector() || numel()!=b.len) wblog(FL,
-      "ERR size mismatch (%s; %d)",SSTR_(this),b.len);
+      "ERR size mismatch (%s; %d)",SSTR(*this),b.len);
    return Wb::rangeNormDiff2(data, b.data, numel());
 };
 
 template<class T>
 wbarray<T>& wbarray<T>::plus( 
-   const wbarray &B, wbarray &C, T bfac, char iflag
+   const wbarray &B, wbarray &C, T bfac,
+   char lflag 
  ) const {
 
    if (isEmpty() && B.isEmpty()) { return C.init(); }
 
    if (C.isRef()) wblog(FL,"ERR %s() got ref (considered const)",FCT);
 
-   if (SIZE==B.SIZE) { if (!bfac) { C=*this; } else {
+   if (sameSize(B)) { if (!bfac) { C=*this; } else {
       size_t i=0, n=numel(); const T *b=B.data; T* c;
 
-      C.SIZE=SIZE;                   
-      C.NEW_DATA(SIZE.prod(0),NULL,0,0); 
+      C.SIZE=SIZE;                       
+      C.NEW_DATA(SIZE.prod(0),nullptr,0,0); 
       c=C.data;
 
       if (bfac==T(+1)) for (; i<n; ++i) { c[i] = data[i] + b[i]; } else
@@ -223,8 +224,8 @@ wbarray<T>& wbarray<T>::plus(
       else             for (; i<n; ++i) { c[i] = data[i] + b[i]*bfac; }
    }}
    else if (!B && !bfac) { C.init(*this); } 
-   else if (!iflag || (SIZE.len && B.SIZE.len)) {
-      wblog(FL,"ERR %s() size mismatch %s / %s",FCT,SSTR_(this),SSTR(B));
+   else if (!lflag || (SIZE.len && B.SIZE.len)) {
+      wblog(FL,"ERR %s() size mismatch %s / %s",FCT,SSTR(*this),SSTR(B));
    }
    else {
       if (SIZE.len) { C=*this; } 
@@ -234,7 +235,7 @@ wbarray<T>& wbarray<T>::plus(
          else {
             size_t i=0, n=B.numel(); const T* b=B.data; T* c;
             C.SIZE=B.SIZE;
-            C.NEW_DATA(B.SIZE.prod(0),NULL,0,0); 
+            C.NEW_DATA(B.SIZE.prod(0),nullptr,0,0); 
             c=C.data;
 
             if (bfac==T(-1))
@@ -250,30 +251,34 @@ template<class T>
 template<class TB>
 wbarray<T>& wbarray<T>::Plus(
    const wbarray<TB> &B, TB bfac,
-   char iflag, 
+   char lflag, 
    T afac      
 ){
    if (isEmpty()) {
       if (B.isEmpty()) { return *this; }
-      if (iflag || afac==T(0)) {
-         if (iflag && afac && afac!=T(1)) { wblog(FL,
+      if (lflag || afac==T(0)) {
+         if (lflag && afac && afac!=T(1)) { wblog(FL,
             "ERR %s() got empty A with afac=%s",FCT,NSTR(afac));
          }
          if (bfac==TB(1)) { return init(B); } else
          if (!bfac) {  return init(B.SIZE); } 
          else {
             SIZE=B.SIZE; 
-            NEW_DATA(B.SIZE.prod(0),NULL,0,0); 
+            NEW_DATA(B.SIZE.prod(0),nullptr,0,0); 
          }
       }
    }
-   else { iflag=0; }
+   else { lflag=0; }
 
    if (isRef()) wblog(FL,"ERR %s() got ref (considered const)",FCT);
-   if (SIZE!=B.SIZE) wblog(FL,
-      "ERR %s() size mismatch %s / %s",FCT,SSTR_(this), SSTR(B));
 
-   Wb::cpyRange(data, B.data, numel(), iflag? T(0) : afac, bfac);
+   if (SIZE!=B.SIZE) { 
+      if (!sameSize(B)) wblog(FL,
+         "ERR %s() size mismatch %s / %s",FCT,SSTR(*this), SSTR(B));
+      skipSingletons(0,0,B.SIZE.len);
+   }
+
+   Wb::cpyRange(data, B.data, numel(), lflag? T(0):afac, bfac);
 
    return *this;
 };
@@ -343,8 +348,8 @@ wbarray<T>& wbarray<T>::getRow(size_t k, wbarray<T> &a) const {
    const T* x=row(k); 
    size_t s[2]={ 1, SIZE[1] }; a.SIZE.init(2,s);
 
-   a.NEW_DATA(s[1],NULL,0,0); 
-   Wb::cpyStride(a.data, x,1,NULL,s[1],-1,SIZE[0],0); 
+   a.NEW_DATA(s[1],nullptr,0,0); 
+   Wb::cpyStride(a.data, x,1,nullptr,s[1],-1,SIZE[0],0); 
 
    return a;
 };
@@ -356,7 +361,7 @@ wbvector<T> wbarray<T>::getDiag() const {
 
    if (!SIZE.len) { return x; }
    if (SIZE.len!=2) wblog(FL,
-      "ERR %s() invalid matrix %s",FCT,SSTR_(this));
+      "ERR %s() invalid matrix %s",FCT,SSTR(*this));
 
    size_t i=0, j=0, m=SIZE[0]+1, n=MIN(SIZE[0],SIZE[1]);
    if (n) { x.init(n);
@@ -373,7 +378,7 @@ void wbarray<T>::getMatSize(
    const size_t *const &s=SIZE.data;
 
    if (r%2) wblog(F_L,
-      "ERR %s() even rank object required (%s)",FCT,SSTR_(this));
+      "ERR %s() even rank object required (%s)",FCT,SSTR(*this));
    if (r) {
       dim1=s[0]; dim2=s[r2];
       for (i=1; i<r2; i++) { dim1*=s[i]; dim2*=s[i+r2]; }
@@ -531,61 +536,65 @@ bool wbarray<T>::sameSize1(const size_t *s2, unsigned n2) const {
 
 template<class T> inline
 bool wbarray<T>::equal (const wbarray<T> &B, T eps) const {
-    size_t i,s=numel(); if (SIZE!=B.SIZE) { return 0; }
-    if (eps)
-         { for (i=0; i<s; ++i) { if (fabs(data[i]-B.data[i])>eps) return 0; }}
-    else { if (memcmp(data,B.data,s*sizeof(T))) { return 0; }}
-    return 1;
+   size_t i,s=numel(); if (SIZE!=B.SIZE) { return 0; }
+   if (eps)
+        { for (i=0; i<s; ++i) { if (fabs(data[i]-B.data[i])>eps) return 0; }}
+   else { if (memcmp(data,B.data,s*sizeof(T))) { return 0; }}
+   return 1;
 };
 
 template<class T> inline
 bool wbarray<T>::unequal (const wbarray<T> &B, T eps) const {
-    return !equal(B,eps);
+   return !equal(B,eps);
 };
 
 template<class T> inline
 bool wbarray<T>::equal (
-    const wbarray<T> &B, double eps, double &maxdiff) const {
+   const wbarray<T> &B, double eps, double &maxdiff) const {
 
-    if (SIZE!=B.SIZE) return 0;
+   if (SIZE!=B.SIZE) return 0;
 
-    size_t i,s=numel(); double d;
+   size_t i,s=numel(); double d;
 
-    for (maxdiff=0, i=0; i<s; i++) {
-        d = Wb::abs( data[i] - B.data[i] );
-        if (maxdiff<d) maxdiff=d;
-    }
+   for (maxdiff=0, i=0; i<s; i++) {
+       d = Wb::abs( data[i] - B.data[i] );
+       if (maxdiff<d) maxdiff=d;
+   }
 
-    return (maxdiff<eps);
+   return (maxdiff<eps);
 };
 
 template<class T> inline
 bool wbarray<T>::unequal (
-    const wbarray<T> &B, double eps, double &maxdiff) const {
-    return !(*this).equal(B,eps,maxdiff);
+   const wbarray<T> &B, double eps, double &maxdiff) const {
+   return !(*this).equal(B,eps,maxdiff);
 };
 
 template<class T>
 bool wbarray<T>::isDiag_aux(const T eps, const char* task) const {
 
-   size_t i=0;
+   if (!task) wblog(FL,"ERR %s() invalid task (null)",FCT);
+   if (SIZE.len%2) { 
+      wblog(FL,"WRN %s() got odd-rank input %s",FCT,SSTR(*this));
+      return 0;
+   }
+   if (!data) {
+      if (numel()) wblog(FL,"ERR %s() %s with data=NULL",FCT,SSTR(*this));
+      return 0;
+   }
+
+   size_t i=0; bool id=0; T one=T(1);
    wbIndex I(SIZE); 
 
-   char isDiag=!strcmp(task,"isDiag");
-   char isIdty=!strcmp(task,"isIdty");
-
-   if (!isDiag && !isIdty) wblog(FL,"ERR %s() invalid task '%s'",FCT,task);
-   if (SIZE.len%2) wblog(FL,"ERR %s() for even-rank objects only (%s)",
-     task,SSTR_(this));
+   if (!strcmp(task,"isIdty")) { id=1; } else
+   if ( strcmp(task,"isDiag")) {
+      wblog(FL,"ERR %s() invalid task '%s'",FCT,task); }
 
    while (++I) {
-       if (!I.isdiag()) {
-          if (Wb::abs(data[i])>eps) return 0;
-       }
-       else {
-          if (isIdty && (Wb::abs(data[i]-T(1)))>eps) return 0;
-       }
-       ++i;
+      if (!I.isdiag())
+           { if (       Wb::abs(data[i]     )>eps) { return 0; }}
+      else { if (id && (Wb::abs(data[i]-one))>eps) { return 0; }}
+      ++i;
    }
 
    return 1;
@@ -604,7 +613,7 @@ bool wbarray<T>::isDiag_aux(double *epsp, const char* task) const {
    if (!isDiag && !isIdty) wblog(FL,"ERR invalid task '%s'", task);
 
    if (!isRank(2)) { info("this"); wblog(FL,
-   "ERR %s only appies to rank-2 tensors (%s).",task,SSTR_(this)); }
+   "ERR %s only appies to rank-2 tensors (%s).",task,SSTR(*this)); }
 
    for (i=0; i<s; i++) {
        if (I[0]!=I[1]) { a=Wb::abs(data[i]);
@@ -632,7 +641,7 @@ bool wbarray<T>::isProptoId(T &x, const T eps) const {
    wbIndex I(SIZE); 
 
    if (SIZE.len%2) wblog(FL,
-      "ERR %s() for even-rank objects only (%s)",FCT,SSTR_(this));
+      "ERR %s() for even-rank objects only (%s)",FCT,SSTR(*this));
    if (!x && data) { x=data[0]; }
 
    while (++I) {
@@ -669,7 +678,7 @@ wbarray<T>& wbarray<T>::balanceOp(
    size_t i,j,l,n=0;
 
    if (!isOpS(&n)) wblog(F_L,
-   "ERR %s() requires operator (%s)",FCT,SSTR_(this));
+      "ERR %s() requires operator (%s)",FCT,SSTR(*this));
 
    if (n<=1) { dref=0; dscale=1; return *this; }
    dref=0; dscale=0;
@@ -701,7 +710,7 @@ wbarray<T>& wbarray<T>::Symmetrize(
 
    if (!isOpS(&n)) wblog(F,L,
       "ERR %s() (generalized) square matrix required (%s)",
-       FCT,SSTR_(this));
+       FCT,SSTR(*this));
    if (tflag && !delta) return *this; 
 
    if (cflag && typeid(T)!=typeid(wbcomplex)) cflag=0;
@@ -759,9 +768,9 @@ template<class T>
 wbarray<T>& wbarray<T>::swapRows(size_t i1, size_t i2) {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() for matrices only (%s)",FCT,SSTR_(this));
+      "ERR %s() for matrices only (%s)",FCT,SSTR(*this));
    if (i1>=SIZE[0] || i2>=SIZE[0]) wblog(FL,"ERR %s() "
-      "index out of bounds (%d,%d; %s)",FCT,i1+1,i2+1,SSTR_(this));
+      "index out of bounds (%d,%d; %s)",FCT,i1+1,i2+1,SSTR(*this));
 
    if (i1!=i2) { size_t dim1=SIZE[0], dim2=SIZE[1]; if (dim2) {
       T x, *d1=data+i1, *d2=data+i2; 
@@ -776,9 +785,9 @@ template<class T>
 wbarray<T>& wbarray<T>::swapCols(size_t j1, size_t j2) {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() for matrices only (%s)",FCT,SSTR_(this));
+      "ERR %s() for matrices only (%s)",FCT,SSTR(*this));
    if (j1>=SIZE[1] || j2>=SIZE[1]) wblog(FL,"ERR %s() "
-      "index out of bounds (%d,%d; %s)",FCT,j1+1,j2+1,SSTR_(this));
+      "index out of bounds (%d,%d; %s)",FCT,j1+1,j2+1,SSTR(*this));
 
    if (j1!=j2) { size_t dim1=SIZE[0]; if (dim1) {
       T x, *d1=data+dim1*j1, *d2=data+dim1*j2; 
@@ -792,10 +801,10 @@ wbarray<T>& wbarray<T>::swapCols(size_t j1, size_t j2) {
 template<class T>
 wbarray<T>& wbarray<T>::setCol(size_t k, size_t k0) {
    if (rank()!=2) wblog(FL,
-      "ERR %s() for matrices only (%s)",FCT,SSTR_(this));
+      "ERR %s() for matrices only (%s)",FCT,SSTR(*this));
    if (k>=SIZE[1] || k0>=SIZE[1]) wblog(FL,
       "ERR %s() index out of bounds (%d,%d; %s)",
-       FCT,k+1,k0+1,SSTR_(this));
+       FCT,k+1,k0+1,SSTR(*this));
 
    size_t dim1=SIZE[0];
    if (k!=k0 && dim1) {
@@ -810,9 +819,9 @@ wbarray<T>& wbarray<T>::setCol(
    size_t k, const T* v, T fac, size_t stride) {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() for matrices only (%s)",FCT,SSTR_(this));
+      "ERR %s() for matrices only (%s)",FCT,SSTR(*this));
    if (k>=SIZE[1]) wblog(FL,
-      "ERR %s() index out of bounds (%d; %s)",FCT,k+1,SSTR_(this));
+      "ERR %s() index out of bounds (%d; %s)",FCT,k+1,SSTR(*this));
 
    size_t i=0, dim1=SIZE[0]; T *d=data+k*dim1; 
    if (dim1 && d!=v) {
@@ -827,9 +836,9 @@ template<class T>
 wbarray<T>& wbarray<T>::setCol(size_t k, const wbvector<T> &v) {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() for matrices only (%s)",FCT,SSTR_(this));
+      "ERR %s() for matrices only (%s)",FCT,SSTR(*this));
    if (k>=SIZE[1]) wblog(FL,
-      "ERR %s() index out of bounds (%d: %s)",FCT,k+1,SSTR_(this));
+      "ERR %s() index out of bounds (%d: %s)",FCT,k+1,SSTR(*this));
 
    size_t dim1=SIZE[0];
    if (v.len!=dim1) wblog(FL,"ERR size mismatch (%d/%d)",v.len,dim1);
@@ -842,9 +851,9 @@ template<class T2>
 wbarray<T>& wbarray<T>::setCol(size_t k, const wbvector<T2> &v) {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() for matrices only (%s)",FCT,SSTR_(this));
+      "ERR %s() for matrices only (%s)",FCT,SSTR(*this));
    if (k>=SIZE[1]) wblog(FL,
-      "ERR %s() index out of bounds (%d: %s)",FCT,k+1,SSTR_(this));
+      "ERR %s() index out of bounds (%d: %s)",FCT,k+1,SSTR(*this));
 
    size_t dim1=SIZE[0]; T* d=data+k*dim1; 
    if (dim1) {
@@ -859,9 +868,9 @@ template<class T>
 wbarray<T>& wbarray<T>::setRow(size_t k, const T* d0) {
 
    if (rank()!=2) wblog(FL,
-   "ERR %s() for matrices only (%s)",FCT,SSTR_(this));
+   "ERR %s() for matrices only (%s)",FCT,SSTR(*this));
    if (k>=SIZE[0]) wblog(FL,
-   "ERR %s() index out of bounds (%d; %s)",FCT,k+1,SSTR_(this));
+   "ERR %s() index out of bounds (%d; %s)",FCT,k+1,SSTR(*this));
 
    size_t i=0, dim1=SIZE[0], dim2=SIZE[1];
    T* d=data+k; 
@@ -874,7 +883,7 @@ template<class T>
 wbvector<T>& wbarray<T>::colNorm2(wbvector<T> &a) const {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() for matrices only (%s)",FCT,SSTR_(this));
+      "ERR %s() for matrices only (%s)",FCT,SSTR(*this));
 
    size_t i,j, dim1=SIZE[0], dim2=SIZE[1];
    const T* d0=data; T x2;
@@ -895,9 +904,9 @@ T wbarray<T>::colNorm2(size_t k) const {
    T a=0;
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() for matrices only (%s)",FCT,SSTR_(this));
+      "ERR %s() for matrices only (%s)",FCT,SSTR(*this));
    if (k>=dim2) wblog(FL,
-      "ERR %s() index out of bounds (%d/%d; %s)",FCT,k,dim2,SSTR_(this));
+      "ERR %s() index out of bounds (%d/%d; %s)",FCT,k,dim2,SSTR(*this));
 
    for (; j<dim2; ++j) { a+=Wb::CONJ(d[j])*d[j]; }
    return a;
@@ -907,7 +916,7 @@ template<class T>
 T wbarray<T>::NormalizeCol(size_t k, char tnorm, char qflag) {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() matrix type required (%s)",FCT,SSTR_(this));
+      "ERR %s() matrix type required (%s)",FCT,SSTR(*this));
 
    const size_t dim1=SIZE[0], dim2=SIZE[1];
    if (k>=dim2) wblog(FL,
@@ -928,7 +937,7 @@ wbarray<T>& wbarray<T>::ColProject(
 ){
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() matrix type required (%s)",FCT,SSTR_(this));
+      "ERR %s() matrix type required (%s)",FCT,SSTR(*this));
 
    const size_t dim1=SIZE[0], dim2=SIZE[1];
    if (k1>=dim2 || k2>=dim2) wblog(FL,
@@ -946,7 +955,7 @@ template<class T>
 bool wbarray<T>::isOrthogonalCol(size_t k0, char tnorm) const {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() matrix type required (%s)",FCT,SSTR_(this));
+      "ERR %s() matrix type required (%s)",FCT,SSTR(*this));
 
    const size_t dim1=SIZE[0], dim2=SIZE[1];
    if (k0>=dim2) wblog(FL,
@@ -957,7 +966,7 @@ bool wbarray<T>::isOrthogonalCol(size_t k0, char tnorm) const {
    T nrm2=Wb::overlap(d0,d0,dim1,1,tnorm);
 
    for (size_t k=0; k<dim2; k++, d+=dim1) { 
-      if (k!=k0 && Wb::abs(Wb::overlap(d,d0,dim1,1,tnorm)/nrm2)>1E-10)
+      if (k!=k0 && Wb::abs(Wb::overlap(d,d0,dim1,1,tnorm)/nrm2)>1e-10)
       return 0;
    }
 
@@ -984,21 +993,23 @@ bool wbarray<T>::isOrthoCols(T *x2, char tnorm, T eps) const {
 
 template<class T>
 unsigned wbarray<T>::QRdecomp(
-   const char *F, int L, wbarray<T> &Q, wbarray<T> &R, T eps
+   const char *F, int L, wbarray<T> &Q, wbarray<T> &R, char useP, T eps
 ){
    if (isEmpty()) { Q.init(); R.init(); return 0; }
-   if (rank()!=2 || !numel()) wblog(F_L,
-      "ERR %s() matrix type required (%s)",FCT,SSTR_(this));
+   if (rank()!=2) wblog(F_L, 
+      "ERR %s() matrix required (got rank %d, %s)",FCT,rank(),SSTR(*this));
 
    size_t dim1=SIZE[0], dim2=SIZE[1], n=MIN(dim1,dim2);
+   if (dim1<dim2) wblog(FL, 
+      "ERR %s() QR for matrix dim2=%d > dim1=%d",FCT,dim2,dim1);
 
-   if (dim1<=1 || dim2<=1) {
+   if (dim1<=1 || dim2<=1) { 
       Q.init(dim1,n); R.init(n,dim2);
 
-      if (!dim1 || !dim2) return n;
+      if (!dim1 || !dim2) { return n; }
       if (dim1==1) { Q[0]=1; R=*this; return n; }
       if (dim2==1) { Q=*this;
-         if ((R[0]=this->norm())!=0) { Q*=(T(1)/R[0]); }
+         if ((R[0]=this->norm())) { Q*=(T(1)/R[0]); }
          else { Q[0]=1; }
          return n;
       }
@@ -1009,20 +1020,22 @@ unsigned wbarray<T>::QRdecomp(
       return 1;
    }
 
-   size_t i,j,k=0;
-   WBPERM P;  
+   size_t j,k=0;
+   wbperm P, *p=(useP ? &P : nullptr);
+
    wbarray<T> U(dim1,n); 
 
    R=*this;
 
    for (k=0; k<n; ++k) {
-      if (R.Householder(F_L,k,U.col(k),&P,eps)<0) break;
+      if (R.Householder(F_L,k,U.col(k),p,eps)<0) { break; }
    }
 
-if (!R.isFinite() || !U.isFinite()) wblog(FL,"ERR %s() ",FCT);
-
    if (k<n) {
-      if (!k) wblog(FL,"ERR %s() resulted in k=%d/%d !?",FCT,k,n);
+      if (!k) { 
+         Q.init(dim1,1); R.init(1,dim2); Q[0]=1;
+         return 1;
+      }
       R.Resize(k,dim2); n=k;
    }
    else if (n<dim1) {
@@ -1031,8 +1044,8 @@ if (!R.isFinite() || !U.isFinite()) wblog(FL,"ERR %s() ",FCT);
 
    Q.initIdentityB(dim1,n); 
 
-   T zero=0, *x;
    const T *u=U.col(n-1);
+   T *x;
 
    for (k=n; k>0; u-=dim1) { --k; x=Q.data;
       for (j=0; j<n; ++j, x+=dim1) {
@@ -1040,41 +1053,29 @@ if (!R.isFinite() || !U.isFinite()) wblog(FL,"ERR %s() ",FCT);
       }
    }
 
-   x=Q.data;
-   for (j=0; j<n; ++j, x+=dim1) { 
-      for (i=0; i<dim1; ++i) { if (Wb::abs(x[i])>eps) {
-         if (x[i]<zero) { T *y=R.data+j;
-            for (i=0; i<dim1; ++i) { x[i]=-x[i]; }
-            for (k=0; k<dim2; ++k, y+=n) { y[0]=-y[0]; }
-         }
-         break;
-      }}
-   }
-
    return n;
 };
 
 template<class T>
-int wbarray<T>::Householder( 
+int wbarray<T>::Householder(       
    const char *F, int L, size_t k, 
-   T *u, WBPERM *P, 
-   T eps
+   T *u, wbperm *P, T eps          
 ){
    if (rank()!=2) wblog(F_L,
-      "ERR %s() matrix type required (%s)",FCT,SSTR_(this));
+      "ERR %s() matrix type required (%s)",FCT,SSTR(*this));
 
    size_t i=0, j=0, k2=k, dim1=SIZE[0], dim2=SIZE[1];
    if (k>=MIN(dim1,dim2)) wblog(F_L,"ERR %s() "
-      "index out of bounds (%d; %s)",FCT,k+1,SSTR_(this));
+      "index out of bounds (%d; %s)",FCT,k+1,SSTR(*this));
 
    T nrm, x2=0., x0max=0., *x; 
 
    for (; i<k; ++i) u[i]=0.;
 
    if (P) {
-      if (!k) P->init(dim2); else
+      if (!k) P->init_bare(dim2); else
       if (P->len!=dim2) wblog(FL,"ERR %s() "
-         "got invalid P for (k=%d: %d/%d) !?",FCT,k+1,P->len,dim2);
+         "got invalid P (len=%d/%d; k=%d)",FCT,P->len,dim2);
       T x2max=0.;
 
       for (x=data, j=0; j<dim2; ++j, x+=dim1) { 
@@ -1082,10 +1083,11 @@ int wbarray<T>::Householder(
             for (x2=0., i=k; i<dim1; ++i) { x2 += (Wb::CONJ(x[i])*x[i]); }
             if (x2max<x2) { x2max=x2; k2=j; }
          }
+         else if (P->data[j]>k) wblog(FL, 
+            "ERR %s() invalid P=[%s] (%d/%d/%d)",FCT,STR_(P),j,k,dim2);
          else {
-            if (P->data[j]>k) wblog(FL, 
-               "ERR %s() invalid P=[%s] (%d/%d/%d)",FCT,STR_(P),j,k,dim2);
-            if (x0max<(x2=Wb::abs(x[P->data[j]-1]))) { x0max=x2; }
+            x2=Wb::abs(x[P->data[j]-1]);
+            if (x0max<x2) { x0max=x2; }
          }
       }; x2=x2max;
 
@@ -1095,15 +1097,14 @@ int wbarray<T>::Householder(
    }
    else {
       for (x=data, j=0; j<k; ++j, x+=dim1) {
-         if (x[j]<0) wblog(FL,"ERR %s() x[%d]=%d",FCT,j,x[j]);
-         if (x0max<(x2=Wb::abs(x[j]))) { x0max=x2; }
+         x2=Wb::abs(x[j]); if (x0max<x2) { x0max=x2; }
       }
       for (x2=0., i=k; i<dim1; ++i) { u[i]=x[i];
          x2+=(Wb::CONJ(x[i])*x[i]);
       }
    }
 
-   eps*=(x0max<x2 ? x2 : x0max);
+   eps*=(x0max<x2 ? x2 : x0max); 
 
    nrm=Wb::sqrt(x2); if (nrm<=eps) { 
      if (!P && k+1<dim2) wblog(FL,
@@ -1111,10 +1112,10 @@ int wbarray<T>::Householder(
      return -1;
    }
 
-   u[k] += (x[k]>0 ? +nrm : -nrm);
+   u[k] += (x[k]>0 ? +nrm : -nrm); 
 
    nrm=T(1)/Wb::sqrt( x2 - Wb::CONJ(x[k])*x[k] + Wb::CONJ(u[k])*u[k] );
-   if (!isfinite(nrm)) wblog(FL,"ERR %s() nrm=%g",FCT,nrm); 
+   if (!isfinite(nrm)) wblog(FL,"ERR %s() nrm=%g",FCT,double(nrm)); 
 
    for (i=k; i<dim1; ++i) { u[i]*=nrm; }
 
@@ -1138,15 +1139,62 @@ template<class T> inline
 void Wb::householder(const T *u, T *a, size_t n, const T& eps) {
 
     size_t i=0;
-    T ua=0.; for (; i<n; ++i) { ua += (Wb::CONJ(u[i])*a[i]); }
+    T zero=0, ua=zero; for (; i<n; ++i) { ua += (Wb::CONJ(u[i])*a[i]); }
 
-    if (ua) { ua*=2.;
-       for (i=0; i<n; ++i) { a[i] -= (u[i]*ua); } 
-       if (eps>0.) { ua=0.; 
-          for (i=0; i<n; ++i) ua += Wb::CONJ(a[i])*a[i];
-          if (ua<eps) { for (i=0; i<n; ++i) a[i]=0.; }
+    char plain=(u[0]<T(-1e-12));
+
+    if (ua) { ua*=T(2);
+       if (plain) 
+            { for (i=0; i<n; ++i) { a[i]        -= (u[i]*ua); }}
+       else { for (i=0; i<n; ++i) { a[i] = -a[i] + (u[i]*ua); }}
+
+       if (eps>zero) { 
+           ua=zero; for (i=0; i<n; ++i) { ua += Wb::CONJ(a[i])*a[i]; }
+          if (ua<eps) { for (i=0; i<n; ++i) a[i]=zero; }
        }
     }
+    else if (!plain) {
+       for (i=0; i<n; ++i) { a[i] = -a[i]; } 
+    }
+};
+
+template<class T> inline
+void Wb::Givens_eraseCol(T* a, unsigned i0, unsigned j0,
+   unsigned dim1, unsigned dim2, T *x, T eps) {
+
+   if (!a) wblog(FL,"ERR %s() got null input",FCT);
+   if (!dim2) { return; }
+
+   if (i0>=dim1 || j0>=dim2) wblog(FL,
+      "ERR %s() index out of bounds (%d,%d) %dx%d",FCT,i0,j0,dim1,dim2);
+
+   unsigned i,j;
+   T a0=a[i0+j0*dim1]; 
+   T nrm=T(1)/a0;      
+   wbvector<T> fac(i0);
+
+   if (fabs(a0)<eps) {
+      if (a0)
+           wblog(FL,"WRN %s() got small denominator %.3g",FCT,double(a0));
+      else wblog(FL,"ERR %s() got zero denominator",FCT);
+   }
+
+   eps*=eps; 
+   for (i=0; i<i0; ++i) {
+      fac[i]=a[i+j0*dim1]/a0; 
+   }
+
+   for (j=0; j<dim2; ++j, a+=dim1) {
+      for (i=0; i<i0; ++i) { a[i] -= fac[i]*a[i0]; }
+      a[i]*=nrm;
+   }
+
+   if (x) { 
+      for (j=0; j<dim2; ++j, x+=dim1) {
+         for (i=0; i<i0; ++i) { x[i] -= fac[i]*x[i0]; }
+         x[i]*=nrm;
+      }
+   }
 };
 
 template<class T>
@@ -1157,7 +1205,7 @@ unsigned wbarray<T>::eigTriDiag(
    unsigned D;
 
    if (!isMatrix()) wblog(F_L,
-      "ERR %s() matrix expected (%s)",FCT,SSTR_(this));
+      "ERR %s() matrix expected (%s)",FCT,SSTR(*this));
 
    D=dim(1); E.init(D); if (U) U->initIdentity(D);
    if (D<=1) {
@@ -1229,10 +1277,10 @@ unsigned wbarray<T>::eigTriDiag(
 };
 
 template<class T>
-wbarray<T>& wbarray<T>::ColPermute(const wbperm &P, char iflag){
+wbarray<T>& wbarray<T>::ColPermute(const wbperm &P){
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() matrix type required (%s)",FCT,SSTR_(this));
+      "ERR %s() matrix type required (%s)",FCT,SSTR(*this));
    if (P.len!=SIZE[1]) wblog(FL,
       "ERR %s() size mismatch (%d/%d)",FCT,P.len,SIZE[1]);
 
@@ -1242,7 +1290,7 @@ wbarray<T>& wbarray<T>::ColPermute(const wbperm &P, char iflag){
    for (; i<P.len; i++) {
       if (P[i]>=dim2) wblog(FL,
          "ERR %s() index out of bounds (%d/%d)",FCT,P[i],dim2);
-      if (iflag==0) 
+      if (P.inv==0) 
            MEM_CPY<T>(data+i*dim1, dim1, X.data+P[i]*dim1);
       else MEM_CPY<T>(data+P[i]*dim1, dim1, X.data+i*dim1);
    }
@@ -1254,7 +1302,7 @@ template<class T>
 wbarray<T>& wbarray<T>::SignCol(size_t k, const T *d0, char tnorm) {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() matrix type required (%s)",FCT,SSTR_(this));
+      "ERR %s() matrix type required (%s)",FCT,SSTR(*this));
 
    const size_t dim1=SIZE[0], dim2=SIZE[1];
    if (k>=dim2) wblog(FL,
@@ -1272,7 +1320,7 @@ template<class T>
 wbarray<T>& wbarray<T>::FlipSignCol(size_t k) {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() matrix type required (%s)",FCT,SSTR_(this));
+      "ERR %s() matrix type required (%s)",FCT,SSTR(*this));
 
    const size_t dim1=SIZE[0], dim2=SIZE[1];
    if (k>=dim2) wblog(FL,
@@ -1291,7 +1339,7 @@ wbarray<T>& wbarray<T>::SignConventionCol(
 ){
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() matrix type required (%s)",FCT,SSTR_(this));
+      "ERR %s() matrix type required (%s)",FCT,SSTR(*this));
 
    const size_t dim1=SIZE[0], dim2=SIZE[1];
    size_t i,k,k1,k2; T *d, eps=
@@ -1422,7 +1470,7 @@ T wbarray<T>::norm2Cols(long j1, long j2) const {
 
    T x2=0; long i,j, dim1,dim2;
    if (SIZE.len!=2) wblog(FL,
-      "ERR %s() got size %s array",FCT,SSTR_(this));
+      "ERR %s() got size %s array",FCT,SSTR(*this));
    dim1=SIZE[0]; dim2=SIZE[1];
 
    if (j1<0) { j1+=dim2; }
@@ -1440,7 +1488,7 @@ T wbarray<T>::norm2Recs(long i1, long i2) const {
 
    T x2=0; long i,j,dim1,dim2;
    if (SIZE.len!=2) wblog(FL,
-      "ERR %s() got size %s array",FCT,SSTR_(this));
+      "ERR %s() got size %s array",FCT,SSTR(*this));
    dim1=SIZE[0]; dim2=SIZE[1];
 
    if (i1<0) { i1+=dim1; }
@@ -1482,7 +1530,7 @@ bool wbarray<T>::isSym_aux(
       if (SIZE[i]!=B.SIZE[j] || SIZE[j]!=B.SIZE[i]) {
          if (lflag) sprintf_str( 
            "%s %s() size mismatch [%s; %s].", SHORT_FL, fct,
-            SSTR_(this), SSTR(B));
+            SSTR(*this), SSTR(B));
          return 0;
       }
    }
@@ -1595,23 +1643,20 @@ bool wbarray<T>::isZero(double eps, char bflag) const {
 template<class T> inline
 size_t wbarray<T>::nnz(const T eps, WBINDEX *I) const {
 
-   size_t i,n, s=numel(); T a;
+   size_t i=0, l=0, n=numel();
 
-   for (i=n=0; i<s; ++i) {
-      a=data[i]; if (a<0) { a=-a; };
-      if (a>eps) { ++n; }
+   for (; i<n; ++i) {
+      if (( data[i]<0? -data[i]:data[i] )>eps) { ++l; }
    }
 
-   if (I) {
-      I->init(n);
-      for (i=n=0; i<s; i++) {
-         a=data[i]; if (a<0) a=-a;
-         if (a>eps) I->data[n++]=i;
+   if (I) { I->init(l);
+      for (l=i=0; i<n; ++i) {
+         if (( data[i]<0? -data[i]:data[i] )>eps) { I->data[l++]=i; }
       }
    }
 
-   return n;
-}
+   return l;
+};
 
 template<class T> inline
 void wbarray<T>::SetRef (
@@ -1620,12 +1665,12 @@ void wbarray<T>::SetRef (
    size_t i,k,s, S=numel(), r=SIZE.len, l=len-1;
    size_t nz=r-len; 
 
-   if (len>r || r==0 || (len && data==NULL)) wblog(FL,
+   if (len>r || r==0 || (len && data==nullptr)) wblog(FL,
       "ERR %s() index out of bounds ([%s]) for %s !?",FCT,
-      (WBINDEX(len,I)+1).toStr().data, SSTR_(this));
+      (WBINDEX(len,I)+1).toStr().data, SSTR(*this));
    for (i=0; i<len; i++) if (I[i]>=SIZE[i+nz]) wblog(FL,
       "ERR %s() index out of bounds (%s; %s)",FCT,
-      (WBINDEX(len,I)+1).toStr().data, SSTR_(this));
+      (WBINDEX(len,I)+1).toStr().data, SSTR(*this));
 
    if (!nz || !len) wblog(FL,"ERR invalid reference (len=%d/%d)",len,r);
 
@@ -1633,10 +1678,10 @@ void wbarray<T>::SetRef (
    for (k=I[l], i=l-1; i<l; i--) { k = k*SIZE[i+nz] + I[i]; }
    k*=s;
 
-   if (k+s>S || d0==NULL) wblog(FL,
+   if (k+s>S || d0==nullptr) wblog(FL,
       "ERR index out of bounds ( %d+%d / %d; 0x%lX)\n"
       "having I=[%s] for %s array",k,s,S,d0,
-      (WBINDEX(len,I)+1).toStr().data, SSTR_(this)
+      (WBINDEX(len,I)+1).toStr().data, SSTR(*this)
    );
 
    MEM_CPY<T>(data+k,s,d0);
@@ -1690,6 +1735,25 @@ int wbarray<T>::skipSingletons(const char *F, int L,
 };
 
 template<class T> inline
+int wbarray<T>::SkipSingleton(
+   const char *F, int L, unsigned i) { 
+
+   if (--i>SIZE.len) { if (F) wblog(FL,"ERR %s() "
+      "index %d/%d out of bounds (%s)",FCT,i+1,SIZE.len,SSTR(*this));
+      return -1;
+   }
+   if (SIZE[i]!=1) { if (F) wblog(FL,"ERR %s() "
+      "index %d/%d not a singleton (%s)",FCT,i+1,SIZE.len,SSTR(*this));
+      return -2;
+   }
+   if (SIZE.len>1) {
+      for (++i; i<SIZE.len; ++i) { SIZE[i-1]=SIZE[i]; }
+      --SIZE.len; return 1; 
+   }
+   return 0;
+};
+
+template<class T> inline
 wbarray<T>& wbarray<T>::appendSingletons(
    const char *F, int L, unsigned r, unsigned m) {
 
@@ -1711,7 +1775,7 @@ wbarray<T>& wbarray<T>::appendSingletons(
 
          if (l>r) {
             for (i=r; i<l; ++i) { if (s[i]!=1) { wblog(F_L,
-               "ERR %s() got r=%d->%d for %s",FCT,l,r,SSTR_(this));
+               "ERR %s() got r=%d->%d for %s",FCT,l,r,SSTR(*this));
             }}
             SIZE.len=r;
          }
@@ -1747,9 +1811,9 @@ wbarray<T>& wbarray<T>::ExpandOM(const char *F, int L,  unsigned r0,
     }
     if (!S) { if (!sx) {
        if (int(r0)<=0 || r0==SIZE.len) { return *this; }}
-       wblog(FL,"ERR %s() got empty S=[%s] for %s",FCT,STR(S),SSTR_(this));
+       wblog(FL,"ERR %s() got empty S=[%s] for %s",FCT,STR(S),SSTR(*this));
     }
-    if (sx && S.isEqual(sx)) { sx=NULL; }
+    if (sx && S.isEqual(sx)) { sx=nullptr; }
 
     unsigned i=0, l=SIZE.len;
     size_t M=1;
@@ -1761,14 +1825,15 @@ wbarray<T>& wbarray<T>::ExpandOM(const char *F, int L,  unsigned r0,
     else if (r0+S.len<l) wblog(F_L,
        "ERR %s() rank out of bounds %d+%d / %d",FCT,r0,S.len,l);
 
-    M=( r0<l ? numOM(r0) : 1 );
+    M=( r0<l? numOM(r0) : 1 );
 
-    if (M!=S.prod()) wblog(FL,
-       "ERR %s() got OM size mismatch %s @ %d <> %s",FCT,
-       SSTR_(this), r0, SSTR(S));
+    if (M!=S.prod()) { wblog(FL,
+       "ERR %s() OM mismatch %s @ %d / %s (r=%d)",
+       FCT, SSTR(*this), M, SSTR(S),r0);
+    }
 
     if (r0<=2 && M>1) wblog(FL,"ERR %s() "
-       "got OM for rank-%d array %s (l=%d)",FCT,r0,SSTR_(this), S.len);
+       "got OM for rank-%d array %s (l=%d)",FCT,r0,SSTR(*this), S.len);
 
     if (sx) { M=1;
        for (; i<S.len; ++i) { M*=sx[i]; if (sx[i]!=S[i]) {
@@ -1778,7 +1843,7 @@ wbarray<T>& wbarray<T>::ExpandOM(const char *F, int L,  unsigned r0,
           }
        }}
        if (M>1 && r0<=2) { wblog(FL,"ERR %s() " 
-          "got OM for rank-%d array %s (M=%ld)",FCT,r0,SSTR_(this),M);
+          "got OM for rank-%d array %s (M=%ld)",FCT,r0,SSTR(*this),M);
        }
     }
 
@@ -1793,7 +1858,7 @@ wbarray<T>& wbarray<T>::ExpandOM(const char *F, int L,  unsigned r0,
 
        if (i<l || j<S.len) { wblog(FL,
           "WRN %s() got OM size reshape %s @ %d <> %s",
-          FCT, SSTR_(this), r0, SSTR(S));
+          FCT, SSTR(*this), r0, SSTR(S));
        }
     }
 
@@ -1822,7 +1887,7 @@ int wbarray<T>::ExpandOM(
    if (!r) { unsigned R=MAX(SIZE.len,B.SIZE.len);
       if (!isScalar() || !B.isScalar() || R>2) { wblog(FL,
          "ERR %s() unexpected empy/scalar QSpaces (%s / %s, r=%d)",
-         FCT,SSTR_(this),SSTR(B),R);
+         FCT,SSTR(*this),SSTR(B),R);
       }
       if (  SIZE.len<R) {   appendSingletons(R); }
       if (B.SIZE.len<R) { B.appendSingletons(R); }
@@ -1833,7 +1898,7 @@ int wbarray<T>::ExpandOM(
      #ifndef WB_SKIP_ASSERT
       if (r<=2 && r<SIZE.len) { unsigned i=r; 
          for (; i<SIZE.len; ++i) { if (SIZE[i]!=1) { wblog(FL,
-            "ERR %s() got OM space %s for rank r=%d",FCT,SSTR_(this),r);
+            "ERR %s() got OM space %s for rank r=%d",FCT,SSTR(*this),r);
          }}
       }
      #endif
@@ -1843,7 +1908,7 @@ int wbarray<T>::ExpandOM(
    if (SIZE.len<r || B.SIZE.len<r) wblog(F_L,"ERR %s() "
       "rank out of bounds (r=%d/%d/%d)",FCT,r,SIZE.len,B.SIZE.len);
    if (memcmp(SIZE.data,B.SIZE.data,r*sizeof(SIZE[0]))) wblog(F_L,
-      "ERR %s() size mismatch %s / %s (r=%d)",FCT,SSTR_(this),SSTR(B),r);
+      "ERR %s() size mismatch %s / %s (r=%d)",FCT,SSTR(*this),SSTR(B),r);
 
    unsigned i, R=MAX(SIZE.len,B.SIZE.len);  
 
@@ -1860,7 +1925,7 @@ int wbarray<T>::ExpandOM(
    if (r<3) {  
       for (i=r; i<R; ++i) { if (  SIZE[i]!=1) { break; }}
       if (i<R || !eq) wblog(FL,"ERR %s() "
-         "got OM space %s / %s for rank r=%d",FCT,SSTR_(this),SSTR(B),r);
+         "got OM space %s / %s for rank r=%d",FCT,SSTR(*this),SSTR(B),r);
    }
    else if (!eq) {
       wbvector<size_t> S(SIZE); unsigned q=0;
@@ -1893,7 +1958,7 @@ template<class TI> inline
 T wbarray<T>::aMax(TI &i_, TI &j_, const wbarray *B) const {
    T x=0; i_=j_=0; 
    if (SIZE.len!=2) wblog(FL,
-      "ERR %s() invalid usage (s=%s)",FCT,SSTR_(this));
+      "ERR %s() invalid usage (s=%s)",FCT,SSTR(*this));
 
    if (!B) { 
       size_t k; int e=aMax(x,k);
@@ -1929,7 +1994,7 @@ double wbarray<T>::maxDiff (const wbarray<T> &B) const {
 
    if (SIZE!=B.SIZE) {
       sprintf_str("%s:%d data SIZE mismatch ([%s, %s])",
-         FL,SSTR_(this),SSTR(B));
+         FL,SSTR(*this),SSTR(B));
       return NAN;
    }
 
@@ -1943,7 +2008,7 @@ template<class T> inline
 void wbarray<T>::TimesEl(const wbarray<T> &B, char conj) {
 
    if (!sameSize(B)) wblog(FL,
-      "ERR %s() size mismatch: %s <> %s",FCT,SSTR_(this),SSTR(B));
+      "ERR %s() size mismatch: %s <> %s",FCT,SSTR(*this),SSTR(B));
 
    Wb::TimesElRange(data,B.data,numel(),conj);
 };
@@ -1953,7 +2018,7 @@ wbarray<T>& wbarray<T>::timesEl(
    const wbarray &B, wbarray &C, T bfac, T cfac, char conj) const {
 
    if (!sameSize(B)) wblog(FL,
-      "ERR %s() size mismatch\n%s <> %s",FCT,SSTR_(this),SSTR(B));
+      "ERR %s() size mismatch\n%s <> %s",FCT,SSTR(*this),SSTR(B));
 
    if (!cfac || C.isEmpty()) {
       if (bfac) { C=*this;
@@ -1963,7 +2028,7 @@ wbarray<T>& wbarray<T>::timesEl(
       else C.init(SIZE);
    }
    else if (!sameSize(C)) { wblog(FL,
-     "ERR %s() size mismatch\n%s <> %s",FCT,SSTR_(this),SSTR(C)); }
+     "ERR %s() size mismatch\n%s <> %s",FCT,SSTR(*this),SSTR(C)); }
    else {
       if (cfac!=T(1)) { C*=cfac; }
       if (bfac) {
@@ -1981,7 +2046,7 @@ wbarray<T>& wbarray<T>::timesEl_OM(
    if (!r || r>SIZE.len) wblog(FL,
       "ERR %s() invalid rank (r=%d/%d)",FCT,r,SIZE.len);
    if (!sameSize(B)) wblog(FL,
-      "ERR %s() size mismatch %s / %s",FCT,SSTR_(this),SSTR(B));
+      "ERR %s() size mismatch %s / %s",FCT,SSTR(*this),SSTR(B));
 
    unsigned i=0; size_t N=1, M=1;
    const size_t *sa=SIZE.data, *sb=B.SIZE.data;
@@ -1990,7 +2055,7 @@ wbarray<T>& wbarray<T>::timesEl_OM(
 
    for (; i<r; ++i) {
       if (sa[i]!=sb[i]) wblog(FL,"ERR %s() "
-        "size mismatch %s / %s (i=%d/%d)",FCT,SSTR_(this),SSTR(B),i+1,r);
+        "size mismatch %s / %s (i=%d/%d)",FCT,SSTR(*this),SSTR(B),i+1,r);
       N*=sa[i];
    }
    for (; i<SIZE.len; ++i) { M*=sa[i]; }
@@ -2011,7 +2076,7 @@ template<class T> inline
 T wbarray<T>::dotProd(const wbarray<T> &B, char conj) const {
    T x=T(0);
    if (!sameSize(B)) wblog(FL,
-      "ERR %s() size mismatch: %s <> %s",FCT,SSTR_(this),SSTR(B));
+      "ERR %s() size mismatch: %s <> %s",FCT,SSTR(*this),SSTR(B));
 
    return Wb::dotProd(data,B.data,numel(),x,conj);
 };
@@ -2021,7 +2086,7 @@ T wbarray<T>::weightedAvg(const wbarray<T> &B) const {
    size_t i,s=numel(); T w,x=0,n2=0;
 
    if (!sameSize(B)) wblog(FL,
-      "ERR %s() size mismatch: %s <> %s",FCT,SSTR_(this),SSTR(B));
+      "ERR %s() size mismatch: %s <> %s",FCT,SSTR(*this),SSTR(B));
 
    for (i=0; i<s; i++) { w=B.data[i]; x+=(data[i]*w); n2+=w*Wb::CONJ(w); }
 
@@ -2100,66 +2165,75 @@ wbarray<T>& wbarray<T>::tensorProd(
 
 template<class T>
 wbarray<T>& wbarray<T>::Cat(
-   unsigned dim, 
-   const wbvector< wbarray<T> > &aa
-){
-   wbvector< const wbarray<T>* > ap(aa.len);
-   for (unsigned i=0; i<aa.len; i++) ap[i]=&aa[i];
-   Cat(dim,ap); return *this;
-};
+   unsigned dim, wbvector< const wbarray<T>* > &ap){  
 
-template<class T>
-wbarray<T>& wbarray<T>::Cat(
-   unsigned dim, 
-   const wbvector< wbarray<T>* > &ap
-){
-   if (ap.len==0) { init(); return *this; }
-   if (ap.len==1) { *this=(*ap[0]); return *this; }
+   if (ap.len==0) { return init(); }
+   if (ap.len==1) {
+      if (ap[0]) { *this=(*ap[0]); } else { init(); }
+      return *this;
+   }
 
-   size_t i,j=0,k,n, e=0, N, *s2=0;
-   const size_t r=ap[0]->SIZE.len, l=r-1, *sref=ap[0]->SIZE.data;
-   const WBINDEX &S0=ap[0]->SIZE;
+   unsigned i0=0, i1=0;
+   for (; i0<ap.len; ++i0) { if (ap[i0]) { break; }}
+   if (i0>=ap.len) { wblog(FL,
+      "WRN %s() got all null data (len=%d; dim=%d)",FCT,ap.len,dim);
+      init(); return *this;
+   }
+
+   for (i1=i0; i1<ap.len; ++i1) {
+      if (ap[i1] && ap[i1]->SIZE && ap[i1]->data) { break; }
+   }
+   if (i1>=ap.len) { wblog(FL,
+      "WRN %s() got all empty/null data (len=%d; dim=%d)",FCT,ap.len,dim);
+      *this=(*ap[i0]); 
+      return *this;
+   }
+
+   size_t i,j=0,k,n, e=0, N=0, *s2=0;
+   const size_t r=ap[i1]->SIZE.len, l=r-1, *sref=ap[i1]->SIZE.data;
+   const WBINDEX &S0=ap[i1]->SIZE;
    WBINDEX S(S0), I(r), I0(ap.len), idx;
 
    if (dim<1) wblog(FL,"ERR invalid index (not 1-based; %d/%d)",dim,r);
-   dim--; 
+   --dim; 
 
-   if (dim<r) N=sref[dim];
+   for (i=0; i<ap.len; ++i) { if (ap[i] && ap[i]->data) {
+      s2=ap[i]->SIZE.data;
 
-   for (i=1; i<ap.len; i++) {
-      if (ap[i]==NULL || ap[i]->data==NULL) continue;
-
-      if (r != ap[i]->SIZE.len) e++; else {
-         s2=ap[i]->SIZE.data;
-         for (j=0; j<r; j++) if (j!=dim && s2[j]!=sref[j]) e++;
+      if (i!=i1) { 
+         if (r!=ap[i]->SIZE.len) { ++e; } else
+         for (j=0; j<r; ++j) if (j!=dim && s2[j]!=sref[j]) { ++e; }
       }
-      if (e) wblog(FL,"ERR size mismatch %d/%d: %s <> %s (%d)",
-         i+1,ap.len, SSTR_(ap[0]),SSTR_(ap[i]),dim+1);
+      if (e) wblog(FL,
+        "ERR %s() size mismatch i=%d/%d/%d: %s <> %s @ %d",
+        FCT,i,i1,ap.len, SSTR_(ap[0]),SSTR_(ap[i]),dim+1);
 
-      I0[i]=N; if (dim<r) N+=s2[dim];
-   }
+      I0[i]=N; N+=(dim<r ? s2[dim] : 1);
+   }}
 
    if (dim>=r) { T *dd;
-      S.Resize(dim+1); S[dim]=ap.len; init(S); dd=data; n=ap[0]->numel();
-      for (i=0; i<ap.len; i++, dd+=n) {
+      S.Resize(dim+1); S[dim]=N; init(S); dd=data; n=ap[i1]->numel();
+      for (i=i1; i<ap.len; ++i, dd+=n) {
+         if (ap[i] && ap[i]->data)
          MEM_CPY<T>(dd,n,ap[i]->data);
       }
       return *this;
    }
 
-   idx.init(N);
-   for (k=i=0; i<ap.len; i++) {
-      if (ap[i]==NULL || ap[i]->data==NULL) continue;
-      for (n=ap[i]->SIZE.data[dim], j=0; j<n; j++, k++) idx[k]=i;
+   idx.init(N); k=0;
+   for (i=i1; i<ap.len; ++i) {
+      if (ap[i] && ap[i]->data) { n=ap[i]->SIZE.data[dim];
+         for (j=0; j<n; ++j, ++k) { idx[k]=i; }
+      }
    }
 
    S[dim]=N; init(S); n=numel();
 
-   for (i=0; i<n; i++) {
+   for (i=0; i<n; ++i) {
        widx_t q=idx[I[dim]];
        const size_t *s=ap[q]->SIZE.data;
 
-       for (j=0,k=l; k<r; k--) {
+       for (j=0,k=l; k<r; --k) {
           if (j) j*=s[k];
           j += (k!=dim ? I[k] : (I[k]-I0[q]));
        }
@@ -2277,7 +2351,7 @@ wbarray<T>& wbarray<T>::addBlock(
 ) const {
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() only applies to rank-2 tensors (%s)",FCT,SSTR_(this));
+      "ERR %s() only applies to rank-2 tensors (%s)",FCT,SSTR(*this));
    size_t dim1=SIZE[0], dim2=SIZE[1];
 
    if (i+n>dim1 || j+m>dim2) wblog(FL,
@@ -2299,7 +2373,7 @@ T wbarray<T>::norm2block(
    T x2=0; 
 
    if (rank()!=2) wblog(FL,
-      "ERR %s() only applies to rank-2 tensors (%s)",FCT,SSTR_(this));
+      "ERR %s() only applies to rank-2 tensors (%s)",FCT,SSTR(*this));
    size_t dim1=SIZE[0], dim2=SIZE[1];
 
    if (i0+n>dim1 || j0+m>dim2) wblog(FL,
@@ -2390,7 +2464,7 @@ template<class T> inline
 wbarray<T>& wbarray<T>::Reshape(const wbvector<size_t> &S, bool lflag) {
 
    if (numel()!=S.prod(0)) wblog(FL,
-      "ERR %s() length mismatch (%s => %s)",FCT, SSTR_(this), SSTR(S));
+      "ERR %s() length mismatch (%s => %s)",FCT, SSTR(*this), SSTR(S));
 
    if (!lflag) {
       unsigned i=0, j=0, e=0;
@@ -2420,7 +2494,7 @@ wbarray<T>& wbarray<T>::Reshape(const wbvector<size_t> &S, bool lflag) {
          }
       }
       if (e || i<SIZE.len || j<S.len) wblog(FL,"WRN %s() "
-      "got non-trivial reshape %s -> %s",FCT,SSTR_(this),SSTR(S));
+      "got non-trivial reshape %s -> %s",FCT,SSTR(*this),SSTR(S));
    }
 
    SIZE=S; return *this;
@@ -2449,7 +2523,7 @@ void wbarray<T>::groupIndizes_P(
 
    size_t i,j,j1=0,j2=0,l, m=I.len, n=SIZE.len;
    wperm_t *p; widx_t *idx;
-   char mark[n ? n : 1]; 
+   std::vector<char> mark(n ? n : 1); 
 
    if (m>n) wblog(FL,
       "ERR %s() invalid group index (len=%d/%d)",FCT,m,n);
@@ -2462,8 +2536,6 @@ void wbarray<T>::groupIndizes_P(
    if (pos==1) { j1=0;   j2=m; } else
    if (pos==2) { j1=n-m; j2=0; }
    else wblog(FL,"ERR %s() invalid pos=%d",FCT,pos);
-
-   memset(mark,0,n*sizeof(char));
 
    for (j=j1, i=0; i<m; ++i, ++j) { l=p[j]=idx[i];
       if (l>=n) wblog(FL,"ERR %s() index not unique (%d/%d)",FCT,l,n);
@@ -2484,24 +2556,24 @@ void wbarray<T>::groupIndizes_P(
 };
 
 template<class T>
-wbarray<T>& wbarray<T>::transpose(const char *F, int L, wbarray<T> &A) const {
+wbarray<T>& wbarray<T>::transpose(const char *F, int L, wbarray<T> &B) const {
 
     unsigned r=rank(); wbperm P;
 
     if (r%2) wblog(F_L,"ERR %s() "
-       "applies to even-rank arrays only! (%s)",FCT,SSTR_(this));
+       "applicable to even-rank arrays only (%s)",FCT,SSTR(*this));
 
     P.initTranspose(r);
-    permute(A,P);
+    permute(B,P);
 
-    return A;
+    return B;
 };
 
 template<class T>
 wbarray<T>& wbarray<T>::flipLR(const char *F, int L, wbarray &B) const {
 
    if (rank()!=2) wblog(F_L,
-      "ERR %s() requires matrix (%s)",FCT,SSTR_(this));
+      "ERR %s() requires matrix (%s)",FCT,SSTR(*this));
    if (&B==this || B.data==data) wblog(F_L,
       "ERR %s() requires different objects!",FCT);
    B.init(SIZE);
@@ -2521,7 +2593,7 @@ template<class T>
 wbarray<T>& wbarray<T>::FlipLR(const char *F, int L) {
 
    if (rank()!=2) wblog(F_L,
-      "ERR %s() requires matrix (%s)",FCT,SSTR_(this));
+      "ERR %s() requires matrix (%s)",FCT,SSTR(*this));
 
    widx_t i=0, j=0, dim1=SIZE[0], dim2=SIZE[1], d2=dim2/2;
 
@@ -2541,7 +2613,7 @@ template<class T>
 wbarray<T>& wbarray<T>::flipUD(const char *F, int L, wbarray &B) const {
 
    if (rank()!=2) wblog(F_L,
-      "ERR %s() requires matrix (%s)",FCT,SSTR_(this));
+      "ERR %s() requires matrix (%s)",FCT,SSTR(*this));
    if (&B==this || B.data==data) wblog(F_L,
       "ERR %s() requires different objects!",FCT);
    B.init(SIZE);
@@ -2561,7 +2633,7 @@ template<class T>
 wbarray<T>& wbarray<T>::FlipUD(const char *F, int L) {
 
    if (rank()!=2) wblog(F_L,
-      "ERR %s() requires matrix (%s)",FCT,SSTR_(this));
+      "ERR %s() requires matrix (%s)",FCT,SSTR(*this));
 
    widx_t i=0, j=0, dim1=SIZE[0], dim2=SIZE[1], d2=dim1/2, l=dim1-1;
 
@@ -2578,17 +2650,17 @@ wbarray<T>& wbarray<T>::FlipUD(const char *F, int L) {
 };
 
 template<class T>
-wbarray<T>& wbarray<T>::MatPermute(const wbperm &P, char iflag){
+wbarray<T>& wbarray<T>::MatPermute(const wbperm &P) {
 
    if (isIdentityPerm(P)) return *this;
    if (!isSMatrix()) wblog(FL,
-      "ERR %s() expects square matrix (%s)",FCT,SSTR_(this));
+      "ERR %s() expects square matrix (%s)",FCT,SSTR(*this));
 
    wbarray<T> X(*this);
    const wperm_t *p=P.data;
    size_t i,j, dim1=SIZE[0], dim2=SIZE[1];
 
-   if (!iflag) {
+   if (!P.inv) {
       for (i=0; i<dim1; i++) 
       for (j=0; j<dim2; j++) { data[i+dim1*j]=X.data[p[i]+dim1*p[j]]; }
    }
@@ -2601,264 +2673,252 @@ wbarray<T>& wbarray<T>::MatPermute(const wbperm &P, char iflag){
 };
 
 template<class T>
-wbarray<T>& wbarray<T>::Permute(
-   const wbperm &P, char iflag, char rcpy) {
+wbarray<T>& wbarray<T>::Permute(wbperm P, char rcpy) { 
 
    if (!P) { return *this; }   
 
    if (P.len>SIZE.len) { appendSingletons(P.len); } 
 
    if (!requiresDataPerm(P)) { 
-      SIZE.Permute(P,iflag);   
+      SIZE.Permute(P('r'));    
       return *this;
    }
 
-   if (isRef()) { 
-      if (rcpy=='c' || rcpy=='C' || rcpy=='i' || rcpy=='I') {
+   if (isRef()) {
+      if (rcpy=='c' || rcpy=='C') { 
          wbarray<T> X;
-         return permute(X,P,iflag).save2(*this);
+         return permute(X,P).save2(*this);
       }
-      else if (rcpy!='r' && rcpy!='R') {
+      else if (rcpy!='r' && rcpy!='R') { 
          wblog(PFL,"ERR %s() got ref (rcpy=%s)",FCT,cSTR(rcpy));
       }
    }
 
    wbarray<T> X(*this);
-   X.permute(*this,P,iflag);
+   X.permute(*this,P);
 
    return *this;
 };
 
 template<class T>
-wbarray<T>& wbarray<T>::Permute(const char* sidx, char iflag, char rcpy) {
-    wbperm P(sidx); 
-    if (P.isEmpty()) wblog(FL,"WRN got empty permutation '%s'", sidx);
-    return Permute(P,iflag,rcpy);
+wbarray<T>& wbarray<T>::Permute(const char* s, int offset, char rcpy) {
+
+   wbperm P(s,offset);   
+   return Permute(P,rcpy);
 };
 
 template<class T>
 wbarray<T>& wbarray<T>::permute(
-    wbarray<T> &A,  
-    const char* sidx,
-    char iflag      
-) const {
+   wbarray<T> &B,  const char *s, int offset) const {
 
-    wbperm P(sidx); 
+   wbperm P(s,offset);   
 
-    if (P.isEmpty()) {
-       wblog (FL,"WRN got empty permutation '%s'", sidx);
-       return A.init(*this);
-    }
-    return permute(A,P,iflag);
+   if (P.isEmpty()) {
+      wblog (FL,"WRN got empty permutation '%s'",s);
+      return B.init(*this);
+   }
+   return permute(B,P);
 };
 
 template<class T>
-wbarray<T>& wbarray<T>::permute(   
-    wbarray<T> &A,     
-    const wbperm &P0,
-    char iflag         
-) const {
+wbarray<T>& wbarray<T>::permute(    
+   wbarray<T> &A, wbperm P) const { 
 
-    if (!P0) { return A=(*this); } 
-    if (&A==this) { 
-       wbarray<T> X;
-       return permute(X,P0,iflag).save2(A);
-    }
+   if (!P) { return A=(*this); }    
+   if (&A==this) {  wbarray<T> X; return permute(X,P).save2(A); }
 
-    wbperm P;
-
-#ifdef WB_CLOCK
+  #ifdef WB_CLOCK
    Wb::Clock clk("arr:permute",0); 
-#endif
+  #endif
 
-    if (iflag!=0 && iflag !='I') wblog(FL, 
-       "ERR %s() invalid iflag '%c'<%d>",FCT,iflag,iflag);
+   P.Extend(SIZE.len); 
 
-    P.init(P0,iflag,SIZE.len); 
+   if (!requiresDataPerm(P)) {
+      A=(*this); A.SIZE.Select(P); 
+      if (P.conj) { A.Conj(); }
+      return A;
+   }
 
-    if (!requiresDataPerm(P)) {
-        A=(*this); A.SIZE.Select(P); 
-        return A;
-    }
-
-#ifdef QS_USING_OMP
-   int np=MAX(OMP_NUM_THREADS,QSP_NUM_THREADS);
+#ifdef QS_USING_OMP 
+  int np=(omp_in_parallel() ? 1 : MAX( OMP_NUM_THREADS, QSP_NUM_THREADS ));
 #else
-   int np=0;
+  int np=0;
 #endif
 
-    A.init_bare(SIZE); 
-    SIZE.permute(A.SIZE,P);
+   A.init_bare(SIZE); 
 
-    wbarray_permute__(A.data,*this,P,np);
+   wbarray_permute__(A.data,*this,P,np); 
 
-    return A;
+   P.Strip();
+   SIZE.permute(A.SIZE,P);
+
+   return A;
 };
 
 template<class T>
 wbarray<T>& wbarray<T>::select0(
-    const WBPERM &P,
-    unsigned dim, 
-    wbarray<T> &A 
+   const WBPERM &P,
+   unsigned dim, 
+   wbarray<T> &A 
 ) const {
 
-    if (&A==this) {
-       wbarray<T> X(A); X.select0(P,dim,A);
-       return A;
-    }
+   if (&A==this) {
+      wbarray<T> X(A); X.select0(P,dim,A);
+      return A;
+   }
 
-    const unsigned r=SIZE.len, l=r-1; size_t i,j,k,d;
-    WBINDEX S,I;
+   const unsigned r=SIZE.len, l=r-1; size_t i,j,k,d;
+   WBINDEX S,I;
 
-    if (dim>=SIZE.len) wblog(FL,
-       "ERR %s() dimension out of bounds (%d/%d)",FCT,dim+1,SIZE.len);
+   if (dim>=SIZE.len) wblog(FL,
+      "ERR %s() dimension out of bounds (%d/%d)",FCT,dim+1,SIZE.len);
 
-    S=SIZE; d=SIZE[dim]; S[dim]=P.len;
+   S=SIZE; d=SIZE[dim]; S[dim]=P.len;
 
-    for (i=0; i<P.len; i++) if (P[i]>=d) wblog(FL,
-        "ERR %s() index out of bounds (%d/%d)",FCT,P[i],d);
+   for (i=0; i<P.len; i++) if (P[i]>=d) wblog(FL,
+       "ERR %s() index out of bounds (%d/%d)",FCT,P[i],d);
 
-    A.init(S); I.init(SIZE.len);
-    widx_t *ip=I.data, *s=S.data; const wperm_t *p=P.data;
+   A.init(S); I.init(SIZE.len);
+   widx_t *ip=I.data, *s=S.data; const wperm_t *p=P.data;
 
-    for (d=A.numel(), i=0; i<d; i++) {
-        for (j=0, k=l; k<r; k--) {
-           if (j) j*=SIZE[k];
-           j+=(k!=dim ? ip[k] : p[ip[k]]);
-        }
+   for (d=A.numel(), i=0; i<d; i++) {
+       for (j=0, k=l; k<r; k--) {
+          if (j) j*=SIZE[k];
+          j+=(k!=dim ? ip[k] : p[ip[k]]);
+       }
 
-        A.data[i]=data[j];
+       A.data[i]=data[j];
 
-        k=0; ip[0]++; 
-        while (ip[k]>=s[k] && k<l) { ip[k]=0; ++ip[++k]; }
-    }
+       k=0; ip[0]++; 
+       while (ip[k]>=s[k] && k<l) { ip[k]=0; ++ip[++k]; }
+   }
 
-    return A;
-}
+   return A;
+};
 
 template<class T>
 wbarray<T>& wbarray<T>::selectSqueeze(
-    wbarray<T> &A, unsigned p, 
-    unsigned dim 
+   wbarray<T> &A, unsigned p, 
+   unsigned dim 
 ) const {
 
-    if (&A==this) {
-       wbarray<T> X(A); X.selectSqueeze(A,p,dim);
-       return A;
-    }
+   if (&A==this) {
+      wbarray<T> X(A); X.selectSqueeze(A,p,dim);
+      return A;
+   }
 
-    const unsigned r=SIZE.len, l=r-1; size_t i,j,k,s;
-    WBINDEX S,I;
+   const unsigned r=SIZE.len, l=r-1; size_t i,j,k,s;
+   WBINDEX S,I;
 
-    if (dim>=SIZE.len) wblog(FL,
-    "ERR %s() dimension out of bounds (%d/%d)",FCT,dim+1,SIZE.len);
+   if (dim>=SIZE.len) wblog(FL,
+   "ERR %s() dimension out of bounds (%d/%d)",FCT,dim+1,SIZE.len);
 
-    if (p>=SIZE[dim]) wblog(FL,
-    "ERR %s() index out of bounds (%d/%d)",FCT,p,SIZE[dim]);
+   if (p>=SIZE[dim]) wblog(FL,
+   "ERR %s() index out of bounds (%d/%d)",FCT,p,SIZE[dim]);
 
-    if (SIZE.len==1) {
-       A.init(1); A.data[0]=data[p];
-       return A;
-    }
+   if (SIZE.len==1) {
+      A.init(1); A.data[0]=data[p];
+      return A;
+   }
 
-    S=SIZE; S[dim]=1; A.init(S); s=A.numel(); I.init(SIZE.len);
+   S=SIZE; S[dim]=1; A.init(S); s=A.numel(); I.init(SIZE.len);
 
-    for (i=0; i<s; i++) {
-        for (j=0, k=l; k<r; k--) {
-           if (j) j*=SIZE[k];
-           j+=(k!=dim ? I[k] : p);
-        }
+   for (i=0; i<s; i++) {
+       for (j=0, k=l; k<r; k--) {
+          if (j) j*=SIZE[k];
+          j+=(k!=dim ? I[k] : p);
+       }
 
-        A.data[i]=data[j];
+       A.data[i]=data[j];
 
-        k=0; I[0]++; 
-        while (I[k]>=S[k] && k<l) { I[k]=0; ++I[++k]; }
-    }
+       k=0; I[0]++; 
+       while (I[k]>=S[k] && k<l) { I[k]=0; ++I[++k]; }
+   }
 
-    for (i=dim+1; i<S.len; i++) A.SIZE[i-1]=A.SIZE[i];
-    A.SIZE.len--; A.SIZE[A.SIZE.len]=0;
+   for (i=dim+1; i<S.len; i++) A.SIZE[i-1]=A.SIZE[i];
+   A.SIZE.len--; A.SIZE[A.SIZE.len]=0;
 
-    return A;
-}
+   return A;
+};
 
 template<class T>
 void wbarray<T>::setBlock(
-    const wbvector< WBINDEX > &DB, 
-    const wbindex &IB,   
-    const wbarray<T> &A
+   const wbvector< WBINDEX > &DB, 
+   const wbindex &IB,   
+   const wbarray<T> &A
 ){
-    size_t i,j,ik,k,s, r=SIZE.len, l=r-1;
-    wbindex I,I1(r),I2(r); 
+   size_t i,j,ik,k,s, r=SIZE.len, l=r-1;
+   wbindex I,I1(r),I2(r); 
 
-    if (DB.len!=r || IB.len!=r) wblog(FL,
-       "ERR %s() size mismatch (r: %d %d / %d)",FCT,DB.len,IB.len,r);
+   if (DB.len!=r || IB.len!=r) wblog(FL,
+      "ERR %s() size mismatch (r: %d %d / %d)",FCT,DB.len,IB.len,r);
 
-    if (A.SIZE.len!=r) {
-       for (i=r; i<A.SIZE.len; ++i) { if (A.SIZE[i]!=1) break; }
-       if (i!=A.SIZE.len) wblog(FL,
-       "ERR %s() size mismatch (r=%d / %d)",FCT,A.SIZE.len,r);
-    }
+   if (A.SIZE.len!=r) {
+      for (i=r; i<A.SIZE.len; ++i) { if (A.SIZE[i]!=1) break; }
+      if (i!=A.SIZE.len) wblog(FL,
+      "ERR %s() size mismatch (r=%d / %d)",FCT,A.SIZE.len,r);
+   }
 
-    for (k=0; k<r; ++k) {
-        const WBINDEX &Dk=DB[k]; ik=IB[k];
+   for (k=0; k<r; ++k) {
+       const WBINDEX &Dk=DB[k]; ik=IB[k];
 
-        if (ik>=Dk.len) wblog(FL,
-           "ERR %s() block index out of bounds (%d: %d/%d)",
-            FCT,k+1, ik+1, Dk.len);
-        if (Dk[ik] != A.SIZE[k]) wblog(FL,
-           "ERR %s() block size mismatch (%d: %d/%d)",
-            FCT,k+1, Dk[ik], A.SIZE[k]);
+       if (ik>=Dk.len) wblog(FL,
+          "ERR %s() block index out of bounds (%d: %d/%d)",
+           FCT,k+1, ik+1, Dk.len);
+       if (Dk[ik] != A.SIZE[k]) wblog(FL,
+          "ERR %s() block size mismatch (%d: %d/%d)",
+           FCT,k+1, Dk[ik], A.SIZE[k]);
 
-        I1[k]=Wb::addRange(Dk.data,ik);
-        I2[k]=I1[k]+Dk[ik];
+       I1[k]=Wb::addRange(Dk.data,ik);
+       I2[k]=I1[k]+Dk[ik];
 
-        if (I2[k]>SIZE[k]) wblog(FL,
-           "ERR %s() index out of bounds (%d: %d/%d)",
-            FCT,k+1, I2[k], SIZE[k]);
-    }
+       if (I2[k]>SIZE[k]) wblog(FL,
+          "ERR %s() index out of bounds (%d: %d/%d)",
+           FCT,k+1, I2[k], SIZE[k]);
+   }
 
-    I=I1; s=A.numel();
+   I=I1; s=A.numel();
 
-    for (i=0; i<s; ++i) {
-        for (j=I[l],k=l-1; k<r; k--) j = j*SIZE[k] + I[k];
+   for (i=0; i<s; ++i) {
+       for (j=I[l],k=l-1; k<r; k--) j = j*SIZE[k] + I[k];
 
-        data[j]=A.data[i];
+       data[j]=A.data[i];
 
-        k=0; I[0]++;
-        while (I[k]>=I2[k] && k<l) { I[k]=I1[k]; ++I[++k]; }
-    }
-}
+       k=0; I[0]++;
+       while (I[k]>=I2[k] && k<l) { I[k]=I1[k]; ++I[++k]; }
+   }
+};
 
 template<class T>
 void wbarray<T>::addBlock(
-    const WBINDEX &I0, 
-    const wbarray<T> &A,
-    const char dflag 
+   const WBINDEX &I0, 
+   const wbarray<T> &A,
+   const char dflag 
 ){
-    size_t i,j,k, s=A.numel(), r=SIZE.len, l=r-1;
-    unsigned ra=(dflag ? r/2 : r), la=ra-1;
-    const widx_t *S=A.SIZE.data;
-    WBINDEX I(ra);
+   size_t i,j,k, s=A.numel(), r=SIZE.len, l=r-1;
+   unsigned ra=(dflag ? r/2 : r), la=ra-1;
+   const widx_t *S=A.SIZE.data;
+   WBINDEX I(ra);
 
-    if (I0.len!=r || A.SIZE.len!=ra || (dflag && r%2)) wblog(FL,
-       "ERR %s() size mismatch (%d/%d, %s; %c<%d>)",
-        FCT,I0.len, A.SIZE.len, SSTR_(this), dflag
-    );
-    for (i=0; i<r; i++) if (I0[i]+S[i>=ra ? i-ra : i]>SIZE[i])
-         wblog(FL,"ERR %s() index out of bounds (%d: %s - %s %s)",
-         FCT,i+1,I0.toStr().data,SSTR(A),SSTR_(this)
-    );
+   if (I0.len!=r || A.SIZE.len!=ra || (dflag && r%2)) wblog(FL,
+      "ERR %s() size mismatch (%d/%d, %s; %c<%d>)",
+       FCT,I0.len, A.SIZE.len, SSTR(*this), dflag
+   );
+   for (i=0; i<r; i++) if (I0[i]+S[i>=ra ? i-ra : i]>SIZE[i])
+        wblog(FL,"ERR %s() index out of bounds (%d: %s - %s %s)",
+        FCT,i+1,I0.toStr().data,SSTR(A),SSTR(*this)
+   );
 
-    for (i=0; i<s; i++) {
-       for (j=0,k=l; k<r; k--) { if (j) j*=SIZE[k];
-          j+=(I0[k]+I[k<ra ? k : k-ra]);
-       }
+   for (i=0; i<s; i++) {
+      for (j=0,k=l; k<r; k--) { if (j) j*=SIZE[k];
+         j+=(I0[k]+I[k<ra ? k : k-ra]);
+      }
 
-       data[j] += A.data[i];
+      data[j] += A.data[i];
 
-       k=0; I[0]++;
-       while (I[k]>=S[k] && k<la) { I[k]=0; ++I[++k]; }
-    }
+      k=0; I[0]++;
+      while (I[k]>=S[k] && k<la) { I[k]=0; ++I[++k]; }
+   }
 };
 
 template<class T>
@@ -2866,12 +2926,12 @@ T wbarray<T>::min() const {
    size_t i,n=numel(); T x;
 
    if (n==0) {
-       wblog(FLINE,"WRN min() of empty wbarray !?");
+       wblog(FL,"WRN min() of empty wbarray !?");
        memset(&x,0,sizeof(T)); return x;
    }
-
-   for (x=data[0], i=1; i<n; i++)
-   if (x>data[i]) x=data[i];
+   for (x=data[0], i=1; i<n; ++i) {
+      if (x>data[i]) x=data[i];
+   }
 
    return x;
 }
@@ -2922,75 +2982,63 @@ T wbarray<T>::aMin(char zflag, size_t *k_) const {
 
 template<class T>
 wbstring wbarray<T>::toStr() const {
-   wbstring s; 
-   unsigned l=2; size_t n=numel();
+   unsigned n=numel();
+   wbvec<char> s;
+
    if (n==1) { s.init(24+4*SIZE.len);
-      l=snprintf(s.data,s.len, SIZE.len==2? "%s (%s)" : "%s [%s]",
-      STR(wbvector<T>(numel(),data,'r')), SSTR_(this));
+      s.catf(0,0,"%s", STR(wbvector<T>(n,data,'r'))); if (SIZE.len!=2) {
+      s.catf(0,0," [%s]",SSTR(*this)); }
    }
-   else if (n || SIZE.len) { s.init(5 + 10*(numel()+SIZE.len));
-      l=snprintf(s.data,s.len,"[%s](%s)",
-      STR(wbvector<T>(numel(),data,'r')), SSTR_(this));
+   else if (n || SIZE.len) { s.init(5 + 10*(n+SIZE.len));
+      s.catf(0,0,"[%s](%s)",STR(wbvector<T>(n,data,'r')), SSTR(*this));
    }
    else { s="[]"; }
 
-   if (l>=s.len) wblog(FL,
-      "WRN %s() string out of bounds (%d/%d)",FCT,l,s.len);
-   return s;
+   return s.data;
 };
 
 template<class T>
 wbstring Wb::sizeStrM( 
-   unsigned r, const T* sd,
-   unsigned m, const T* sm, const char *sep, const char *sepM
+   unsigned r, const T* sd, 
+   unsigned m, const T* sm, 
+   const char *sep, const char *sepM
 ) {
-   unsigned i=0, j, l=0, n=0, ndims=r+m;
-   char *s; size_t x;
-   wbstring sout;
+   if (!r && !m) { return ""; }
 
-   if (r>1 || m>1)
-          { n+=(ndims-(r && m ? 2 : 1))*(sep ? strlen(sep) : 1); }
-   if (m) { n+=(sepM ? strlen(sepM) : 1); }
+   unsigned i=0, n=0;
+   wbvec<char> sout;
 
-   for (; i<ndims; ++i) {
-      x=(i<r ? sd[i] : sm[i-r]); if (x<0) { x=-x; ++n; } 
-      for (j=0; j<64; ++j) { if (!(x>>1)) break; }
-      n+=(1+ceil(3*(double(i)/10))); 
-   }; if (n<8) n=8;
+   for (i=0; i<r; ++i) { n+=Wb::bit_width(sd[i])/3; }; if (m) {
+   for (i=0; i<m; ++i) { n+=Wb::bit_width(sm[i])/3; }
+   n += m + (sepM ? strlen(sepM) : 1); }
+   n += r + ((r?r-1:0) + (m?m-1:0)) * (sep? strlen(sep) : 1);
+   n += 2; 
 
-   sout.init(n); s=sout.data;
+   sout.init(MAX(n,8U));
 
-   for (i=0; i<r && l<n; ++i) {
-      l+=snprintf(s+l,n-l,"%s%ld",i? (sep? sep:" "):"", long(sd[i]));
-   }
-   for (i=0; i<m && l<n; ++i) {
-      l+=snprintf(s+l,n-l,"%s%ld", i? (sep? sep:" ") : (sepM? sepM:"|"),
-      long(sm[i]));
-   }
+   for (i=0; i<r; ++i) { sout.catf(0,0,
+      "%s%ld",i? (sep? sep:" "):"", long(sd[i])); }
+   for (i=0; i<m; ++i) { sout.catf(0,0,
+      "%s%ld", i? (sep? sep:" "):(sepM? sepM:"_"), long(sm[i])); }
+   sout.check_bounds(FL,0); 
 
-   if (l>=n) wblog(FL,
-      "WRN %s() string out of bounds (%d/%d)\n'%s'",FCT,l,n,s);
-   return sout;
+   return sout.data;
 };
 
 template<class T>
 void wbarray<T>::print_ref (const char *sb, const char *nl) const {
 
    if (isRef() || mtype || (sptr && sptr->mtype)) {
-      int l=0, n=32; char str[n]; str[0]=0;
+      wbvec<char> sx(32);
 
       if (sptr) {
-         l+=snprintf(str,n,"%s",STR_(sptr));
-         if (mtype!=sptr->mtype && l<n)
-         l+=snprintf(str+l,n-l," / %s !?",Wb::MTYPE_STR[mtype]);
+         sx.catf(0,0,"%s",STR_(sptr)); if (mtype!=sptr->mtype) {
+         sx.catf(0,0," / %s !?",Wb::MTYPE_STR[mtype]); }
       }
-      else { l+=snprintf(str,n,"%s",Wb::MTYPE_STR[mtype]); }
+      else { sx.catf(0,0,"%s",Wb::MTYPE_STR[mtype]); }
 
-      printf(" %s%s%s%s", sb?sb:"", str, sb?sb:"", nl?nl:"");
-
-      if (l>=n) { printf("\n");
-         wblog(FL,"WRN %s() string out of bounds (%d/%d)",FCT,l,n);
-      }
+      printf(" %s%s%s%s", sb?sb:"",sx.data, sb?sb:"", nl?nl:"");
+      sx.check_bounds(FL,0);
    }
    else if ((nl && nl[0])) { printf("%s",nl); }
 
@@ -3025,7 +3073,7 @@ void wbarray<T>::info(const char *F, int L,
    else { snprintf(s,32,"%s",istr?istr:""); }
 
    #pragma omp critical (__ensure_sequential_wblog__)
-   {  printf("%-20s %-8s %-8s %s",shortFL(F_L),s,SSTR_(this),TSTR(T));
+   {  printf("%-20s %-8s %-8s %s",shortFL(F_L),s,SSTR(*this),TSTR(T));
       print_ref();
    }
 
@@ -3038,17 +3086,17 @@ void wbarray<T>::info(const char *F, int L,
 template<class T>
 void wbarray<T>::info(const char* istr) const {
 
-   unsigned l=0, n=16; char s[n];
+   wbvec<char> s(16);
+
    size_t b=numel()*sizeof(T); 
 
-   if (b<(1<<10)) l=snprintf(s,n,"%ld bytes ",b); else
-   if (b<(1<<20)) l=snprintf(s,n,"%.3g kB",b/double(1<<10)); else
-                  l=snprintf(s,n,"%.3g MB",b/double(1<<20));
-   if (l>=n) wblog(FL,"ERR %s() string out of bounds (%d/%d)",FCT,l,n);
+   if (b<(1<<10)) s.catf(FL,"%ld bytes ",b); else
+   if (b<(1<<20)) s.catf(FL,"%.3g kB",b/double(1<<10));
+   else           s.catf(FL,"%.3g MB",b/double(1<<20));
 
    #pragma omp critical (__ensure_sequential_wblog__)
    {  printf("  %-12s %-10s %12s  @ %12p %s",
-         istr? istr:"", SSTR_(this), s, data, TSTR(T));
+         istr? istr:"", SSTR(*this), s.data, data, TSTR(T));
       print_ref();
    }
 };
@@ -3064,7 +3112,7 @@ void wbarray<T>::print(
       else tstr.init(((char*)(typeid(T).name())));
 
       wblog(F,L,"%s = [%s] %s array \\",
-         istr[0]? istr:"ans", SSTR_(this), tstr.data);
+         istr[0]? istr:"ans", SSTR(*this), tstr.data);
       print_ref();
    }
    else info(istr);
@@ -3074,24 +3122,21 @@ void wbarray<T>::print(
 
 template<class T>
 int wbarray<T>::printdata( 
-   const char *istr,
-   const char *fmt0
-) const {
+   const char *istr, const char *fmt0) const {
 
-   unsigned i,j,k, r=SIZE.len, l=r-1, s=numel();
+   unsigned i,j,k, r=SIZE.len, l=r-1, n=numel(), m=numel(2);
    wbstring fmt;
 
    if (!fmt0[0]) {
        if (typeid(T)==typeid(double) || typeid(T)==typeid(float))
-            fmt=" %12.5g";
-       else fmt.init2Fmt((T)0, 6);
-   } else fmt=fmt0;
+            { fmt=" %12.5g"; }
+       else { fmt.init2Fmt((T)0, 6); }
+   } else { fmt=fmt0; }
 
-   if (s>1) {
-      if (SIZE.len<2) {
-         printf("\n");
-         for (i=0; i<s; i++) printf(fmt.data,data[i]);
-         if (s) printf("\n\n");
+   if (n>1) {
+      if (SIZE.len<2) { PRINTF("\n");
+         for (i=0; i<n; ++i) { PRINTF(fmt.data,data[i]); }
+         if (n) PRINTF("\n\n");
       }
       else {
          WBINDEX I(r);
@@ -3099,33 +3144,33 @@ int wbarray<T>::printdata(
          wbarray<T> A; wbperm P(r); P[0]=1; P[1]=0;
          permute(A,P);
 
-         for (k=2, i=0; i<s; i++) {
-            if (k) { if (i) printf("\n");
+         for (k=2, i=0; i<n; ++i) {
+            if (k) { if (i) { PRINTF("\n"); }
                if (k>1) {
-                  if (r>2) {
-                     printf("\n  %s(:,:",istr);
-                     for (j=2; j<r; j++) printf(",%ld",I[j]+1);
-                     printf(") = [\n\n");
+                  if (m>1) {
+                     PRINTF("\n%s(:,:",istr);
+                     for (j=2; j<r; ++j) { PRINTF(",%ld",I[j]+1); }
+                     PRINTF(") = [\n");
                   }
-                  else printf("%s = [\n",istr);
+                  else PRINTF("%s = [\n",istr);
                }
             }
 
-            printf(fmt.data,A.data[i]);
+            PRINTF(fmt.data,A.data[i]);
 
             k=0; I[0]++;  
             while (I[k]>=A.SIZE[k] && k<l) { I[k]=0; ++I[++k]; }
          }
-         printf("\n];\n");
+         PRINTF("\n];\n");
       }
    }
-   else if (s==1) {
-      printf("  %s = ",istr);
-      printf(fmt.data,data[0]); printf("\n");
+   else if (n==1) {
+      PRINTF("%s = ",istr);
+      PRINTF(fmt.data,data[0]); PRINTF("\n");
    }
-   else printf("\n");
+   else PRINTF("\n");
 
-   return (int)s;
+   return n;
 };
 
 template<>
@@ -3133,16 +3178,16 @@ int wbarray<wbcomplex>::printdata(
    const char *istr, const char *fmt0
 ) const {
 
-   unsigned i,j,k, r=SIZE.len, l=r-1, s=numel();
+   unsigned i,j,k, r=SIZE.len, l=r-1, n=numel();
    wbstring fmt;
 
    fmt=((fmt0 && fmt0[0]) ? fmt0 : " %8.4g%+8.4gi");
 
-   if (s>1) {
+   if (n>1) {
       if (SIZE.len<2) {
-         printf("\n");
-         for (i=0; i<s; i++) printf(fmt.data,data[i].r,data[i].i);
-         if (s) printf("\n\n");
+         PRINTF("\n");
+         for (i=0; i<n; ++i) PRINTF(fmt.data,data[i].r,data[i].i);
+         if (n) PRINTF("\n\n");
       }
       else {
          WBINDEX I(r);
@@ -3150,33 +3195,33 @@ int wbarray<wbcomplex>::printdata(
          wbarray<wbcomplex> A; wbperm P(r); P[0]=1; P[1]=0;
          permute(A,P);
 
-         for (k=2, i=0; i<s; i++) {
-            if (k) { if (i) printf("\n");
+         for (k=2, i=0; i<n; ++i) {
+            if (k) { if (i) PRINTF("\n");
                if (k>1) {
                   if (r>2) {
-                     printf("\n  %s(:,:",istr);
-                     for (j=2; j<r; j++) printf(",%ld",I[j]+1);
-                     printf(") = [\n\n");
+                     PRINTF("\n  %s(:,:",istr);
+                     for (j=2; j<r; j++) PRINTF(",%ld",I[j]+1);
+                     PRINTF(") = [\n\n");
                   }
-                  else printf("%s = [\n",istr);
+                  else PRINTF("%s = [\n",istr);
                }
             }
 
-            printf(fmt.data,A.data[i].r,A.data[i].i);
+            PRINTF(fmt.data,A.data[i].r,A.data[i].i);
 
             k=0; I[0]++;  
             while (I[k]>=A.SIZE[k] && k<l) { I[k]=0; ++I[++k]; }
          }
-         printf("\n];\n");
+         PRINTF("\n];\n");
       }
    }
-   else if (s==1) {
-      printf("  %s = ",istr);
-      printf(fmt.data,data[0].r,data[0].i); printf("\n");
+   else if (n==1) {
+      PRINTF("  %s = ",istr);
+      PRINTF(fmt.data,data[0].r,data[0].i); PRINTF("\n");
    }
-   else printf("\n");
+   else PRINTF("\n");
 
-   return (int)s;
+   return n;
 };
 
 template<class T>
@@ -3193,7 +3238,7 @@ wbarray<TC>& wbarray<T>::comm(
    if (!isMatrix() || !B.isMatrix() || SIZE[0]!=B.SIZE[1] ||
        SIZE[0]!=SIZE[1] || B.SIZE[0]!=B.SIZE[1]) wblog(FL,
       "ERR %s() invalid operators for [A,B] (%s; %s)",
-       FCT,SSTR_(this), SSTR(B)
+       FCT,SSTR(*this), SSTR(B)
    );
 
    Wb::MatProd(*this,B,C,aflag,bflag);        
@@ -3211,13 +3256,39 @@ wbarray<TC>& wbarray<T>::acomm(
    if (!isMatrix() || !B.isMatrix() ||
        SIZE[0]!=SIZE[1] || B.SIZE[0]!=B.SIZE[1]) wblog(FL,
       "ERR %s() invalid operators for [A,B] (%s; %s)",
-       FCT,SSTR_(this), SSTR(B)
+       FCT,SSTR(*this), SSTR(B)
    );
 
    Wb::MatProd(*this,B,C,aflag,bflag);        
    Wb::MatProd(B,*this,C,bflag,aflag,+1.,1.); 
 
    return C;
+};
+
+template<class T>
+wbarray<T>& wbarray<T>::contractVec(
+   const char *F, int L, unsigned i1, 
+   const wbvector<T> &v, wbarray &B) const {
+
+   unsigned r=SIZE.len;
+   wbvector<size_t> S(2); wbperm P;
+   wbarray<T> MA;
+
+   if (i1<1 || i1>r || r<2) wblog(F_L,
+      "ERR %s() invalid contraction index (i1=%d/%d)",FCT,i1,r);
+
+   if (i1==1) { S[0]=1; S[1]=v.len;
+      wbarray<T> M(S,nullptr,'r'); SIZE.select(P,S); S.Skip(0);
+      toMatrixRef(MA,i1-1,1,P);
+      Wb::MatProd(M,MA,B).Reshape(S); 
+   }
+   else { S[0]=v.len; S[1]=1;
+      wbarray<T> M(S,nullptr,'r'); SIZE.select(P,S); --S.len;
+      toMatrixRef(MA,i1-1,2,P);
+      Wb::MatProd(MA,M,B).Reshape(S); 
+   }
+
+   return B;
 };
 
 template<class T>
@@ -3230,14 +3301,13 @@ wbarray<TC>& wbarray<T>::contractMat(
 
    unsigned r=SIZE.len, l=r-1;
    wbvector<size_t> S; wbperm P;
-   wbarray<T> A;
    wbarray<T> MA;
 
    if (!M.isMatrix()) wblog (F_L,
       "ERR %s() rank 2 object required (%d)",FCT,M.SIZE.len);
    if (i1<1 || i1>SIZE.len || i2<1 || i2>2) wblog(F_L,
-      "ERR %s() invalid contraction indizes [%d %d, %d %d]", i1,i2,
-       FCT,rank(), M.rank());
+      "ERR %s() invalid contraction indizes (%d/%d, %d/%d)",
+       FCT, i1,rank(), i2,M.rank());
 
    if (i1==1) {
       toMatrixRef(MA,i1-1,1,P); SIZE.select(P,S); l=0;
@@ -3252,22 +3322,22 @@ wbarray<TC>& wbarray<T>::contractMat(
       else { Wb::MatProd(MA,M,X,'N','T'); S[l]=M.SIZE[0]; }
    }
 
-   X.Reshape(S).Permute(P,'I');
+   X.Reshape(S).Permute(wbperm(P,'i'));
 
    return X;
 };
 
 template<class T>
 template<class TB> inline
-wbarray<T>& wbarray<T>::Contract(char *idx1,
-   const wbarray<TB> &B, char *idx2,
+wbarray<T>& wbarray<T>::Contract(
+   const char *idx1, const wbarray<TB> &B, const char *idx2,
    const wbperm &pfinal
 ){
    wbarray<T> A(*this);
 
    WBINDEX i1, i2;
-   i1 = Str2Idx(idx1,1); 
-   i2 = Str2Idx(idx2,1);
+   Wb::Str2Idx(FL,idx1,i1,widx_t(1)); 
+   Wb::Str2Idx(FL,idx2,i2,widx_t(1));
 
    A.contract(i1, B, i2, *this, pfinal);
    return *this;
@@ -3277,14 +3347,14 @@ template<class T>
 template<class TB, class TC> inline
 wbarray<TC>& wbarray<T>::contract(const char *F, int L,
    const char *idx1, const wbarray<TB> &B, const char *idx2,
-   wbarray<TC> &Q, const wbperm &pfinal
+   wbarray<TC> &Q, const wbperm &pfinal, T afac, TC cfac
  ) const {
 
-   wbvector<unsigned> i1, i2;
-   i1 = Str2Idx(idx1,1); 
-   i2 = Str2Idx(idx2,1); 
+   WBINDEX i1, i2;
+   Wb::Str2Idx(FL,idx1,i1,widx_t(1)); 
+   Wb::Str2Idx(FL,idx2,i2,widx_t(1)); 
 
-   return contract(F,L, i1,B,i2,Q,pfinal);
+   return contract(F,L, i1,B,i2,Q,pfinal,afac,cfac);
 }
 
 template<class T>
@@ -3371,7 +3441,7 @@ wbarray<TC>& wbarray<TA>::contract(
    for (i=0; i<i1.len; ++i) {
       if (SIZE[i1[i]]!=B.SIZE[i2[i]]) wblog(F,L,
       "ERR wbarray::%s() incompatible data size\n[%s] @ %d <> [%s] @ %d",
-      FCT,SSTR_(this),i1[i]+1,SSTR(B),i2[i]+1); }
+      FCT,SSTR(*this),i1[i]+1,SSTR(B),i2[i]+1); }
 
      toMatrixRef(FL,MA,i1,2,aflag);    SIZE.getI(i1,S1); 
    B.toMatrixRef(FL,MB,i2,1,bflag);  B.SIZE.getI(i2,S2);
@@ -3395,10 +3465,8 @@ wbarray<TC>& wbarray<TA>::contract(
 
    char isPtrans = P.isCyclic2F(S1.len,S2.len,'i');
 
-   if (aflag<0 || aflag>1) wblog(FL,
-      "ERR %s() invalid aflag=%d !?",FCT,aflag);
-   if (bflag<0 || bflag>1) wblog(FL,
-      "ERR %s() invalid bflag=%d !?",FCT,bflag);
+   if (aflag<0 || aflag>1) wblog(FL,"ERR %s() aflag=%d",FCT,aflag);
+   if (bflag<0 || bflag>1) wblog(FL,"ERR %s() bflag=%d",FCT,bflag);
 
    if (isPtrans) { aflag=!aflag; bflag=!bflag; }
 
@@ -3450,7 +3518,7 @@ wbarray<T>& wbarray<T>::trace(
    if (i1==i2 || !i1 || !i2 || i1>SIZE.len || i2>SIZE.len ||
        SIZE[i1-1]!=SIZE[i2-1]) {
        wblog (FL,"ERR %s() invalid trace indizes (%d,%d; %s)",
-       FCT,i1, i2, SSTR_(this)); return C;
+       FCT,i1, i2, SSTR(*this)); return C;
    }
 
    i1--; i2--; 
@@ -3485,7 +3553,7 @@ wbarray<T>& wbarray<T>::trace(
    }
 
    return C;
-}
+};
 
 template<class T>
 wbarray<T>& wbarray<T>::trace( 
@@ -3515,8 +3583,8 @@ wbarray<T>& wbarray<T>::trace(
       sx[i]=s0[i1[i]]; if (sx[i]!=s0[i2[i]]) { break; }
    }
    if (i<I1.len) wblog (FL,
-      "ERR %s() invalid index set\nhaving %s with %s <> %s",
-      FCT,SSTR_(this),STR(I1),STR(I2)
+      "ERR %s() invalid index set\nhaving %s @ %s / %s",
+      FCT,SSTR(*this),STR(I1),STR(I2)
    );
 
    if (!I1.len) {
@@ -3563,6 +3631,71 @@ wbarray<T>& wbarray<T>::trace(
    }
 
    return C;
+};
+
+template<class T>
+wbarray<T>& wbarray<T>::mldivide( const char *F, int L,
+   const wbarray<T> &B, wbarray<T> &X, T bfac, T eps) const {
+
+   size_t nA=numel();
+   if (nA==1 && B.SIZE && B.SIZE[0]==1) {
+      size_t i=0, n=B.numel(); X=B; T *x=X.data, xfac=bfac/data[0];
+      for (; i<n; ++i) { x[i]*=xfac; }
+      return X;
+   }
+
+   if (!SIZE || !B.SIZE) {
+      if (*this || B) wblog(F_L,
+         "ERR %s() mixed empty data (%s) \\ (%s)",FCT,SSTR(*this),STR(B));
+      return X.init();
+   }
+
+   if (SIZE.len!=2 || SIZE!=B.SIZE) wblog(F_L,
+      "ERR %s() unexpected size (%s) \\ (%s)",FCT,SSTR(*this),STR(B));
+   if (SIZE[1]>SIZE[0]) wblog(F_L,
+      "ERR %s() invalid input (%s; expecting dim1>=dim2)",FCT,SSTR(*this));
+
+   if (!bfac) { unsigned dim2=SIZE[1];
+      return X.init(dim2,dim2);
+   }
+
+   unsigned j,k, dim1=SIZE[0], dim2=SIZE[1];
+   wbarray<T> A(*this), U(SIZE[0],dim2);
+   T *u=U.data, *x; X=B;
+
+   for (k=0; k<dim2; ++k, u+=dim1) {
+      if (A.Householder(F_L,k,u,nullptr,eps)>=0) {
+         for (x=X.data, j=0; j<dim2; ++j, x+=dim1) { 
+            Wb::householder(u+k,x+k,dim1-k,eps);
+         }
+      }
+      else wblog(F_L,"ERR %s() singular input @ %g",FCT,double(eps));
+   }
+
+   if (dim1>dim2) { double dx=0;
+      A.Resize(dim2,dim2,dx); 
+        if (fabs(dx)>1e-14) wblog(FL, 
+           "TST %s() discarded weight for A at %.3g",FCT,dx);
+      X.Resize(dim2,dim2,dx);
+        if (fabs(dx)>1e-14) wblog(FL, 
+           "TST %s() discarded weight for B at %.3g",FCT,dx);
+      dim1=dim2;
+   }
+
+   for (k=0; k<dim2; ++k) {
+      Wb::Givens_eraseCol(A.data,k,k,dim1,dim2,X.data);
+   }
+
+   if (!A.isIdentityMatrix(eps)) wblog(FL,
+      "ERR %s() failed to compute left-inverse (%g)",FCT,double(A.data[0]));
+
+   if (bfac!=1) { size_t i=0, n=X.numel(); x=X.data;
+      if (bfac==-1)
+           { for (; i<n; ++i) { x[i]=-x[i]; }}
+      else { for (; i<n; ++i) { x[i]*=bfac; }}
+   }
+
+   return X;
 };
 
 template<class T>
@@ -3692,7 +3825,7 @@ wbstring tensor_ref_::sizeStr() const {
 
 const wbvector<size_t>* tensor_ref_::getSIZE() const {
 
-   const wbvector<size_t> *s=NULL;
+   const wbvector<size_t> *s=nullptr;
    if (Ar) {
       if (Az) wblog(FL,"ERR %s() multiple refs set (%p/%p)",FCT,Ar,Az);
       s=&(Ar->SIZE);
@@ -3703,7 +3836,7 @@ const wbvector<size_t>* tensor_ref_::getSIZE() const {
 };
 
 template<>
-void tensor_ref_::contract(
+void tensor_ref_::contract( 
    const char *F, int L, const ctrIdx &ia,
    const tensor_ref_ &b, const ctrIdx &ib, wbarray<double> &C
  ) const {
@@ -3711,12 +3844,12 @@ void tensor_ref_::contract(
    if (Az || b.Az) wblog(FL,
       "ERR %s() got complex array refs (%p/%p)",FCT,Az,b.Az);
    if (!Ar || !b.Ar) wblog(FL,
-      "ERR %s() got NULL array refs (%p/%p)",FCT,Ar,b.Ar);
+      "ERR %s() got nullptr array refs (%p/%p)",FCT,Ar,b.Ar);
    Ar->contract(F_L,ia,*b.Ar,ib,C,wbperm(),1.,0.);
 };
 
 template<>
-void tensor_ref_::contract(
+void tensor_ref_::contract( 
    const char *F, int L, const ctrIdx &ia,
    const tensor_ref_ &b, const ctrIdx &ib, wbarray<wbcomplex> &C
  ) const {
@@ -3753,7 +3886,7 @@ char tensorRef_::check(const char* F, int L) const {
 
 char tensorRef_::Check(const char* F, int L, unsigned &k) {
    if (!id) { id=(++k); }
-   if (!R) { if (F) wblog(FL,"ERR %s() got NULL array reference",FCT); }
+   if (!R) { if (F) wblog(FL,"ERR %s() got nullptr array reference",FCT); }
    else if (!S.len) { S.init2ref(*R.getSIZE()); }
 
    return check(F_L);
@@ -3780,10 +3913,10 @@ int tensorRef_::contract(const char *F, int L,
 
    if ((i=(check() | b.check()))) wblog(F_L,
       "ERR %s() %s input\n%s\n%s", FCT,
-      i&1 ? "got empty":"inconsistent", STR_(this),STR(b));
+      i&1 ? "got empty":"inconsistent", STR(*this),STR(b));
 
    nc=this->it.getCtr(
-      flops? NULL : (F? F : __FILE__), 
+      flops? nullptr : (F? F : __FILE__), 
       flops?    1 : (L? L : __LINE__),
       b.it, ia,ib,    
       &c.it, &ma, &mb 
@@ -3796,7 +3929,7 @@ int tensorRef_::contract(const char *F, int L,
       "length mismatch %d/%d ; %d/%d",FCT,ma.len,S.len,mb.len,b.S.len);
    for (i=0; i<ia.len; ++i) { if (S[ia[i]]!=b.S[ib[i]]) { wblog(FL,
       "ERR %s() size mismatch\n%-40s @ %s\n%-40s @ %s",
-      FCT, STR_(this), STR(ia), STR(b), STR(ib));
+      FCT, STR(*this), STR(ia), STR(b), STR(ib));
    }}
 
    l=c.it.len;
@@ -3924,6 +4057,7 @@ void tensorRefs::print(const char *F, int L) const {
 template<class T> inline
 bool wbarray<T>::requiresDataPerm(const wbperm &P, char lflag) const {
 
+   if (P.fac!=1 || (P.conj && ISCOMPLX_(T))) { return 1; }
    if (!P.len) { return 0; }
 
    const wperm_t *p=P.data; const size_t *s=SIZE.data;
@@ -4040,7 +4174,7 @@ void wbarray<T>::toMatrixRefM(
    if (R<2 || R>SIZE.len) wblog(FL,
       "ERR %s() invalid rank (R=%d/%d; K=%d)",FCT,R,SIZE.len,K);
    if (SIZE.len>R+1) wblog(FL,"WRN %s() "
-      "got multi-dimensional OM (%s @ %d; K=%d)",FCT,SSTR_(this),R,K);
+      "got multi-dimensional OM (%s @ %d; K=%d)",FCT,SSTR(*this),R,K);
 
    if (!P0.len) { P.Index(R); }
    else {
@@ -4140,7 +4274,7 @@ void cell2mat(
    D2.init(C.dim2);
 
    for (i=0; i<C.dim1; ++i)
-   for (j=0; j<C.dim2; ++j) { if (C(i,j).D==NULL) continue;
+   for (j=0; j<C.dim2; ++j) { if (C(i,j).D==nullptr) continue;
 
        WBINDEX &S = C(i,j).D->SIZE;
 
@@ -4165,7 +4299,7 @@ void cell2mat(
    for (j0=j=0; j<C.dim2; ++j, j0+=d2) { d2=D2[j];
    for (i0=i=0; i<C.dim1; ++i, i0+=d1) { d1=D1[i];
 
-      if (C(i,j).D==NULL) continue;
+      if (C(i,j).D==nullptr) continue;
 
       d0=(C(i,j).D->data); dd=M.ref(i0,j0);
       fac=C(i,j).fac;
@@ -4254,12 +4388,38 @@ void wbarray<wbcomplex>::getImag(wbarray<double> &I) const {
 };
 
 template<class T>
-void wbarray<T>::Conj() { return; }
+wbarray<T>& wbarray<T>::Conj() {
+   if (WbUtil<T>::isComplex()) wblog(FL,"ERR %s() got type %s",FCT,TSTR(T));
+   return *this;
+};
 
 template<>
-void wbarray<wbcomplex>::Conj() {
+wbarray<wbcomplex>& wbarray<wbcomplex>::Conj() {
+   for (size_t i=0, n=numel(); i<n; ++i) { data[i].i = -data[i].i; }
+   return *this;
+};
+
+template<class T>
+wbarray<T>& wbarray<T>::ConjTimes(double fac) {
+   if (WbUtil<T>::isComplex()) wblog(FL,"ERR %s() got type %s",FCT,TSTR(T));
+   return Times(fac);
+};
+
+template<>
+wbarray<wbcomplex>& wbarray<wbcomplex>::ConjTimes(double fac) {
    size_t i=0, n=numel();
-   for (; i<n; ++i) { data[i].i = -data[i].i; }
+
+   if (fac== 1) { for (; i<n; ++i) { data[i].i = -data[i].i; }} else
+   if (fac==-1) { for (; i<n; ++i) { data[i].r = -data[i].r; }} else
+   if (!fac  ) { memset((void*)data,0,n*sizeof(wbcomplex)); }
+   else {
+      for (; i<n; ++i) {
+         data[i].r =  fac*data[i].r;
+         data[i].i = -fac*data[i].i;
+      }
+   }
+
+   return *this;
 };
 
 template<class T>
@@ -4291,23 +4451,46 @@ void wbarray<wbcomplex>::set(
 };
 
 template <typename T> 
-  void wbperm_helper<T>::permute(const T *src, T *dest, int np
+  void wbperm_helper<T>::permute(
+  const T *B, 
+  T *A,       
+  int np      
 ) const {
 
+   if (!A || !B) wblog(FL,
+      "ERR %s() got null input (src=%p, dest=%p; rk=%d)",FCT,B,A,rk);
+
+   if (!fac) {
+      T z=0; for (size_t i=0; i<numel; ++i) { A[i]=z; }
+      return;
+   }
+
+   T a=0, b=fac; 
+
    if (rk<2) {
-      if (rk==1) { std::copy_n (src, sz[0], dest); }
+      if (rk==1) {
+         Wb::cpyRange(A,B,sz[0],a,b,conj); 
+      }
       return;
    }
 
    widx_t m=2*m_blk, m2=m*m; 
 
-   if (!src || !dest) wblog(FL,
-      "ERR %s() got null input (s=%p, d=%p; rk=%d)",FCT,src,dest,rk);
-
    if (numel<8192) { 
-      widx_t idest=-1;
+      widx_t ia=-1;
       wbIndex I(rk, sz);
-      while (++I) { dest[++idest]=src[I.serial(stride)]; }
+
+      if (!conj) {
+         if (b==T( 1)) { while (++I) A[++ia] = B[I.serial(stride)]; } else
+         if (b==T(-1)) { while (++I) A[++ia] =-B[I.serial(stride)]; }
+         else          { while (++I) A[++ia] = B[I.serial(stride)]*b; }
+      }
+      else {
+         if (b==T( 1)) { while (++I) A[++ia] = Wb::CONJ(B[I.serial(stride)]); } else
+         if (b==T(-1)) { while (++I) A[++ia] =-Wb::CONJ(B[I.serial(stride)]); }
+         else          { while (++I) A[++ia] = Wb::CONJ(B[I.serial(stride)])*b; }
+      }
+
       return;
    }
 
@@ -4315,12 +4498,12 @@ template <typename T>
       "ERR %s() unexpected l1=%d with stride %d (l2=%d, rk=%d)",
       FCT,l1,stride[0],l2,rk);
 
-   if (np<1) { np=1; }
+   if (np<1 || omp_in_parallel()) { np=1; } 
 
    if (l1) {
       const unsigned k=2;  
 
-      widx_t idest=-1, isrc=0, len=sz[k-1], step=stride[k-1];
+      widx_t ia=-1, ib=0, len=sz[k-1], step=stride[k-1];
       wbIndex I(rk-k, sz+k); 
 
       if (rk<3) wblog(FL, 
@@ -4329,12 +4512,12 @@ template <typename T>
 
       if (np>1) { np=std::min(4,np); if ((int)len<4*np) { np=1; }}
 
-      while (++I) { ++idest;
-         isrc = I.serial(stride+k);
+      while (++I) { ++ia;
+         ib = I.serial(stride+k);
          #pragma omp parallel for num_threads(np)
          for (widx_t i=0; i<len; ++i) {
-            std::copy_n( 
-            src+isrc+i*step, sz[0], dest+(i+idest*len)*sz[0]);
+            Wb::cpyRange(
+            A+(i+ia*len)*sz[0], B+ib+i*step, sz[0],a,b,conj);
          }
       }
       return;
@@ -4343,30 +4526,31 @@ template <typename T>
    unsigned i, l=0;
    int r_=rk-(l1+2); if (r_<1) { r_=1; }
 
-   widx_t isrc, idest;
-   widx_t sz_[3*r_], *stride_s = sz_+r_, *stride_d = sz_+2*r_;
+   widx_t ib, ia;
+   std::vector<widx_t> Sz_(3*r_);
+   widx_t *sz_=Sz_.data(), *stride_s = sz_+r_, *stride_d = sz_+2*r_;
 
    widx_t N_=0, M_;
    widx_t M=sz[l2], N=sz[l1]; 
 
-   for (idest=1, i=0; i<=l1; ++i) { idest*=sz[i]; } 
+   for (ia=1, i=0; i<=l1; ++i) { ia*=sz[i]; } 
    for (; i<rk; ++i) {
       if (i!=l2) { sz_[l] = sz[i];
          stride_s[l] = stride[i];
-         stride_d[l] = idest;
+         stride_d[l] = ia;
          ++l;
       }
       else {
-         N_=idest;  
+         N_=ia;  
       }
-      idest*=sz[i]; 
+      ia*=sz[i]; 
    }
 
    M_=stride[l1];   
    if (!N_) wblog(FL,"ERR %s() failed to set N_",FCT);
 
    if (np>1) {  
-      if (M*N > (1>>14) && M>=2*m) { 
+      if (M*N > (1<<14) && M>=2*m) { 
          int np_=M/m; if (np>np_) { np=np_; }
       }
    }
@@ -4375,8 +4559,8 @@ template <typename T>
    wbIndex I_(l,sz_);
 
    while (++I_) {
-      isrc  = I_.serial(stride_s);
-      idest = I_.serial(stride_d);
+      ib  = I_.serial(stride_s);
+      ia = I_.serial(stride_d);
 
       #pragma omp parallel for num_threads(np)
       for (widx_t I=0; I<M; I+=m) {
@@ -4387,13 +4571,29 @@ template <typename T>
 
          widx_t i,j,J,jM_,n_,m_ = std::min(m,M-I); 
       for (J=0; J<N; J+=m) { n_ = std::min(m,N-J); 
-         s_ = src + isrc + J*M_ + I;  
-         for (j=0; j<n_; ++j) { jM_=j*M_;
-         for (i=0; i<m_; ++i) { blk[j*m+i] = s_[jM_+i]; }}
+         s_ = B + ib + J*M_ + I;  
+         if (!conj) {
+            for (j=0; j<n_; ++j) { jM_=j*M_;
+            for (i=0; i<m_; ++i) { blk[j*m+i] =          s_[jM_+i];  }}
+         }
+         else {
+            for (j=0; j<n_; ++j) { jM_=j*M_;
+            for (i=0; i<m_; ++i) { blk[j*m+i] = Wb::CONJ(s_[jM_+i]); }}
+         }
 
-         d_ = dest + idest + I*N_ + J;
-         for (i=0; i<m_; ++i) { 
-         for (j=0; j<n_; ++j) { d_[i*N_+j] = blk[j*m+i]; }}
+         d_ = A + ia + I*N_ + J;
+         if (b==T(1)) {
+            for (i=0; i<m_; ++i) { 
+            for (j=0; j<n_; ++j) { d_[i*N_+j] = blk[j*m+i]; }}
+         }
+         else if (b==T(-1)) {
+            for (i=0; i<m_; ++i) {
+            for (j=0; j<n_; ++j) { d_[i*N_+j] =-blk[j*m+i]; }}
+         }
+         else {
+            for (i=0; i<m_; ++i) {
+            for (j=0; j<n_; ++j) { d_[i*N_+j] = blk[j*m+i]*b; }}
+         }
       }}
    }
 };
@@ -4401,8 +4601,8 @@ template <typename T>
 template <typename T>
 mxArray* wbperm_helper<T>::toMx() const {
 
-   const char *fields[] = { "rk","numel","sz","stride","blk" };
-   mxArray *S=mxCreateStructMatrix(1,1,5,fields);
+   const char *fields[] = { "rk","numel","sz","stride","blk","fac" };
+   mxArray *S=mxCreateStructMatrix(1,1,6,fields);
    wbvector<double> x(MAX(3U,rk));
 
    x.len=2; x[0]=rk; x[1]=rk_;
@@ -4417,8 +4617,10 @@ mxArray* wbperm_helper<T>::toMx() const {
       Wb::cpyRange(x.data,stride,rk); mxSetFieldByNumber(S,0,3,x.toMx());
    }
 
-   x.len=3; x[0]=l1; x[1]=l2; x[2]=m_blk; 
-   mxSetFieldByNumber(S,0,4,x.toMx());    
+   x.len=3; x[0]=l1; x[1]=l2; x[2]=m_blk;   
+   mxSetFieldByNumber(S,0,4,x.toMx());      
+
+   mxSetFieldByNumber(S,0,5,numtoMx(fac));  
 
    return S;
 };

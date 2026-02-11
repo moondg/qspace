@@ -25,8 +25,8 @@ function Il=wblog_iter(k,kdir,L,r2,I,isw)
   else
      if L<100, f='%02g'; else f='%03g'; end
      if kdir>0
-          sw=sprintf(['|%g.' f '>'],isw,k);
-     else sw=sprintf(['<%g.' f '|'],isw,k); end
+          sw=sprintf(['│%g.' f '⟩'],isw,k);
+     else sw=sprintf(['⟨%g.' f '│'],isw,k); end
   end
 
   if isfield(I,'E0')

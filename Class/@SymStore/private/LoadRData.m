@@ -63,7 +63,7 @@ function [R,dd]=LoadRData(sym,varargin)
      fprintf(1,'\r   Loading all %g R-data ... \r',nf);
      for i=nf:-1:1
          I=load([D0 '/' ff(i).name],'-mat'); I=I.RSet; R(i)=I;
-         jj{i}=QSet2str(I.J);
+         jj{i}=qmat2char(I.J);
          dd(i)=size(R(i).Z,1);
      end
      fprintf(1,'\r%70s\r','');

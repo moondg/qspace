@@ -20,20 +20,32 @@
 #ifndef __WB_UTIL_HH__
 #define __WB_UTIL_HH__
 
-/* -------------------------------------------------------------------- */
 namespace Wb {
-/* -------------------------------------------------------------------- */
+
+   inline char conj2bool(char c);
+
+   inline void conj_add_z2(char &conj, char dc);
+   inline void conj_iter_z2(char &conj) { conj_add_z2(conj,1); };
+
+   template<class T>
+   inline T z2ferm2sign(T z2);
+
+   template<class T>
+   inline void z2ferm2sign(T* z2, unsigned len);
+
+   template<class T>
+   inline void z2ferm2sign(wbvector<T> &z2);
 
    int Rational(
       double &x,          
       long &P, long &Q,   
-      double *dx=NULL,    
-      unsigned *nmax=NULL,
-      wbvector<double>* aa=NULL, 
+      double *dx=nullptr,    
+      unsigned *nmax=nullptr,
+      wbvector<double>* aa=nullptr, 
       unsigned niter=6,   
       long pqmax=-1,      
-      double eps=1E-8,    
-      double eps2=1E-14,  
+      double eps=1e-8,    
+      double eps2=1e-14,  
       char vflag=0
    );
 
@@ -42,14 +54,14 @@ namespace Wb {
       const char *F, int L, T *d, unsigned n, char rflag=0,
       unsigned niter=6,
       long pqmax=-1,    
-      double eps=1E-8,  
-      double eps2=1E-14,
-      double *rz=NULL, double *ra=NULL, char vflag=0
+      double eps=1e-8,  
+      double eps2=1e-14,
+      double *rz=nullptr, double *ra=nullptr, char vflag=0
    );
 
    wbstring rat2Str( 
       const char *F, int L, double d, unsigned niter=6,
-      long pqmax=99999, double eps=1E-8, double eps2=1E-14, char vflag=0
+      long pqmax=99999, double eps=1e-8, double eps2=1e-14, char vflag=0
    );
 
    template<class T>
@@ -59,7 +71,7 @@ namespace Wb {
       double eps  QS_UNUSED_VAR =1e-14
    ){ return 0; };
 
-   void ResSummary(const char *F, int L, const char *istr=NULL);
+   void ResSummary(const char *F, int L, const char *istr=nullptr);
 
 #ifndef __WB_MEM_TRACK_HH__
    void MemStat(const char *F=0, int L=0, char lflag=0);
@@ -138,26 +150,19 @@ namespace Wb {
 
    template <class T0, class T> inline
    size_t findfirst_sorted(const char *F, int L,
-      const T0* d0, const T* dd, size_t m, size_t N, size_t M, char lex=1
-   ){
-      T d2[m];
-      for (unsigned i=0; i<m; ++i) d2[i]=T(d0[i]);
-      return findfirst_sorted(F,L,d2,dd,m,N,M,lex);
-   };
+      const T0* d0, const T* dd, size_t m, size_t N, size_t M, char lex=1);
 
    template <class T0, class T> inline
    size_t findlast_sorted(const char *F, int L,
-      const T0* d0, const T* dd, size_t m, size_t N, size_t M, char lex=1
-   ){
-      T d2[m];
-      for (unsigned i=0; i<m; ++i) d2[i]=T(d0[i]);
-      return findlast_sorted(F,L,d2,dd,m,N,M,lex);
-   };
+      const T0* d0, const T* dd, size_t m, size_t N, size_t M, char lex=1);
 
    int dstrlen_utf8(const char *s);
 
    template <class T>
-   wbstring bits(const T &x, char compact=1); 
+   wbvec<char> bits(const T &x, char compact=1); 
+
+   template <class T>
+   wbvec<char> Bits(const T &x, char compact=1); 
 
 class IOstat { 
   public:
@@ -192,7 +197,7 @@ class iterator {
   public:
 
     iterator(T* p_) : i(0), p(p_) {
-       if (!p_) wblog(FL,"ERR %s() got p=NULL !?",FCT);
+       if (!p_) wblog(FL,"ERR %s() got p=nullptr !?",FCT);
        n=p->numel();
     };
 
@@ -224,7 +229,7 @@ class iterator<T,T2*> {
   public:
 
     iterator(T* p_) : i(0), p(p_) {
-       if (!p_) wblog(FL,"ERR %s() got p=NULL !?",FCT);
+       if (!p_) wblog(FL,"ERR %s() got p=nullptr !?",FCT);
        n=p->numel();
     };
 
@@ -256,7 +261,7 @@ class citerator {
   public:
 
     citerator(const T* p_) : i(0), p(p_) {
-       if (!p_) wblog(FL,"ERR %s() got p=NULL !?",FCT);
+       if (!p_) wblog(FL,"ERR %s() got p=nullptr !?",FCT);
        n=p->numel();
     };
 
@@ -288,7 +293,7 @@ class citerator<T,T2*> {
   public:
 
     citerator(const T* p_) : i(0), p(p_) {
-       if (!p_) wblog(FL,"ERR %s() got p=NULL !?",FCT);
+       if (!p_) wblog(FL,"ERR %s() got p=nullptr !?",FCT);
        n=p->numel();
     };
 
@@ -409,6 +414,34 @@ void rand::scale_rand(int *x, size_t n, double fac) {
    for (size_t i=0; i<n; ++i) { x[i]=((double(x[i]))*fac); }
 };
 
+long pow2_ceil(long k) { 
+   long K=0;
+   if (k<=1) { K=(k==1 ? 1 : 0); }
+   else {
+      unsigned i=0, l=1;
+      for  (--k; i<6; ++i, l<<=1) {
+         k |= (k>>l); 
+      }
+      K=k+1; 
+   }
+   return K;
+};
+
+int bit_width(long k) { 
+   int n=0; 
+   if (k<128) {
+      if (k>0) { do { ++n; } while ((k>>=1)); }
+      else { n=0; }
+   }
+   else {
+      unsigned i=0, l=1; 
+      for  (; i<6; ++i, l<<=1) { if (!(k>>l)) break; }
+      for (i=(l>>1), k>>=i; ; ++i) { if (!(k>>=1)) break; }
+      n=i+1;
+   }
+   return n;
+};
+
 template <class T,
 typename std::enable_if< std::is_floating_point<T>::value , T>::type* = nullptr >
 bool is_finite(const T *x, size_t n) {
@@ -451,8 +484,8 @@ class WbUtil {
         return std::is_trivially_copyable<T>::value;
      };
 
-     static bool isFloat();  
-     static bool isInt();    
+     static constexpr char isFloat(); 
+     static constexpr char isInt();    
 
      static constexpr char isComplex() { return 0; };
 
@@ -462,7 +495,7 @@ class WbUtil {
         return q;
      };
 
-     T eps(); 
+     static constexpr double eps();
 
   protected:
   private:
@@ -475,48 +508,70 @@ void WbUtil<T>::adjust_tnorm(char &tnorm){ tnorm=0; };
 template <> inline
 void WbUtil<wbcomplex>::adjust_tnorm(char &tnorm QS_UNUSED_VAR){};
 
-template <> inline
-constexpr char WbUtil<wbcomplex>::isComplex() { return 1; };
+template <class T> inline
+   constexpr char WbUtil<T>::isFloat() { return 0; };
 
-template <> inline
-constexpr char WbUtil<void>::isComplex() { return -1; }; 
-
-#ifdef MATLAB_MEX_FILE
-template <> inline
-constexpr char WbUtil<mxComplexDouble>::isComplex() { return 2; };
-#endif
+template <> inline constexpr
+   char  WbUtil<double     >::isFloat() { return 1; };
+template <> inline constexpr
+   char  WbUtil<float      >::isFloat() { return 1; };
+template <> inline constexpr
+   char  WbUtil<long double>::isFloat() { return 1; };
 
 #ifdef _COMPLEX_H  
-template <> inline
-constexpr char WbUtil<complex<double> >::isComplex() { return 4; };
-template <> inline
-constexpr char WbUtil<complex<float > >::isComplex() { return 8; };
+template <> inline constexpr
+   char WbUtil<complex<double> >::isFlaot() { return  7; }; 
+template <> inline constexpro
+   char WbUtil<complex<float > >::isFloat() { return 11; }; 
+#endif
+
+#ifdef MATLAB_MEX_FILE
+template <> inline constexpr
+   char WbUtil<mxComplexDouble >::isFloat() { return 19; }; 
+#endif
+
+template <> inline constexpr
+   char WbUtil<wbcomplex>::isComplex() { return 1; };
+
+template <> inline constexpr
+   char WbUtil<void     >::isComplex() { return -1; }; 
+
+#ifdef _COMPLEX_H  
+template <> inline constexpr
+   char WbUtil<complex<double> >::isComplex() { return 2; };
+template <> inline constexpro
+   char WbUtil<complex<float > >::isComplex() { return 4; };
+#endif
+
+#ifdef MATLAB_MEX_FILE
+template <> inline constexpr
+   char WbUtil<mxComplexDouble>::isComplex() { return 8; };
 #endif
 
 template <class T> inline
-bool WbUtil<T>::isFloat(){ return 0; };
-
-template <> inline bool WbUtil<double>::isFloat(){ return 1; };
-template <> inline bool WbUtil<long double>::isFloat(){ return 1; };
-template <> inline bool WbUtil<float>::isFloat(){ return 1; };
-template <> inline bool WbUtil<wbcomplex>::isFloat(){ return 1; };
-
-template <class T> inline
-bool WbUtil<T>::isInt(){ return 0; }
-
-template <> inline bool WbUtil<int>::isInt(){ return 1; }
-template <> inline bool WbUtil<char>::isInt(){ return 1; }
-template <> inline bool WbUtil<long>::isInt(){ return 1; }
-
-template <> inline bool WbUtil<unsigned>::isInt(){ return 1; }
-template <> inline bool WbUtil<unsigned char>::isInt(){ return 1; }
-template <> inline bool WbUtil<unsigned long>::isInt(){ return 1; } 
-
-template <> inline double WbUtil<double>::eps(){ return DBL_EPSILON; }
-template <> inline float  WbUtil<float >::eps(){ return FLT_EPSILON; }
+   constexpr char WbUtil<T>::isInt(){ return 0; }
 
 template <> inline
-long double WbUtil<long double>::eps(){ return LDBL_EPSILON; }
+   constexpr char WbUtil<int          >::isInt() { return 1; }
+template <> inline
+   constexpr char WbUtil<char         >::isInt() { return 1; }
+template <> inline
+   constexpr char WbUtil<int8_t       >::isInt() { return 1; } 
+template <> inline
+   constexpr char WbUtil<long         >::isInt() { return 1; }
+template <> inline
+   constexpr char WbUtil<unsigned     >::isInt() { return 1; }
+template <> inline
+   constexpr char WbUtil<unsigned char>::isInt() { return 1; }
+template <> inline
+   constexpr char WbUtil<unsigned long>::isInt() { return 1; } 
+
+template <> inline
+constexpr double WbUtil<float      >::eps() { return double(FLT_EPSILON); }
+template <> inline
+constexpr double WbUtil<double     >::eps() { return double(DBL_EPSILON); }
+template <> inline
+constexpr double WbUtil<long double>::eps() { return double(LDBL_EPSILON); }
 
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -571,7 +626,7 @@ namespace wbsys {
     size_t getSwapTot();
     size_t getSwapFree();
 
-    char checkSwapSpace(const char *F=NULL, int L=0);
+    char checkSwapSpace(const char *F=nullptr, int L=0);
 
     int getNumCores();      
     int getCacheLineSize(); 
@@ -592,7 +647,7 @@ class wbtop {
     wbstring VmPeak2Str() const;
     size_t getVmPeak() const { return Wb::getProcSize("VmPeak",pid); };
 
-    int runningLarge(const char *F=NULL, int L=0,
+    int runningLarge(const char *F=nullptr, int L=0,
        double th0=0.80, 
        double fac=1.2   
     );

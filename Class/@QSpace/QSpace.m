@@ -38,7 +38,10 @@ function [A,varargout] = QSpace(varargin)
 %  for testing purposes
 %  8: A = QSpace(CData);  % generate a QSpace based on a particular CData
 
-  if nargin==1, A=varargin{1};
+  if ~nargin
+     A=class(get_struct(),'QSpace');
+     return
+  elseif nargin==1, A=varargin{1};
      if isa(A,'QSpace')
         return
      elseif isstruct(A) && isfield(A,'data')
@@ -63,7 +66,6 @@ function [A,varargout] = QSpace(varargin)
            return
         end
      end
-  elseif ~nargin, A=class(get_struct(),'QSpace'); return
   end
 
   if isnumeric(varargin{1})

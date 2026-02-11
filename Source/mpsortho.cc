@@ -586,13 +586,16 @@ void SVD_Data<TQ,TD>::blockSVD(
 
    Wb::LogException ex;
 
-   int np=MIN(int(n),QSP_NUM_THREADS);
-   if (np<1) np=1;
+   int np=1;
+   if (!omp_in_parallel() && n>1) { 
+      np=MIN(int(n),QSP_NUM_THREADS);
+      if (np>int(n)) { np=n; } else if (np<1) { np=1; }
+   }
 
    D.cumsum_(Dc);
 
    #pragma omp parallel for num_threads(np) 
-   for (i=0; i<n; ++i) { if (!ex) { try {
+   for (unsigned i=0; i<n; ++i) { if (!ex) { try {
       QBlock<TQ,TD> &b=QB[i];
       wbarray<TD> MM;
 
@@ -641,7 +644,7 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
         xtol2=(stol>0 ? stol*1e-14 : 0); 
    char cgflag=0;
 
-   unsigned l=0, n=128; char istr[n]; istr[0]=0;
+   wbvec<char> istr(160); 
 
    if (!nq) wblog(FL,"ERR %s() got empty QB data",FCT);
    else {
@@ -699,15 +702,15 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
 
    if (SM(N,0)>stol) { if (SM.dim1>Nkeep) {
        if (stol) {
-          l+=snprintf(istr,n,"Smin=%.3g > stol=%.3g (NK=%d/%d/%li)",
+          istr.catf(FL,"Smin=%.3g > stol=%.3g (NK=%d/%d/%li)",
           SM(N,0), stol, Nkmin,NK,SM.dim1); flag++;
        }
        else {
-          l+=snprintf(istr,n,"using Nkeep=%d (%d/%d/%li; "
+          istr.catf(FL,"using Nkeep=%d (%d/%d/%li; "
           "stol=%g; Smin=%.3g)",NK,Nkmin,Nkeep,SM.dim1, stol, SM(N,0));
        }}
        else {
-          l+=snprintf(istr,n,"keeping all (stol=%g; Smin=%.3g, "
+          istr.catf(FL,"keeping all (stol=%g; Smin=%.3g, "
           "NK=%d (%d/%d/%li)",stol, SM(N,0), NK,Nkmin,Nkeep,SM.dim1);
           xtol2=0; 
        }
@@ -715,18 +718,18 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
    else {
       if (unsigned(NK)<Nkeep) { 
          if (Nkmin) {
-            l+=snprintf(istr,n,"truncation by stol=%.3g or Nkmin=%d "
+            istr.catf(FL,"truncation by stol=%.3g or Nkmin=%d "
             "(Nkeep %d->%d; Smin=%.3g < %.3g)", stol,
             Nkmin,Nkeep,NK, SM(N,0), SM(nk? nk-1:0,0));
          }
          else {
-            l+=snprintf(istr,n,"truncation by stol=%.3g "
+            istr.catf(FL,"truncation by stol=%.3g "
             "(Nkeep %d->%d; Smin=%.3g < %.3g)", stol,
             Nkeep,NK, SM(N,0), SM(nk? nk-1:0,0));
          }
       }
       else if (unsigned(NK)<SM.dim1) {
-         l+=snprintf(istr,n,"truncation by Nkeep ([%d,%d] -> %d/%li; "
+         istr.catf(FL,"truncation by Nkeep ([%d,%d] -> %d/%li; "
             "Smin=%.3g < %.3g <= stol=%.3g)", Nkmin,Nkeep,NK,SM.dim1,
             SM(N,0), SM(MAX(0,int(NK)-1),0), stol);
          flag++;
@@ -734,24 +737,24 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
    }
 
    if (s2t) {
-      if (l>=n) wblog(FL,"ERR %s() "
-         "string out of bounds (%d/%d)%N%N%s%N",FCT,l,n,istr);
-      else if (snorm2>s2t) {
+      if (snorm2>s2t) {
          sfac=snorm/sqrt(snorm2-s2t);
-         if (fabs(sfac-1)>0.01) { ++flag;
-            snprintf(istr+l,n-l,
-               "%sWRN readjusting norm by factor %.4g",l?"\n":"",sfac);
+         if (fabs(sfac-1)>0.01) { unsigned l=istr.l; ++flag;
+            istr.catf(0,0,
+               "%sWRN readjusting norm by factor %.4g", l?"\n":"",sfac);
             if (fabs(sfac-1)>0.1 && (vflag || Wb::envVRB&8)) {
-               wblog(FL,istr+(l?l+1:0)); 
+               wblog(FL,istr.data+(l?l+1:0)); 
             }
          }
          for (i=0; i<nq; ++i) QB[i].S*=sfac;
       }
-      else if (snorm2==s2t) { snprintf(istr+l,n-l,
+      else if (snorm2==s2t) { istr.catf(0,0,
          "all states discarded (|SVD|=%.3g / %.3g; Nkeep=%d/%d/%li)",
          snorm,stol,NK,Nkeep,SM.dim1); 
       }
       else wblog(FL,"ERR %s() %g/%g",FCT,snorm2,s2t);
+
+      istr.check_bounds(FL,0);
    }
 
    if (Sout) {
@@ -764,7 +767,7 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
       mxAddField2Scalar(FL, Sout, "Nkeep",  numtoMx(nk));
       mxAddField2Scalar(FL, Sout, "Ntot",   numtoMx(SM.dim1));
       mxAddField2Scalar(FL, Sout, "flag",   numtoMx(flag));
-      mxAddField2Scalar(FL, Sout, "info",   mxCreateString(istr));
+      mxAddField2Scalar(FL, Sout, "info",   mxCreateString(istr.data));
    }
    else if (vflag) {
       wblog(FL,"<i> sum(SVD) = %g = %g%+.4g",
@@ -830,7 +833,7 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
       x.initFromBlockMatrix(FL,X,b.U,tU);
 
       if (X.Append2AndDestroy(FL,UQ,'u')) wblog(FL,
-         "ERR %s() U: QIDX must not overlap\n%s",FCT,istr);
+         "ERR %s() U: QIDX must not overlap\n%s",FCT,istr.data);
 
       if (SQ) {
          wbarray<double> Sf; 
@@ -844,13 +847,13 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
          X.DATA[0]->Reduce2Diag();
 
          if (X.Append2AndDestroy(FL,*SQ,'u')) wblog(FL,
-            "ERR %s() S: QIDX must not overlap\n%s",FCT,istr);
+            "ERR %s() S: QIDX must not overlap\n%s",FCT,istr.data);
 
          x.init_bare_refA(b,'V');     
          x.initFromBlockMatrix(FL,X,b.Vc,tV,&cgp2);
 
          if (X.Append2AndDestroy(FL,VC,'u')) wblog(FL,
-            "ERR %s() V: QIDX must not overlap\n%s",FCT,istr);
+            "ERR %s() V: QIDX must not overlap\n%s",FCT,istr.data);
       }
       else {
          wbarray<TD> VS; Wb::DMatProd(b.Vc,b.S,VS); 
@@ -864,7 +867,7 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
          X.SkipZeroData(xtol2,'b',0);
 
          if (X.Append2AndDestroy(FL,VC,'u')) wblog(FL,
-            "ERR %s() VS: QIDX must not overlap\n%s",FCT,istr
+            "ERR %s() VS: QIDX must not overlap\n%s",FCT,istr.data
          );
       }
 
@@ -875,8 +878,7 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
 
    if (revert_Uidx) {
       unsigned r1=UQ.rank(FL); wbindex ia(1);
-      wbvector< QSpace<TQ,TD> >X(1);
-      QSpace<TQ,TD> U1J;
+      QSpace<TQ,TD> X, U1J;
 
       if (UQ.qtype!=VC.qtype || (!UQ.qtype.allAbelian() &&
          (!UQ.CGR.data || !VC.CGR.data))) wblog(FL,"ERR %s() "
@@ -886,18 +888,18 @@ unsigned SVD_Data<TQ,TD>::dmrgTruncate(
          "unexpected rank-%d for %s",FCT,VC.itags.len, SQ ? "V":"VS");
 
       if (SQ) {
-         SQ->save2(X[0]); U1J.initIdentityCG(X,ia,'z');
-         U1J.contract(FL,1,X[0],ia[0]+1,*SQ); 
+         SQ->save2(X); U1J.initIdentityCG( cPVEC1_(X),ia,'z');
+         U1J.contract(FL,1,X,ia[0]+1,*SQ); 
       }
       else {
          ia[0]=VC.rank(FL)-1;
-         VC.save2(X[0]); U1J.initIdentityCG(X,ia,'z');
-         X[0].contract(FL,ia[0]+1,U1J,1,VC); 
+         VC.save2(X); U1J.initIdentityCG(cPVEC1_(X),ia,'z');
+         X.contract(FL,ia[0]+1,U1J,1,VC); 
 
       }
 
-      UQ.save2(X[0]); {
-         X[0].contract(FL,r1,U1J,"1*",UQ); 
+      UQ.save2(X); {
+         X.contract(FL,r1,U1J,"1*",UQ); 
       }
    }
 

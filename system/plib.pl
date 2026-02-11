@@ -71,7 +71,8 @@ sub getARCH {
          if (/i686/  ) { return 'glnx86';  }
       }
       elsif (/Darwin/i) {
-         if (/x86_64|arm64/) { return 'maci64'; }
+         if (/x86_64/) { return 'maci64'; }
+         if (/arm64/ ) { return 'maca64'; }
       }
    }
    wblog("ERR %F() failed to determine ARCH");
@@ -86,7 +87,8 @@ sub getMEXEXT {
          if (/i686/  ) { return 'mexglx';  }
       }
       elsif (/Darwin/i) {
-         if (/x86_64|arm64/) { return 'maci64'; }
+         if (/x86_64/) { return 'maci64'; }
+         if (/arm64/ ) { return 'maca64'; }
       }
    }
    wblog("ERR %F() failed to determine MEXEXT");

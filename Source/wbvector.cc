@@ -22,6 +22,27 @@
 
 /* -------------------------------------------------------------------- */
 /* -------------------------------------------------------------------- */
+// Wb,Sep27,25
+
+template <class T>
+wbvec<T>& wbvec<T>::Resize(unsigned n) {
+
+   unsigned l0; T* d0=data;
+
+   if (ref) wblog(FL,"ERR %s() got ref=%s",FCT,cSTR(ref));
+   if (l>n) { wblog(FL,"WRN %s() got n=%d/%d/%d",FCT,n,l,len); l=n; }
+
+   data=nullptr; l0=(l<len? l:len); l=len=0; init(n);
+   if (d0) { l=l0;
+      if (l0) { Wb::MemCpy(data,d0,l0); } 
+      free(d0); 
+   }
+   else if (l0) { 
+      wblog(FL,"WRN %s() got l=%d with data=0",FCT,l0);
+   }
+
+   return *this;
+};
 
 template <class T>
 wbvector<T>& wbvector<T>::set(const wbvector<size_t> &I0, const T &x) {
@@ -95,6 +116,11 @@ bool wbvector<T>::isUnique() const {
    wbvector v(*this); wbperm p; Wb::hpsort(v,p);
    for (size_t i=1; i<v.len; ++i) if (v[i]==v[i-1]) return 0;
    return 1;
+};
+
+template <class T>
+char wbvector<T>::isValidPerm(wperm_t n, char f) const {
+   return Wb::is_valid_perm(data,len,n,f);
 };
 
 template <>
@@ -234,37 +260,37 @@ wbvector<T>& wbvector<T>::RevertSigns() {
 };
 
 template <class T>
-void wbvector<T>::selectSU(const WBINDEX &I) {
-    size_t i,n;
-    WBINDEX mark(len);
-    for (i=0; i<I.len; i++) {
-       if (I[i]>=len)
-       wblog(FL,"ERR index out of bounds (%d/%d).", i,len);
-       mark[I[i]]++;
-    }
-    for (n=i=0; i<mark.len; i++)
-    if (mark[i]) mark[n++]=i; 
+template <class TI>
+void wbvector<T>::selectSU(const wbvector<TI> &I) {
 
-    mark.Resize(n);
+    size_t i=0; MVEC mark(len);
+
+    for (; i<I.len; i++) {
+       if (I[i]>=len) wblog(FL,
+          "ERR index out of bounds (%d/%d)",i,len);
+       ++mark[I[i]];
+    }
     Select(mark);
 };
 
 template <class T>
+template <class TI>
 wbvector<T>& wbvector<T>::select(
-    const WBINDEX &I, wbvector<T> &a) const {
+    const wbvector<TI> &I, wbvector<T> &B) const {
 
-    a.init(I.len); if (!I.len) { return a; }
+    B.init(I.len); if (!I.len) { return B; }
 
-    for (size_t i=0; i<a.len; ++i) {
+    for (size_t i=0; i<B.len; ++i) {
        if (I[i]>=len) wblog(FL,
           "ERR %s() index out of bounds (%d/%d)",FCT,I[i],len);
-       a.data[i]=data[I[i]];
+       B.data[i]=data[I[i]];
     }
-    return a;
+    return B;
 };
 
 template <class T>
-void wbvector<T>::select(const WBINDEX &I, T* r) const {
+template <class TI>
+void wbvector<T>::select(const wbvector<TI> &I, T* r) const {
     if (I.len==0) return;
 
     for (size_t i=0; i<I.len; i++) {
@@ -276,13 +302,14 @@ void wbvector<T>::select(const WBINDEX &I, T* r) const {
 };
 
 template <class T>
-wbvector<T>& wbvector<T>::Select(const WBINDEX &I) {
+template <class TI>
+wbvector<T>& wbvector<T>::Select(const wbvector<TI> &I) {
 
     if (isref) wblog(FL,"ERR must not resize vector reference!");
     size_t i; T* d0=data;
 
-    if (I.len==0) { init(); return *this; }
-    WB_NEW(data,I.len);
+    if (!I.len) { init(); return *this; }
+    WB_NEW(data,I.len,1); 
 
     for (i=0; i<I.len; ++i) {
        if (I[i]>=len) wblog(FL,
@@ -295,10 +322,55 @@ wbvector<T>& wbvector<T>::Select(const WBINDEX &I) {
 };
 
 template <class T>
+wbvector<T>& wbvector<T>::Select(cMVEC &mark, char nonzero) {
+   unsigned i=0, l=-1; const int8_t *m=mark.data;
+
+   if (mark.len!=len) { char s[64];
+      snprintf(s,64,"%s() length mismatch (%ld/%ld)",FCT,mark.len,len);
+      wblog(FL, mark.len<len ? "ERR %s":"WRN %s",s);
+   }
+
+   if (nonzero)
+        { for (; i<len; ++i) { if ( m[i] && ++l<i) { data[l]=data[i]; }}}
+   else { for (; i<len; ++i) { if (!m[i] && ++l<i) { data[l]=data[i]; }}}
+
+   if (l<len) { len=l+1; } else { init(); }
+   return *this;
+};
+
+template <class T>
+wbvector<T>& wbvector<T>::select(
+   cMVEC &mark, wbvector<T> &B, char nonzero) const {
+
+   unsigned i=0, l=0; const int8_t *m=mark.data;
+
+   if (mark.len!=len) { char s[64];
+      snprintf(s,64,"%s() insufficient marker space (len=%ld/%ld)",FCT,mark.len,len);
+      wblog(FL, mark.len<len ? "ERR %s":"WRN %s",s);
+   }
+
+   if (nonzero) 
+        { for (; i<len; ++i) { if ( m[i]) { ++l; }}}
+   else { for (; i<len; ++i) { if (!m[i]) { ++l; }}}
+
+   if (!l    ) { B.init();      } else
+   if (l==len) { B.init(*this); }
+   else {
+      B.RENEW(l,nullptr,0,0); i=0; l=-1;
+      if (nonzero) 
+           { for (; i<len; ++i) { if ( m[i]) { B.data[++l]=data[i]; }}}
+      else { for (; i<len; ++i) { if (!m[i]) { B.data[++l]=data[i]; }}}
+   }
+
+   return B;
+};
+
+template <class T>
+template<class TI>
 wbvector<T>& wbvector<T>::BlockSelect(
-    const WBINDEX &I, const WBINDEX &D
+    const wbvector<TI> &I, const wbvector<TI> &D
 ){
-    WBINDEX dc;
+    wbvector<TI> dc;
     size_t i,j,l,n; T *d0=data, *d;
 
     if (isref) wblog(FL,"ERR shall not resize vector reference!");
@@ -311,13 +383,14 @@ wbvector<T>& wbvector<T>::BlockSelect(
     }
 
     i=D.cumsum_(dc);
-    if (i!=len) wblog(FL,"ERR severe size mismatch (%d/%d; %d)",i,len,n);
+    if (i!=len) wblog(FL,"ERR size mismatch (%d/%d; %d)",i,len,n);
 
-    WB_NEW(data,n); len=n;
+    WB_NEW(data,n,1); 
+    len=n;
 
     for (n=l=i=0; i<I.len; ++i, l+=n) { j=I[i];
        d=d0+dc[j]; n=D[j];
-       for (j=0; j<n; j++) data[l+j]=d[j];
+       for (j=0; j<n; ++j) data[l+j]=d[j];
     }
 
     WB_DELETE(d0); return *this;
@@ -326,22 +399,26 @@ wbvector<T>& wbvector<T>::BlockSelect(
 template <class T>
 template <class T1, class T2, class T3, class T4>
 wbvector<T>& wbvector<T>::Cat(
-   const wbvector<T1> *v1, const wbvector<T2> *v2,
-   const wbvector<T3> *v3, const wbvector<T3> *v4
-){
+   const wbvector<T1> *v1,
+   const wbvector<T2> *v2,
+   const wbvector<T3> *v3,
+   const wbvector<T3> *v4) {
+
    return Cat(
-      v1 ? v1->data : (T1*)0, v1 ? v1->len : 0,
-      v2 ? v2->data : (T2*)0, v2 ? v2->len : 0,
-      v3 ? v3->data : (T3*)0, v3 ? v3->len : 0,
-      v4 ? v4->data : (T4*)0, v4 ? v4->len : 0
+      v1? v1->data : (T1*)0, v1? v1->len : 0,
+      v2? v2->data : (T2*)0, v2? v2->len : 0,
+      v3? v3->data : (T3*)0, v3? v3->len : 0,
+      v4? v4->data : (T4*)0, v4? v4->len : 0
    );
 };
 
 template <class T>
 template <class T1, class T2, class T3, class T4>
 wbvector<T>& wbvector<T>::Cat(
-   const T1* v1, size_t l1, const T2* v2, size_t l2,
-   const T3* v3, size_t l3, const T4* v4, size_t l4
+   const T1* v1, size_t l1,
+   const T2* v2, size_t l2,
+   const T3* v3, size_t l3,
+   const T4* v4, size_t l4
 ){
    wbvector<T> X(l1+l2+l3+l4); 
    size_t i; T *x=X.data;
@@ -355,28 +432,29 @@ wbvector<T>& wbvector<T>::Cat(
 };
 
 template <class T>
-wbvector<T>& wbvector<T>::Cat(const wbvector<wbvector<T> > &vv) {
-   size_t i,n=0; T *d;
+wbvector<T>& wbvector<T>::Cat(const wbvector<wbvector<T> > &V) {
+   size_t i, N=0; T *dest;
 
-   for (i=0; i<vv.len; i++) n+=vv[i].len;
-   init(n); d=data;
+   for (i=0; i<V.len; ++i) { N+=V[i].len; }
+   init(N); dest=data;
 
-   for (i=0; i<vv.len; i++) {
-      memcpy(d,vv[i].data,sizeof(T)*vv[i].len); d+=vv[i].len;
+   for (i=0; i<V.len; ++i) {
+      Wb::MemCpy(dest,V[i].data,V[i].len); 
+      dest+=V[i].len;  
    }
    return *this;
 };
 
 template <class T>
-wbvector<T>& wbvector<T>::Cat(const wbvector<wbvector<T>* > &vv) {
-   size_t i,n=0; T *d;
+wbvector<T>& wbvector<T>::Cat(const wbvector<wbvector<T>* > &V) {
+   size_t i,N=0; T *dest;
 
-   for (i=0; i<vv.len; i++) n+=(vv[i] ? vv[i]->len : 0);
-   init(n); d=data;
+   for (i=0; i<V.len; ++i) { if (V[i]) { N+=V[i]->len; }}
+   init(N); dest=data;
 
-   for (i=0; i<vv.len; i++) { if (vv[i]) {
-       const wbvector<T> &v=*vv[i];
-       memcpy(d,v.data,sizeof(T)*v.len); d+=v.len;
+   for (i=0; i<V.len; ++i) { if (V[i]) { const wbvector<T> &v = *V[i];
+      Wb::MemCpy(dest,v.data,v.len);   
+      dest+=v.len; 
    }}
    return *this;
 };
@@ -384,20 +462,19 @@ wbvector<T>& wbvector<T>::Cat(const wbvector<wbvector<T>* > &vv) {
 template <class T>
 void wbvector<T>::info(const char *istr) const {
 
-   size_t l=0, n=32; char sstr[n];
    size_t b=len*sizeof(T);
+   wbvec<char> sstr(32);
    wbstring tstr;
 
    if (typeid(T)==typeid(double)) tstr="double";
    else tstr.init(TSTR(T));
 
-   if (b<(1<<10)) l=snprintf(sstr,n,"%ld ",   b); else
-   if (b<(1<<20)) l=snprintf(sstr,n,"%.3g kB",b/double(1<<10)); else
-                  l=snprintf(sstr,n,"%.3g MB",b/double(1<<20));
-   if (l>=n) wblog(FL,"ERR %s() string out of bounds (%d/%d)",FCT,l,n);
+   if (b<(1<<10)) sstr.catf(FL,"%ld ",   b); else
+   if (b<(1<<20)) sstr.catf(FL,"%.3g kB",b/double(1<<10));
+   else           sstr.catf(FL,"%.3g MB",b/double(1<<20));
 
    printf("  %-12s %10ld %12s  @ %p  %s vector%s\n",
-   istr, len, sstr, (void*)data, tstr.data, isref ? "  ***ISREF***" : "");
+   istr, len, sstr.data, (void*)data, tstr.data, isref ? "  ***ISREF***" : "");
 }
 
 template <class T>
@@ -435,11 +512,29 @@ void wbvector<T>::print(const char *istr, char mflag) const {
           istr[0]? istr:"ans", isref? " *isref*":"");
     }
 
-    Wb::CallMatlab(0,NULL,1,&a,"disp");
+    Wb::CallMatlab(0,nullptr,1,&a,"disp");
 
     if (mflag>1) wb_printf("];\n");
 
     mxDestroyArray(a);
+};
+
+template <class T> inline
+wbindex& wbvector<T>::find(wbindex &I, char nonzero) const {
+
+   size_t i=0, l=0; {
+      if (nonzero)
+           { for (; i<len; ++i) { if ( data[i]) { ++l; }}}
+      else { for (; i<len; ++i) { if (!data[i]) { ++l; }}}
+   }
+   I.init(l);
+
+   if (l) { i=0; l=-1; 
+      if (nonzero)
+           { for (; i<len; ++i) { if ( data[i]) I[++l]=i; }}
+      else { for (; i<len; ++i) { if (!data[i]) I[++l]=i; }}
+   }
+   return I;
 };
 
 template <class T> inline
@@ -628,8 +723,10 @@ wbvector<T>& wbvector<T>::initI(
        return init();
     }
 
-    size_t i=0, j=0, na=a.len, nb=b.len, n=na+nb;
-    char ma[n], *mb=ma+na; memset(ma,0,n*sizeof(char));
+    size_t i=0, j=0, na=a.len, nb=b.len;
+
+    std::vector<char> Ma(na+nb); 
+    char *ma=Ma.data(), *mb=ma+na;
 
     if (uflag) {
        for (; i<ia.len; ++i) { j=ia[i];
@@ -794,7 +891,7 @@ int wbvector<Wb::quad>::init_mpfr(
    unsigned r=mxGetNumberOfDimensions(a);
    const size_t *sz=mxGetDimensions(a);
 
-   wbvector<char> ss; char *sd=NULL;
+   wbvector<char> ss; char *sd=nullptr;
 
    if (r!=2) {
       if (F) wblog(FL,"ERR invalid rank-%d array",r);
@@ -830,8 +927,9 @@ int wbvector<Wb::quad>::init_mpfr(
       FCT,mxGetClassName(a),sz[0],sz[1]);
    }
 
-   if (len>=64) {
+   if (len>=64 && !omp_in_parallel()) {  
       np=MAX( QSP_NUM_THREADS, OMP_NUM_THREADS );
+      if (np<1) { np=1; }
    }
 
   #pragma omp parallel for num_threads(np)
@@ -848,9 +946,10 @@ int wbvector<Wb::quad>::init_mpfr(
             cx=sk[i];                       ((char*)sk)[i]=0;
             data[k].init_s(F_L,sk+i0,base); ((char*)sk)[i]=cx;
          }
-         else { char s[n+1]; ++e;  strncpy(s,sk,n); s[n]=0;
+         else { ++e;
+            wbvec<char> s(n+1); s.cat(0,0,sk); 
             wblog(FL,"... error i=%4ld/%ld: `%s' (%d..%d/%d)",
-            k,len,s,i0,i,n);
+            k,len,s.data,i0,i,n);
          }
       }
       catch (...) {
@@ -913,85 +1012,83 @@ wbperm& wbvector<T>::pSort(wbperm &p) const {
 };
 
 template <class T>
-inline wbvector<T>& wbvector<T>::Permute(const wbperm &P, char iflag) {
-   const wperm_t *p=P.data; char q=0;
+inline wbvector<T>& wbvector<T>::Permute(const wbperm &P) { 
 
-   if (!P.len || (P.len<=len && (q=P.isValidPerm())>1)) { return *this; }
+   long q=P.relevant();
 
-   if (P.len!=len) {
-      wbperm P_; P_.init(P,iflag,len);
-      return Permute(P_);
-   }
+   if (q<0) { P.wberr_invalid_perm(FL,len); }
+   if (!P.len || !q) { return *this; }
 
-   if (q) {
-      size_t i=0; wbvector<T> v(*this);
-      if (!iflag)
-           { for (; i<len; ++i) data[i]=v.data[p[i]]; }
-      else { for (; i<len; ++i) data[p[i]]=v.data[i]; }
+   if (q&1) { 
+      wbvector<T> v(*this); 
+      Wb::perm_data(FL, data, v.data, len, P.data, P.len, P.inv);
    }
    else if (P.len<12) wblog(FL,
        "ERR invalid permutation [%s] (len=%d/%d)",STR(P),P.len,len);
    else wblog(FL,"ERR invalid permutation (len=%d/%d)", P.len, len);
 
+   if (q>1) {
+      this->Times(P.fac,P.conj);
+   }
+
    return *this;
 };
 
 template <class T>
-inline wbvector<T>& wbvector<T>::permute(
-   wbvector<T> &v, const wbperm &P, char iflag
- ) const {
+inline wbvector<T>& wbvector<T>::permute( 
+   wbvector<T> &v, const wbperm &P) const {
 
-   if (P.isEmpty()) { v=*this; return v; }
-   const wperm_t *p=P.data;
+   long q=P.relevant();
 
-   if (len!=P.len || !validPerm(P)) {
-      if (P.len<12) wblog(FL,
-         "ERR invalid permutation [%s] (%d/%d)",STR(P),len,P.len);
-      else wblog(FL,"ERR invalid permutation (%d/%d)",len,P.len);
+   if (!q ) { return v.init(*this); }
+   if (q<0) { P.wberr_invalid_perm(FL,len); }
+
+   if (!P.len || !(q&1)) { v=*this; } 
+   else {
+      v.init_bare(len);
+      Wb::perm_data(FL, v.data, data, len, P.data, P.len, P.inv);
    }
 
-   if (!P.isIdentityPerm()) { v.init(len);
-      if (iflag==0) {
-             for (size_t i=0; i<len; i++) v.data[i]=data[p[i]]; }
-      else { for (size_t i=0; i<len; i++) v.data[p[i]]=data[i]; }
+   if (q>1) {
+      v.Times(P.fac,P.conj);
    }
-   else v=(*this);
 
    return v;
 };
 
 template <class T> inline
 wbvector<T>& wbvector<T>::blockPermute(
-   const wbperm &P, wbvector<T> &v, char iflag
-) const {
+   wbvector<T> &B, const wbperm &P) const {
+
+   if (P.extras()>1) wblog(FL,"WRN %s() got P=%s",FCT,STR(P));
 
    if (isEmpty() || P.isEmpty() || P.isIdentityPerm()) {
        if (P.len && len%P.len) wblog(FL,
           "ERR %s() data mismatch (%d mod %d !?)",FCT,len,P.len);
-       v=*this; return v;
+       B=*this; return B;
    }
-   if (&v==this) {
+   if (&B==this) {
       wbvector<T> x(*this);
-      return x.blockPermute(P,v,iflag);
+      return x.blockPermute(B,P);
    }
 
-   if (len%P.len || !validPerm(P)) wblog(FL,
+   if (len%P.len || P.isValidPerm()<=0) wblog(FL,
       "ERR invalid permutation (%d/%d)", len, P.len);
-   v.init(len);
+   B.init(len);
 
    size_t i,j, m=len/P.len;
-   const wperm_t *p=P.data; const T *d0=data; T *d=v.data;
+   const wperm_t *p=P.data; const T *d0=data; T *d=B.data;
 
-   if (iflag==0) {
+   if (!P.inv) {
       for (i=0; i<P.len; ++i, d+=m) { d0=data+m*p[i];
       for (j=0; j<m; ++j) d[j]=d0[j]; }
    }
    else {
-      for (i=0; i<P.len; ++i, d0+=m) { d=v.data+m*p[i];
+      for (i=0; i<P.len; ++i, d0+=m) { d=B.data+m*p[i];
       for (j=0; j<m; ++j) d[j]=d0[j]; }
    }
 
-   return v;
+   return B;
 };
 
 template <class T> inline
@@ -1105,7 +1202,7 @@ inline int wbvector<T>::set2Group(
    wbvector<T> X;
 
    if (!S0 && len!=P.len) wblog(FL,
-   "ERR %s() severe size mismatch (%d/%d)", FCT, len, P.len);
+   "ERR %s() size mismatch (%d/%d)", FCT, len, P.len);
 
    if (n==0) {
       if (P.len) wblog(FL,
@@ -1113,15 +1210,15 @@ inline int wbvector<T>::set2Group(
       return 0;
    }
 
-   if (S0==NULL || S0==data) { save2(X); S0=X.data; }
+   if (S0==nullptr || S0==data) { save2(X); S0=X.data; }
 
    init(n);
 
-   for (l=i=0; i<n; i++, l+=d) { d=D[i];
+   for (l=i=0; i<n; ++i, l+=d) { d=D[i];
       data[i]=S0[P[l]];
 
-      for (j=1; j<d; j++) if (S0[P[l+j]]!=data[i]) {
-         e++; if (iflag)
+      for (j=1; j<d; ++j) if (S0[P[l+j]]!=data[i]) {
+         ++e; if (iflag)
          sprintf_str("%g/%g", (double)data[i], (double)S0[P[l+j]]);
       }
    }
@@ -1170,7 +1267,9 @@ void wbvector<T>::add2MxStruct(
 template<class T> inline
 wbstring wbvector<T>::sizeStr() const {
    wbstring s; 
-   if (len) { s=toStrf("","x"); } else { s="[]"; }
+   if (len)
+        { s.init(16); snprintf(s.data,s.len,"%ld",len); }
+   else { s="[]"; }
    return s;
 };
 
@@ -1180,67 +1279,77 @@ wbstring wbvector<T>::toStr() const { return toStr(-1," "); }
 template<class T> inline
 wbstring wbvector<T>::toStr(int n, const char *sep) const {
 
-    wbstring s(MAX(size_t(32), len*MAX(16,int(n)+6))), fmt;
-    fmt.init2Fmt((T)0,n);
+   wbstring s(MAX(size_t(32), len*MAX(16,int(n)+6))), fmt;
+   fmt.init2Fmt((T)0,n);
 
-    for (size_t i=0; i<len; ++i) {
-        if (i>0) { s.push(FL,sep); }
-        s.pushf(FL,fmt.data,data[i]);
-    }
-    return s;
+   for (size_t i=0; i<len; ++i) {
+       if (i>0) { s.push(FL,sep); }
+       s.pushf(FL,fmt.data,data[i]);
+   }
+   return s;
 };
 
 template<> inline
 wbstring wbvector<wbcomplex>::toStr(int n, const char *sep) const {
 
-    wbstring s(MAX((size_t)32, len*MAX(16,abs(n)+6))), fmz, fmd;
-    fmz.init2Fmt(wbcomplex(0),n); fmd.init2Fmt(double(0),n);
+   wbstring s(MAX((size_t)32, len*MAX(16,abs(n)+6))), fmz, fmd;
+   fmz.init2Fmt(wbcomplex(0),n); fmd.init2Fmt(double(0),n);
 
-    for (size_t i=0; i<len; ++i) { if (i) { s.push(FL,sep); }
-        if (data[i].r && data[i].i)
-           s.pushf(FL,fmz.data,data[i].r,data[i].i);
-        else if (data[i].r)
-             { s.pushf(FL,fmd.data,data[i].r); }
-        else { s.pushf(FL,fmd.data,data[i].i).push("i"); }
-    }
-    return s;
+   for (size_t i=0; i<len; ++i) { if (i) { s.push(FL,sep); }
+       if (data[i].r && data[i].i)
+          s.pushf(FL,fmz.data,data[i].r,data[i].i);
+       else if (data[i].r)
+            { s.pushf(FL,fmd.data,data[i].r); }
+       else { s.pushf(FL,fmd.data,data[i].i).push("i"); }
+   }
+   return s;
 };
 
 #ifdef QS_USING_MPFR
 template<> inline
 wbstring wbvector<Wb::quad>::toStr(int n, const char *sep) const {
 
-    wbstring s(MAX((size_t)32, len*MAX(16,int(n)+6))), fmt;
-    fmt.init2Fmt((double)0,n);
+   wbstring s(MAX((size_t)32, len*MAX(16,int(n)+6))), fmt;
+   fmt.init2Fmt((double)0,n);
 
-    for (size_t i=0; i<len; ++i) {
-        if (i>0) { s.push(FL,sep); }
-        s.pushf(FL,fmt.data,double(data[i]));
-    }
+   for (size_t i=0; i<len; ++i) {
+       if (i>0) { s.push(FL,sep); }
+       s.pushf(FL,fmt.data,double(data[i]));
+   }
 
-    return s;
+   return s;
 };
 #endif
 
 template<class T> inline
-wbstring wbvector<T>::toStrf (
-    const char *fmt_,  const char *sep, unsigned stride, const char *sep2
-  ) const {
+wbstring wbvector<T>::toStrf(
+   const char *fmt,  const char *sep,
+   unsigned stride, const char *sep2
+ ) const {
 
-    wbstring s(MAX(32U, unsigned(len)*16)), fmt;  
-    unsigned i_,isep=0;
+   if (!len) { return "[]"; }
 
-    if (fmt_ && fmt_[0])
-         { fmt=fmt_; }
-    else { fmt.init2Fmt(T(0)); }
+   wbvec<char> sout(MAX(32U, unsigned(len)*16));  
+   unsigned i, l_, itry=0, ntry=2; int q=-1;
 
-    for (unsigned i=0; i<len; ++i) { if (++isep>1) {
-       s.push (FL,sep); }
-       s.pushf(FL,fmt.data,data[i]); if (stride) { i_=i+1;
-       if (!(i_%stride) && i_<len) { s.push(FL,sep2); isep=0; }}
-    }
+   wbstring Fmt;
+   if (!fmt || !*fmt) { Fmt.init2Fmt(T(0)); fmt=Fmt.data; }
 
-    return s;
+   for (i=0; itry<ntry; ++itry) {
+      for (; i<len; ++i) { l_=sout.l;
+         if (i) { sout.cat(0,0, !stride || i%stride ? sep : sep2); }
+         q=sout.catf(0,0,fmt,data[i]); if (q<0) break;
+      }
+      if (i<len) { if (sout.l!=l_) { itry=0; };
+         sout.Resize( (sout.len*(len+1)) / (i?i:1) + 1);
+         sout.l=l_;
+      }
+   }
+
+   if (i<len || sout.check_bounds()<0) wblog(FL,
+      "ERR %s() string out of bounds (len=%d / %d+%d; itry=%d)",
+      FCT,sout.len,sout.l,q,itry);
+   return sout.data;
 };
 
 template<> inline
@@ -1249,24 +1358,19 @@ wbstring wbvector<wbcomplex>::toStrf(
  ) const {
 
    wbstring s; 
-   unsigned w,i=0; char fmt[16], s1[32], flag=1;
+   unsigned w,i; char fmt[16], s1[32];
 
    snprintf(fmt,16,"%s",fmt_ && fmt_[0] ? fmt_ : "%.4g");
    w=2 + sprintf_str(fmt, sqrt(2.))
        + sprintf_str(fmt,-sqrt(2.)*1e-20);
 
-   s.init(32+(4+i)*len); 
+   s.init(32+(4+w)*len); 
 
-   for (size_t i=0; i<len; ++i) {
-      if (i>0) { if (flag) { s.push(FL,sep); } else { flag=1; }}
-
+   for (i=0; i<len; ++i) {
+      if (i) { s.push(FL, !stride || i%stride ? sep : sep2); }
       snprintf(s1,32,"%s",data[i].toStr(fmt).data);
       s.pushf(FL,"%*s",w,s1);
-      if (stride && ((i+1)%stride)==0 && i+1<len) {
-         s.push(FL,sep2); flag=0;
-      }
    }
-
    return s;
 };
 
@@ -1296,7 +1400,7 @@ mxArray* wbvector< Wb::quad >::toMx(char base) const {
    unsigned nmax=0, n=0; size_t S[2];
    mxArray *a;
 
-   wbstring s_; char *s=NULL;
+   wbstring s_; char *s=nullptr;
    if (len) { data[0].toStr(s_,base); n=s_.len; s=s_.data; }
 
    if (len!=1)
@@ -1317,14 +1421,15 @@ mxArray* wbvector< Wb::quad >::toMx(char base) const {
       }
    }
 
-   char *cdat=NULL;
+   char *cdat=nullptr;
    a=Mx::Array<char>(2,S).Return(cdat); 
 
    if (!len) { return a; }
 
    unsigned np=1; int e=0;
-   if (len>=64) {
+   if (len>=64 && !omp_in_parallel()) {  
       np=MAX( QSP_NUM_THREADS, OMP_NUM_THREADS );
+      if (np<1) { np=1; }
    }
 
   #pragma omp parallel for num_threads(np) 
@@ -1339,9 +1444,9 @@ mxArray* wbvector< Wb::quad >::toMx(char base) const {
       while (i<n && s[i]!=' ' && s[i]) { ++i; }
 
       if (i<2 || i0>=i || s[i] || (++i)>=n) { ++e;
-         char s[n+1]; strncpy(s,sk,n); s[n]=0;
+         wbvec<char> s(n+1); s.cat(0,0,sk); 
          wblog(FL,"... error i=%4ld/%ld: `%s' (%d..%d/%d)",
-         k,len,s,i0,i,n);
+         k,len,s.data,i0,i,n);
       }
 
      #pragma omp critical (mpfr_collecting_nmax)
@@ -1385,7 +1490,7 @@ inline wbvector<T>& wbvector<T>::Move2_FE(
             if (k!=i) data[k]=data[i];
             k++;
         }
-        memcpy(data+k, x.data, x.len*sizeof(T));  
+        Wb::MemCpy(data+k, x.data, x.len);  
     }
     else
     if (iflag=='F') { 
@@ -1394,7 +1499,7 @@ inline wbvector<T>& wbvector<T>::Move2_FE(
             if (k!=i) data[k]=data[i];
             k--;
         }
-        memcpy(data, x.data, x.len*sizeof(T));  
+        Wb::MemCpy(data, x.data, x.len);  
     }
     else wblog(FL,"ERR Move2_FE - Invalid flag %c<%d>", iflag, iflag);
 
@@ -1402,18 +1507,19 @@ inline wbvector<T>& wbvector<T>::Move2_FE(
 }
 
 template <class T>
-inline wbvector<T>& wbvector<T>::Skip(size_t i1) {
+inline wbvector<T>& wbvector<T>::Skip(size_t i1) { 
 
-    if (i1>=len) {
-        wblog(FL, "ERR Skip - index out of range (%d,%d)\n[%s; %d]",
-        i1, len, toStr().data, i1); return *this;
+    if (i1>=len) wblog(FL,
+       "ERR %s() index out of range (%d/%d)",FCT,i1,len);
+
+    if (len>1) {
+       for (size_t i=i1+1; i<len; ++i) { data[i-1]=data[i]; }
+       --len; 
     }
-
-    for (size_t i=i1+1; i<len; i++) data[i-1]=data[i];
-    Resize(len-1);
+    else init();
 
     return *this;
-}
+};
 
 template <class T>
 inline wbvector<T>& wbvector<T>::Skip(
@@ -1424,10 +1530,9 @@ inline wbvector<T>& wbvector<T>::Skip(
     wbvector<char> mark(len); char *m=mark.data;
 
     for (k=0; k<I.len; k++) {
-        if (I[k]<len) m[I[k]]++;
-        else {
-            wblog(FL, "ERR Skip - index out of range (%d,%d)\n[%s; %d]",
-            I[k]+1, len, toStr().data, k+1); return *this;
+        if (I[k]<len) { m[I[k]]++; }
+        else { wblog(FL,
+           "ERR %s() index out of range (%d/%d)",FCT,I[k],len);
         }
     }
 

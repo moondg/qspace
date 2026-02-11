@@ -19,9 +19,9 @@ function [NPsi,NPsi2]=get_NPsi_bond(Psi)
      d=getDimQS(Psi); NPsi=d(1,end); NPsi2=d(end);
      t=Psi.info.itags{end};
      if isempty(regexpi(t,'Psi'))
-        wblog('WRN','got itag ''%s'' for Psi !?',t);
+        wblog('WRN','got empty itag ''%s'' for Psi',t);
      end
-  else wbdie('invalid usage (got qdir=''%s'' !?)',qdir);
+  else wbdie('invalid usage (got qdir=''%s'')',qdir);
   end
 
 end

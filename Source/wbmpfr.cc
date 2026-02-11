@@ -58,7 +58,7 @@ mpfr__<P>& mpfr__<P>::init_d(
       double x=getval_d(), e=std::fabs((x-val)/val);
       if (e>1e-14) { 
          fprintf(stderr,"\n  %30.20g\n  %30.20g\n\n",val,x);
-         wblog(F_L,"ERR %s(%g) conversion error @ %.3g /1E-14",FCT,val,e);
+         wblog(F_L,"ERR %s(%g) conversion error @ %.3g /1e-14",FCT,val,e);
       }
       else if (F && (e || std::fabs(x-int(x)))) {
          wblog(F,L,"TST %s(%g) conversion error @ %.3g",FCT,val,e);
@@ -78,13 +78,13 @@ mpfr__<P>& mpfr__<P>::init(const char *F, int L, double val,
       return *this;
    }
 
-   if (std::fabs(val)>1E-4) {
+   if (std::fabs(val)>1e-4) {
       long p,q; unsigned niter; double r,v0=val; char rflag=0;
-      e=Rational(val,p,q,&r,&niter,NULL,6,1000000,1E-10,1E-12);
+      e=Rational(val,p,q,&r,&niter,NULL,6,1000000,1e-10,1e-12);
 
-      if (e || std::fabs((r*q)/p)>1E-14) { val=v0*v0; rflag=1;
-         e=Rational(val,p,q,&r,&niter,NULL,6,1000,1E-10,1E-12);
-         if (!e && std::fabs((r*q)/p)>1E-14) { e=2; }
+      if (e || std::fabs((r*q)/p)>1e-14) { val=v0*v0; rflag=1;
+         e=Rational(val,p,q,&r,&niter,NULL,6,1000,1e-10,1e-12);
+         if (!e && std::fabs((r*q)/p)>1e-14) { e=2; }
       }
       if (!e) {
          mpfr_t b; mpfr_init2(b,P);
@@ -102,7 +102,7 @@ mpfr__<P>& mpfr__<P>::init(const char *F, int L, double val,
    }
 
    double q=::exp10(6-std::floor(std::log10(std::fabs(val)))), x=val*q;
-   if (std::fabs(::round(x)-x)<1E-7) {
+   if (std::fabs(::round(x)-x)<1e-7) {
       char s[20], l=snprintf(s,20,"%.12g",val);
          if (l>14) wblog(FL,"WRN %s() s=%s",FCT,s);
       init_s(FL,s); return *this;

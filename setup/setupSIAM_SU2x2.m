@@ -74,7 +74,6 @@
 
   if Aflag, NF=FF;
      for i=1:numel(FF)
-        FF(i)=fixScalarOp('-l',FF(i));
         NF(i)=FF(i)'*FF(i);
      end
      Sop=SS(end);

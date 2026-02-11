@@ -29,9 +29,10 @@ inline wbstring Wb::sec2Str(double t) {
    wbstring st(16); 
    unsigned l;
 
-   if (t<100) { l=snprintf(st.data,st.len,"%.5g",t); } else
-   if (t<3600) {
-      double s=fmod(t,60), m=(t-s)/60;
+   if (t<1   ) { l=snprintf(st.data,st.len,"%.3g",t); } else
+   if (t<10  ) { l=snprintf(st.data,st.len,"%.4g",t); } else
+   if (t<100 ) { l=snprintf(st.data,st.len,"%.5g",t); } else
+   if (t<3600) { double s=fmod(t,60), m=(t-s)/60;
       if (::fabs(s-::round(s))<1e-6)
            { l=snprintf(st.data,st.len,"%02.0f:%02f",  m,s); }
       else { l=snprintf(st.data,st.len,"%02.0f:%02.3f",m,s); }
@@ -68,8 +69,8 @@ void Wb::pause(const char *F, int L, double tsec) {
 void Wb::get_Clock_name(wbstring &name, const char *s, char use_tag) {
 
    if (use_tag) { 
-      unsigned l, n=16+(s ? strlen(s) : 0); char sx[n];
-      l=snprintf(sx,n,"%.12s:",
+      wbvec<char> sx(16+(s ? strlen(s) : 0));
+      sx.catf(0,0,"%.12s:",
         #ifdef PROG_TAG
           PROG_TAG
         #elif defined(myname)
@@ -78,12 +79,12 @@ void Wb::get_Clock_name(wbstring &name, const char *s, char use_tag) {
           "???"
         #endif
       );
-      if (s && l<n) {
-         if (l && !strncmp(sx,s,l))
-              { wblog(FL,"WRN %s() '%s :? %s'",FCT,sx,s); }
-         else { l+=snprintf(sx+l,n-l,"%s",s); }
+      if (s) {
+         if (sx.l && !strncmp(sx.data,s,sx.l))
+              { wblog(FL,"WRN %s() '%s :? %s'",FCT,sx.data,s); }
+         else { sx.catf(0,0,"%s",s); }
       }
-      name=sx;
+      name=sx.data;
    }
    else { name=(s ? s : ""); }
 };

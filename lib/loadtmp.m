@@ -14,8 +14,8 @@ function S=loadtmp(varargin)
 % See also save2tmp.m
 % Wb,Nov12,09
 
-  f=[ getenv('HOME') '/Matlab/tmp.mat' ];
-  q=[];
+  f=getenv('MYMATLAB'); if ~isdir(f), f=[ getenv('HOME') '/Matlab']; end
+  f=[f '/tmp.mat' ]; q=[];
 
   if nargin, q=varargin{1};
      if ischar(q) && ~isempty(regexp(q,'^-[0-9]+$'))

@@ -25,14 +25,14 @@
 //====================================================================//
 
 template <class TQ, class TA, class TB, class TC>
-double contractDATA_group(const char *F, int L,
-   const QSpace<TQ,TA> &A, C_UVEC &Ia, const ctrIdx &ica,
-   const QSpace<TQ,TB> &B, C_UVEC &Ib, const ctrIdx &icb,
+double contractDATA_group(const char *F, int L, 
+   const QSpace<TQ,TA> &A, cMVEC &fA, cUVEC &Ia, const ctrIdx &ica,
+   const QSpace<TQ,TB> &B, cMVEC &fB, cUVEC &Ib, const ctrIdx &icb,
    QSpace<TQ,TC> &C, unsigned ic,
    char preview 
 ){
 
-   unsigned nCGR=0, Nx=0, nx=0, nsym=A.qtype.len, cgflag=A.qtype.maxRank();
+   unsigned nCGR=0, Nx=0, nx=0, nsym=A.qtype.len, cgflag=A.qtype.hasCG();
    unsigned ra=A.rank(F_L), rb=B.rank(F_L), rc=ra+rb-2*ica.len;
    unsigned rmax=MAX3(ra,rb,rc);
    double x, rval=0, flops=0; 
@@ -73,8 +73,8 @@ double contractDATA_group(const char *F, int L,
       wblog(FL,"ERR %s() invalid preview=%d",FCT);
    }
 
-   unsigned i_,j,l,m=0,M=0, ia,ib; int q=0, xflag=0;
-   double cfac=1;
+   unsigned i_,j,l,m=0,M=0, ia,ib; int q=0, expand=0;
+   double afac=1;
    size_t sA, sB;
 
    wbvector<unsigned> iOM(nsym), iom(nsym); 
@@ -84,12 +84,13 @@ double contractDATA_group(const char *F, int L,
 
    wbperm P, pfin; 
    tensorRef_ R;
+   QDir qdir;
 
-   wbarray<TC> Ci, &Ck(*C.DATA.el(ic));
+   wbarray<TC> Ci, &Ck(*C.DATA.at(ic));
 
    Ck.init(); 
 
-   if (cgflag) {
+   if (cgflag) { qdir.init(C.itags);
       for (M=j=0; j<nsym; ++j) { 
          C.CGR(ic,j).init();
          if (A.qtype[j].permitsOM(rmax)) { iOM[j]=(++M); }
@@ -101,12 +102,24 @@ double contractDATA_group(const char *F, int L,
       wblog(FL,"TST %s() ic=%d / %d",FCT,ic+1,Ia.len);
    #endif
 
-   for (i_=0; i_<Ia.len; ++i_) { ia=Ia[i_]; ib=Ib[i_];
-      wbarray<TA> Ai(*A.DATA.el(ia),'r'); 
-      wbarray<TB> Bi(*B.DATA.el(ib),'r'); 
+   if ((fA && fA.len!=A.DATA.len) || (fB && fB.len!=B.DATA.len)) wblog(FL,
+      "ERR contract() fermionic sign length mismatch (fA: %d/%d, fB: %d/%d)",
+      fA.len,A.DATA.len, fB.len,B.DATA.len);
 
-      if (cgflag) { iom.set(0);
-         for (cfac=1., nx=m=0, j=0; j<nsym; ++j) {
+   for (i_=0; i_<Ia.len; ++i_) { ia=Ia[i_]; ib=Ib[i_];
+      wbarray<TA> Ai(*A.DATA.at(ia),'r'); 
+      wbarray<TB> Bi(*B.DATA.at(ib),'r'); 
+
+      if (Wb::envFERM) 
+           { afac=(fA? fA[ia] : 1)*(fB? fB[ib] : 1); }
+      else { afac=1; }
+
+      if (cgflag) { char xCGR=0;
+         if (preview==1  ) { xCGR|=2; } 
+         if (i_+1==Ia.len) { xCGR|=4; } 
+
+         iom.set(0);
+         for (nx=m=0, j=0; j<nsym; ++j) {
             const CRef<TQ> &Ar=A.CGR(ia,j), &Br=B.CGR(ib,j);
             CRef<TQ> &Cr=C.CGR(ic,j); 
 
@@ -122,19 +135,24 @@ double contractDATA_group(const char *F, int L,
                else { QC[j]=Q; }
             #endif
 
-            nCGR+=gXS.contractCGR(FL,Ar,ica,Br,icb, Cr, preview==1);
+            nCGR+=gXS.contractCGR(FL,Ar,ica,Br,icb, Cr, xCGR);
+
+            if (!preview && !Cr.sameQDir(0,1,qdir)) { 
+               wblog(FL,"ERR contractCGR() inconsistent qdir\n%s <> '%s'",
+               STR2(Cr,'l'),STR(qdir));
+            }
 
             if (preview==1) { continue; } 
 
             if (!Cr.cgb || !Cr.cgw) { q=0; 
                if (Cr.cgw) {
-                  if (Cr.rtype==CGR_ABELIAN) {
+                  if (Cr.rtype==CR_ABELIAN) {
                      if (Cr.wscalar1()) { Cr.cgw.init(); continue; }
                      else { q|=1; }  
                   }
                   else { size_t n=Cr.wnumel();
-                     if (Cr.rtype==CGR_CTR_SCALAR) { if (!n) { q|=2; }} else
-                     if (Cr.rtype==CGR_CTR_ZERO  ) { if ( n) { q|=4; }}
+                     if (Cr.rtype==CR_CTR_SCALAR) { if (!n) { q|=2; }} else
+                     if (Cr.rtype==CR_CTR_ZERO  ) { if ( n) { q|=4; }}
                      else { q|=8; }
                   }
                   if (q) {
@@ -147,7 +165,7 @@ double contractDATA_group(const char *F, int L,
                }
                else if (Cr.cgb) { wblog(FL,
                   "ERR %s() invalid CRef (missing cgw)\n%s",FCT,STR(Cr)); }
-               else if (Cr.rtype!=CGR_CTR_ZERO) wblog(FL,
+               else if (Cr.rtype!=CR_CTR_ZERO) wblog(FL,
                   "ERR %s() invalid CRef %s",FCT,STR(Cr));
             }
 
@@ -163,13 +181,13 @@ double contractDATA_group(const char *F, int L,
                if (!(iom[j]=iOM[j])) wblog(FL,
                   "ERR %s() missing iOM (l=%d, m=%d/%d)",FCT,l,m,M);
             }
-            else if (Cr.rtype==CGR_CTR_ZERO) {
-               cfac=0; 
+            else if (Cr.rtype==CR_CTR_ZERO) {
+               afac=0; 
                if (!Cr.cgw && Cr_.cgb && Cr_.cgw) { Cr_.save2(Cr); }
                break;                              
             }
             else if (l==1 || Cr.wscalar()) {
-               cfac*=Cr.cgw[0];
+               afac*=Cr.cgw[0];
             }
             else wblog(FL,"ERR %s() got empty x3 (%s)",FCT,SSTR(Cr.cgw));
 
@@ -177,15 +195,15 @@ double contractDATA_group(const char *F, int L,
             PRINTF("%s [ic=%d] i=%d/%ld\n"
             "   %-60s@%4s\n   %-60s@%4s\n-> %-60s%5s  %5s\n\n",SHORT_FL,
             ic+1,i_+1,Ia.len, STR(Ar),STR(ica), STR(Br),STR(icb),
-            STR2(Cr,'l'), RATS(cfac), RATS(Cr.cgw.norm()));
+            STR2(Cr,'l'), RATS(afac), RATS(Cr.cgw.norm()));
            #endif
          }
       }
       if (preview==1) { continue; } 
 
-      if (fabs(cfac)<1e-8) { ++Nx;
-         if (fabs(cfac)<CG_SKIP_EPS2) { continue; }
-         wblog(FL,"WRN %s() got small cfac=%g (nx=%d/%d)",FCT,cfac,nx,nsym);
+      if (fabs(afac)<1e-8) { ++Nx;
+         if (fabs(afac)<CG_SKIP_EPS2) { continue; }
+         wblog(FL,"WRN %s() got small afac=%g (nx=%d/%d)",FCT,afac,nx,nsym);
       }
 
       if (!m) {
@@ -204,16 +222,16 @@ double contractDATA_group(const char *F, int L,
          }
 
          if (!cgflag) {
-            if (cfac!=1) wblog(FL,
-               "WRN %s() got cfac=%g for all-abelian",FCT,cfac);
-            Ai.contract(FL,ica,Bi,icb,Ck,wbperm(),cfac); 
+            if (fabs(afac)!=1) wblog(FL, 
+               "WRN %s() got afac=%g for all-abelian",FCT,afac);
+            Ai.contract(FL,ica,Bi,icb,Ck,wbperm(),afac); 
          }
          else { Ci.init();
-            Ai.contract(FL,ica,Bi,icb,Ci);
+            Ai.contract(FL,ica,Bi,icb,Ci); 
 
             if (Ck) { Ck.ExpandOM(FL,Ci,rc); }
 
-            Ck.Plus(Ci,TC(cfac),'i',1); 
+            Ck.Plus(Ci,TC(afac),'i',1); 
          }
          continue; 
       }
@@ -224,7 +242,7 @@ double contractDATA_group(const char *F, int L,
       tensorRefs TR(2+m); 
 
       Ai.ExpandOM(FL,ra, m, Ma.data, Ma.data+nsym); 
-      Bi.ExpandOM(FL,rb, m, Mb.data, Mb.data+nsym);
+      Bi.ExpandOM(FL,rb, m, Mb.data, Mb.data+nsym); 
 
       TR[0].init(Ai, &A.itags);
       TR[1].init(Bi, &B.itags);
@@ -285,15 +303,15 @@ double contractDATA_group(const char *F, int L,
       }
 
       q=Ck.ExpandOM(FL,Ci,rc);
-      xflag = (q<0 ? 0 : q&8);
+      expand = (q<0 ? 0 : q&8);
 
      #ifdef DBG_CONTRACT
       static int iout=0; sprintf_str("I%02d",++iout);
       MXPut Ix(FL,str,"base");
-      Ix.add(Ck,"Ck_").add(cfac,"cfac").add(Ci,"Ci").add(ic,"ic").add(C,"C");
+      Ix.add(Ck,"Ck_").add(afac,"afac").add(Ci,"Ci").add(ic,"ic").add(C,"C");
      #endif
 
-      Ck.Plus(Ci,TC(cfac),'i',1); 
+      Ck.Plus(Ci,TC(afac),'i',1); 
 
      #ifdef DBG_CONTRACT
       wbarray<TC> Ck_(Ck); Ix.add(Ck_,"Ck");
@@ -301,7 +319,7 @@ double contractDATA_group(const char *F, int L,
 
       PRINTF("%-16s│ %-10s@%4s │ %-10s@%4s │ %d/%ld %d: %-10s %5s  %5s\n",
          SHORT_FL, SSTR(Ai),STR(ica),SSTR(Bi),STR(icb), i_+1, Ia.len, ic+1,
-         SSTR(Ci), RATS(cfac), RATS(double(Ck.norm()))
+         SSTR(Ci), RATS(afac), RATS(double(Ck.norm()))
       );
      #endif
    }
@@ -312,9 +330,9 @@ double contractDATA_group(const char *F, int L,
          "got empty C.DATA[%d]\nfor valid CGTs (%d/%d)",FCT,ic+1,nx,Nx);
 
       for (m=1, j=0; j<nsym; ++j) {
-         if (xflag) { 
+         if (expand) { 
             if (iOM[j])
-                 { d=Ck.SIZE.el(rc+iOM[j]-1); }
+                 { d=Ck.SIZE.at(rc+iOM[j]-1); }
             else { d=1; }
          }
          m*=C.CGR(ic,j).Reduce_w3Id(d,l);
@@ -337,9 +355,9 @@ double contractDATA_group(const char *F, int L,
 };
 
 template <class TQ, class TA, class TB, class TC>
-void contractDATA_plain(const char *F, int L,
-   const QSpace<TQ,TA> &A, C_UVEC &Ia, const ctrIdx &ica,
-   const QSpace<TQ,TB> &B, C_UVEC &Ib, const ctrIdx &icb,
+void contractDATA_plain(const char *F, int L, 
+   const QSpace<TQ,TA> &A, cUVEC &Ia, const ctrIdx &ica,
+   const QSpace<TQ,TB> &B, cUVEC &Ib, const ctrIdx &icb,
    QSpace<TQ,TC> &C, unsigned ic
 ){
 
@@ -388,8 +406,8 @@ void contractDATA_plain(const char *F, int L,
 
    try {
       for (i=0; i<Ia.len; ++i) {
-         A.DATA.el(Ia[i])->contract(
-            FL,ica, *B.DATA.el(Ib[i]),icb, *C.DATA[ic]
+         A.DATA.at(Ia[i])->contract(
+            FL,ica, *B.DATA.at(Ib[i]),icb, *C.DATA[ic]
          );
       }
    }
@@ -462,8 +480,9 @@ int mxIsQSpace(
    const unsigned *rmax, 
    const char *istr
 ){
-   int q, isq=0, ise=0;
-   unsigned l,nA,nA_, M=0, N=0, i=(istr ? strlen(istr) : 0);
+   int isq=0; 
+   int q, ise=0;
+   unsigned l, k1,k2, nA, M=0, N=0, i=(istr ? strlen(istr) : 0);
    unsigned r, r1=(rmin ? *rmin : rank), r2=(rmax ? *rmax : r1);
 
    mxArray *Q, *D, *a;
@@ -479,27 +498,31 @@ int mxIsQSpace(
       else { sp+=snprintf(sp,256,"%s: ", i ? istr : "A"); }
    }}
 
-   if (!A || !mxIsStruct(A) || !Mx::IsVector(A)) {
+   if (!A || !mxIsStruct(A) || Mx::IsVector(A)<=0) {
       if (vflag) { snprintf(sp,256,
          "invalid QSpace object (%s)",mxTypeSize2Str(A).data);
       if (vflag>1) wblog(F_L,"ERR %s",str); }
-      return -1;
+      return (isq=-1);
    }
 
-   nA=nA_=mxGetNumberOfElements(A);
+   nA=mxGetNumberOfElements(A);
    if (int(k)>=int(nA)) {
       if (vflag) { snprintf(sp,256,"structure index out of bounds "
          "(%s <> %d)",mxTypeSize2Str(A).data,int(k)+1);
       if (vflag>1) wblog(F_L,"ERR %s",str); }
-      return -2;
+      return (isq=-2);
    }
 
    if (int(k)==-1 && nA>1) { 
       if (vflag) {
          snprintf(sp,256,"expecting single QSpace (got %d)",nA);
       if (vflag>1) wblog(F_L,"ERR %s",str); }
-      return -3;
+      return (isq=-3);
    }
+
+   if (int(k)<0)
+        { k1=0; k2=nA;  } 
+   else { k1=k; k2=k+1; } 
 
    fidQ=mxGetFieldNumber(A,"Q");
    fidD=mxGetFieldNumber(A,"data");
@@ -508,13 +531,10 @@ int mxIsQSpace(
       if (vflag) {
          strcpy(sp,"mxArray is not of type {Q,data,...}");
       if (vflag>1) wblog(F_L,"ERR %s",str); }
-      return -4;
+      return (isq=-4);
    }
 
-   if (int(k)<0) { k=0; } 
-   else { nA_=k+1; }      
-
-   for (; k<nA_; ++k) {
+   for (k=k1; k<k2; ++k) {
       Q=mxGetFieldByNumber(A,k,fidQ);
       D=mxGetFieldByNumber(A,k,fidD);
 
@@ -524,7 +544,7 @@ int mxIsQSpace(
             if (vflag) {
                strcpy(sp,"QSpace data only partially set !?");
             if (vflag>1) wblog(F_L,"ERR %s",str); }
-            return -5;
+            return (isq=-5);
          }
       }
 
@@ -538,7 +558,7 @@ int mxIsQSpace(
             if (vflag) { snprintf(sp,256,
                "Q-field not a vector cell (%s)",mxTypeSize2Str(Q).data);
             if (vflag>1) wblog(F_L,"ERR %s",str); }
-            return -6;
+            return (isq=-6);
          }
       }
 
@@ -551,19 +571,22 @@ int mxIsQSpace(
          if (vflag) { snprintf(sp,256,
             "rank r=%d not in range [%d %d])",r,r1,r2);
          if (vflag>1) wblog(F_L,"ERR %s",str); }
-         return -7;
+         return (isq=-7);
       }
 
       for (i=0; i<r; ++i) { a=mxGetCell(Q,i);
          if (Mx::IsNumArray(0,L,a)<=0) { 
-            if (vflag) { unsigned l=0, n=512; char s[n];
-               l+=snprintf(s,n,"invalid field %s",istr? istr:"A");
-               if (nA>1) { l+=snprintf(s+l,n-l,"(%d/%d)",k+1,nA); }
-               l+=snprintf(s+l,n-l,".Q{%d} (n=%d)\n%.256s",i+1,
+            if (vflag) { wbvec<char> s(512);
+               s.catf(0,0,"invalid field %s",istr? istr:"A"); if (nA>1) {
+               s.catf(0,0,"(%d/%d)",k+1,nA); }
+               s.catf(0,0,".Q{%d} (n=%d)\n%.256s",i+1,
                   a ? int(mxGetNumberOfElements(a)) : -1, str);
-               if (vflag>1) wblog(F_L,"ERR %s",s); else strcpy(str,s);
+
+               if (vflag>1)
+                    { wblog(F_L,"ERR %s",s.data); }
+               else { strcpy(str,s.data); }
             }
-            return -8;
+            return (isq=-8);
          }
          if (!i) { M=mxGetM(a); N=mxGetN(a); }
          if ((i && (M!=mxGetM(a) || N!=mxGetN(a))) ||
@@ -571,7 +594,7 @@ int mxIsQSpace(
           ){
             if (vflag) { snprintf(sp,256,"dimension mismatch in Q{%d}",i+1);
             if (vflag>1) wblog(F_L,"ERR %s",str); }
-            return -9;
+            return (isq=-9);
          }
       }
 
@@ -579,7 +602,7 @@ int mxIsQSpace(
          if (mxGetFieldNumber(A,"data")<0) {
             if (vflag) { strcpy(sp,"missing field 'data'");
             if (vflag>1) wblog(F_L,"ERR %s",str); }
-            return -10;
+            return (isq=-10);
          }
       }
       else {
@@ -589,7 +612,7 @@ int mxIsQSpace(
             if (vflag) { snprintf(sp,256,
                "QSpace inconsistency data: %d/%s",M,mxSize2Str(D).data);
             if (vflag>1) wblog(F_L,"ERR %s",str); }
-            return -11;
+            return (isq=-11);
          }
          if (!l) continue;
 
@@ -597,36 +620,45 @@ int mxIsQSpace(
             if (vflag) { snprintf(sp,256,
                "data field not a cell vector (%s)",mxTypeSize2Str(D).data);
             if (vflag>1) wblog(F_L,"ERR %s",str); }
-            return -12;
+            return (isq=-12);
          }
 
-         for (i=0; i<l; ++i) { a=mxGetCell(D,i);
-            if ((q=Mx::IsNumArray(0,L,a,r,cflag))<=0) {
+         for (i=0; i<l; ++i) {
+            a=mxGetCell(D,i);
+            q=Mx::IsNumArray(0,L,a,r,cflag); 
+
+            if (q<=0) {
                if (r>2 && unsigned(-q)==r+1) {
                   q=Mx::IsNumArray(0,L,a,r+1,cflag);  
                }
             }
             if (q<=0) {
-               if (vflag) { unsigned l=0, n=512; char s[n];
-                  l+=snprintf(s,n,"invalid field %s",istr? istr:"A");
-                  if (nA>1) { l+=snprintf(s+l,n-l,"(%d/%d)",k+1,nA); }
-                  l+=snprintf(s+l,n-l,".data{%d}\n%.256s",i+1,str);
-                  if (vflag>1) wblog(F_L,"ERR %s",s); else strcpy(str,s);
+               if (vflag) { wbvec<char> s(512);
+                  s.catf(0,0,"invalid field %s",istr? istr:"A"); if (nA>1) {
+                  s.catf(0,0,"(%d/%d)",k+1,nA); }
+                  s.catf(0,0,".data{%d}\n%.256s",i+1,str);
+                  if (vflag>1)
+                       { wblog(F_L,"ERR %s",s.data); }
+                  else { strcpy(str,s.data); }
                }
-               return -13;
+               return (isq=-13);
             }
-            isq|=q; 
+
+            isq|=q;
          }
       }
    }
 
-   if (ise) { isq|=256; } 
+   if (k2-k1!=1) { isq|=128; } 
+
+   if (ise) { isq|=256; }     
+
    return isq;
 };
 
 bool mxIsEmptyQSpace(const mxArray *a, unsigned k) {
 
-   mxArray *Q=NULL, *D=NULL;
+   mxArray *Q=nullptr, *D=nullptr;
    unsigned i1,i2;
    int fidQ, fidD;
 
@@ -671,7 +703,7 @@ bool mxIsEmptyQSpace(const mxArray *a, unsigned k) {
 bool mxIsScalarQSpace(const mxArray *a, unsigned k) {
 
    int fidQ, fidD, fidI;
-   mxArray *Q=NULL, *D=NULL, *I=NULL;
+   mxArray *Q=nullptr, *D=nullptr, *I=nullptr;
 
    if (!a || mxIsEmpty(a)) return 0;
 
@@ -997,7 +1029,7 @@ void mxInitQSpaceVec(
 
    n*=m;
 
-   if (FF.len!=n) FF.initDef(n); 
+   if (FF.len!=n) { FF.init(n); } 
 
    for (k=0; k<n; ++k) {
       FF[k].init(F,L,S,ref,k);
@@ -1033,7 +1065,7 @@ void mxcInitQSpaceVec(const char *F, int L,
 
    n*=m;
 
-   if (FF.len!=n) FF.initDef(n); 
+   if (FF.len!=n) { FF.init(n); } 
 
    for (i=0; i<n; i++)
    FF[i].init(F,L,mxGetCell(C,i),ref);
@@ -1058,7 +1090,7 @@ void mxInitQSpaceVecVec(const char *F, int L,
       "--> %s:%d", mxGetClassName(C),m,n, Wb::basename(__FILE__),__LINE__);
    }
 
-   n*=m; if (FF.len!=n) FF.initDef(n);
+   n*=m; if (FF.len!=n) { FF.init(n); }
 
    for (i=0; i<n; i++) { a=mxGetCell(C,i);
        if (mxIsQSpaceVec(FL,a))
@@ -1095,7 +1127,7 @@ void mxInitQSpaceMat(const char *F, int L,
        wblog(F,L,"ERR %s needs QSpace array on input\n(%d, %dx%d)",
        FCT, mxIsStruct(S), m, n);
 
-   if (FF.dim1!=m || FF.dim2!=n) FF.initDef(m,n);
+   if (FF.dim1!=m || FF.dim2!=n) FF.init(m,n);
 
    for (i=0; i<m; i++)
    for (j=0; j<n; j++) FF(i,j).init(F,L,S,ref,i+j*m);
@@ -1132,7 +1164,7 @@ void mxcInitQSpaceMat(const char *F, int L,
       }
       else {
          n=mxGetNumberOfElements(a);
-         if (FF.dim1!=m || FF.dim2!=n) FF.initDef(m,n);
+         if (FF.dim1!=m || FF.dim2!=n) FF.init(m,n);
       }
 
       for (j=0; j<n; j++)
@@ -1171,7 +1203,7 @@ QVec qsGetSym(const char *F, int L, const mxArray *a, unsigned k) {
 
    QVec qtype;  
    int fidt, fidI; unsigned l,n;
-   mxArray *I=NULL, *t;
+   mxArray *I=nullptr, *t;
 
    if (!a || mxIsEmpty(a)) return qtype;
 

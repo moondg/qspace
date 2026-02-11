@@ -27,6 +27,8 @@ function varargout=SymStore(sym,task,varargin)
 %   q=SymStore('SU3','XOM'        )   % print XStore OM statistics
 %   q=SymStore('SU3','rmX',qstr,ID)   % remove XStore entries that match qstr+ID
 %
+%   SymStore SU3 --check-fOM          % check full OM on all CGTs
+%
 % # Permutation group
 %   SymStore('PERM','213');           % dimension of given Young tableau
 %
@@ -53,32 +55,40 @@ function varargout=SymStore(sym,task,varargin)
   end
 
   varargout=cell(1,max(1,nargout));
+  args={};
 
   if ischar(sym) && ~isempty(regexp(sym,'^-'))
      if nargin>1
-          varargin={sym,task,varargin{:}};
-     else varargin={sym}; end
+          args={sym,task,varargin{:}};
+     else args={sym}; end
+  elseif nargin>1 && ~isempty(regexp(task,'^-'))
+     args={task,sym,varargin{:}};
+  end
 
-     if isequal(varargin{1},'--check-gCX')
-        check_gCX(varargin{2:end});
+  if ~isempty(args)
+     if isequal(args{1},'--check-gCX')
+        check_gCX(args{2:end});
         varargout={}; return
-     elseif isequal(varargin{1},'--xtr')
-        [varargout{:}]=xfile2qout(varargin{2:end});
+     elseif isequal(args{1},'--check-fOM')
+        check_fOM(args{2:end});
+        varargout={}; return
+     elseif isequal(args{1},'--xtr')
+        [varargout{:}]=xfile2qout(args{2:end});
         return
-     elseif isequal(varargin{1},'--prc')
-        for i=2:numel(varargin)
+     elseif isequal(args{1},'--prc')
+        for i=2:numel(args)
            n=inputname(i); if isempty(i), n=sprintf('#%g',i); end
-           print_qset(n,varargin{i},'-v');
+           print_qset(n,args{i},'-v');
         end
         varargout={}; return
-     else wbdie('invalid usage');
+     else args={};
      end
   end
 
   if isstruct(sym) && ...
      isfield(sym,'type') && isfield(sym,'qset') && isfield(sym,'qdir')
-     if nargin>1, varargin={task,varargin{:}}; end
-     [varargout{:}]=LoadCData(sym,varargin{:});
+     if nargin>1, args={task,varargin{:}}; end
+     [varargout{:}]=LoadCData(sym,args{:});
      return
   elseif isequal(upper(sym),'PERM') || isequal(upper(sym),'SYM')
      if nargin<2, wbdie('invalid usage'), end
@@ -88,7 +98,7 @@ function varargout=SymStore(sym,task,varargin)
 
   if ischar(sym) && length(regexp(sym,'[()\s@,;]'))>2
 
-     if nargin>1, varargin={task, varargin{:}}; end
+     if nargin>1, args={task, varargin{:}}; end
 
      s=sym; ext=''; sym='';
      i=max(find(s=='.')); if ~isempty(i), ext=s(i+1:end); s=s(1:i-1); end
@@ -140,12 +150,12 @@ function varargout=SymStore(sym,task,varargin)
 
      if xpat
         q=regexprep(q,'\*\s+(','*(');
-        [varargout{:}]=LoadXData(sym,q,varargin{:});
+        [varargout{:}]=LoadXData(sym,q,args{:});
         return
      end
 
      if regexp(ext,'^m')
-        [varargout{:}]=LoadMData(sym,q,varargin{:});
+        [varargout{:}]=LoadMData(sym,q,args{:});
         return
      end
 
@@ -162,7 +172,7 @@ function varargout=SymStore(sym,task,varargin)
         end
      end
 
-     [varargout{:}]=LoadCData(sym,q,varargin{:});
+     [varargout{:}]=LoadCData(sym,q,args{:});
      return
   end
 
@@ -176,9 +186,10 @@ function varargout=SymStore(sym,task,varargin)
   end
 
   if ~isempty(regexp(task,'\.mp3'))
-     varargin=[{task}, varargin]; task='-M';
+     args=[{task}, varargin]; task='-M';
   elseif ~isempty(regexp(task,'\.cgd'))
-     varargin=[{task}, varargin]; task='-C';
+     args=[{task}, varargin]; task='-C';
+  else args=varargin;
   end
 
   sym=regexprep(sym,'(S[pU])\(*(\d+)\)','$1$2');
@@ -194,31 +205,34 @@ function varargout=SymStore(sym,task,varargin)
   end
 
   switch task
-     case 'mp3', [varargout{:}]=getOMmp3 (sym,varargin{:});
-     case 'XOM', [varargout{:}]=getSymXOM(sym,varargin{:});
-     case {'-C','loadC'}, [varargout{:}]=LoadCData(sym,varargin{:});
-     case {'-M','loadM'}, [varargout{:}]=LoadMData(sym,varargin{:});
-     case {'-R','loadR'}, [varargout{:}]=LoadRData(sym,varargin{:});
-     case {'-X','loadX'}, [varargout{:}]=LoadXData(sym,varargin{:});
-     case 'Casimir', [varargout{:}]=CasimirC2(sym,varargin{:});
+     case 'mp3', [varargout{:}]=getOMmp3 (sym,args{:});
+     case 'XOM', [varargout{:}]=getSymXOM(sym,args{:});
+     case {'-C','loadC'}, [varargout{:}]=LoadCData(sym,args{:});
+     case {'-M','loadM'}, [varargout{:}]=LoadMData(sym,args{:});
+     case {'-R','loadR'}, [varargout{:}]=LoadRData(sym,args{:});
+     case {'-X','loadX'}, [varargout{:}]=LoadXData(sym,args{:});
+     case {'--OM'}
+        varargout=cell(1,nargout);
+        [varargout{:}]=checkOM(sym,args{:});
+     case 'Casimir', [varargout{:}]=CasimirC2(sym,args{:});
 
-     case {'-d'}, [varargout{:}]=getSymDim(sym,varargin{:});
-     case 'dim', [varargout{:}]=getSymDim(sym,varargin{:});
+     case {'-d'}, [varargout{:}]=getSymDim(sym,args{:});
+     case 'dim', [varargout{:}]=getSymDim(sym,args{:});
                  if ~nargout, varargout={}; end
 
-     case '--plotR', plotRStat(sym,varargin{:}); varargout={};
+     case '--plotR', plotRStat(sym,args{:}); varargout={};
 
-     case 'rmX',        [varargout{:}]=remXData(sym,varargin{:});
-     case 'findID',     [varargout{:}]=findID(sym,varargin{:});
+     case 'rmX',        [varargout{:}]=remXData(sym,args{:});
+     case 'findID',     [varargout{:}]=findID(sym,args{:});
 
-     case '--rebuildR', rebuildRStore(sym,varargin{:}); varargout={};
-     case '--rebuildC', rebuildCStore(sym,varargin{:}); varargout={};
+     case '--rebuildR', rebuildRStore(sym,args{:}); varargout={};
+     case '--rebuildC', rebuildCStore(sym,args{:}); varargout={};
 
-     case '--check-mp3',[varargout{:}]=check_mp3(sym,varargin{:});
-     case '--check-X',  [varargout{:}]=check_XStore(sym,varargin{:});
+     case '--check-mp3',[varargout{:}]=check_mp3(sym,args{:});
+     case '--check-X',  [varargout{:}]=check_XStore(sym,args{:});
 
-     case '--tensor-prod',  [varargout{:}]=tensorprod_QSet(sym,varargin{:});
-     case '--contract',     [varargout{:}]=contractSym(sym,varargin{:});
+     case '--tensor-prod',  [varargout{:}]=tensorprod_QSet(sym,args{:});
+     case '--contract',     [varargout{:}]=contractSym(sym,args{:});
 
      otherwise
      wbdie('invalid task ''%s''',task);

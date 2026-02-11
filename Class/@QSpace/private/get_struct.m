@@ -14,7 +14,7 @@ function A=get_struct(Q,data,info)
         n=[ numel(Q), numel(info) ]; q3=diff(n);
         if ~iscell(info) || ~iscell(Q)  || q3<0 || q3>1
            wbdie('unexpected info data'); end
-        info=struct('qtype',{'A'},'otype',{''},'itags',{info},'cgr',[]);
+        info=struct('qtype',{'A'},'otype',{''},'itags',{info},'fdir',{''},'cgr',[]);
         if q3
            Q(end+1:n(2))={zeros(size(Q{1}))};
         end

@@ -33,11 +33,15 @@ function save2tmp(varargin)
      wbdie('invalid tid=%s',tid); end
   end
 
+  S=dbstack; if numel(S)>1, S(1)=[]; end
+  Itmp=mlinfo; Itmp.stack=S;
+
   if dbflag || isbatch()
-     s=dbstack; s=s(min([2, length(s)]));
-     f=[ pwd '/' wbstamp('-l') sprintf('_%s_%04d_debug',s.name,getpid) '.mat' ];
+     if ~isempty(tid), tid=['-' tid]; end
+     f=[ pwd '/' wbstamp('-l') tid '_' S(1).name '_debug.mat' ];
   else
-     f=[ getenv('HOME') '/Matlab/tmp' tid '.mat' ];
+     f=getenv('MYMATLAB'); if ~isdir(f), f=[ getenv('HOME') '/Matlab']; end
+     f=[f '/tmp' tid '.mat' ];
   end
 
   if ~isempty(xpat)
@@ -55,7 +59,8 @@ function save2tmp(varargin)
 
   if aflag, cmd=[cmd ' -append']; end
 
-  evalin('caller', cmd); 
+  assignin('caller','Itmp__',Itmp);
+  evalin('caller', [ cmd '; clear Itmp__']); 
 
   if ~isempty(varargin)
        s=sprintf(' %s', varargin{:}); s=['(' s(2:end) ')'];

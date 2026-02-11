@@ -69,7 +69,7 @@ void GET_SMOOTH_SPEC(
     aa.init0(argin[1]);
 
     ASpec.Emin=om.aMin(1);
-    ASpec.eps=ASpec.Emin*1E-3;
+    ASpec.eps=ASpec.Emin*1e-3;
 
     opts.init(argin+2, nargin-2);
 
@@ -141,7 +141,7 @@ void GET_SMOOTH_SPEC(
        if (int(i)>=0) {
           om.findRange(2*om[i],om[i],I,"[["); 
           if (!I.isEmpty()) {
-             aa.getCols(I,ax).recSumA(a2); a2.setMin(1E-14);
+             aa.getCols(I,ax).recSumA(a2); a2.setMin(1e-14);
              for (j=0; j<a2.len; ++j) {
                 if (Wb::abs2(aa(j,i))>Wb::abs2(a2[j])) {
                    a0(j,0)+=aa(j,i); aa(j,i)=0; ++gotdelta;
@@ -154,7 +154,7 @@ void GET_SMOOTH_SPEC(
        if (int(i)>=0) {
           om.findRange(om[i],2*om[i],I,"]]"); 
           if (!I.isEmpty()) {
-             aa.getCols(I,ax).recSumA(a2); a2.setMin(1E-14);
+             aa.getCols(I,ax).recSumA(a2); a2.setMin(1e-14);
              for (j=0; j<a2.len; ++j) {
                 if (Wb::abs2(aa(j,i))>Wb::abs2(a2[j])) {
                     a0(j,1)+=aa(j,i); aa(j,i)=0; ++gotdelta;

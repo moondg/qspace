@@ -142,7 +142,7 @@ char wbsparray<TD>::matchWithSingletons(
    const SPIDX_T *sa=SIZE.data, *sb=S.data;
 
    if (!S.len) {
-      if (SIZE.len) wblog(FL,"ERR %s() got %s <> ()",FCT,SSTR_(this));
+      if (SIZE.len) wblog(FL,"ERR %s() got %s <> ()",FCT,SSTR(*this));
       M.init(); return 0;
    }
 
@@ -159,7 +159,7 @@ char wbsparray<TD>::matchWithSingletons(
 
    if (e) {
       if (F) wblog(F,L,"ERR %s() got size mismatch (%s <> %s)",
-      FCT, SSTR_(this), SSTR(S));
+      FCT, SSTR(*this), SSTR(S));
       return e;
    }
 
@@ -196,7 +196,7 @@ wbsparray<TD>& wbsparray<TD>::setRand(double x, char sflag){
       for (j=0; j<m; ++j) {
          R.rand_(I[j], SIZE[j]);
          if (I[j]>=SIZE[j]) wblog(FL,"ERR %s() index out of bounds "
-            "(%d,%d: %d; %s)",FCT,i+1,j+1,I[j],SSTR_(this)
+            "(%d,%d: %d; %s)",FCT,i+1,j+1,I[j],SSTR(*this)
          );
       }
    }
@@ -238,7 +238,7 @@ wbsparray<TD>& wbsparray<TD>::Resize(const wbvector<SPIDX_T> &S_) {
       "ERR %s() invalid size (%d/%d)",FCT,S_.len,SIZE.len);
    if (!D.len) { return init(S_); }
    if (SIZE.len!=IDX.dim2) wblog(FL,
-      "ERR %s() got size %s !?",FCT,SSTR_(this));
+      "ERR %s() got size %s !?",FCT,SSTR(*this));
 
    SPIDX_T i,j, l=0, N=IDX.dim1, m=IDX.dim2;
    const SPIDX_T *idx=IDX.data, *s=S_.data;
@@ -293,7 +293,7 @@ SPIDX_T wbsparray<TD>::findRecSortedP(
 
    if (int(i)<0 || !n || !SIZE.len) wblog(FL,
       "ERR %s() invalid index [%s] (%s)",
-      FCT, wbvector<SPIDX_T>(n,idx,'r'), SSTR_(this)
+      FCT, wbvector<SPIDX_T>(n,idx,'r'), SSTR(*this)
    );
 
    return IDX.findRecSorted(idx,n,lex);
@@ -316,7 +316,7 @@ char wbsparray<TD>::sameUptoFac(
    }
 
    if (sab>=20) wblog(FL,"ERR %s() got singletons (%s <> %s)",
-      FCT,SSTR_(this), SSTR(B));
+      FCT,SSTR(*this), SSTR(B));
 
    if (sab>=10) {        
       iA=((sab-10) & 1); 
@@ -325,7 +325,7 @@ char wbsparray<TD>::sameUptoFac(
 
    a0=D.aMax(&i);
 
-   if (swidx_t(i)<0) wblog(FL,
+   if (widx_ts(i)<0) wblog(FL,
       "ERR %s() got zero data (%g;%d)",FCT,double(a0),i
    );
 
@@ -361,7 +361,7 @@ char wbsparray<TD>::sameUptoFac(
          if (B.IDX.dim2!=2) wblog(FL,
             "ERR %s() %dx%d !?",FCT,B.IDX.dim1,B.IDX.dim2);
          for (i=0; i<B.D.len; ++i, I+=2) {
-            if (I[0]==I[1]) { mark.el(I[0])=1;
+            if (I[0]==I[1]) { mark.at(I[0])=1;
                  if (Wb::abs(a[I[0]]-fac*b[i])>eps) return 12; }
             else if (Wb::abs(b[i])>eps) return 13;
          }
@@ -375,7 +375,7 @@ char wbsparray<TD>::sameUptoFac(
          if (IDX.dim2!=2) wblog(FL,
             "ERR %s() %dx%d !?",FCT,IDX.dim1,IDX.dim2);
          for (i=0; i<D.len; ++i, I+=2) {
-            if (I[0]==I[1]) { mark.el(I[0])=1;
+            if (I[0]==I[1]) { mark.at(I[0])=1;
                  if (Wb::abs(a[i]-fac*b[I[0]])>eps) return 21; }
             else if (Wb::abs(a[i])>eps) return 22;
          }
@@ -455,11 +455,11 @@ wbvector<TD>& wbsparray<TD>::getDiag(
       SPIDX_T i=0, n=-1; const SPIDX_T *I=IDX.data;
 
       if (!isSMatrix(F_L,&n) || IDX.dim2!=2) wblog(F_L,
-         "ERR %s() requires rank-2 tensor (%s)",FCT,SSTR_(this));
+         "ERR %s() requires rank-2 tensor (%s)",FCT,SSTR(*this));
       dd.init(n);
 
       for (; i<IDX.dim1; ++i, I+=2) {
-         if (*I==I[1]) { dd.el(*I) += D[i]; }
+         if (*I==I[1]) { dd.at(*I) += D[i]; }
       }
    }
    return dd;
@@ -480,7 +480,7 @@ TD wbsparray<TD>::getDiag(const char *F, int L, SPIDX_T k) const {
       SPIDX_T i=0, n=-1; const SPIDX_T *I=IDX.data;
 
       if (!isSMatrix(F_L,&n) || IDX.dim2!=2) wblog(F_L,
-         "ERR %s() requires rank-2 tensor (%s)",FCT,SSTR_(this));
+         "ERR %s() requires rank-2 tensor (%s)",FCT,SSTR(*this));
       if (sSPIDX_T(k)<0) { k+=n; }
       if (k>=n) wblog(FL,
          "ERR %s() index out of bounds (%d/%d)",FCT,k,n);
@@ -778,7 +778,7 @@ TD wbsparray<TD>::dotProd(
    if (iA || iB) { 
       if ((!iA && SIZE.len!=2) || (!iB && B.SIZE.len!=2) || dim()!=B.dim())
          wblog(FL,"ERR %s() size mismatch (%s <> %s)",
-         FCT,SSTR_(this),SSTR(B)
+         FCT,SSTR(*this),SSTR(B)
       );
 
       if (iA && iB) {    
@@ -795,7 +795,7 @@ TD wbsparray<TD>::dotProd(
    }
 
    if (SIZE!=B.SIZE) wblog(F_L,"ERR %s() "
-      "got size mismatch (%s <> %s)",FCT,SSTR_(this),SSTR(B));
+      "got size mismatch (%s <> %s)",FCT,SSTR(*this),SSTR(B));
    if (!SIZE.len) { return x; }
 
    SPIDX_T ia=0, ib=0, na=IDX.dim1, nb=B.IDX.dim1, l=0, lnext=0; 
@@ -838,7 +838,7 @@ TD wbsparray<TD>::dotProd_full_diag(const wbsparray<TD> &B, char cflag
    TD x=TD();
 
    if (IDX.dim2!=2 || B.IDX.dim1 || B.D.len!=SIZE[0]) wblog(FL,
-      "ERR %s() %s <> %s !?",FCT, SSTR_(this), SSTR(B)
+      "ERR %s() %s <> %s !?",FCT, SSTR(*this), SSTR(B)
    );
 
    if (cflag==0) { 
@@ -869,7 +869,7 @@ wbsparray<TD>& wbsparray<TD>::TimesEl(
    char iA=0, iB=0, sab=sameSize(B);
 
    if (!sab || sab>=20) wblog(FL,"ERR %s() "
-      "size mismatch (%s <> %s)",FCT,SSTR_(this),SSTR(B));
+      "size mismatch (%s <> %s)",FCT,SSTR(*this),SSTR(B));
 
    if (sab>=10) { wbsparray<TD> X;
 
@@ -952,7 +952,7 @@ wbsparray<TD>& wbsparray<TD>::setCol(
    if (rank(F_L)!=2 || rv<1 || rv>2 || SIZE[0]!=v.SIZE[0] ||
       (rv==2 && v.SIZE[1]!=1)
     ) wblog(F_L,"ERR %s() invalid input (%s <> %s)",
-      FCT, SSTR_(this), SSTR(v)
+      FCT, SSTR(*this), SSTR(v)
    );
 
    if (k>=SIZE[1]) wblog(F_L,
@@ -1003,7 +1003,7 @@ template <class TD> inline
 TD wbsparray<TD>::Normalize(char tnorm, char qflag){
    TD x = Wb::sqrt(Wb::overlap(D.data,D.data,D.len,1,tnorm));
 
-   if (Wb::abs(x)>TD(1E-15)) Wb::timesRange(D.data,TD(1)/x,D.len);
+   if (Wb::abs(x)>TD(1e-15)) Wb::timesRange(D.data,TD(1)/x,D.len);
    else if (!qflag) {
       wblog(FL,"ERR %s() got vector with norm %.3g !?",FCT,double(x));
    }
@@ -1015,7 +1015,7 @@ template <class TD>
 TD wbsparray<TD>::NormalizeCol(SPIDX_T k, char tnorm, char qflag){
 
    if (rank()!=2 || IDX.dim2!=2) wblog(FL,
-      "ERR %s() requires rank-2 (got %s)",FCT,SSTR_(this));
+      "ERR %s() requires rank-2 (got %s)",FCT,SSTR(*this));
    if (k>=SIZE[1]) wblog(FL,
       "ERR %s() index out of bounds (%d/%d)",FCT,k,SIZE[1]);
    checkSize(FLF);
@@ -1029,7 +1029,7 @@ TD wbsparray<TD>::NormalizeCol(SPIDX_T k, char tnorm, char qflag){
    else { for (; i<n; ++i, I2+=2) if ((*I2)==k) { x+=D[i]*D[i]; }}
 
    x=Wb::sqrt(x);
-   if (Wb::abs(x)>1E-15) { x=1/x;
+   if (Wb::abs(x)>1e-15) { x=1/x;
       for (i=0; i<n; ++i, I2+=2) if ((*I2)==k) { D[i]*=x; }
    }
    else if (!qflag) {
@@ -1046,7 +1046,7 @@ wbsparray<TD>& wbsparray<TD>::QRdecomp(const char *F, int L,
    TD eps     
 ){
    if (rank()!=2 || SIZE.len!=2 || IDX.dim2!=2) wblog(F_L,
-      "ERR %s() requires rank-2 tensor (%s)",FCT,SSTR_(this));
+      "ERR %s() requires rank-2 tensor (%s)",FCT,SSTR(*this));
 
    SPIDX_T d1=SIZE[0], d2=SIZE[1], *idx=IDX.data;
    if (!d1 || !d2) { Q.init(); return *this; }
@@ -1058,7 +1058,7 @@ wbsparray<TD>& wbsparray<TD>::QRdecomp(const char *F, int L,
 
    eps2*=Wb::sqrt(TD(MAX(d1,d2)));
 
-   if (eps2>TD(1E-8)) wblog(F_L,
+   if (eps2>TD(1e-8)) wblog(F_L,
       "ERR %s() got eps=%.3g !?",FCT,double(eps));
 
    if (!N) { SPIDX_T one=1;
@@ -1213,7 +1213,7 @@ wbsparray<TD>& wbsparray<TD>::OrthoNormalizeColsQR(
 
    if (SIZE.len==2 || D.len) {
       SPIDX_T l, n=D.len, d2=SIZE[1]; char e=0; int lmax=-1; 
-      wbvector<TD> dd(d2); TD eps=1E-12;
+      wbvector<TD> dd(d2); TD eps=1e-12;
       wbvector<int> id; id.init2val(d2,-1);
 
       for (l=0; l<n; ++l) { if (Wb::norm(D[l])>eps) {
@@ -1251,7 +1251,7 @@ wbsparray<TD>& wbsparray<TD>::OrthoNormalizeColsGS(
    unsigned np  
 ){
    if (rank()!=2) wblog(FL,
-      "ERR %s() requires rank-2 tensor (%s)",FCT,SSTR_(this));
+      "ERR %s() requires rank-2 tensor (%s)",FCT,SSTR(*this));
 
    SPIDX_T i,j,ip;
    char xflag=(qflag=='x' || qflag=='X');
@@ -1345,7 +1345,7 @@ TD wbsparray<TD>::trace() const {
 
    for (; i<r2; ++i) {
       if (SIZE[i]!=SIZE[i+r2]) wblog(FL,
-      "ERR %s() got non-symmetric tensor (%s)",FCT,SSTR_(this));
+      "ERR %s() got non-symmetric tensor (%s)",FCT,SSTR(*this));
    }
 
    for (i=0; i<IDX.dim1; ++i, idx+=r) {
@@ -1361,27 +1361,31 @@ wbvector<T2>& wbsparray<TD>::trace(
    unsigned k, wbvector<T2> &A 
  ) const {
 
-   SPIDX_T i=0;
-   unsigned r=IDX.dim2, r2=(r-1)/2, n=r2*sizeof(SPIDX_T);
-   const SPIDX_T *idx=IDX.data+(k?0:1), *sz=SIZE.data+(k?0:1);
-   int l=(k ? r-1 : -1);
+   unsigned r=IDX.dim2;
 
-   if (k && k+1!=SIZE.len) wblog(FL,
+   if (r!=SIZE.len || IDX.dim1!=D.len) sperror_this(FLF);
+   if (r%2!=1) wblog(FL,
+      "ERR %s() requires odd-rank tensor (r=%d; k=%d)",FCT,r,k);
+
+   if (int(k)<0) { k=r-1; } 
+   else if (k && k+1!=r) wblog(FL,
       "ERR %s() only accepts k=1 or k=rank (%d/%d)",FCT,k+1,r);
-   if (SIZE.len%2!=1) wblog(FL,"ERR %s() "
-      "requires odd-rank tensor (r=%d; k=%d)",FCT,SIZE.len,k);
-   if (SIZE.len!=IDX.dim2 || IDX.dim1!=D.len) sperror_this(FLF);
+
+   unsigned r2=(r-1)/2, n=r2*sizeof(SPIDX_T);
+   const SPIDX_T *idx=IDX.data+(k? 0:1), *sz=SIZE.data+(k? 0:1);
+   int l=(k ? r-1 : -1); 
+   SPIDX_T i=0;
+
+   for (; i<r2; ++i) {
+      if (sz[i]!=sz[i+r2]) wblog(FL,"ERR %s() "
+      "got non-symmetric tensor (%s; k=%d)",FCT,SSTR(*this),k+1);
+   }
 
    A.init(SIZE[k]);
    T2 *a=A.data;
 
-   for (; i<r2; ++i) {
-      if (sz[i]!=sz[i+r2]) wblog(FL,"ERR %s() "
-      "got non-symmetric tensor (%s; k=%d)",FCT,SSTR_(this),k+1);
-   }
-
    for (i=0; i<IDX.dim1; ++i, idx+=r) {
-      if (memcmp(idx,idx+r2,n)==0) {
+      if (!memcmp(idx,idx+r2,n)) { 
          if (idx[l]>=A.len) wblog(FL,"ERR %s() "
             "index out of bounds (%d,%d: %d/%d)",FCT,i,l,idx[l],A.len);
          a[idx[l]]+=D[i];
@@ -1396,6 +1400,11 @@ bool mxIsWbsparray(
 ){
 
    if (!a || mxIsEmpty(a)) { return 0; }
+   if (!mxIsStruct(a)) { if (F) wblog(F,L, 
+      "ERR sparse::%s() invalid input (got %s instead of struct)",
+         FCT,mxGetClassName(a));
+      return 0;
+   }
 
    SPIDX_T n=mxGetNumberOfElements(a);
    if (k>=n) { if (F) wblog(F,L,
@@ -1492,21 +1501,21 @@ wbvector<TD>& wbsparray<TD>::getCol(SPIDX_T k, wbvector<TD> &v) const {
    if (isDiag(FL)) { 
       if (sSPIDX_T(k)<0) { k+=D.len; }
       if (k>=D.len) wblog(FL,
-         "ERR %s() index out of bounds (%d/ %s)",FCT,k,SSTR_(this));
+         "ERR %s() index out of bounds (%d/ %s)",FCT,k,SSTR(*this));
       v.init(D.len); v[k]=D[k];
    }
    else {
-      if (SIZE.len!=2) wblog(FL,"ERR %s() invalid S=%d",FCT,SSTR_(this));
+      if (SIZE.len!=2) wblog(FL,"ERR %s() invalid S=%d",FCT,SSTR(*this));
       if (sSPIDX_T(k)<0) { k+=SIZE[1]; } 
       if (k>=SIZE[1]) wblog(FL,
-         "ERR %s() index out of bounds (%d/ %s)",FCT,k,SSTR_(this));
+         "ERR %s() index out of bounds (%d/ %s)",FCT,k,SSTR(*this));
 
       SPIDX_T i=0, n=SIZE[0]; const SPIDX_T *I=IDX.data;
       v.init(n);
 
       for (; i<IDX.dim1; ++i, I+=2) { if (I[1]==k) {
          if (*I>=n) wblog(FL,"ERR %s() "
-            "index out of bounds (%d/%d/ %s)",FCT,*I,n,SSTR_(this));
+            "index out of bounds (%d/%d/ %s)",FCT,*I,n,SSTR(*this));
          v[*I]+=D[i];
       }}
    }
@@ -1519,21 +1528,21 @@ wbvector<TD>& wbsparray<TD>::getRow(SPIDX_T k, wbvector<TD> &v) const {
    if (isDiag(FL)) { 
       if (sSPIDX_T(k)<0) { k+=D.len; }
       if (k>=D.len) wblog(FL,
-         "ERR %s() index out of bounds (%d/ %s)",FCT,k,SSTR_(this));
+         "ERR %s() index out of bounds (%d/ %s)",FCT,k,SSTR(*this));
       v.init(D.len); v[k]=D[k];
    }
    else {
-      if (SIZE.len!=2) wblog(FL,"ERR %s() invalid S=%d",FCT,SSTR_(this));
+      if (SIZE.len!=2) wblog(FL,"ERR %s() invalid S=%d",FCT,SSTR(*this));
       if (sSPIDX_T(k)<0) { k+=SIZE[0]; } 
       if (k>=SIZE[0]) wblog(FL,
-         "ERR %s() index out of bounds (%d/ %s)",FCT,k,SSTR_(this));
+         "ERR %s() index out of bounds (%d/ %s)",FCT,k,SSTR(*this));
 
       SPIDX_T i=0, n=SIZE[1]; const SPIDX_T *I=IDX.data;
       v.init(n);
 
       for (; i<IDX.dim1; ++i, I+=2) { if (*I==k) {
          if (I[1]>=n) wblog(FL,"ERR %s() "
-            "index out of bounds (%d/%d/ %s)",FCT,I[1],n,SSTR_(this));
+            "index out of bounds (%d/%d/ %s)",FCT,I[1],n,SSTR(*this));
          v[I[1]]+=D[i];
       }}
    }
@@ -1629,15 +1638,57 @@ int wbsparray<TD>::SkipTrailingSingletons(
    return 0;
 };
 
-template <class TD> inline
-bool wbsparray<TD>::hasSingletons(const wbindex &I) const {
+template <class TD>
+int wbsparray<TD>::hasSingletons(
+   const char *F, int L, const wbindex &I, wbindex *Ik) const {
 
-   if (!I.len) wblog(FL,"ERR %s() got empty index set",FCT);
-   for (unsigned i=0; i<I.len; ++i) {
-      if (I[i]>=SIZE.len || SIZE[I[i]]!=1) return 0;
+   if (!I.len) { return 0; } 
+
+   int m=0; unsigned i=0;
+   MVEC mark(SIZE.len);
+
+   for (; i<I.len; ++i) {
+      if (I[i]<SIZE.len && SIZE[I[i]]==1) { ++m; if (++mark[I[i]]>1)
+         wblog(F_L,"ERR %s() got non-unique input index I",FCT);
+      }
+      else if (F) { if (I[i]<SIZE.len) wblog(FL,"ERR %s() "
+        "index %d/%d not a singleton (%s)",FCT,I[i],SIZE.len,SSTR(*this));
+      else wblog(FL,"ERR %s() "
+        "index %d/%d out of bounds (%s)",FCT,I[i],SIZE.len,SSTR(*this));
+      }
    }
+   if (*Ik) { mark.find(*Ik,0); } 
 
-   return 1;
+   return m;
+};
+
+template <class TD>
+wbsparray<TD>& wbsparray<TD>::SkipSingleton(
+   const char *F, int L, unsigned i) {
+
+   if (i>=SIZE.len) { if (F) wblog(FL,"ERR %s() "
+      "index %d/%d out of bounds (%s)",FCT,i,SIZE.len,SSTR(*this)); }
+   else if (SIZE[i]!=1) { if (F) wblog(FL,"ERR %s() "
+      "index %d/%d not a singleton (%s)",FCT,i,SIZE.len,SSTR(*this)); }
+   else {
+      wbindex Ik; Ik.Index_ex(SIZE.len,i);
+      SIZE.Select(Ik);
+      IDX.set2Cols(Ik);
+   }
+   return *this;
+};
+
+template <class TD>
+wbsparray<TD>& wbsparray<TD>::SkipSingletons(
+   const char *F, int L, const wbindex &I) {
+
+   if (I) { wbindex Ik;
+      if (hasSingletons(F,L,I,&Ik)) {
+         SIZE.Select(Ik);
+         IDX.set2Cols(Ik);
+      }
+   }
+   return *this;
 };
 
 template <class TD>
@@ -1645,25 +1696,21 @@ wbsparray<TD>& wbsparray<TD>::skipSingletons(
    const char *F, int L, const wbindex &I, wbsparray<TD> &A
  ) const {
 
-   if (!I.len) { A=*this; return A; }
-   if (&A==this) {
-      wbsparray<TD> X; A.save2(X);
-      return X.skipSingletons(F,L,I,A);
+   if (&A==this) { return A.SkipSingletons(F,L,I); }
+
+   wbindex Ik;
+
+   if (!hasSingletons(F,L,I,&Ik)) { A=*this; } 
+   else {
+      SIZE.select(Ik,A.SIZE); A.isref=0;
+      IDX.getCols(Ik,A.IDX);  A.D=D;
    }
-
-   if (!hasSingletons(I)) wblog(FL,"ERR %s() got S=(%s) "
-      "given I=[%s] !?", FCT,SSTR_(this), STR(I));
-
-   wbindex I2; I.invert(IDX.dim2,I2,'u');
-
-   SIZE.select(I2,A.SIZE); A.isref=0;
-   IDX.getCols(I2,A.IDX); A.D=D;
 
    return A;
 };
 
 template <class TD>
-wbsparray<TD>& wbsparray<TD>::AddTrailingSingletons(
+wbsparray<TD>& wbsparray<TD>::AppendTrailingSingletons(
    const char *F, int L, unsigned r
 ){
    unsigned rk=rank(FL); if (r==rk) { return *this; }
@@ -1714,7 +1761,7 @@ char wbsparray<TD>::checkSize2(
     }
     else if (sab<=0) {
        wblog(F_L,"ERR %s() mismatch %s <> %s (%d)",
-          FCT,SSTR_(this),SSTR(B),sab);
+          FCT,SSTR(*this),SSTR(B),sab);
     }
 
     return sab;
@@ -1734,7 +1781,7 @@ char wbsparray<TD>::checkSize(
       else if (D.len) {
          if (SIZE.len==2 && SIZE[0]==D.len && SIZE[1]==D.len) {
             wblog(FL,"WRN %s() got SIZE for diag-format (%s; d=%d)",
-            FCT,SSTR_(this),D.len);
+            FCT,SSTR(*this),D.len);
          }
          else { if (F) sperror_this(F_L_F,istr); else return 3; }
       }
@@ -1767,7 +1814,7 @@ void wbsparray<TD>::check_IDX_range(const char *F, int L) const {
          for (j=0; j<m; ++j) {
             if (I[j]>=s[j]) wblog(FL,
                "ERR %s() index out of bounds (%d: %d <> %s)",
-               FCT,j+1,I[j]+1, SSTR_(this)
+               FCT,j+1,I[j]+1, SSTR(*this)
             );
          }
       }
@@ -1826,7 +1873,7 @@ mxArray* wbsparray<TD>::toMxSp() const {
    if (!Wb::isBaseType(typeid(TD))) {
       double x;
       for (SPIDX_T i=0; i<D.len; ++i) { x=double(D[i]);
-         if (fabs(double(TD(x)-D[i])/x)>1E-20) {
+         if (fabs(double(TD(x)-D[i])/x)>1e-20) {
              MXPut(FL,"ans").add(*this,"data").add(i+1,"i").add(x,"x");
              wblog(FL,"ERR %s() got data type `%s' (d[%d]=%g @ %.3g)",
                 FCT,TSTR(TD), i+1,x,double(TD(x)-D[i])
@@ -1854,7 +1901,7 @@ mxArray* wbsparray<TD>::toMxSp() const {
       if (IDX.isEmpty() && D.isEmpty())
          return Wb::mxCreateSparse(FL,0,0,IDX,D);
       else wblog(FL,
-     "ERR %s() invalid wbsparray (%s;%d)",FCT,SSTR_(this),D.len);
+     "ERR %s() invalid wbsparray (%s;%d)",FCT,SSTR(*this),D.len);
    }
 
    if (SIZE.len==2) {
@@ -1874,7 +1921,7 @@ mxArray* wbsparray<TD>::toMxSp() const {
    }
 
    wblog(FL,"ERR %s() requires rank-2 wbsparray (%s)",
-   FCT,SSTR_(this)); return 0;
+   FCT,SSTR(*this)); return 0;
 };
 
 template <class TD>
@@ -1985,7 +2032,7 @@ void wbsparray<TD>::add2MxStruct(mxArray *a, unsigned i, int ma) const {
    int e=0;
 
    mxSetFieldByNumber(a,i,0, SIZE.toMx());
-   mxSetFieldByNumber(a,i,1, Wb::mxCreateSparse(FL,d1,d2,IJ,D,NULL,&e));
+   mxSetFieldByNumber(a,i,1, Wb::mxCreateSparse(FL,d1,d2,IJ,D,nullptr,&e));
 
    if (e && !isDiag()) {
       static unsigned ic=0; char s[8];
@@ -2018,7 +2065,7 @@ template <class TD>
 void wbsparray<TD>::add2MxCell(mxArray *a, unsigned i) const {
 
    if (rank()>2) wblog(FL,
-      "ERR %s() cell array expects rank <=2 (%s)",FCT,SSTR_(this));
+      "ERR %s() cell array expects rank <=2 (%s)",FCT,SSTR(*this));
    mxSetCell(a,i,toMxSp());
 
 };
@@ -2142,7 +2189,7 @@ SPIDX_T wbsparray<TD>::catRecs(
 
    if (!n && a.D.len==1) {
       if (IDX.dim2!=1 || IDX.dim1!=D.len) wblog(FL,"ERR %s() "
-         "%s <> %dx%d (%d)",FCT,SSTR_(this),IDX.dim1,IDX.dim2,i0);
+         "%s <> %dx%d (%d)",FCT,SSTR(*this),IDX.dim1,IDX.dim2,i0);
       if (a.D[0])
            { IDX(i0,0)=id; D[i0]=a.D[0]; return 1; }
       else { return 0; }
@@ -2175,12 +2222,12 @@ wbsparray<TD>& wbsparray<TD>::Cat(
 
    if (!SIZE.len || !B.SIZE.len) wblog(F_L,
       "ERR %s() got empty size (%s <> %s @ %d) !?",
-      FCT, SSTR_(this), SSTR(B), k);
+      FCT, SSTR(*this), SSTR(B), k);
    checkSize(FLF); B.checkSize(FLF);
 
    if (!k || (k>SIZE.len && k>99)) wblog(F_L,
       "ERR %s() k out of bounds (%d/%d)",FCT,k,SIZE.len);
-   if (k>SIZE.len) AddTrailingSingletons(FL,k);
+   if (k>SIZE.len) AppendTrailingSingletons(FL,k);
    --k; 
 
    SPIDX_T i=0, n=MIN(SIZE.len, B.SIZE.len); int e=0;
@@ -2195,7 +2242,7 @@ wbsparray<TD>& wbsparray<TD>::Cat(
    }
    if (e) wblog(F_L,
       "ERR %s() size mismatch (%s <> %s @ %d; e=%d)",
-      FCT, SSTR_(this), SSTR(B), k, e
+      FCT, SSTR(*this), SSTR(B), k, e
    );
 
    SIZE[k]+=(B.SIZE.len>k ? B.SIZE[k] : 1);
@@ -2318,7 +2365,7 @@ wbsparray<TD>& wbsparray<TD>::init(
       if (IDX.isEmpty()) {
          if (!SIZE.isEmpty() && !IDX.dim2) {
             if (IDX.dim1) wblog(FL,
-               "ERR %s() got size %s !?",FCT,SSTR_(this));
+               "ERR %s() got size %s !?",FCT,SSTR(*this));
             IDX.init(IDX.dim1,SIZE.len);
          }
       }
@@ -2413,7 +2460,7 @@ wbsparray<TD>& wbsparray<TD>::init(
    SPIDX_T i,N, nz=0, iz=0, *ip=I.data; const size_t *s=A.SIZE.data;
 
    N=A.numel();
-   for (i=0; i<N; ++i) { if (Wb::abs(A.data[i])>eps) ++nz; }
+   for (i=0; i<N; ++i) { if (Wb::abs(A.data[i])>eps) { ++nz; }}
    init(A.SIZE,nz);
 
    for (i=0; i<N; ++i) {
@@ -2440,7 +2487,7 @@ wbarray<TA>& wbsparray<TD>::toFull(wbarray<TA> &A) const {
       SPIDX_T i,j; const SPIDX_T *s=SIZE.data, *ip=IDX.data;
 
       A.init(SIZE);
-      if (IDX.dim1 && A.data!=NULL) {
+      if (IDX.dim1 && A.data!=nullptr) {
          for (i=0; i<IDX.dim1; ++i, ip+=IDX.dim2) {
              for (j=ip[l], k=l-1; k<r; --k) { j=j*s[k]+ip[k]; }
              A.data[j]=TA(D.data[i]);
@@ -2462,7 +2509,7 @@ wbvector<T2>& wbsparray<TD>::toFull(wbvector<T2> &A) const {
          if (!ip) { ip=IDX.data+i; }
          else wblog(FL,
             "ERR %s() invalid usage (got %s tensor)",
-            FCT,SSTR_(this)
+            FCT,SSTR(*this)
          );
       }}
       if (!ip) ip=IDX.data; 
@@ -2521,7 +2568,7 @@ wbsparray<TD>& wbsparray<TD>::reshape(
 
    if (numel()!=S.prod(0)) wblog(FL, 
       "ERR %s() got size mismatch (%s => %s)",
-      FCT,SSTR_(this), SSTR(S)
+      FCT,SSTR(*this), SSTR(S)
    );
 
    A.init(S); A.D=D; A.IDX.init(IDX.dim1,S.len);
@@ -2592,11 +2639,11 @@ wbsparray<TD>& wbsparray<TD>::splitLast(SPIDX_T k, wbsparray &a) const {
    SPIDX_T *I=IDX.data+l, i=0, n=0;
 
    if (r<2) {
-      wblog(FL,"ERR %s() got S=%s (k=%d)",FCT,SSTR_(this),k);
+      wblog(FL,"ERR %s() got S=%s (k=%d)",FCT,SSTR(*this),k);
    }
 
    if (k>=SIZE[l]) wblog(FL,
-      "ERR %s() index out of bounds (%s /%d)",FCT,SSTR_(this),k);
+      "ERR %s() index out of bounds (%s /%d)",FCT,SSTR(*this),k);
    if (IDX.dim2!=r) wblog(FL,"ERR %s() %d/%d",FCT,IDX.dim2,r);
 
    for (; i<IDX.dim1; ++i, I+=r) { if (*I==k) ++n; }
@@ -2777,6 +2824,60 @@ wbsparray<TD>& wbsparray<TD>::splitBlock(const char *F, int L,
 };
 
 template <class TD>
+double wbsparray<TD>::BlockDiag(
+   const wbvector< wbarray<TD> > &X, char w, TD eps) {
+
+   double dx=0; TD x2, x2max=0; 
+   size_t i,j,n, l=0, nnz=0, D1=0, D2=0; unsigned k=0;
+
+   for (k=0; k<X.len; ++k) { if (X[k]) {
+      const wbvector<size_t> &S=X[k].SIZE; const TD *x=X[k].data;
+      if (S.len!=2) wblog(FL,"ERR %s() invalid input (%s)",FCT,SSTR(X[k]));
+      D1+=S[0]; D2+=S[1]; n=X[k].numel();
+      for (i=0; i<n; ++i) {
+         if (fabs(x[i])>eps) { ++nnz; }
+         else { x2=Wb::norm2(x[i]); if (x2max<x2) { x2max=x2; }}
+      }
+   }}
+   dx=double(sqrt(x2max));
+
+   if (!nnz) {
+      if (!D1 && !D2)
+           { init(); return dx; }
+      else { init(D1,D2); return dx; }
+   }
+
+   wbvector<widx_t> S(2); S[0]=D1; S[1]=D2;
+   init(S,nnz);
+
+   if (w==1) { D1=0; D2=0;
+      for (k=0; k<X.len; ++k) { if (X[k]) {
+         const size_t *S=X[k].SIZE.data; const TD *x=X[k].data;
+         for (j=0; j<S[1]; ++j) { 
+         for (i=0; i<S[0]; ++i, ++x) { if (fabs(*x)>eps) {
+             IDX(l,0)=i+D1;
+             IDX(l,1)=j+D2; D[l]=*x; ++l;
+         }}}
+         D1+=S[0]; D2+=S[1];
+      }}
+   }
+   else if (w==2) { D2=0;
+      for (k=0; k<X.len; ++k) { if (X[k]) {
+         const size_t *S=X[k].SIZE.data; const TD *x=X[k].data; D1-=S[0];
+         for (j=0; j<S[1]; ++j) { 
+         for (i=0; i<S[0]; ++i, ++x) { if (fabs(*x)>eps) {
+             IDX(l,0)=i+D1;
+             IDX(l,1)=j+D2; D[l]=*x; ++l;
+         }}}
+         D2+=S[1];
+      }}
+   }
+   else wblog(FL,"ERR %s() invalid w=%d",FCT,w);
+
+   return dx;
+};
+
+template <class TD>
 TD wbsparray<TD>::getHouseholderVec(const char *F, int L,
    SPIDX_T k,        
    SPIDX_T j,        
@@ -2788,7 +2889,7 @@ TD wbsparray<TD>::getHouseholderVec(const char *F, int L,
 
    if (!isRank(2) || SIZE.len!=2 || IDX.dim2!=2) wblog(F_L,
       "ERR %s() only applies to rank-2 tensors (%s; %d,%d)",
-      FCT,SSTR_(this),SIZE.len,IDX.dim2);
+      FCT,SSTR(*this),SIZE.len,IDX.dim2);
 
    SPIDX_T dim1=SIZE[0], dim2=SIZE[1], i1,i2, i=0, l=0, n=IDX.dim1;
    const SPIDX_T *i0=IDX.data;
@@ -2809,7 +2910,7 @@ TD wbsparray<TD>::getHouseholderVec(const char *F, int L,
 
    if (b2<=eps2) {
       if (b2==0) {
-         wblog(F_L,"WRN %s() got 0 vector (%s) !?",FCT,SSTR_(this));
+         wblog(F_L,"WRN %s() got 0 vector (%s) !?",FCT,SSTR(*this));
          return x2;
       }
       wblog(F_L,"WRN %s() got b2=%.3g !?",FCT,double(b2));
@@ -2839,7 +2940,7 @@ wbsparray<TD>& wbsparray<TD>::IDX_Shift(sSPIDX_T i1, sSPIDX_T i2) {
 
    if (!isRank(2) || SIZE.len!=2 || IDX.dim2!=2) wblog(FL,
       "ERR %s() only applies to rank-2 tensors (%s; %d,%d)",
-      FCT,SSTR_(this),SIZE.len,IDX.dim2
+      FCT,SSTR(*this),SIZE.len,IDX.dim2
    );
 
    SPIDX_T i=0, n=IDX.dim1, *I=IDX.data;
@@ -2857,7 +2958,7 @@ wbsparray<TD>& wbsparray<TD>::IDX_Shift(sSPIDX_T i1, sSPIDX_T i2) {
       for (; i<n; ++i, I+=2) { I[0]+=i1; I[1]+=i2;
           if (I[0]>=dim1 || I[1]>=dim2) wblog(FL,
              "ERR %s() index out of bounds (%ld,%ld; %s)",
-             FCT,I[0],I[1],SSTR_(this)
+             FCT,I[0],I[1],SSTR(*this)
           );
       }
    }
@@ -2879,7 +2980,7 @@ SPIDX_T wbsparray<TD>::LContractVec_omp(
          "ERR %s() expecting sparse VECTOR\n(got b: IDX=%s; SIZE=[%s])",
          FCT,SSTR(b.IDX),STR(b.SIZE));
       if (dim0(0)!=b.SIZE[0]) wblog(FL,
-         "ERR %s() size mismatch (%d/%d)",FCT,SSTR_(this),SSTR(b));
+         "ERR %s() size mismatch (%d/%d)",FCT,SSTR(*this),SSTR(b));
    }
 
    if (!D.len || !b.D.len) { x.init(); return l; }
@@ -2892,11 +2993,11 @@ SPIDX_T wbsparray<TD>::LContractVec_omp(
       SPIDX_T d1=ISP.numRows();
       if (d1!=SIZE[0] || d2!=SIZE[1] || !d1 || !d2) wblog(FL,
          "ERR %s() got size inconsistency (%dx%d / %s)",
-         FCT,d1,d2,SSTR_(this));
+         FCT,d1,d2,SSTR(*this));
      #endif
 
       int np=1;
-      if (sp_num_threads>1) {
+      if (sp_num_threads>1 && !omp_in_parallel()) { 
          np=IDX.dim1/1024;
          if (np>sp_num_threads) np=sp_num_threads;
          if (np>int(d2)) np=d2;
@@ -2970,89 +3071,86 @@ wbsparray<TD>& wbsparray<TD>::LProject1(
    return X;
 };
 
-template <class TD> inline
-wbsparray<TD>& wbsparray<TD>::Permute(const wbperm &P, char iflag){
+template <class TD> inline  
+wbsparray<TD>& wbsparray<TD>::Permute(wbperm P) {
 
-   if (!SIZE.len && !IDX.dim1 && D.len<=1) return *this;
-   if (!P.isEmpty()) {
-      SIZE.Permute(P,iflag); IDX.colPermute(P,iflag);
-      Sort();
+   char q=P.relevant();
+
+   if (q>1) { D.Times(P.fac,P.conj); P.Strip(); }
+
+   if (q&1) { 
+      if (P.len>SIZE.len) {
+         AppendTrailingSingletons(FL,P.len);
+      }
+
+      if (SIZE.len || IDX.dim1 || D.len>1) {
+         SIZE.Permute(P); IDX.colPermute(P);
+         Sort();
+      }
    }
+
    return *this;
 };
 
-template <class TD> inline
-wbsparray<TD>& wbsparray<TD>::permute(
-   const wbperm &P, wbsparray<TD>&B, char iflag
-) const {
+template <class TD> inline 
+wbsparray<TD>& wbsparray<TD>::permute(wbsparray<TD>&B, wbperm P) const {
 
-   if (this==&B) return B.Permute(P,iflag);
+   char q=P.relevant();
+   if (this==&B) {
+      if (q)
+           { return B.Permute(P); }
+      else { return B; }
+   }
 
-   if (P.isEmpty() || (!SIZE.len && !IDX.dim1 && D.len<=1)) { B=(*this); }
-   else {
-      SIZE.permute(B.SIZE,P,iflag); B.D=D; B.isref=0;
-      IDX.colPermute(P,B.IDX,iflag);
+   if (q>1)
+        { D.times(P.fac, B.D, P.conj); P.Strip(); } 
+   else { B.D=D; }
+
+   if ((q&1) && (SIZE.len || IDX.dim1 || D.len>1)) { 
+      SIZE.permute(B.SIZE,P); B.isref=0;
+      IDX.colPermute(B.IDX,P);
       B.Sort();
    }
+   else { B.SIZE=SIZE; B.IDX=IDX; B.isref=0; }
+
    return B;
 };
 
 template <class TD> inline
-wbsparray<TD>& wbsparray<TD>::Permute(const char* s, char iflag){
-   return Permute(Str2Idx(s,1),iflag);
-};
+wbsparray<TD>& wbsparray<TD>::ColPermute(wbperm P) { 
 
-template <class TD> inline
-wbsparray<TD>& wbsparray<TD>::permute(
-   const char* s, wbsparray<TD>&Q, char iflag
-) const { return permute(Q,Str2Idx(s,1),iflag); };
-
-template <class TD> inline
-wbsparray<TD>& wbsparray<TD>::ColPermute(const wbperm &P0, char iflag){
-
-   if (isIdentityPerm(P0)) return *this;
+   if (isIdentityPerm(P)) { return *this; }
 
    if (SIZE.len!=2 || IDX.dim2!=2) wblog(FL,
-      "ERR %s() requires rank-2 (%s; %d)",FCT,SSTR_(this),IDX.dim2);
-   if (P0.len!=SIZE[1]) wblog(FL,
-      "ERR %s() size mismatch (%d/%d)",FCT,P0.len,SIZE[1]);
+      "ERR %s() requires rank-2 (%s; %d)",FCT,SSTR(*this),IDX.dim2);
+   if (P.len!=SIZE[1]) wblog(FL,
+      "ERR %s() size mismatch (%d/%d)",FCT,P.len,SIZE[1]);
 
-   SPIDX_T k,i=0, l=IDX.dim2-1; wbperm P;
+   SPIDX_T i=0, l=IDX.dim2-1; 
 
-   if (!iflag)
-        P0.invert(P);
-   else P.wbvector<wperm_t>::init2ref(P0);
+   P.Invert();      
 
-   for (; i<IDX.dim1; ++i) { k=IDX(i,l);
-      if (k>=P.len) wblog(FL,"ERR %s() %d/%d !?",FCT,k,P.len);
-      IDX(i,l)=P[k];
-   }
+   for (; i<IDX.dim1; ++i) { IDX(i,l)=P.at(IDX(i,l)); }
+
    return Sort();
 };
 
 template <class TD> inline
-wbsparray<TD>& wbsparray<TD>::MatPermute(const wbperm &P0, char iflag){
+wbsparray<TD>& wbsparray<TD>::MatPermute(wbperm P){ 
 
-   if (isIdentityPerm(P0)) return *this;
+   if (isIdentityPerm(P)) { return *this; }
 
    SPIDX_T d=-1;
    if (!isSMatrix(FL,&d)) wblog(FL,
-      "ERR %s() requires rank-2 (%s; %d)",FCT,SSTR_(this),IDX.dim2);
-   if (P0.len!=d) wblog(FL,
-      "ERR %s() size mismatch (%d/%d)",FCT,P0.len,d);
+      "ERR %s() requires rank-2 (%s; %d)",FCT,SSTR(*this),IDX.dim2);
+   if (P.len!=d) wblog(FL,
+      "ERR %s() size mismatch (%d/%d)",FCT,P.len,d);
 
-   if (isDiag()) { D.Permute(P0); }
+   if (isDiag()) { D.Permute(P); }
    else {
-      wbperm P;
-      if (!iflag) 
-           P0.invert(P);
-      else P.wbvector<wperm_t>::init2ref(P0);
-
-      SPIDX_T *I=IDX.data, n=IDX.numel(); wperm_t *p=P.data;
-      for (SPIDX_T i=0; i<n; ++i) {
-         if (I[i]>=P.len) wblog(FL,"ERR %s() %d/%d !?",FCT,I[i],P.len);
-         I[i]=p[I[i]];
-      }
+      SPIDX_T i=0, n=IDX.numel(), *I=IDX.data;
+      P.Invert(); 
+      for (; i<n; ++i) { I[i]=P.at(I[i]); }
    }
 
    return Sort();
@@ -3132,18 +3230,18 @@ wbsparray<TD>& wbsparray<TD>::setRec_kron(
 
 template <class TD>
 wbsparray<TD>& wbsparray<TD>::transpose(
-   const char *F, int L, wbsparray<TD> &A
+   const char *F, int L, wbsparray<TD> &B
  ) const {
 
    unsigned r=rank(); wbperm P;
 
    if (r%2) wblog(F_L,"ERR %s() "
-      "applies to even-rank arrays only! (%s)",FCT,SSTR_(this));
+      "applies to even-rank arrays only! (%s)",FCT,SSTR(*this));
 
    P.initTranspose(r);
-   permute(P,A);
+   permute(B,P);
 
-   return A.Sort();
+   return B.Sort();
 };
 
 template <class TD> inline
@@ -3183,10 +3281,10 @@ wbsparray<TD>& wbsparray<TD>::tensorProd(const char *F, int L,
    unsigned ra=rank(), rb=B0.rank();
 
    if (!ra || ra%2 || ra!=rb) wblog(F_L,"ERR %s() invalid input to "
-      "kron(%s,%s)",FCT,SSTR_(this),SSTR(B0));
+      "kron(%s,%s)",FCT,SSTR(*this),SSTR(B0));
    if (SIZE.len!=IDX.dim2 || B0.SIZE.len!=B0.IDX.dim2) wblog(FL,
       "ERR %s() data inconsistency (%s -> %dx%d, %s -> %dx%d)",FCT,
-         SSTR_(this),   IDX.dim1,   IDX.dim2, 
+         SSTR(*this),   IDX.dim1,   IDX.dim2, 
       SSTR(B0),B0.IDX.dim1,B0.IDX.dim2);
 
    opFlags<TD> aflag(aflag0), bflag(bflag0);
@@ -3313,12 +3411,12 @@ wbsparray<TD>& wbsparray<TD>::Plus(
    }
 
    if (SIZE!=B.SIZE || !SIZE.len) wblog(FL,
-      "ERR %s() got size mismatch (%s <> %s)",FCT,SSTR_(this),SSTR(B));
+      "ERR %s() got size mismatch (%s <> %s)",FCT,SSTR(*this),SSTR(B));
 
    if (afac!=1) {
-      if (afac== 0) { D.init(); IDX.init(0,IDX.dim2); isref=0; } else
-      if (afac==-1) { for (SPIDX_T i=0; i<D.len; ++i) D[i]=-D[i];} else
-      if (afac!=+1) { for (SPIDX_T i=0; i<D.len; ++i) D[i]*=afac;}
+      if (afac== 0) { D.init(); IDX.init(0,IDX.dim2); isref=0;    } else
+      if (afac==-1) { for (SPIDX_T i=0; i<D.len; ++i) D[i]=-D[i]; } else
+      if (afac!=+1) { for (SPIDX_T i=0; i<D.len; ++i) D[i]*=afac; }
    }
 
    if (bfac==0) return *this;
@@ -3361,7 +3459,7 @@ wbsparray<TD>& wbsparray<TD>::Plus(
 
    for (; i<nx; ++i) {
       if (qq[i]<0) {
-         x[l]=a[ia]; if (afac!=1) x[l]*=afac;
+         x[l]=a[ia]; 
          if (Wb::abs(x[l])>eps) X.IDX.recSetP(l++,Ia); else e2+=Wb::norm2(x[l]);
          ++ia; Ia+=m;
       }
@@ -3371,7 +3469,7 @@ wbsparray<TD>& wbsparray<TD>::Plus(
          ++ib; Ib+=m;
       }
       else {
-         x[l]=a[ia]; if (afac!=1) x[l]*=afac;
+         x[l]=a[ia]; 
          x[l]+=(bfac!=1 ? bfac*b[ib] : b[ib]);
          if (Wb::abs(x[l])>eps) X.IDX.recSetP(l++,Ia); else e2+=Wb::norm2(x[l]);
          ++ia; ++ib; Ia+=m; Ib+=m;
@@ -3385,52 +3483,44 @@ wbsparray<TD>& wbsparray<TD>::Plus(
 
 template <class TD>
 double wbsparray<TD>::Compress( 
-   const char *F, int L, TD eps, char lex, const wbperm *Pc
+   const char *F, int L, TD eps, char lex
 ){
    wbperm P; WBINDEX dg; rank(F_L); 
 
    checkSize(F_L);
-   if (!IDX.dim1) { 
-      double e2=0;
-      if (Pc && Pc->len!=2) wblog(FL,
-         "ERR %s() invalid permutation (%s)",FCT,Pc->toStr().data);
-      if (double(eps)>0) {
+
+   if (!IDX.dim1) { TD e2=0; 
+      if (eps>TD(0)) { TD *x=D.data;
          for (SPIDX_T k=0; k<D.len; ++k) {
-            TD &x=D.data[k];
-            if (x && Wb::abs(x)<=eps) { e2+=double(Wb::norm2(x)); x=0; }
+            if (x[k] && Wb::abs(x[k])<=eps) { e2+=Wb::norm2(x[k]); x[k]=0; }
          }
       }
-      return e2;
+      return double(e2);
    }
+   if (eps<=TD(0) && IDX.isUniqueSorted(+1,lex)) { return 0; }
 
-   if (!Pc || Pc->isIdentityPerm()) {
-      if (double(eps)<=0 && IDX.isUniqueSorted(+1,lex)) { return 0; }
-      IDX.groupRecs(P,dg,-1,lex);
-   }
-   else {
-      wbMatrix<SPIDX_T> X; IDX.colPermute(*Pc,X);
-      X.groupRecs(P,dg,-1,lex);
-   }
+   IDX.groupRecs(P,dg,-1,lex);
 
 #ifdef WB_CLK_SPARSE
    Wb::Clock clk("sparse:cmpr",0); 
 #endif
 
-   SPIDX_T i,j,k,d; wperm_t *p=P.data;
+   SPIDX_T i,j, k=0, d=0; wperm_t *p=P.data;
    wbvector<TD> D0; D.save2(D0); D.init(dg.len);
    const TD *d0=D0.data;
+   TD *x=D.data;
 
-   for (j=k=0; j<dg.len; ++j,++k) {
-      TD &x=D.data[k]; x=d0[p[0]];
-      for (d=dg.data[j], i=1; i<d; ++i) { x+=d0[p[i]]; }
-
-      p+=d;
-      if (x==0) { --k; } else if (k<j) { IDX.recSet(k,j); }
+   for (j=0; j<dg.len; ++j, p+=d) { d=dg.data[j];
+      x[k]=d0[p[0]]; for (i=1; i<d; ++i) { x[k]+=d0[p[i]]; }
+      if (x[k]) {
+          if (k<j) { IDX.recSet(k,j); }
+          ++k;
+       }
    }
 
    REDSIZE_NNZ(k);
 
-   return (double)SkipTiny(eps); 
+   return double(SkipTiny(eps)); 
 };
 
 template <class TD>
@@ -3478,12 +3568,11 @@ inline int checkContract(const char* F, int L,
 
    for (unsigned i=0; i<ica.len; ++i) {
       if ((ica[i]<SA.len ? SA[ica[i]] : 1) !=
-          (icb[i]<SB.len ? SB[icb[i]] : 1))
-      wblog(FL, 
-         "ERR invalid contraction @ i=%d/%d ... !?\n"
-         "having: %s (%s) * %s (%s)",i+1,ica.len,
-         SSTR(SA), STR(ica), SSTR(SB), STR(icb)
-      );
+          (icb[i]<SB.len ? SB[icb[i]] : 1)
+      ){ wblog(FL, 
+         "ERR size mismatch in contraction\n%s @ '%s' * %s @ '%s' (i=%d)",
+         SSTR(SA), STR(ica), SSTR(SB), STR(icb), i);
+      }
    }
 
    if (SC) {
@@ -3529,13 +3618,13 @@ char wbsparray<TD>::contract_scalar(
    if (SIZE.len) {
       if (B.SIZE.len) {
          checkContract(F_L, SIZE,ica,B.SIZE,icb,
-            (gotC? &pfinal : NULL), (gotC? &C.SIZE : NULL));
+            (gotC? &pfinal : nullptr), (gotC? &C.SIZE : nullptr));
          r=(SIZE.len + B.SIZE.len - 2*ica.len);
       }
       else {
          wbvector<SPIDX_T> Sb(2); Sb[0]=Sb[1]=B.D.len;
          checkContract(F_L, SIZE,ica,Sb,icb,
-            (gotC? &pfinal : NULL), (gotC? &C.SIZE : NULL));
+            (gotC? &pfinal : nullptr), (gotC? &C.SIZE : nullptr));
          r=(SIZE.len + 2 - 2*ica.len);
       }
    }
@@ -3543,7 +3632,7 @@ char wbsparray<TD>::contract_scalar(
       if (B.SIZE.len) {
          wbvector<SPIDX_T> Sa(2); Sa[0]=Sa[1]=D.len;
          checkContract(F_L,Sa,ica,B.SIZE,icb,
-            (gotC? &pfinal : NULL), (gotC? &C.SIZE : NULL));
+            (gotC? &pfinal : nullptr), (gotC? &C.SIZE : nullptr));
          r=(2 + B.SIZE.len - 2*ica.len);
       }
    }
@@ -3563,7 +3652,7 @@ wbsparray<TD>& wbsparray<TD>::contract_diag_diag(
    SPIDX_T i=0, ra=2, rb=2; int e=0;
 
    if (SIZE.len || B.SIZE.len) wblog(F_L,
-      "ERR %s() (%s) <> (%s)",FCT,SSTR_(this),SSTR(B));
+      "ERR %s() (%s) <> (%s)",FCT,SSTR(*this),SSTR(B));
    if (D.len!=B.D.len) wblog(FL,
       "ERR %s() size mismatch (%d/%d)",FCT,D.len,B.D.len);
 
@@ -3574,7 +3663,7 @@ wbsparray<TD>& wbsparray<TD>::contract_diag_diag(
    if (!e && ica.len==2 && (ica[0]==ica[1] || icb[0]==icb[1])) e=4;
    if (e) wblog(F_L,
       "ERR %s() invalid contraction %s (%s) <> %s (%s)",
-      FCT,SSTR_(this),STR(ica),SSTR(B),STR(icb)
+      FCT,SSTR(*this),STR(ica),SSTR(B),STR(icb)
    );
 
    if (ISCOMPLX_(TD) && (ica.conj || icb.conj)) 
@@ -3609,7 +3698,7 @@ wbsparray<TD>& wbsparray<TD>::contract_diag_diag(
          C.initDiag(D.len); x.save2(C.D);
       }
 
-      if (!pfinal.isEmpty() && !pfinal.isValidPerm(0,0,2))
+      if (!pfinal.isEmpty() && pfinal.isValidPerm(2)<=0)
       wblog(F_L,"ERR %s() got pfinal=[%s] !?",FCT,STR(pfinal));
    }
 
@@ -3631,7 +3720,7 @@ char wbsparray<TD>::contract_check_2full(
    if (flag && flag!='f' && flag!='F')   
    wblog(F_L,"ERR %s() invalid flag=%c<%d>",FCT,flag,flag);
 
-   if (!flag || nnz_C!=NULL) {
+   if (!flag || nnz_C!=nullptr) {
       SPIDX_T NA=numel(), NB=B.numel(), M=SIZE.prod(ica.data,ica.len);
       SPIDX_T NC=(NA/M)*(NB/M); 
       double pa=nnz()/double(NA), pb=B.nnz()/double(NB);
@@ -3639,7 +3728,7 @@ char wbsparray<TD>::contract_check_2full(
       double pc=M*pa*pb; if (pc>1) pc=1; 
 
       if (!NA || !NB || !M) wblog(F_L,
-         "ERR %s() got\n%s [%s] <> %s [%s] (%d)",FCT,SSTR_(this),
+         "ERR %s() got\n%s [%s] <> %s [%s] (%d)",FCT,SSTR(*this),
          ica.toStr().data, SSTR(B), STR(icb), M);
 
       if ((pc>0.50 && NC<(1<<24)) || 
@@ -3707,8 +3796,9 @@ wbsparray<TD>& wbsparray<TD>::contract(
    char iA=isDiag(FL), iB=B.isDiag(FL);
    if (iA || iB) {
       if (iA && iB) {
-         if ((ica.len && ica.len<=2) && (icb.len && icb.len<=2))
+         if (ica.len && ica.len<=2 && ica.len==icb.len) {
             return contract_diag_diag(F_L,ica,B,icb,C,pfinal,afac,cfac);
+         }
          else {
             if (ica.len || icb.len) wblog(FL,
                "ERR %s() got %d/%d !?",FCT,ica.len,icb.len);
@@ -3791,7 +3881,7 @@ wbsparray<TD>& wbsparray<TD>::contract(
       FCT,SSTR(B), STR(icb)
    );
 
-   int np=1; if (sp_num_threads>1) {
+   int np=1; if (sp_num_threads>1 && !omp_in_parallel()) {
       np=(IDX.dim1+B.IDX.dim1)/1024; 
       if (np>sp_num_threads) { np=sp_num_threads; }
       if (unsigned(np)>b2.S[1]) { np=b2.S[1]; }
@@ -3801,7 +3891,7 @@ wbsparray<TD>& wbsparray<TD>::contract(
   #ifdef LD_CLEBSCH_QS
    if (np<sp_num_threads && CG_VERBOSE>5) {
       static time_t tlast=0;
-      time_t tnow=time(NULL); 
+      time_t tnow=time(nullptr); 
       if (tnow>tlast+60) { size_t s1=(1<<26);
          if (numel()>s1 || B.numel()>s1 || sC.prod(0)>s1) {
             wblog(FL,"CTR %12s * %12s @ %d/%d threads",
@@ -3909,10 +3999,10 @@ wbsparray<TD>& wbsparray<TD>::contract(
    groupIndex<widx_t> kc; { kc.init(b2.S[1]); }
 
    const SPIDX_T *pa=a2.P.data, *pb=b2.P.data;
-   SPIDX_T k=0, ltot=0, nnzc=0;
+   SPIDX_T ltot=0, nnzc=0;
 
   #pragma omp parallel for num_threads(np) reduction(+:ltot)
-   for (k=0; k<b2.S[1]; ++k) { 
+   for (SPIDX_T k=0; k<b2.S[1]; ++k) { 
       int id=omp_get_thread_num();
       widx_t *mark=MARK.ref(id,0);
       SPIDX_T i, i_,i1,i2, j, j_, j1=b2.cidx(k), j2=b2.cidx(k+1), nnzc=0;
@@ -3959,16 +4049,17 @@ wbsparray<TD>& wbsparray<TD>::contract(
          }
       }
 
-      if (largeD&2) {
-         wblog(FL,"TST %s() large sparse arrays (%d/%d threads)\n"
-            "  A: %-20s (%9.3g) @ %s\n  B: %-20s (%9.3g) @ %s\n"
-            "> C: %-20s (%9.3g)",FCT, np, sp_num_threads,
-         SSTR_(this), D.len/double(  numel()), STR(ica),
-         SSTR(B),   B.D.len/double(B.numel()), STR(icb),
-         STR(sC),      nnzc/double(sC.prod(1)));
+      if (largeD&2) { wblog(FL,
+         "TST %s() large sparse arrays (%d; %d/%d threads)  \n"
+         "  A: %-20s @ [ %9.3g %3.1f ] _ %s\n"
+         "  B: %-20s @ [ %9.3g %3.1f ] _ %s\n"
+         "> C: %-20s @ [ %9.3g %3.1f ]",FCT, largeD, np, sp_num_threads,
+         SSTR(*this) , D.len/double(   numel() ), log2(  D.len), STR(ica),
+         SSTR(B),    B.D.len/double( B.numel() ), log2(B.D.len), STR(icb),
+         STR(sC),      nnzc /double(sC.prod(1))), log2(  nnzc );
       }
       else if (largeD) {
-        wblog(FL,"CTR %s_%s * %s_%s = %s (np=%d/%d)", SSTR_(this),
+        wblog(FL,"CTR %s_%s * %s_%s = %s (np=%d/%d)\r\\", SSTR(*this),
         STR(ica), SSTR(B), STR(icb), SSTR(sC), np, sp_num_threads);
       }
       if (largeD) { Wb::MemStat(FL); doflush(); }
@@ -3978,7 +4069,7 @@ wbsparray<TD>& wbsparray<TD>::contract(
    ltot=0; 
 
   #pragma omp parallel for num_threads(np) reduction(+:ltot)
-   for (k=0; k<b2.S[1]; ++k) {
+   for (SPIDX_T k=0; k<b2.S[1]; ++k) {
       int id=omp_get_thread_num();
       wbvector<SPIDX_T> ic(IC.dim2,IC.ref(id,0),'r');
       SPIDX_T *ic_=IC_.ref(id,0), is=0;
@@ -4052,14 +4143,14 @@ wbsparray<TD>& wbsparray<TD>::contract(
 
    if (k>=SIZE.len) {
       if (B.len!=1) wblog(F_L,"ERR %s() "
-         "size mismatch (%s ; %d @ %d)",FCT,SSTR_(this),B.len,k+1);
+         "size mismatch (%s ; %d @ %d)",FCT,SSTR(*this),B.len,k+1);
       C=*this; C*=B.data[0];
-      if (Wb::abs(B.data[0])<TD(1E-8)) C.Compress();
+      if (Wb::abs(B.data[0])<TD(1e-8)) C.Compress();
       return C;
    }
 
    if (SIZE[k]!=B.len) wblog(F_L,
-      "ERR %s() size mismatch (%s ; %d @ %d)",FCT,SSTR_(this),B.len,k+1);
+      "ERR %s() size mismatch (%s ; %d @ %d)",FCT,SSTR(*this),B.len,k+1);
    if (IDX.dim1!=D.len || IDX.dim2!=SIZE.len) wblog(FL,
       "ERR %s() size inconsistency (%dx%d <> %dx%d) !?",
       FCT,IDX.dim1,IDX.dim2,D.len,SIZE.len);
@@ -4309,7 +4400,7 @@ wbsparray<TD>& wbsparray<TD>::comm(const char *F, int L,
    SPIDX_T d=-1;
    if (!isSMatrix(FL,&d) || !B.isSMatrix(FL,&d)) wblog(F_L,
       "ERR %s() invalid operators for [A,B] (%s; %s)", FCT,
-      SSTR_(this), SSTR(B)
+      SSTR(*this), SSTR(B)
    );
 
    Wb::MatProd(*this,B,C,aflag,bflag);                

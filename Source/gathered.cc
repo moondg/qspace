@@ -65,8 +65,8 @@ void wbSigHandler(int sig) {
       return;
    }
 
-   unsigned l=128; char istr[l], s[16];
-   istr[0]=0; strcpy(s,"(signal)");
+   wbvec<char> istr(128);
+   char s[16]; strcpy(s,"(signal)");
 
    if (sig==SIGINT) { 
       strcpy(s,"SIGINT"); --Wb::SigHandler::icount;
@@ -76,34 +76,35 @@ void wbSigHandler(int sig) {
       i=a; 
    }
    else { printf("\n");
-      snprintf(istr,l,"%s ERR terminating due to uncaught signal %d",
+      istr.catf(0,0,"%s ERR terminating due to uncaught signal %d",
          shortFL(gsh_F,gsh_L), sig);
-      ExitMsg(istr); fflush(0); exit(1); 
+      ExitMsg(istr.data);
+      fflush(0); exit(1); 
    }
 
    if (i<=0) { 
-      snprintf(istr,l,"%s ERR terminating due to %s (%d/%d) %s",
+      istr.catf(0,0,"%s ERR terminating due to %s (%d/%d) %s",
          shortFL(gsh_F,gsh_L),s,n,n,"--------------------");
-      ExitMsg(istr);
+      ExitMsg(istr.data);
       fflush(0); exit(-1); 
    }
 
    if (i>=3) { 
-      snprintf(istr,l,"--- received %s (%d) %s",
+      istr.catf(0,0,"--- received %s (%d) %s",
       s,i,"--------------------------------"); }
    else if (i==2) {
-      snprintf(istr,l,"--- received %s (%s)",
+      istr.catf(0,0,"--- received %s (%s)",
       s,"waiting for natural termination pt"); }
    else {
-      snprintf(istr,l,"WRN next %s will result in immediate stop %s",
+      istr.catf(0,0,"WRN next %s will result in immediate stop %s",
       s,"----------");
    }
 
-   time_t curr_time=time(NULL);
+   time_t curr_time=time(nullptr);
    struct tm *tblock=localtime(&curr_time);
    char t[16]; strftime(t,16,"%T",tblock); 
 
-   fprintf(stdout,"%-20s %s  %s\n",shortFL(gsh_F,gsh_L), t, istr);
+   fprintf(stdout,"%-20s %s  %s\n",shortFL(gsh_F,gsh_L), t, istr.data);
 
 };
 
@@ -118,13 +119,14 @@ void dbstop(const char* F, int L) {
    fflush(0);
 
    raise(SIGTRAP);
+
 };
 
 template<class T> inline
 int num2int(const char *F, int L, const T &x){
    double d=x; int i=round(d);
    if (F) {
-      double e=fabs(d-i); if (e>1E-12) {
+      double e=fabs(d-i); if (e>1e-12) {
       wblog(F,L,"ERR %s() got non-int value %g !?",FCT,d); }
    }
    return i;
@@ -204,6 +206,52 @@ const char* Wb::basename(const char *data, char c) {
     return (data + (i>0 ? i : 0));
 };
 
+const char* Wb::class_function(const char *f, char vflag) {
+
+    static unsigned iter=-1;
+    static char SOUT[512];
+
+    unsigned i=0, i0=0, i1=0, i2=0, b=0,l=0, n=64, N=256; 
+    char *sout;
+
+    #pragma omp critical
+    if (++iter>=8) { iter=0; }
+
+     sout=SOUT+iter*n;
+
+    if (!f) wblog(FL,"ERR %s() got null input",FCT);
+
+    for (; f[i] && i<N; ++i) { 
+       if (f[i]==':' && f[i+1]==':') { i1=i+2; break; }}
+    for (i=i1; f[i] && i<N; ++i) {
+       if (f[i]=='(' || isspace(f[i])) { i2=i; break; }}
+    for (i=(i1 ? i1-2 : i2-1); i; --i) {
+       if (f[i]=='>') { ++b; } else 
+       if (f[i]=='<') { --b; } else 
+       if (isspace(f[i]) && !b) { i0=i+1; break; }}
+
+    while (f[i0] && !isalpha(f[i0])) { ++i0; }
+
+    if (vflag) {
+       i=i2-i0; if (i>=n) { i=n-1; sout[i]=0; }
+       strncpy(sout,f+i0,i);
+    }
+    else {
+       for (l=b=0, i=i0; f[i] && i<i2 && l<n; ++i) {
+          if (f[i]=='<') {
+             for (++b, ++i; b && i<i2; ++i) {
+                if (f[i]=='>') { if (--b==0) break; } else
+                if (f[i]=='<') { ++b; }
+             }
+          }
+          else { sout[l++]=f[i]; }
+       }
+       sout[l<n ? l : n-1]=0;
+    }
+
+    return sout;
+};
+
 inline const char* Wb::strchri(const char *s, char c) {
 
    if (!s) wblog(FL,"ERR %s() got invalid null string",FCT);
@@ -212,7 +260,7 @@ inline const char* Wb::strchri(const char *s, char c) {
       if (tolower(*s)==c) return s;
    }
 
-   return NULL;
+   return nullptr;
 };
 
 inline const char* Wb::rstrstr(const char *s1, const char *s2) {
@@ -226,7 +274,7 @@ inline const char* Wb::rstrstr(const char *s1, const char *s2) {
          }
       }
    }
-   return NULL;
+   return nullptr;
 };
 
 inline const char* Wb::strstri(const char *s1, const char *s2) {
@@ -241,7 +289,7 @@ inline const char* Wb::strstri(const char *s1, const char *s2) {
       if(!*b) return s1;
    }
 
-   return NULL;
+   return nullptr;
 };
 
 inline const char* Wb::strstrw(const char *s1, const char *s2) {
@@ -259,7 +307,7 @@ inline const char* Wb::strstrw(const char *s1, const char *s2) {
       } 
    }
 
-   return NULL;
+   return nullptr;
 };
 
 inline const char* Wb::strstrwi(const char *s1, const char *s2) {
@@ -277,7 +325,7 @@ inline const char* Wb::strstrwi(const char *s1, const char *s2) {
       } 
    }
 
-   return NULL;
+   return nullptr;
 };
 
 void Wb::shift(char *s, unsigned n, int p, char erase) {
@@ -355,8 +403,8 @@ int Wb::GetEnv(const char *F, int L, const char *name, double &val) {
     char *s, *s2;
     double dbl;
 
-    s=getenv(name);    if (!s || !s[0]) return -1;
-    dbl=strtod(s,&s2); if (!s2) return -2;
+    s=getenv(name);    if (!s || !s[0]) { return -1; }
+    dbl=strtod(s,&s2); if (s2==s) { return -2; }
     val=dbl;
 
     if (F) wblog1(F,L," *  getenv %-6s = %g", name, val);
@@ -439,10 +487,10 @@ int Wb::get_WB_VERBOSE(const char *F, int L) {
       if (k<0) wblog1(F_L, 
          "WRN %s() invalid %s=%d/255",FCT,vname,k);
       else if (k!=Wb::envVRB) {
-         if ((F && k) || k&8) { unsigned n=32; char s[n];
-            i=snprintf(s,n,"%s()",myname);
+         if ((F && k) || k&8) {
+            wbvec<char> s(32); s.catf(0,0,"%s()",myname);
             if (i<0) wblog(FL,"WRN %s() i=%d",FCT,i);
-            wblog1(PF_L,"ENV %-14s %s = %X->%X",s,vname,Wb::envVRB,k); 
+            wblog1(PF_L,"ENV %-14s %s = %X->%X",s.data,vname,Wb::envVRB,k);
          }
          Wb::envVRB=k;
       }
@@ -468,8 +516,11 @@ int Wb::got_DBSTOP(const char *F, int L) {
 
    for (; i<3; ++i) { q=0;
       e=GetEnv(0,0,ss[i],q);
-      if (!e) { if (q) { x|=(1<<i); }} else
-      if (e!=-1 && F) wblog1(F_L,
+      if (!e) { if (q) {
+         if (!i && q>0) { x=(q&15); } 
+         x|=(1<<(i+5));
+      }}
+      else if ((e!=-1 || q<0) && F) wblog1(F_L,
          "WRN %s() invalid value for ENV %s (e=%d)",FCT,ss[i],e);
    }
 
@@ -481,6 +532,34 @@ int Wb::got_DBSTOP(const char *F, int L) {
    }
 
    return x;
+};
+
+int Wb::GetEnvInt(const char *F, int L,
+   const char *VN, 
+   int *val,       
+   const char *vn, 
+   int q_          
+) {
+   int q=0, e=0;
+
+   if (!VN || !*VN) wblog(FL,
+      "ERR %s() asking for invalid ENV '%s'",FCT,VN?VN:"(null)");
+   if (!val) wblog(FL,"ERR %s() got val=(null)",FCT);
+
+   if ((e=GetEnv(0,0,VN,q))<-1) {
+      wblog1(F_L,"WRN %s() invalid ENV %s (q=%d, e=%d)",FCT,vn,q,e);
+      return e;
+   }
+
+   if (e==-1) { q=q_; } 
+   if (q!=*val) {
+      if ((F && q!=q_ && Wb::envVRB&15) ||
+          ((*val!=q_ || L || q<0) && (Wb::envVRB&8)) ) wblog1(PF_L,
+          "ENV using %-20s= %d -> %d", vn && *vn? vn:VN, *val,q);
+      *val=q; 
+   }
+
+   return e;
 };
 
 #ifdef MATLAB_MEX_FILE
@@ -586,8 +665,8 @@ int Wb::strrep(
 wbstring Wb::repHome(const char *file) {
 
    size_t n=2*strlen(file);
-   const char *s; char F0[n+1], F[n+1];
-   char *f0=F0, *f=F; strcpy(f,file);
+   const char *s; wbvec<char> F0(n+1), F(n+1);
+   char *f0=F0.data, *f=F.data; strcpy(f,file);
 
    if ((s=getenv("MEX" ))) {
       SWAP(f,f0); if (Wb::strrep(f0,s,"$MEX", f,n)) return f; }
@@ -610,11 +689,11 @@ void Wb::print_backtrace(const char *F, int L, const char *istr) {
    unsigned i=0, n=4;
    GetEnv(0,0,"QS_NUM_BTRACE",i); if (n<i) { n=i; }
 
-   void *array[n];
+   wbvec<void*> array(n);
 
-   n=backtrace(array,n); 
+   n=backtrace(array.data,n); 
 
-   char **ss=backtrace_symbols(array,n); 
+   char **ss=backtrace_symbols(array.data,n); 
 
    printf("\n# %s: stack backtrace",shortFL(F_L)); 
       if (istr && istr[0]) { printf(" %s",istr); }
@@ -719,58 +798,46 @@ Wb::num2Fmt<T>::operator wbstring() const {
 };
 
 template<class T>
-void Wb::num2Fmt<T>::get_fmt(wbstring &s) const {
+void Wb::num2Fmt<T>::get_fmt(wbstring &sout) const {
 
-   unsigned l=0; s.init(12); 
+   wbvec<char> s(12); 
 
    if (m<-1 || p<-1 || t[0]<=0) wblog(FL,
       "ERR %s<%s> invalid type %d.%d%s",FCT,TSTR(T),m,p,t);
 
    if (m>0) {
       if (p>=0)
-           { l=snprintf(s.data,s.len,"%%%d.%d%s",m,p,t); }
-      else { l=snprintf(s.data,s.len,"%%%d%s",m,t); }
+           { s.catf(FL,"%%%d.%d%s",m,p,t); }
+      else { s.catf(FL,"%%%d%s",   m,  t); }
    }
-   else {
-     if (p>=0)
-          { l=snprintf(s.data,s.len,"%%.%d%s",p,t); }
-     else { l=snprintf(s.data,s.len,"%%%s",t); }
-   }
+   else if (p>=0)
+        { s.catf(FL,"%%.%d%s",p,t); }
+   else { s.catf(FL,"%%%s",     t); }
 
-   if (l>=s.len) wblog(FL,
-      "ERR %s<%s> string out of bounds (%%%d.%d%s; %d/%d)",
-      FCT,TSTR(T),m,p,t,l,s.len
-   );
+   sout=s.data;
 };
 
 template<>
-void Wb::num2Fmt<wbcomplex>::get_fmt(wbstring &s) const {
+void Wb::num2Fmt<wbcomplex>::get_fmt(wbstring &sout) const {
 
-   unsigned l=0; s.init(16); 
+   wbvec<char> s(16); 
 
    if (m<-1 || p<-1 || t[0]<=0) wblog(FL,
       "ERR %s<%s> invalid type %d.%d%s",FCT,TSTR(wbcomplex),m,p,t);
 
-   for (int i=0; i<2; ++i) {
-      l+=snprintf(s.data+l,s.len-l,"%%%s",i?"+":"");
+   for (int i=0; i<2; ++i) { s.catf(FL,"%%%s",i?"+":"");
       if (m>0) {
          if (p>=0)
-              { l+=snprintf(s.data+l,s.len-l,"%d.%d%s",m,p,t); }
-         else { l+=snprintf(s.data+l,s.len-l,"%d%s",m,t); }
+              { s.catf(FL,"%d.%d%s",m,p,t); }
+         else { s.catf(FL,"%d%s",   m,  t); }
       }
-      else {
-        if (p>=0)
-             { l+=snprintf(s.data+l,s.len-l,".%d%s",p,t); }
-        else { l+=snprintf(s.data+l,s.len-l,"%s",t); }
-      }
+      else if (p>=0)
+           { s.catf(FL,".%d%s",p,t); }
+      else { s.catf(FL,"%s",     t); }
    }
+   s.append(FL,'i');
 
-   if (l+2>=s.len) wblog(FL,
-      "ERR %s<%s> string out of bounds (%%%d.%d%s; %d/%d)",
-      FCT,TSTR(wbcomplex),m,p,t,l,s.len
-   );
-
-   snprintf(s.data+l,s.len-l,"i");
+   sout=s.data;
 };
 
 template<class T>
@@ -834,6 +901,16 @@ int Wb::num2Fmt<char>::check_init() {
         { if (!strchr("ducxX",t[0])) return 't'; } 
    else { strcpy(t,"d"); }
    return 0;
+};
+
+template<> inline
+int Wb::num2Fmt<int8_t>::check_init() { 
+   return ((num2Fmt<char>*)this)->check_init();
+};
+
+template<> inline
+int Wb::num2Fmt<unsigned char>::check_init() { 
+   return ((num2Fmt<char>*)this)->check_init();
 };
 
 template<> inline
@@ -902,7 +979,7 @@ wbstring Wb::TimeStamp(char type) {
    unsigned l,n;
 
   #pragma omp critical (got_CPTR_TIME)
-   { time_t t=time(NULL);
+   { time_t t=time(nullptr);
      struct tm *tb=localtime(&t);
      if (type=='t' || type=='T') {
         s.init(32); l=strftime(s.data,s.len,"%T",tb);
@@ -988,11 +1065,11 @@ bool Wb::anyEqual(const T* a, const size_t n, const T &x) {
 template <class T> inline
 void Wb::scale_eps(T &eps, const T* d, size_t n) {
    if (double(eps)>0) {
-      if (double(eps)>1E-8) wblog(FL,
+      if (double(eps)>1e-8) wblog(FL,
          "WRN %s() got eps=%g (ignore)",FCT,double(eps));
       else {
          T x=getdscale(d,n);
-         if (x>T(1E-8)) eps*=x; 
+         if (x>T(1e-8)) eps*=x; 
       }
    }
 };
@@ -1209,30 +1286,61 @@ void Wb::cpyStride(
 };
 
 template <class T, class TB>
-void Wb::cpyRange(T* a, const TB* b, size_t n, T afac, TB bfac) {
+void Wb::cpyRange(T* A, const TB* B, size_t n, T a, TB b) {
 
    size_t i=0;
 
-   if (bfac) {
-      if (!afac) {
-         if (bfac==TB( 1)) { for (; i<n; ++i) { a[i] = b[i]; }} else
-         if (bfac==TB(-1)) { for (; i<n; ++i) { a[i] =-b[i]; }}
-         else              { for (; i<n; ++i) { a[i] = b[i]*bfac; }}
-      }
-      else if (afac==T(1)) {
-         if (bfac==TB( 1)) { for (; i<n; ++i) { a[i]+= b[i]; }} else
-         if (bfac==TB(-1)) { for (; i<n; ++i) { a[i]-= b[i]; }}
-         else              { for (; i<n; ++i) { a[i]+= b[i]*bfac; }}
-      }
-      else {
-         if (bfac==TB( 1)) { for (; i<n; ++i) { (a[i]*=afac) += b[i]; }} else
-         if (bfac==TB(-1)) { for (; i<n; ++i) { (a[i]*=afac) -= b[i]; }}
-         else              { for (; i<n; ++i) { (a[i]*=afac) += b[i]*bfac; }}
-      }
+   if (!a) { 
+      if (b==TB( 1)) { for (; i<n; ++i) { A[i] = B[i]; }} else 
+      if (b==TB(-1)) { for (; i<n; ++i) { A[i] =-B[i]; }} else
+      if (b        ) { for (; i<n; ++i) { A[i] = B[i]*b; }}
+      else { T z=0;    for (; i<n; ++i) { A[i] = z; }}     
    }
-   else if (afac!=T(1)) {
-      if (afac) {    for (; i<n; ++i) { a[i]*=afac; }}
-      else { T z=0;  for (; i<n; ++i) { a[i]=z;     }}
+   else if (a==T(1)) {
+      if (b==TB( 1)) { for (; i<n; ++i) { A[i]+= B[i]; }} else
+      if (b==TB(-1)) { for (; i<n; ++i) { A[i]-= B[i]; }} else
+      if (b        ) { for (; i<n; ++i) { A[i]+= B[i]*b; }}
+   }
+   else if (a==T(-1)) {
+      if (b==TB( 1)) { for (; i<n; ++i) { A[i]=-A[i]+B[i]; }} else
+      if (b==TB(-1)) { for (; i<n; ++i) { A[i]=-A[i]-B[i]; }} else
+      if (b        ) { for (; i<n; ++i) { A[i]=-A[i]+B[i]*b; }}
+      else           { for (; i<n; ++i) { A[i]=-A[i]; }}
+   }
+   else {
+      if (b==TB( 1)) { for (; i<n; ++i) { (A[i]*=a) += B[i]; }} else
+      if (b==TB(-1)) { for (; i<n; ++i) { (A[i]*=a) -= B[i]; }} else
+      if (b        ) { for (; i<n; ++i) { (A[i]*=a) += B[i]*b; }}
+      else           { for (; i<n; ++i) {  A[i]*=a; }}
+   }
+};
+
+template <class T, class TB>
+void Wb::cpyRange_conj(T* A, const TB* B, size_t n, T a, TB b) {
+   size_t i=0;
+
+   if (!a) { 
+      if (b==TB( 1)) { for (; i<n; ++i) { A[i] = Wb::CONJ(B[i]); }} else 
+      if (b==TB(-1)) { for (; i<n; ++i) { A[i] =-Wb::CONJ(B[i]); }} else
+      if (b        ) { for (; i<n; ++i) { A[i] = Wb::CONJ(B[i])*b; }}
+      else { T z=0;    for (; i<n; ++i) { A[i] = z; }}     
+   }
+   else if (a==T(1)) {
+      if (b==TB( 1)) { for (; i<n; ++i) { A[i]+= Wb::CONJ(B[i]); }} else
+      if (b==TB(-1)) { for (; i<n; ++i) { A[i]-= Wb::CONJ(B[i]); }} else
+      if (b        ) { for (; i<n; ++i) { A[i]+= Wb::CONJ(B[i])*b; }}
+   }
+   else if (a==T(-1)) {
+      if (b==TB( 1)) { for (; i<n; ++i) { A[i]=-A[i]+Wb::CONJ(B[i]); }} else
+      if (b==TB(-1)) { for (; i<n; ++i) { A[i]=-A[i]-Wb::CONJ(B[i]); }} else
+      if (b        ) { for (; i<n; ++i) { A[i]=-A[i]+Wb::CONJ(B[i])*b; }}
+      else           { for (; i<n; ++i) { A[i]=-A[i]; }}
+   }
+   else {
+      if (b==TB( 1)) { for (; i<n; ++i) { (A[i]*=a) += Wb::CONJ(B[i]); }} else
+      if (b==TB(-1)) { for (; i<n; ++i) { (A[i]*=a) -= Wb::CONJ(B[i]); }} else
+      if (b        ) { for (; i<n; ++i) { (A[i]*=a) += Wb::CONJ(B[i])*b; }}
+      else           { for (; i<n; ++i) {  A[i]*=a; }}
    }
 };
 
@@ -1534,7 +1642,7 @@ T Wb::gs_project_range(
 
    if (!isnorm) { 
       T nrm2=overlap(b,b,n,stride,tnorm);
-      if (std::fabs(double(nrm2))<1E-12) wblog(FL,
+      if (std::fabs(double(nrm2))<1e-12) wblog(FL,
          "WRN %s() got norm=%.3g !?",FCT,double(nrm2));
       x/=nrm2;
    }
@@ -1729,7 +1837,7 @@ void markSet(
 
    for (N=i=0; i<n; i++) N+=(E0[i]->len);
 
-   E.init(N); mark.initDef(n);
+   E.init(N); mark.init(n);
    if (!N) return;
 
    for (l=i=0; i<n; i++, l+=d) {
@@ -1790,7 +1898,7 @@ void markSet(
    const char *dir_  
 ){
    unsigned i,d,l,N, n=E0.len;
-   const char *s=NULL;
+   const char *s=nullptr;
 
    wbvector<char> mm;
    wbvector<double> ee;
@@ -1805,14 +1913,14 @@ void markSet(
    for (N=i=0; i<n; i++) N+=(E0[i]->len);
    if (!N) return;
 
-   E.init(N); ee.init(N); mark.initDef(n);
+   E.init(N); ee.init(N); mark.init(n);
 
    for (l=i=0; i<n; i++, l+=d) {
       d=(E0[i]->len);  mark[i].init(d);
       memcpy(E.data+l, E0[i]->data, d*sizeof(wbcomplex));
    }
 
-   if (s==NULL || !strcmp(s,"R")) {
+   if (s==nullptr || !strcmp(s,"R")) {
       Wb::cpyRangeR(ee.data,E.data,N);
    }
    else if (!strcmp(s,"I")) {

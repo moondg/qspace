@@ -16,10 +16,10 @@ function bt(varargin)
   if nargin
      if isnumber(varargin{1}), n=varargin{1}; varargin(1)=[]; end
      nargs=numel(varargin);
-     if nargs
-        if ~isempty(regexpi(varargin{1},'^(--show|-v$)'))
-             vflag=2; if isequal(varargin{1}(1:2),'-V'), vflag=3; end
-             iS=varargin(2:end);
+     if nargs, q=varargin{1};
+        if ~isempty(regexpi(q,'^(--show|-v$)'))
+           vflag=2; if q(end)=='V', vflag=3; end
+           iS=varargin(2:end);
         elseif ~isempty(regexp(varargin{1},'^--(up|down)(?@q=$1;)')) && nargs<=2
            df=[varargin{2:end}];
            if isempty(df), df=1; elseif ischar(df), df=str2num(df); end
@@ -47,7 +47,7 @@ if isempty(gStack) || isempty(df)
 %     if ~isempty(j), S(j(1)).curr=1; end
 % -------------------------------------------------------------------- %
 
-  dispstack(S)
+  if vflag~=2, dispstack(S); else printf('\n'); end
   gStack=S; iStack=1;
 end
 
@@ -96,10 +96,14 @@ end
      e2=[char(27) '[38;5;12m'];
      em=[char(27) '[0m'];
 
-     s={num2str(k), '', ''}; if nS==1, s{3}=char(10); end
-     s{2}=regexprep(S(k).file,'.*\/','');
-     s=sprintf('-- source at level %s (%s)%s ',s{:});
-     s(end+1:80)='-';
+     s=sprintf('%2d: %s ',k, regexprep(S(k).file,'.*\/',''));
+     if isempty(regexp(S(k).file,[S(k).name '\.m']))
+        s=[s ':: ' S(k).name ' '];
+     end
+
+     if nS==1, s=[s ' ' char(10)];
+     else s(end+1:80)='-'; end
+
      fprintf(1,[e0 '%s' em '\n'],s);
 
      l=S(k).line; l=sprintf('%d:%d',max(1,l-dl),l+dl);
@@ -108,13 +112,16 @@ end
      if ~wblog('--hl-check'), eval(cmd);
      else
         s=textscan(evalc(cmd),'%s','whitespace','\n'); s=s{1};
-        lpat=['^' num2str(S(k).line) '\s'];
-        fmt=[e0 '%d:' em ' %s\n'];
+        s=regexprep(s,'^(\d)  ','  $1');
+        s=regexprep(s,'^(\d\d) ',' $1');
+
+        lpat=['^\s*' num2str(S(k).line) '\s'];
+        fmt=['     %s\n'];
         for j=1:numel(s)
            if ~isempty(regexp(s{j},lpat))
               s{j}=[ e2 s{j} em];
            end
-           fprintf(1,fmt,k,s{j});
+           fprintf(1,fmt,s{j});
         end
      end
   end

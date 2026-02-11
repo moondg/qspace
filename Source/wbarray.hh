@@ -23,13 +23,19 @@
 // #define CHECK_ELEMENT_RANGE
 
 namespace Wb {
+
    template<class T>
-   wbstring sizeStrM(
+   wbstring sizeStrM( 
       unsigned r, const T* sd, unsigned m, const T* sm,
       const char *sep1="x", const char *sepM="_"); 
 
    template<class T> inline
    void householder(const T *u, T *x, size_t n, const T& eps);
+
+   template<class T> inline
+   void Givens_eraseCol(
+      T* a, unsigned i0, unsigned j0, unsigned dim1, unsigned dim2,
+      T *x=nullptr, T eps=1e-14);
 };
 
 template <class T>
@@ -37,7 +43,7 @@ class wbarray {
 
   public:
 
-    wbarray() : mtype(Wb::MEM_DEF), sptr(NULL), data(NULL) { };
+    wbarray() : mtype(Wb::MEM_DEF), sptr(nullptr), data(nullptr) { };
 
     wbarray(size_t d1) : wbarray() { init(d1); };
     wbarray(size_t d1, size_t d2) : wbarray() { init(d1,d2); };
@@ -45,10 +51,13 @@ class wbarray {
     wbarray(size_t d1, size_t d2, size_t d3, size_t d4)
      : wbarray() { init(d1,d2,d3,d4); };
 
-    wbarray(char *sidx) : wbarray() { init(Str2Idx(sidx)); };
+    wbarray(char *sidx) : wbarray() {
+       WBINDEX S; Wb::Str2Idx(FL,sidx,S);
+       init(S);
+    };
     wbarray(const wbvector<unsigned> &S) : wbarray() { init(S); };
 
-    wbarray(const wbvector<size_t> &S, T *d0, char ref=0) : wbarray() {
+    wbarray(const wbvector<size_t> &S, const T *d0, char ref=0) : wbarray() {
        if (ref)  
             { INIT2REF(d0,&S); }
        else { NEW(S,d0); }
@@ -83,27 +92,34 @@ class wbarray {
     };
 
     wbarray& init() {
-       DELETE_DATA(); 
+       DELETE_DATA();
        SIZE.init(); return *this;
     };
 
-    wbarray& init(size_t d1, const T* d=NULL) {
+    wbarray& init(size_t d1, const T* d=nullptr) {
        if (d1) { NEW(wbvector<size_t>(1,&d1,'r'),d); } else { init(); }
        return *this;
     };
 
-    wbarray& init(size_t d1, size_t d2, const T* d=NULL) {
+    wbarray& init(size_t d1, size_t d2, const T* d=nullptr) {
        size_t s[2]= {d1,d2}; NEW(wbvector<size_t>(2,s,'r'),d);
        return *this;
     };
 
-    wbarray& init(size_t d1, size_t d2, size_t d3, const T* d=NULL) {
+    wbarray& init(size_t d1, size_t d2, size_t d3, const T* d=nullptr) {
        size_t s[3]= {d1,d2,d3}; NEW(wbvector<size_t>(3,s,'r'),d);
        return *this;
     };
 
-    wbarray& init(size_t d1, size_t d2, size_t d3, size_t d4, const T* d=NULL) {
+    wbarray& init(size_t d1, size_t d2, size_t d3, size_t d4, const T* d=nullptr) {
        size_t s[4]= {d1,d2,d3,d4}; NEW(wbvector<size_t>(4,s,'r'),d);
+       return *this;
+    };
+
+    wbarray& init(const wbvector<size_t> &S, const T *d0, char ref=0) {
+       if (ref)
+            { INIT2REF(d0,&S); }
+       else { NEW(S,d0); }
        return *this;
     };
 
@@ -133,18 +149,16 @@ class wbarray {
        return *this;
     };
 
-    wbarray& set(const wbarray &A) { return init(A); }
-
     template<class T_>
-    wbarray& set(const wbarray &A, T_ fac) {
-       if (fac==T_(1) ) { init(A); } 
-       else if (!A || !fac) { NEW(A.SIZE); }
+    wbarray& set(const wbarray &A, T_ fac_) {
+       if (fac_==T_(1) ) { init(A); } 
+       else if (!A || !fac_) { NEW(A.SIZE); }
        else {
           size_t i=0, n=A.SIZE.prod(0);
-          const T *a=A.data;
-          SIZE=A.SIZE; NEW_DATA(n,NULL,0,0); 
+          const T *a=A.data; double fac=fac_;
+          SIZE=A.SIZE; NEW_DATA(n,nullptr,'\0','\0'); 
 
-          if (fac==T_(-1))
+          if (fac==-1)
                { for (; i<n; ++i) data[i]=   -a[i]; }
           else { for (; i<n; ++i) data[i]=fac*a[i]; }
        }
@@ -181,7 +195,7 @@ class wbarray {
        if (flag=='C' && typeid(T)!=typeid(wbcomplex)) flag='T';
 
        if (fac!=T(1) || flag!='N') { size_t i;
-          if (flag!='N') permute(A,"2 1"); else A=(*this);
+          if (flag!='N') permute(A,"21"); else A=(*this);
           if (flag=='C') for (i=0; i<s; i++) A[i]=Wb::CONJ(A[i]);
           if (fac!=T(1)) for (i=0; i<s; i++) A[i]*=fac;
        }
@@ -236,13 +250,13 @@ class wbarray {
        T cfac, size_t s1, size_t s2, char cforce
     ){
        if (cfac!=T(0)) {
-           if (data==NULL) {
+           if (data==nullptr) {
               if (cforce) wblog(F,L,      
              "WRN C = A*B + c*[] with c=%s !?", Wb::num2Str(cfac).data);
            }
            else if (!isMatrix() || SIZE[0]!=s1 || SIZE[1]!=s2) {
               wblog(F,L,"ERR %s() dimension mismatch: C=(%s) =? (%d,%d).",
-              FCT, SSTR_(this), s1, s2); return;
+              FCT, SSTR(*this), s1, s2); return;
            }
            else {
                if (cfac!=T(1)) { 
@@ -324,16 +338,17 @@ class wbarray {
        NEW(a.SIZE); init_T(F_L,a.data); return *this;
     };
 
-    wbarray& init(char *s, T* d=NULL) {
-       init(Str2Idx(s), d); return *this;
+    wbarray& init(char *s, T* d=nullptr) {
+       WBINDEX S; Wb::Str2Idx(FL,s,S);
+       init(S,d); return *this;
     };
 
-    wbarray& init(const WBINDEX &S, T* d=NULL) {
+    wbarray& init(const WBINDEX &S, T* d=nullptr) {
        return NEW(S,d); 
     };
 
     template <class IT>
-    wbarray& init(const wbvector<IT> &S_, T* d=NULL) {
+    wbarray& init(const wbvector<IT> &S_, T* d=nullptr) {
        WBINDEX S(S_.len);
        for (size_t i=0; i<S.len; ++i) { S.data[i]=size_t(S_.data[i]); }
        return NEW(S,d); 
@@ -342,7 +357,7 @@ class wbarray {
     wbarray& init_bare(const WBINDEX &S) {
        size_t len=S.prod(0);
        if (len)
-            { SIZE=S; NEW_DATA(len,NULL,0,0); } 
+            { SIZE=S; NEW_DATA(len,nullptr,'\0','\0'); } 
        else { init(); }
        return *this;
     };
@@ -383,15 +398,15 @@ class wbarray {
        return INIT2REF(x);
     };
 
-    int isRef() const { return (sptr && sptr->isRef()); };
+    int isRef() const { return sptr ? sptr->isRef() : 0; };
 
-    wbarray& Instantiate(const char *F=NULL, int L=0) {
+    wbarray& Instantiate(const char *F=nullptr, int L=0) {
 	   if (isRef() && data) {
           if (!sptr) wblog(F_L,"ERR %s() got null sptr !?",FCT);
           T *d0=data; NEW_DATA(SIZE.prod(0),d0);
        }
        else if (F) wblog(F,L,
-          "WRN %s() no need to instantiate %s",SSTR_(this));
+          "WRN %s() no need to instantiate %s",SSTR(*this));
 
        return *this;
     };
@@ -406,7 +421,7 @@ class wbarray {
     void init2ref(const wbarray &A, size_t s1, size_t s2) {
         if (s1*s2!=A.SIZE.prod(0)) wblog(FL,
           "ERR %s() cannot reshape array %s into %dx%d",
-           SSTR_(this), s1, s2
+           SSTR(*this), s1, s2
         );
 
         SIZE.init(2); SIZE[0]=s1; SIZE[1]=s2;
@@ -430,6 +445,8 @@ class wbarray {
     wbarray& initIdentityB3(
         size_t d1, size_t d2, size_t D, size_t i0, T x=1);
 
+    wbarray& initPermB(size_t d1, size_t d2, const wbperm &P);
+
     wbarray& Expand2Projector(const T eps=0);
     wbarray& ExpandDiagonal(unsigned i1, unsigned i2); 
     wbarray& ExpandDiagonal();
@@ -450,31 +467,42 @@ class wbarray {
        init(d); if (val) set(val);
     };
 
-    wbarray& resize(const wbvector<size_t> &S, wbarray &B) const;
+    wbarray& resize(
+       const wbvector<size_t> &S, wbarray &B) const;
+    wbarray& resize( 
+       const wbvector<size_t> &S, wbarray &B, double &dx) const;
 
     wbarray& resizeNumCols(size_t n, wbarray &B) const { 
        if (!n && isEmpty()) { return B.init(); }
        if (SIZE.len!=2) wblog(FL,
-          "ERR %s() for matrices only (got %s)",FCT,SSTR_(this));
+          "ERR %s() for matrices only (got %s)",FCT,SSTR(*this));
        wbvector<size_t> S(SIZE); S[1]=n;
        return resize(S,B);
     };
 
-    void Resize(const wbvector<size_t> &S, const T* d0=NULL) { 
+    wbarray& Resize(const wbvector<size_t> &S, const T* d0=nullptr) { 
        if (d0) { NEW(S,d0); } else
        if (S!=SIZE) {
           wbarray<T> X;
           resize(S,X).save2(*this);
        };
+       return *this;
     };
 
-    void Resize(size_t s1, size_t s2) {
+    wbarray& Resize(size_t s1, size_t s2) {
        size_t s[2]={s1,s2}; wbarray X;
-       if (SIZE.len!=2) wblog(FL,"ERR rank-2 required (%d)",SIZE.len);
+       if (SIZE.len!=2) wblog(FL,"ERR got rank %d (matrix required)",SIZE.len);
        resize(wbvector<size_t>(2,s),X).save2(*this);
+       return *this;
+    };
+    wbarray& Resize(size_t s1, size_t s2, double &dx) {
+       size_t s[2]={s1,s2}; wbarray X;
+       if (SIZE.len!=2) wblog(FL,"ERR got rank %d (matrix required)",SIZE.len);
+       resize(wbvector<size_t>(2,s),X,dx).save2(*this);
+       return *this;
     };
 
-    wbarray& Resize1(unsigned i, size_t Si) { 
+    wbarray& Resize1(unsigned i, size_t Si) {
        if (i>=SIZE.len) wblog(FL,
           "ERR %s() index out of bounds (%d/%d)",FCT,i,SIZE.len);
        if (SIZE[i]!=Si) {
@@ -529,7 +557,8 @@ class wbarray {
 
     wbarray& Reset(const T *dref) { 
        size_t n=SIZE.prod();
-       if (dref) { memcpy(data,dref,sizeof(T)*n); }
+       if (dref)
+            { Wb::MemCpy(data,dref,n); } 
        else { MEM_SET<T>(data,n); }
        return *this;
     };
@@ -557,33 +586,33 @@ class wbarray {
     void SetRef(size_t k, const T* d0) { SetRef(&k,1,d0); };
 
     const T* ref(const widx_t *I, size_t n) const {
-       if (!n) return NULL; 
+       if (!n) return nullptr; 
        return data+serial_index(I,n);
     };
     T* ref(const widx_t *I, size_t n) {
-       if (!n) return NULL; 
+       if (!n) return nullptr; 
        return data+serial_index(I,n);
     };
 
     T* col(size_t k) {
        if (SIZE.len!=2 || k>=SIZE[1]) wblog(FL,
-          "ERR %s() index out of bounds (%s; %d)",FCT,SSTR_(this),k);
+          "ERR %s() index out of bounds (%s; %d)",FCT,SSTR(*this),k);
        return (data+k*SIZE[0]); 
     };
     const T* col(size_t k) const {
        if (SIZE.len!=2 || k>=SIZE[1]) wblog(FL,
-          "ERR %s() index out of bounds (%s; %d)",FCT,SSTR_(this),k);
+          "ERR %s() index out of bounds (%s; %d)",FCT,SSTR(*this),k);
        return (data+k*SIZE[0]); 
     };
 
     T* row(size_t k) {
        if (SIZE.len!=2 || k>=SIZE[0]) wblog(FL,
-          "ERR %s() index out of bounds (%d / %s)",FCT,k,SSTR_(this));
+          "ERR %s() index out of bounds (%d / %s)",FCT,k,SSTR(*this));
        return (data+k); 
     };
     const T* row(size_t k) const {
        if (SIZE.len!=2 || k>=SIZE[0]) wblog(FL,
-          "ERR %s() index out of bounds (%d / %s)",FCT,k,SSTR_(this));
+          "ERR %s() index out of bounds (%d / %s)",FCT,k,SSTR(*this));
        return (data+k); 
     };
 
@@ -624,36 +653,43 @@ class wbarray {
        return data[i];
     }
 
-    const T& operator() (size_t i) const {
+    T& last(size_t i) {  
+       size_t n=numel(); 
+       if (!n) wblog(FL,
+          "ERR %s() got empty %s array (%s)",FCT,TSTR(T),SSTR(*this));
+       return data[n-1];
+    };
+
+    const T& operator() (size_t i) const { 
         if (SIZE.len!=1) wblog(FL,
-           "ERR %s requires vector type (%s)",FCT,SSTR_(this));
+           "ERR %s requires vector type (%s)",FCT,SSTR(*this));
         return data[i];
     };
     T& operator() (size_t i) {
         if (SIZE.len!=1) wblog(FL,
-           "ERR %s requires vector type (%s)",FCT,SSTR_(this));
+           "ERR %s requires vector type (%s)",FCT,SSTR(*this));
         return data[i];
     };
 
     const T& operator() (size_t i, size_t j) const {
         if (SIZE.len!=2) wblog(FL,
-           "ERR %s(i,j) requires matrix type (%s)",FCT,SSTR_(this));
+           "ERR %s(i,j) requires matrix type (%s)",FCT,SSTR(*this));
         return data[ i + j*SIZE[0] ]; 
     };
     T& operator() (size_t i, size_t j) {
         if (SIZE.len!=2) wblog(FL,
-           "ERR %s(i,j) requires matrix type (%s)",FCT,SSTR_(this));
+           "ERR %s(i,j) requires matrix type (%s)",FCT,SSTR(*this));
         return data[ i + j*SIZE[0] ]; 
     };
 
     const T& operator() (size_t i, size_t j, size_t k) const {
         if (SIZE.len!=3) wblog(FL,
-           "ERR %s(i,j,k) requires 3D-object (%s)",FCT,SSTR_(this));
+           "ERR %s(i,j,k) requires 3D-object (%s)",FCT,SSTR(*this));
         return data[ i + SIZE[0] * (j + SIZE[1]*k) ];
     };
     T& operator() (size_t i, size_t j, size_t k) {
         if (SIZE.len!=3) wblog(FL,
-           "ERR %s(i,j,k) requires 3D-object (%s)",FCT,SSTR_(this));
+           "ERR %s(i,j,k) requires 3D-object (%s)",FCT,SSTR(*this));
         return data[ i + SIZE[0] * (j + SIZE[1]*k) ];
     };
 
@@ -664,47 +700,48 @@ class wbarray {
     };
     T& operator() (const WBINDEX &I) {
        if (I.len!=SIZE.len) wblog(FL,
-       "ERR invalid index [%s] having %s",STR(I),SSTR_(this));
+       "ERR invalid index [%s] having %s",STR(I),SSTR(*this));
        return data[serial_index(I.data,I.len)];
     };
 
     const T& element(const WBINDEX &I) const {
        if (I.len!=SIZE.len) wblog(FL,"ERR %s() invalid index [%s] "
-          "having %s",FCT,STR(I),SSTR_(this));
+          "having %s",FCT,STR(I),SSTR(*this));
        for (size_t i=0; i<I.len; i++) if (I.data[i]>=SIZE.data[i])
            wblog(FL,"ERR %s() index out of bounds (%s; %s)",
-           FCT,STR(I),SSTR_(this));
+           FCT,STR(I),SSTR(*this));
        return data[serial_index(I.data,I.len)];
     };
     T& element(const WBINDEX &I) {
        if (I.len!=SIZE.len) wblog(FL,"ERR %s() invalid index [%s] "
-          "having %s",FCT,STR(I),SSTR_(this));
+          "having %s",FCT,STR(I),SSTR(*this));
        for (size_t i=0; i<I.len; i++) if (I.data[i]>=SIZE.data[i])
            wblog(FL,"ERR %s() index out of bounds (%s; %s)",
-           FCT,STR(I),SSTR_(this));
+           FCT,STR(I),SSTR(*this));
        return data[serial_index(I.data,I.len)];
     };
 
-    size_t numel() const {
+    size_t numel(unsigned r0=-1) const { 
        size_t N=0; 
        if (SIZE.len) {
-          const size_t *s=SIZE.data; size_t i=0;
-          N=s[i]; for (++i; i<SIZE.len; ++i) { N*=s[i]; }
+          unsigned i=0, n=SIZE.len;
+          const size_t *s=SIZE.data; N=1;
+
+          if (int(r0)>=0) { if (r0>n) { r0=n; }
+             for (; i<r0; ++i) { if (!s[i]) { N=0; break; }}
+          }
+          if (N && i<n) {
+             for (N=s[i++]; i<n; ++i) { N*=s[i]; }
+          }
        }
        return N;
     };
 
     size_t numOM(unsigned r0) const {
-       size_t M=1; 
-       if (!SIZE.len) { return (M=0); } 
-       if (r0<2) wblog(FL,"ERR %s() invalid r0=%d/%d",FCT,r0,SIZE.len);
-       if (r0<SIZE.len) {
-          const size_t *s=SIZE.data; size_t i=r0;
-          M=s[i]; for (++i; i<SIZE.len; ++i) { M*=s[i]; }
-
-          if (r0==2 && M>1) wblog(FL,
-             "ERR %s() got OM=%d for %s @ r0=%d",FCT,M,SSTR_(this),r0);
-       }
+       size_t M=numel(r0); 
+       if (int(r0)<2) wblog(FL,"ERR %s() invalid r0=%d/%d",FCT,r0,SIZE.len);
+       if (r0==2 && M>1) wblog(FL, 
+          "ERR %s() got OM=%d for %s @ r0=%d",FCT,M,SSTR(*this),r0);
        return M;
     };
 
@@ -715,6 +752,19 @@ class wbarray {
     };
 
     wbarray& Squeeze(); 
+
+    wbarray& initSingleton(unsigned r, T x=1, unsigned m=0) {
+       wbvector<size_t> S;
+       if (!m) { S.init2val(r,1); }
+       else {
+           S.init2val(r+1,1); S[r]=m;
+           if (m>1) { x/=sqrt(double(m)); }
+       }
+       init(S); set(x);
+       return *this;
+    };
+
+    int SkipSingleton(const char *F, int L, unsigned i); 
 
     int skipSingletons(const char *F, int L, unsigned r=-1);
     int skipSingletons(unsigned r=-1) {
@@ -730,10 +780,10 @@ class wbarray {
 
     wbarray& ExpandOM(const char *F, int L,  unsigned r0, 
        const wbvector<unsigned> &S,
-       const unsigned *sx=NULL);
+       const unsigned *sx=nullptr);
 
     wbarray& ExpandOM(const char *F, int L, unsigned r0,
-       unsigned m, const unsigned *s, const unsigned *sx=NULL
+       unsigned m, const unsigned *s, const unsigned *sx=nullptr
     ){ return ExpandOM(F,L,r0, wbvector<unsigned>(m,s,'r'), sx); };
 
     int ExpandOM(const char *F, int L, wbarray &B, unsigned r0);
@@ -769,7 +819,7 @@ class wbarray {
 
     size_t size(unsigned i) const { return SIZE[i]; };
 
-    size_t dim (unsigned i) const { 
+    size_t dim(unsigned i) const { 
        if (i==0 || i>SIZE.len) wblog(FL,
           "ERR index out of bounds (%d/%d)", i-1, SIZE.len);
        return SIZE[i-1];
@@ -788,14 +838,14 @@ class wbarray {
           for (; i<n; ++i) {
              if (s[i]>1) {
                 if (l>i) { l=i; } else
-                wblog(FL,"ERR %s() invalid vector %s",FCT,SSTR_(this));
+                wblog(FL,"ERR %s() invalid vector %s",FCT,SSTR(*this));
              }
              else if (!s[i]) { ++z; } 
           }
 
           if (!z) { D=s[l<n ? l : 0]; } else
           if (n>2 || l<n) { 
-             wblog(FL,"ERR %s() invalid vector %s",FCT,SSTR_(this));
+             wblog(FL,"ERR %s() invalid vector %s",FCT,SSTR(*this));
           }
        }
        return D;
@@ -804,18 +854,18 @@ class wbarray {
     size_t dim2() const { 
        if (!SIZE.len) return 0;
        if (SIZE.len!=2) wblog(FL,
-          "ERR %s() got rank-%d array (%s) !?",FCT,SIZE.len,SSTR_(this));
+          "ERR %s() got rank-%d array (%s) !?",FCT,SIZE.len,SSTR(*this));
        if (SIZE[0]!=SIZE[1]) wblog(FL,
-          "ERR %s() got non-square matrix (%s) !?",FCT,SSTR_(this));
+          "ERR %s() got non-square matrix (%s) !?",FCT,SSTR(*this));
        return SIZE[0];
     };
 
     void getMatSize(const char *F, int L, size_t &dim1, size_t &dim2) const;
     void getMatSize(size_t &dim1, size_t &dim2, unsigned m) const;
     void getMatSize(const ctrIdx &ic, size_t &dimc, size_t &dimk,
-        unsigned r=-1, size_t *dom=NULL) const;
+        unsigned r=-1, size_t *dom=nullptr) const;
 
-    unsigned rank() const { return SIZE.len; };
+    unsigned rank() const { return SIZE.len; }; 
 
     bool isRank(unsigned r) const { 
        bool q=1;
@@ -833,18 +883,12 @@ class wbarray {
        return (q=0);
     };
 
-    bool isOpS(size_t *n=NULL) const; 
-    bool isOpS(unsigned &n) const { bool q; 
-       size_t N; q=isOpS(&N); n=N;
-       if (size_t(n)!=N) wblog(FL,
-          "ERR %s() unsigned out of bounds (%d/%ld)",FCT,n,N);
-       return q;
-    };
+    bool isOpS(size_t *n=nullptr) const; 
 
     wbarray& SkipTiny_float(const T eps QS_UNUSED_VAR =1e-14) { return *this; };
     double   SkipTiny_imag (double  eps QS_UNUSED_VAR =1e-14) { return 0; };
 
-    double SkipTiny(double eps_=1E-14);
+    double SkipTiny(double eps_=1e-14);
 
     wbarray<T>& SkipTrailingZeroSpace(
        unsigned k,  
@@ -872,7 +916,7 @@ class wbarray {
        return 1;
     };
 
-    bool isEmpty() const { return (data==NULL); };
+    bool isEmpty() const { return (data==nullptr); };
     bool isComplex() const;
     bool isZero(double eps=0., char flag=0) const;
 
@@ -887,7 +931,7 @@ class wbarray {
 
     wbarray& Symmetrize(
        const char *F, int L,
-       double *delta=NULL, char cflag=1, char tflag=0, char fflag=0
+       double *delta=nullptr, char cflag=1, char tflag=0, char fflag=0
     );
 
     wbarray& swapRows(size_t i1, size_t i2);
@@ -914,64 +958,68 @@ class wbarray {
 
     unsigned QRdecomp(
        const char *F, int L, wbarray<T> &Q, wbarray<T> &R,
-       T eps=1E-15);
+       char useP=0, T eps=1e-15);
+
+    wbarray& mldivide( const char *F, int L, 
+       const wbarray<T> &B, wbarray<T> &X, T bfac=1, T eps=1e-15) const;
 
     int Householder(
        const char *F, int L,
        size_t k, T *u, 
-       WBPERM *P=NULL, 
-       T eps=1E-15);
+       wbperm *P=nullptr, 
+       T eps=1e-15);
 
     unsigned eigTriDiag(
        const char *F, int L, wbvector<T> &E,
-       wbarray<T> *U=NULL, T eps=1E-15) const;
+       wbarray<T> *U=nullptr, T eps=1e-15) const;
 
     wbarray& ColProject(
        size_t k1, size_t k2, char nflag=0, char tnorm=0);
 
-    wbarray& ColPermute(const wbperm &P, char iflag=0);
+    wbarray& ColPermute(const wbperm &P); 
 
     bool isOrthogonalCol(size_t k, char tnorm=0) const;
-    bool isOrthoCols(T *x2=NULL, char tnorm=0, T eps=1E-14) const;
+    bool isOrthoCols(T *x2=nullptr, char tnorm=0, T eps=1e-14) const;
 
     wbarray& SignCol(size_t k, const T *d0, char tnorm=0);
     wbarray& FlipSignCol(size_t k);
     wbarray& SignConventionCol(
        size_t k=-1,    
-       double eps=1E-12  
+       double eps=1e-12  
     );
 
     T NormalizeCol(size_t k, char tnorm=0, char qflag=0);
     wbarray& NormalizeCols(
        const char *F, int L,
-       double *amin=NULL, double *amax=NULL, char tnorm=0
+       double *amin=nullptr, double *amax=nullptr, char tnorm=0
     );
 
     wbarray& OrthoNormalizeCols(
-       const char *F=NULL, int L=0, char tnorm=0,
-       char qxflag=0, double eps=1E-14, unsigned np=1
+       const char *F=nullptr, int L=0, char tnorm=0,
+       char qxflag=0, double eps=1e-14, unsigned np=1
     );
 
     wbarray& balanceOp(
        const char *F, int L, T &xref, double &xscale
     );
 
-    bool isProptoId(T &x, T eps=1E-14) const;
+    bool isProptoId(T &x, T eps=1e-14) const;
 
-    bool isProptoId(T *x_=NULL, T eps=1E-14) const { 
+    bool isProptoId(T *x_=nullptr, T eps=1e-14) const { 
        bool q=0; T x=T(0);
        if (isProptoId(x,eps)) { q=1; if (x_) { (*x_)=x; }}
        return q;
     };
 
-    bool isDiagMatrix(double eps=1E-14) const {
-    return isDiag_aux(eps,"isDiag"); }
+    bool isDiagMatrix(T eps=1e-14) const {
+       return isDiag_aux(eps,"isDiag");
+    };
 
-    bool isIdentityMatrix(double eps=1E-14) const {
-       if (data && Wb::abs(data[0]-double(1))<eps) { 
+    bool isIdentityMatrix(T eps=1e-14) const { T one(1);
+       if (data && Wb::abs(data[0]-one)<eps) { 
           if ((SIZE.len%2)==0) {
              if (SIZE.allEqual(1)) { return 1; } 
-             else { T one(1); 
+             else { 
                 return isProptoId(one,eps);
              }
           }
@@ -985,7 +1033,16 @@ class wbarray {
     bool isIdentityMatrix(double *eps) const {
        return isDiag_aux(eps,"isIdty"); }
 
-    size_t nnz(const T eps=0, WBINDEX *I=NULL) const;
+    size_t nnz(const T eps=0, WBINDEX *I=nullptr) const;
+
+    size_t ndiag() const { size_t n=0;
+       if (SIZE.len==1) { if (SIZE[0]) { n=1; }} else
+       if (SIZE.len>1) {
+          size_t i=0,l; SIZE.max(&l);
+          for (n=1; i<SIZE.len; ++i) { if (i!=l) { n*=SIZE[i]; }}
+       }
+       return n;
+    };
 
     double sparsity(const T eps=0) const { 
        size_t n=numel();
@@ -993,19 +1050,19 @@ class wbarray {
     };
 
     bool isHConj(
-      const wbarray &B, double eps=1E-12, double* xref=NULL
+      const wbarray &B, double eps=1e-12, double* xref=nullptr
     ) const { return isSym_aux(FLF, B, eps, xref, 's'); };
 
     bool isHConj(
-      double eps=1E-12, double* xref=NULL
+      double eps=1e-12, double* xref=nullptr
     ) const { return isSym_aux(FLF,*this,eps,xref,'s'); };
 
     bool isAHerm(
-      const wbarray &B, double eps=1E-12, double* xref=NULL
+      const wbarray &B, double eps=1e-12, double* xref=nullptr
     ) const { return isSym_aux(FLF, B, eps, xref, 'a'); };
 
     bool isAHerm(
-      double eps=1E-12, double* xref=NULL
+      double eps=1e-12, double* xref=nullptr
     ) const { return isSym_aux(FLF,*this,eps,xref,'a'); };
 
     char hasGroupSize(size_t s1, size_t s2) const;
@@ -1020,7 +1077,7 @@ class wbarray {
     };
 
     template<class TI>
-    T aMax(TI &i, TI &j, const wbarray *B=NULL) const; 
+    T aMax(TI &i, TI &j, const wbarray *B=nullptr) const; 
 
     double maxDiff (const wbarray &B) const;
     T froNorm2(const wbarray &B) const;
@@ -1040,10 +1097,11 @@ class wbarray {
     T scalarProd(const wbarray &B) const;
     T sum() const;
 
-    wbarray& sum(const WBINDEX &I, wbarray&) const;
-    wbarray& sum(const char *sidx, wbarray &A) const {
-       sum(Str2Idx(sidx,1), A); 
-       return A;
+    wbarray& sum(const WBINDEX &I, wbarray &B) const;
+
+    wbarray& sum(const char *sidx, wbarray &B) const {
+       WBINDEX I; Wb::Str2Idx(FL,sidx,I, widx_t(1)); 
+       sum(I,B); return B;
     };
 
     char fitsSize(const wbarray &, char strict=0) const;
@@ -1100,7 +1158,7 @@ class wbarray {
     };
 
     char sameUptoFac(
-      const wbarray &B, T *fac=NULL, double eps=1e-12
+      const wbarray &B, T *fac=nullptr, double eps=1e-12
     ) const;
 
     bool sameAs(const wbarray &B, double eps=1e-12) const;
@@ -1141,16 +1199,21 @@ class wbarray {
      ) const { return tensorProd(B,X,aflag,bflag,'k'); };
 
     wbarray& Kron(const wbarray &B, char aflag='N', char bflag='N') {
-       wbarray X; tensorProd(B,X,aflag,bflag,'k');
-       return X.save2(*this);
+       wbarray X; save2(X);
+       return X.tensorProd(B,*this,aflag,bflag,'k');
     };
 
-    wbarray& Cat(unsigned dim, const wbvector< wbarray* > &ap);
-    wbarray& Cat(unsigned dim, const wbvector< wbarray  > &ap);
+    wbarray& Cat(unsigned dim, wbvector< const wbarray* > &ap);
+
+    wbarray& Cat(unsigned dim, const wbvector< wbarray > &aa) {
+       wbvector< const wbarray<T>* > ap(aa.len);
+       for (unsigned i=0; i<aa.len; ++i) { ap[i]=&aa[i]; }
+       return Cat(dim,ap);
+    };
 
     wbarray& BlockCat(
        const wbarray< wbarray > &aa,
-       WBINDEX *D1=NULL, WBINDEX *D2=NULL
+       WBINDEX *D1=nullptr, WBINDEX *D2=nullptr
     ){
        wbarray< const wbarray* > ap(aa.SIZE);
        for (size_t n=aa.numel(), i=0; i<n; ++i) { ap[i]=&aa[i]; }
@@ -1159,7 +1222,7 @@ class wbarray {
 
     wbarray& BlockCat(
        const wbarray< const wbarray* > &ap,
-       WBINDEX *D1=NULL, WBINDEX *D2=NULL
+       WBINDEX *D1=nullptr, WBINDEX *D2=nullptr
     );
 
     void operator+= (T x) {
@@ -1187,7 +1250,7 @@ class wbarray {
     wbarray& times(const T_ a, wbarray<T> &X) const { 
        if (&X==this) { X*=a; } else
        if (a==T_(1)) { X.init(*this); } else
-       if (!a) { X.init(SIZE); } else { X.set(*this,a); }
+       if (!a) { X.init(SIZE); } else { X.set(*this,a); } 
        return X;
     };
 
@@ -1203,6 +1266,14 @@ class wbarray {
        return *this;
     };
 
+    wbarray& operator*=(const wbarray &b) { 
+       if (SIZE.len!=2 || b.SIZE.len!=2) wblog(FL,
+          "ERR %s() operator*= only supported for matrices (r=%d/%d)",
+          FCT, SIZE.len, b.SIZE.len);
+       ContractMat(FL,2,b,1);
+       return *this;
+    };
+
     template <class T_>
     wbarray& operator/=(const T_ &a) {
        if (SIZE && a!=T_(1)) { size_t i=0, n=numel();
@@ -1213,7 +1284,7 @@ class wbarray {
           if (n<4 || WbUtil<T>::isInt()) { for (; i<n; ++i) { data[i]/=a; }}
           else {
              T x=1/T(a);
-             if (fabs(double(x*a-1))>1E-12) 
+             if (fabs(double(x*a-1))>1e-12) 
                   { for (; i<n; ++i) { data[i]/=a; }}
              else { for (; i<n; ++i) { data[i]*=x; }}
           }
@@ -1296,8 +1367,10 @@ class wbarray {
     ) const { return toMatrixRef( A, UVEC(1,&i), pos, P); };
 
     void toMatrixRef(
-      wbarray &A, const char* sidx, int pos, wbperm &P
-    ) const { return toMatrixRef( A, Str2Idx(sidx,1), pos, P); };
+       wbarray &A, const char* sidx, int pos, wbperm &P) const {
+       WBINDEX S; Wb::Str2Idx(FL,sidx,S,widx_t(1)); 
+       return toMatrixRef(A,S,pos,P);
+    };
 
     wbarray& Reshape(const wbvector<size_t> &, bool lflag=0);
 
@@ -1313,7 +1386,7 @@ class wbarray {
     wbarray<T>& Reshape1(const size_t *s, unsigned n) {
        if (!sameSize1(s,n)) wblog(FL,
           "ERR %s() size mismatch (%s <> %s)",FCT,
-          SSTR_(this), SSTR(wbvector<size_t>(n,s)));
+          SSTR(*this), SSTR(wbvector<size_t>(n,s)));
        SIZE.init(n,s); return *this;
     };
     wbarray& Reshape1(size_t s1, size_t s2) {
@@ -1353,7 +1426,7 @@ class wbarray {
 
     void groupIndizes_P(
        const WBINDEX&, int, wbperm&,
-       size_t* =NULL, size_t* =NULL
+       size_t* =nullptr, size_t* =nullptr
     ) const;
 
     wbarray& transpose(const char *F, int L, wbarray &A) const;
@@ -1368,13 +1441,22 @@ class wbarray {
     wbarray& flipUD(const char *F, int L, wbarray &A) const;
     wbarray& FlipUD(const char *F=0, int L=0);
 
-    wbarray& MatPermute(const wbperm &P, char iflag=0);
+    wbarray& MatPermute(const wbperm &P);
 
-    wbarray& Permute(const char* s, char iflag=0, char rcpy=0);
-    wbarray& Permute(const wbperm&, char iflag=0, char rcpy=0);
+    wbarray& Permute(const char *s, int offset=1, char rcpy=0);
+    wbarray& Permute(wbperm, char rcpy=0);
 
-    wbarray& permute(wbarray&, const char* s, char iflag=0) const;
-    wbarray& permute(wbarray&, const wbperm&, char iflag=0) const; 
+    wbarray& permute(wbarray&, const char* s, int offset=1) const;
+    wbarray& permute(wbarray&, wbperm) const; 
+
+    wbarray permute(const char* s, int offset=1) const {
+       wbarray x; permute(x,s,offset); 
+       return x;
+    };
+    wbarray permute(wbperm &p) const {
+       wbarray x; permute(x,p); 
+       return x;
+    };
 
     wbarray& select0( 
        const WBPERM &, unsigned dim, wbarray&) const;
@@ -1407,11 +1489,17 @@ class wbarray {
     T min() const;
     T max() const;
 
-    T aMin(char zflag=0, size_t *k=NULL) const;  
+    T aMin(char zflag=0, size_t *k=nullptr) const;  
 
     void info(const char* ="") const;
     void info(const char *F, int L,
        const char* ="", unsigned k=-1, unsigned nlt=0, unsigned nlb=0) const;
+
+    wbstring info_mem() const { 
+       wbstring s(128);
+       snprintf(s.data, s.len,"%s / %p", sptr? STR_(sptr):"(null)", data);
+       return s;
+    };
 
     void print(
        const char *F, int L,
@@ -1432,6 +1520,15 @@ class wbarray {
        T a, T b, wbarray &C, char Iflag=0, char bflag='N'
     ) const;
 
+    wbarray& contractVec( const char *F, int L,
+       unsigned i1, const wbvector<T> &v, wbarray &B) const; 
+
+    wbarray& ContractVec(
+       const char *F, int L, unsigned i1, const wbvector<T>&v) {
+       wbarray A; save2(A);
+       return A.contractVec(F,L,i1,v,*this);
+    };
+
     template<class TB, class TC>
     wbarray<TC>& contractMat(
        const char *F, int L, unsigned i1,
@@ -1446,8 +1543,8 @@ class wbarray {
 
     wbarray& ContractMat(const char *F, int L,
        unsigned i1, const wbarray &M, unsigned i2=1 
-    ){ wbarray A;
-       return contractMat(F,L,i1,M,i2,A).save2(*this);
+    ){ wbarray A; save2(A);
+       return A.contractMat(F,L,i1,M,i2,*this);
     };
 
     template<class TB, class TC>
@@ -1475,14 +1572,14 @@ class wbarray {
 
     template<class TB>
     wbarray<T>& Contract(
-       char*, const wbarray<TB>&, char*,
+       const char*, const wbarray<TB>&, const char*,
        const wbperm &pfinal=wbperm()
     );
 
     template<class TB, class TC>
     wbarray<TC>& contract(const char *F, const int L,
        const char*, const wbarray<TB>&, const char*, wbarray<TC>&,
-       const wbperm &pfinal=wbperm()
+       const wbperm &pfinal=wbperm(), T afac=1, TC cfac=1
     ) const;
 
     template<class TB, class TC>
@@ -1500,7 +1597,7 @@ class wbarray {
 
     template<class TB, class TC>
     wbarray<TC>& contract(const char *F, int L,
-       unsigned i1, const wbarray<TB>&B, unsigned i2,
+       unsigned i1, const wbarray<TB>&B, unsigned i2, 
        wbarray<TC>&C, const wbperm &pfinal=wbperm()
      ) const {
 
@@ -1548,6 +1645,8 @@ class wbarray {
     wbarray& trace(unsigned i1, unsigned i2, wbarray &C) const;
     wbarray& trace(const ctrIdx &I1, const ctrIdx &I2, wbarray<T> &C) const;
 
+    wbvector<T>& trace(unsigned k, wbvector<T> &t) const;
+
     mxArray* toMx() const { return toMx_Struct(); } 
     mxArray* toMx_Struct() const;
     mxArray* toMx_base() const; 
@@ -1570,7 +1669,9 @@ class wbarray {
 
     void getReal(wbarray<double> &R) const;
     void getImag(wbarray<double> &I) const;
-    void Conj();
+
+    wbarray& Conj();
+    wbarray& ConjTimes(double fac);
 
     void set(const wbarray<double> &R, const wbarray<double> &I);
 
@@ -1580,7 +1681,7 @@ class wbarray {
 
        if (tflag=='N') { return *this; } else
        if (tflag=='T' || tflag=='C') {
-          permute(aux, wbperm("2 1")); if (tflag=='C') aux.Conj();
+          permute(aux, wbperm("21")); if (tflag=='C') aux.Conj();
           return aux;
        }
        wblog(FL, "ERR invalid flag %c<%d>", tflag, tflag);
@@ -1593,6 +1694,8 @@ class wbarray {
       const char symflag='s',
       const char lflag=1
     ) const;
+
+    inline int check_consistency(const char *F=0, int L=0) const; 
 
     wbvector<size_t> SIZE;  
 
@@ -1616,91 +1719,25 @@ class wbarray {
     void print_rec (UVEC&, size_t, const char*, const char*) const;
 
     void make2D() {
-        if (SIZE.len<2) {
-            SIZE.Resize(2); if (SIZE[0]) { SIZE[1]=1; }
-        }
-        else if (SIZE.len>2) wblog(FL,
-        "ERR make2D() - invalid usage (got rank-%d)",SIZE.len);
+       if (SIZE.len<2) { SIZE.Resize(2); if (SIZE[0]) SIZE[1]=1; } else
+       if (SIZE.len>2) { wblog(FL,"ERR %s() got rank-%d",FCT,SIZE.len); }
     };
 
     void MemErrMsg(const char* file, int line, size_t s) {
         wblog(file,line, "ERR Out of memory? (%dx%d)", s, sizeof(T));
     };
 
-    int check_consistency(const char *F=0, int L=0) const { 
-       int e=0; 
+    inline void DELETE_DATA(char mflag=0);
 
-       if (sptr) {
-          if (!data || sptr->data!=data ) { e|=1; }
-          if (sptr->check_consistency(0)) { e|=2; }
-          if (!SIZE.len || SIZE.min()==0) { e|=4; }
-
-          if (e && F) wblog(F,L,
-             "ERR Wb::sptr = %s\n%p / %p (r=%ld, e=%d)",
-              STR_(sptr), sptr, data, SIZE.len, e
-          );
-
-          if (mtype!=sptr->mtype) {
-          if (mtype || sptr->mtype!=Wb::MEM_REF) wblog(F_L,
-             "WRN Wb:sptr mtype = %s / %s !?",
-             Wb::MTYPE_STR[mtype], Wb::MTYPE_STR[sptr->mtype]);
-          }
-       }
-       else {
-          if (SIZE.len && SIZE.min()) { e|=8; }
-          if (data) { e|=16; }
-
-          if (e && F) wblog(F,L,
-             "ERR Wb:sptr inconsistency: %p / %p",sptr,data
-          );
-       }
-       return e;
-    };
-
-    void DELETE_DATA(char mflag=0) {
-
-       if (sptr) { check_consistency(FL);
-          if (sptr->rm_dref(mflag)) {
-             WB_DELETE_1(sptr); 
-          }
-          else { sptr=NULL; }   
-          data=NULL;
-
-          mtype=Wb::MEM_DEF;
-       }
-       else if (data) wblog(FL,"ERR %s() %p / %p !?",FCT,data,sptr);
-    };
-
-    wbarray& NEW_DATA(size_t n, const T* d0=NULL, char ref=0, char init=1) {
-       if (!n) {
-          DELETE_DATA(); return *this;
-       }
-
-       if (!ref) {
-          if (!sptr) WB_NEW_1(sptr);
-
-          if (mtype && WBLOG_MMEX) { wblog(FL,
-             " |  %s     ... %p -> %s", Wb::MTYPE_STR[mtype],
-             this, Wb::size2Str(n*sizeof(T)).data);
-          }
-
-          if (d0 || init)
-               { data=sptr->malloc_data(n,d0,mtype); }
-          else { data=sptr->malloc_base(n, 0,mtype); } 
-       }
-       else {
-          RENEW_SPTR();
-          data=(sptr->init2ref(n,d0)); 
-       }
-       return *this;
-    };
+    inline wbarray& NEW_DATA( 
+       size_t n, const T* d0=nullptr, char ref=0, char init=1);
 
     void RENEW_SPTR() {
        if (sptr) { DELETE_DATA(); } 
        WB_NEW_1(sptr);
     };
 
-    wbarray& INIT2REF(const T *d0, const wbvector<size_t> *S=NULL) {
+    wbarray& INIT2REF(const T *d0, const wbvector<size_t> *S=nullptr) {
        if (S) { SIZE=(*S); }
        size_t n=SIZE.prod(0);
 
@@ -1709,18 +1746,18 @@ class wbarray {
           data=(sptr->init2ref(n,d0)); 
        }}
        else if (n) wblog(FL,
-         "ERR data/size inconsistency: %p / %p => %s",data,d0,SSTR_(this));
+         "ERR data/size inconsistency: %p / %p => %s",data,d0,SSTR(*this));
 
        return *this;
     };
 
-    wbarray& NEW(const wbvector<size_t> &S, const T* d0=NULL) {
+    wbarray& NEW(const wbvector<size_t> &S, const T* d0=nullptr) {
        SIZE=S;
        NEW_DATA(SIZE.prod(0),d0); 
        return *this;
     };
 
-    wbarray& NEW(const wbvector<size_t> &S, size_t n, const T* d0=NULL) {
+    wbarray& NEW(const wbvector<size_t> &S, size_t n, const T* d0=nullptr) {
        SIZE.init(n,S); NEW_DATA(SIZE.prod(0),d0);
        return *this;
     };
@@ -1733,30 +1770,109 @@ class wbarray {
 }; 
 
 template <class T>
+int wbarray<T>::check_consistency(const char *F, int L) const {
+   int e=0; 
+
+   if (sptr) {
+      if (!data || sptr->data!=data ) { e|=1; }
+      if (sptr->check_consistency(0)) { e|=2; }
+      if (!SIZE.len || SIZE.min()==0) { e|=4; }
+
+      if (e && F) wblog(F,L,
+         "ERR Wb::sptr = %s\n%p -> %p / %p (r=%ld, e=%d)",
+          STR_(sptr), sptr, sptr? sptr->data: nullptr, data, SIZE.len, e
+      );
+
+      if (mtype!=sptr->mtype) {
+      if (mtype || sptr->mtype!=Wb::MEM_REF) wblog(F_L,
+         "WRN Wb:sptr mtype inconsistency (%s / %s)",
+         Wb::MTYPE_STR[mtype], Wb::MTYPE_STR[sptr->mtype]);
+      }
+   }
+   else {
+      if (SIZE.len && SIZE.min()) { e|=8; }
+      if (data) { e|=16; }
+
+      if (e && F) wblog(F,L,
+         "ERR Wb:sptr inconsistency: %p / %p",sptr,data
+      );
+   }
+   return e;
+};
+
+template <class T>
+void wbarray<T>::DELETE_DATA(char mflag) {
+
+   if (sptr) { int q=0; check_consistency(FL);
+      q=sptr->rm_dref(mflag);
+      if (q) { 
+         WB_DELETE_1(sptr);  
+      }
+      else { sptr=nullptr; }    
+      data=nullptr;             
+
+      mtype=Wb::MEM_DEF;
+   }
+   else if (data) wblog(FL,"ERR %s() %p / %p !?",FCT,data,sptr);
+};
+
+template <class T>
+wbarray<T>& wbarray<T>::NEW_DATA(
+   size_t n, const T* d0, char ref, char init) {
+
+   if (!n) {
+      DELETE_DATA(); return *this;
+   }
+
+   if (!ref) {
+      if (!sptr) WB_NEW_1(sptr);
+
+      if (mtype && WBLOG_MMEX) { wblog(FL,
+         " |  %s     ... %p -> %s", Wb::MTYPE_STR[mtype],
+         this, Wb::size2Str(n*sizeof(T)).data);
+      }
+
+      if (d0 || init)
+           { data=sptr->malloc_data(n,d0,mtype); }
+      else { data=sptr->malloc_base(n, 0,mtype); } 
+   }
+   else {
+      RENEW_SPTR();
+      data=(sptr->init2ref(n,d0)); 
+   }
+   return *this;
+};
+
+template <class T>
 class wbperm_helper { 
 
 public:
 
    wbperm_helper() 
-    : rk_(0), rk(0), numel(0), sz(NULL), stride(NULL),
+    : fac(1), conj(0), rk_(0), rk(0), numel(0), sz(nullptr), stride(nullptr),
       l1(0), l2(0), m_blk(0) {};
 
-   wbperm_helper(const wbvector<widx_t> &sz_, const wbperm &perm)
-    : rk_(sz_.len), rk(0), numel(0),
-      sz( new widx_t [2*rk_] ),
-      stride(sz+rk_), l1(0), l2(0), m_blk(0) {
-
+   wbperm_helper(const wbvector<widx_t> &sz_, const wbperm &P)
+    : fac(1), conj(0), rk_(sz_.len), rk(0), numel(0),
+      sz( new widx_t [2*rk_] ), stride(sz+rk_), l1(0), l2(0), m_blk(0)
+    {
       unsigned i,j;
+      fac=P.fac;  
 
-      widx_t stride_[rk_+1]; stride_[0]=1;
+      if (P.conj && ISCOMPLX_(T)) {
+         conj=Wb::conj2bool(P.conj); 
+      }
+
+      wbvec<widx_t> Stride_(rk_+1);
+      widx_t *stride_=Stride_.data; stride_[0]=1;
       for (i=1; i<=rk_; ++i) { stride_[i] = stride_[i-1]*sz_[i-1]; }
       numel = stride_[i-1];
 
-      if (rk_!=perm.len) wblog(FL,
-         "ERR %s() rank mismatch (r=%d/%d)",FCT,rk_,perm.len);
+      if (rk_!=P.len) wblog(FL,
+         "ERR %s() rank mismatch (r=%d/%d)",FCT,rk_,P.len);
       if (!numel) { rk=1; return; }
 
-      for (i=0; i<rk_; ++i) { j=perm[i];
+      for (i=0; i<rk_; ++i) { j=P[i];
          sz[i]     = sz_[j];
          stride[i] = stride_[j];
       }
@@ -1798,12 +1914,15 @@ public:
 
    wbperm_helper& save2(wbperm_helper &X) {
       X.rk_=rk_; X.rk=rk; X.numel=numel; rk_=rk=0;
-      X.sz=sz;   X.stride=stride;        sz=stride=NULL;
+      X.sz=sz;   X.stride=stride;        sz=stride=nullptr;
       X.l1=l1;   X.l2=l2; X.m_blk=m_blk;
       return X;
    };
 
    mxArray* toMx() const;
+
+   double fac;      
+   char conj;       
 
    unsigned rk_;    
    unsigned rk;     
@@ -1817,43 +1936,46 @@ public:
 };
 
 template <class T>
-void wbarray_permute__(T *B_data,
-   const wbarray<T> &A, const wbvector<wperm_t> &P, int np=1
-);
+void wbarray_permute__(
+   T *B_data, const wbarray<T> &A, const wbperm &P, int np=1);
 
 template <class T>
-void wbarray_permute__(T *B_data,
-   const wbarray<T> &A, const wbvector<wperm_t> &P, int np
-){
-   wbperm_helper<T> PH(A.SIZE,P);
-   PH.permute(A.data,B_data,np);
+void wbarray_permute__(
+   T *B_data, const wbarray<T> &A, const wbperm &P, int np) {
+
+   wbperm_helper<T> PH(A.SIZE,P); 
+   PH.permute(A.data,B_data,np);  
 };
 
 #ifdef QS_USING_HPTT
 
 template <>
-void wbarray_permute__( double *B_data,
-   const wbarray<double> &A, const wbvector<wperm_t> &P_, int np
-){
+void wbarray_permute__(
+   double *B_data, const wbarray<double> &A, const wbperm &P_, int np) {
+
    wbvector<int> Sz(A.SIZE), P(P_); 
 
    auto plan = hptt::create_plan(P.data, Sz.len,
-       1., A.data, Sz.data, NULL,  
-       0., B_data,          NULL,  
+       P.fac, A.data, Sz.data, nullptr,  
+       0.,    B_data,          nullptr,  
        hptt::ESTIMATE,np>=1 ? np : 1);
    plan->execute();
+
+   if (P.conj) { Conj(); } 
 };
 
 template <>
-void wbarray_permute__(wbcomplex *B_data,
-   const wbarray<wbcomplex> &A, const wbvector<wperm_t> &P_, int np
-){
+void wbarray_permute__(
+   wbcomplex *B_data, const wbarray<wbcomplex> &A, const wbperm &P_, int np) {
+
    wbvector<int> Sz(A.SIZE), P(P_);
    auto plan = hptt::create_plan(P.data, Sz.len,
-       1., (hptt::DoubleComplex*)A.data, Sz.data, NULL,
-       0., (hptt::DoubleComplex*)B_data,          NULL,
+       P.fac, (hptt::DoubleComplex*)A.data, Sz.data, nullptr,
+       0.,    (hptt::DoubleComplex*)B_data,          nullptr,
        hptt::ESTIMATE,np>=1 ? np : 1);
    plan->execute();
+
+   if (P.conj) { Conj(); } 
 };
 
 #endif
@@ -1861,7 +1983,7 @@ void wbarray_permute__(wbcomplex *B_data,
 class tensor_ref_ { 
 
   public:
-    tensor_ref_() : Ar(NULL), Az(NULL) {};
+    tensor_ref_() : Ar(nullptr), Az(nullptr) {};
     tensor_ref_(const tensor_ref_ &b) : Ar(b.Ar), Az(b.Az) {};
 
     tensor_ref_& init(const tensor_ref_ &b) {
@@ -1875,15 +1997,15 @@ class tensor_ref_ {
     bool operator==(const wbarray<wbcomplex> *A) const {
        return (Az && Az==A); };
 
-    tensor_ref_& init(const wbarray<double>    &A) { Ar=&A; Az=NULL;
+    tensor_ref_& init(const wbarray<double>    &A) { Ar=&A; Az=nullptr;
        return *this; };
-    tensor_ref_& init(const wbarray<wbcomplex> &A) { Az=&A; Ar=NULL;
+    tensor_ref_& init(const wbarray<wbcomplex> &A) { Az=&A; Ar=nullptr;
        return *this; };
 
     explicit operator bool() const { return (Ar || Az); };
     bool operator! () const { return (!Ar && !Az); };
 
-    int check(const char *F=NULL, int L=0) const;
+    int check(const char *F=nullptr, int L=0) const;
     int rank(unsigned r) const;
 
     bool sameSize(const wbvector<size_t> &S) const;
@@ -1913,7 +2035,7 @@ class tensorRef_ {
         it=B.it; S=B.S; ID=B.ID; };
 
      template<class T>
-     tensorRef_(const wbarray<T> &A, const iTags *t_=NULL) {
+     tensorRef_(const wbarray<T> &A, const iTags *t_=nullptr) {
         init(A,t_); }
 
      tensorRef_& operator=(const tensorRef_ &B) { return init(B); };
@@ -1930,7 +2052,7 @@ class tensorRef_ {
      };
 
      template<class T>
-     tensorRef_& init(const wbarray<T> &A, const iTags *t_=NULL, char c=0) {
+     tensorRef_& init(const wbarray<T> &A, const iTags *t_=nullptr, char c=0) {
         R.init(A); 
         S.init2ref(A.SIZE); ID.init(); id=0; conj=c;
 
@@ -1949,7 +2071,7 @@ class tensorRef_ {
 
      size_t numel() const { return S.prod(0); };
 
-     char check(const char* F=NULL, int L=0) const;
+     char check(const char* F=nullptr, int L=0) const;
      char Check(const char* F, int L, unsigned &id_);
 
      int UpdateItagsCtr(const char *F, int L,
@@ -1965,18 +2087,18 @@ class tensorRef_ {
      };
 
      template<class T>
-     int contract(const char *F, int L,
+     int contract(const char *F, int L, 
         const tensorRef_ &b, tensorRef_ &c, double *flops,
         wbarray<T> *C) const;
 
      int contract(const char *F, int L,
         const tensorRef_ &b, tensorRef_ &c, double &flops
-      ) const { return contract(F,L,b,c,&flops, (wbarray<double>*)NULL); }
+      ) const { return contract(F,L,b,c,&flops, (wbarray<double>*)nullptr); }
 
      template<class T>
      int contract(const char *F, int L,
         const tensorRef_ &b, tensorRef_ &c, wbarray<T> &C
-      ) const { return contract(F,L,b,c,NULL, &C); }
+      ) const { return contract(F,L,b,c,nullptr, &C); }
 
      wbstring toStr() const {
         wbstring s(ID.len ? 128 : 256); 
@@ -1992,9 +2114,9 @@ class tensorRef_ {
         return s;
      };
 
-     const tensorRef_& print(const char* istr=NULL, char vflag=1) const {
+     const tensorRef_& print(const char* istr=nullptr, char vflag=1) const {
         char q=(vflag ? check() : 0);
-        PRINTF("%s %-50s%s\n", istr? istr:"      ", STR_(this),
+        PRINTF("%s %-50s%s\n", istr? istr:"      ", STR(*this),
            q ? (q&1 ? "empty data" : "length mismatch") : "");
         return *this;
      };
@@ -2034,12 +2156,12 @@ class tensorRefs : public wbvector<tensorRef_> {
         return q;
      };
 
-     void print() { print(NULL,0); } 
+     void print() { print(nullptr,0); } 
      void print(const char *F, int L) const;
 
      double getOptimalCtrOrder( 
         const char *F, int L, wbperm &P,
-        wbperm *pfin=NULL, char useP=0, char vflag=0);
+        wbperm *pfin=nullptr, char useP=0, char vflag=0);
 
   protected:
   private:
@@ -2049,7 +2171,7 @@ template <class T>
 class wbarrRef { 
   public:
 
-    wbarrRef() : dc(0.), fac(1.), tflag(0), D(NULL) {};
+    wbarrRef() : dc(0.), fac(1.), tflag(0), D(nullptr) {};
 
     wbarrRef(const wbarrRef<T> &r) {
        memcpy(this, &r, sizeof(r));
@@ -2101,8 +2223,8 @@ T sign(const T &a, const T &b) {
 
 template<class T>
 wbarray<T> TestContract(
-    const wbarray<T> &A, C_UVEC i1,
-    const wbarray<T> &B, C_UVEC i2, const wbperm &pfinal=wbperm());
+    const wbarray<T> &A, cUVEC i1,
+    const wbarray<T> &B, cUVEC i2, const wbperm &pfinal=wbperm());
 
 template<class T>
 void cell2mat(
@@ -2116,14 +2238,14 @@ size_t wbarray<T>::serial_index(const widx_t *I, size_t len) const {
    size_t i,k, r=SIZE.len, l=r-1, nz=r-len; 
 
    if (len==0) return -1;
-   if (!r || len>r || (len && data==NULL)) wblog(FL,
+   if (!r || len>r || (len && data==nullptr)) wblog(FL,
       "ERR %s[%s] having %s array",FCT,
-      STR(WBINDEX(len,I)+1), SSTR_(this));
+      STR(WBINDEX(len,I)+1), SSTR(*this));
 
 #ifdef CHECK_ELEMENT_RANGE
    for (i=0; i<len; i++) if (I[i]>=SIZE[i+nz]) {
        wblog(FL,"ERR %s[%s] index out of bounds (%s)",FCT,
-      STR(WBINDEX(len,I)+1), SSTR_(this));
+      STR(WBINDEX(len,I)+1), SSTR(*this));
    }
 #endif
 
@@ -2133,7 +2255,7 @@ size_t wbarray<T>::serial_index(const widx_t *I, size_t len) const {
 
 #ifdef CHECK_ELEMENT_RANGE
    if (k>=numel()) wblog(FL,
-   "ERR %s() index out of bounds (%d; %s)",FCT,k,SSTR_(this));
+   "ERR %s() index out of bounds (%d; %s)",FCT,k,SSTR(*this));
 #endif
 
    return k;
@@ -2167,7 +2289,7 @@ template<class T>
 void wbarray<T>::add2MxStruct(mxArray *S, unsigned i, char tflag) const {
 
    if (tflag) { size_t s=0; 
-      if (S==NULL || (s=mxGetNumberOfElements(S))<1 || i>=s) wblog(FL,
+      if (S==nullptr || (s=mxGetNumberOfElements(S))<1 || i>=s) wblog(FL,
       "ERR %s() must follow mxCreateStruct()\n%lx, %d/%d",FCT,S,i+1,s);
    }
 
@@ -2177,12 +2299,12 @@ void wbarray<T>::add2MxStruct(mxArray *S, unsigned i, char tflag) const {
 template <class T> inline
 mxArray* wbarray<T>::toMx_base() const { 
 
-   mxArray *a=NULL;
+   mxArray *a=nullptr;
 
    if (sptr && sptr->mtype) { check_consistency(FL);
       if (sptr->mtype==Wb::MEX_RETURN) {
-         size_t l=P2X.BUF.size();
-         a=P2X.Return(0,0,data); 
+         size_t l=gP2X.BUF.size();
+         a=gP2X.Return(0,0,data); 
 
          if (a) {
             size_t s1=numel(), s2=mxGetNumberOfElements(a);
@@ -2197,7 +2319,7 @@ mxArray* wbarray<T>::toMx_base() const {
             );
          }
          else {
-            wblog(FL,"WRN sptr=%s not / no longer in P2X @ %ld",STR_(sptr),l);
+            wblog(FL,"WRN sptr=%s not / no longer in gP2X @ %ld",STR_(sptr),l);
          }
       }
       else {
@@ -2223,16 +2345,17 @@ wbarray<T>& wbarray<T>::resize(
 
    if (SIZE.len!=S.len) wblog(FL,
       "ERR length mismatch (%d/%d)",SIZE.len,S.len);
-   if (this==&B) wblog(FL,"WRN %s() got call onto self",FCT);
+   if (data==B.data) wblog(FL,"WRN %s() got call onto self",FCT);
 
    if (S==SIZE) { B=(*this); return B; }
    else if (!S) { B.init();  return B; }
    else { B.NEW(S); }
 
    size_t i,j,k, r=S.len, l=r-1, *s1=SIZE.data, *s2=B.SIZE.data;
-   WBINDEX I(r); T *b=B.data;
+   T *b=B.data;
+   WBINDEX I(r);
 
-   size_t s[r];
+   wbvec<size_t> Smin(r); size_t *s=Smin.data;
    for (i=0; i<r; ++i) { s[i] = MIN( S[i], SIZE[i] ); }
 
    while (I[l]<s[l]) { 
@@ -2243,10 +2366,49 @@ wbarray<T>& wbarray<T>::resize(
 
       b[j]=data[i];
 
-      k=0; I[0]++;
+      ++I[k=0];
       while (I[k]>=s[k] && k<l) { I[k]=0; ++I[++k]; }
    }
 
+   return B;
+};
+
+template<class T>
+wbarray<T>& wbarray<T>::resize(
+   const wbvector<size_t> &S, wbarray<T> &B, double &dx) const {
+
+   if (SIZE.len!=S.len) wblog(FL,
+      "ERR length mismatch (%d/%d)",SIZE.len,S.len);
+   if (data==B.data) wblog(FL,"WRN %s() got call onto self",FCT);
+
+   if (S==SIZE) { B=(*this); return B; }
+   else if (!S) { B.init();  return B; }
+   else { B.NEW(S); }
+
+   size_t i,j,k, r=S.len, l=r-1, *s1=SIZE.data, *s2=B.SIZE.data;
+   int nx; T x2=0, *b=B.data;
+   WBINDEX I(r);
+
+   wbvec<size_t> Smin(r); size_t *s=Smin.data;
+   for (i=0; i<r; ++i) { s[i] = MIN( S[i], SIZE[i] ); }
+
+   i=0;
+
+   while (I[l]<s1[l]) { 
+      k=l; nx=(I[k]>=s[k] ? 1 : 0);
+      for (j=I[k--]; k<r; --k) {
+         if (I[k]>=s[k]) { ++nx; } else
+         if (!nx) { j = j*s2[k] + I[k]; }
+      }
+      if (!nx)
+           { b[j]=data[i]; }
+      else { x2+=Wb::norm2(data[i]); }
+
+      ++I[k=0]; ++i;
+      while (I[k]>=s1[k] && k<l) { I[k]=0; ++I[++k]; }
+   }
+
+   dx=Wb::sqrt(double(x2));
    return B;
 };
 
@@ -2310,14 +2472,14 @@ wbarray<T>& wbarray<T>::Append2(
    if (B.isEmpty()) { save2(B); return B; }
 
    if (SIZE.len!=B.SIZE.len) wblog(F_L,
-      "ERR %s() incompatible objects (%s <> %s)",FCT,SSTR_(this),SSTR(B));
+      "ERR %s() incompatible objects (%s <> %s)",FCT,SSTR(*this),SSTR(B));
    if (dim>=SIZE.len) wblog(F_L,
       "ERR %s() dimension out of bounds (%d/%d)",FCT,dim+1,SIZE.len);
 
    for (i=0; i<SIZE.len; ++i) {
       if (i!=dim) { if (SIZE[i]!=B.SIZE[i]) wblog(F_L,
          "ERR %s() size mismatch (%s <> %s @ %d/%d; %d)",
-          FCT,SSTR_(this),SSTR(B),i+1,SIZE.len,dim+1);
+          FCT,SSTR(*this),SSTR(B),i+1,SIZE.len,dim+1);
       }
       else { D=SIZE[i]+B.SIZE[i]; ib=B.SIZE[i]; }
    }
@@ -2357,11 +2519,11 @@ void wbarray<T>::Append2(
 
    if (SIZE.len!=B.SIZE.len) wblog(F_L,
       "ERR %s() incompatible objects (%s <> %s)",
-       FCT,SSTR_(this),SSTR(B));
+       FCT,SSTR(*this),SSTR(B));
    for (i=0; i<SIZE.len; ++i) { if (i!=dim) {
        if (SIZE[i]!=B.SIZE[i]) wblog(F_L,
       "ERR %s() size mismatch (%s <> %s; %d; %d/d)",
-       FCT,SSTR_(this),SSTR(B),dim+1,i+1,SIZE.len);
+       FCT,SSTR(*this),SSTR(B),dim+1,i+1,SIZE.len);
    }}
 
    wbindex J(SIZE[dim]);
@@ -2369,7 +2531,7 @@ void wbarray<T>::Append2(
 
    if (!W.isVector() || n!=SIZE[dim]) wblog(F_L,
       "ERR %s() invalid weigths W (%s <> %s @ %d)",
-       FCT, SSTR(W), SSTR_(this), dim+1);
+       FCT, SSTR(W), SSTR(*this), dim+1);
    for (i=0; i<n; ++i) { if (w[i]<eps) { j[m++]=i; }}
 
    if (!m) return; 
@@ -2450,7 +2612,7 @@ wbarray<T>& wbarray<T>::init(
    SIZE.init(r);
    for (i=0; i<r; ++i) { SIZE[i]=sz[P[i]]; len*=sz[i]; }
 
-   NEW_DATA(len,NULL,0,0); 
+   NEW_DATA(len,nullptr,'\0','\0'); 
 
    Mx::Array<T>(a).copyTo(data,P);
 
@@ -2495,11 +2657,11 @@ wbarray<T>& wbarray<T>::initIdentity(
    size_t const* const s=S.data;
 
    if (S.len%2) wblog(FL,
-   "ERR %s() requires even rank object (%s)",FCT,SSTR_(this));
+   "ERR %s() requires even rank object (%s)",FCT,SSTR(*this));
    for (i=0; i<m; i++) if (s[i]!=s[i+m]) wblog(FL,
-   "ERR %s() requires symmetric object (%s)",FCT,SSTR_(this));
+   "ERR %s() requires symmetric object (%s)",FCT,SSTR(*this));
    if (m>1 && dflag) wblog(FL,
-   "ERR %s() rank-2 tensor required with dflag (%s)",FCT,SSTR_(this));
+   "ERR %s() rank-2 tensor required with dflag (%s)",FCT,SSTR(*this));
 
    if (!m) { init(); return *this; }
    if (dflag) { init(s[0]).set(T(1)); return *this; }
@@ -2520,7 +2682,7 @@ wbarray<T>& wbarray<T>::Reduce2Id() {
       for (i=0; i<s[0]; ++i, ++x) { *x = (i==j ? 1 : 0); }}
    }
    else if (SIZE.len) wblog(FL,
-      "ERR %s() matrix expected (got %s)",FCT,SSTR_(this));
+      "ERR %s() matrix expected (got %s)",FCT,SSTR(*this));
 
    return *this;
 };
@@ -2568,13 +2730,27 @@ wbarray<T>& wbarray<T>::initIdentityB3(
 };
 
 template<class T> inline
+wbarray<T>& wbarray<T>::initPermB(size_t d1, size_t d2, const wbperm &P) {
+
+   unsigned i, j=0; T *x;
+   init(d1,d2); x=data;
+
+   for (; j<d2; ++j, x+=d1) { i=P.at_(j);
+      if (i>=d1) wblog(FL,"ERR %s() "
+         "P out of bounds (j=%d/%d/%d: i=%d/%d)",FCT,j,d2,P.len,i,d1);
+      x[i]=1;
+   }
+   return *this;
+};
+
+template<class T> inline
 void wbarray<T>::Diag2Vec() {
    size_t i,m;
    WBINDEX S(1);
 
    if (!isSMatrix()) wblog(FL,
       "ERR Calling %s for rank-%d object (%s).",
-       FCT, SIZE.len, SSTR_(this));
+       FCT, SIZE.len, SSTR(*this));
 
    m=S[0]=SIZE[0];
    for (i=1; i<m; i++) data[i]=data[i+i*m]; 
@@ -2588,7 +2764,7 @@ wbarray<T>& wbarray<T>::Reduce2Diag(T eps) {
    if (!SIZE.len) { return *this; }
    else if (!isSMatrix()) wblog(FL,
       "ERR %s() symmetric matrix required\n"
-      "(got rank-%d object; %s)",FCT,rank(),SSTR_(this)
+      "(got rank-%d object; %s)",FCT,rank(),SSTR(*this)
    );
 
    unsigned i, j=0, n=SIZE[0];
@@ -2640,7 +2816,7 @@ void wbarray<T>::contractDiag(
 
    for (i=0; i<s; i++) {
        if (Iflag)
-            X.data[i]/=(b-h[I[ic]]+1E-33); 
+            X.data[i]/=(b-h[I[ic]]+1e-33); 
        else X.data[i]*=(b-h[I[ic]]);
 
        k=0; I[0]++; 
@@ -2649,7 +2825,7 @@ void wbarray<T>::contractDiag(
 
    if (C.isEmpty()) X.save2(C); else {
       if (C.SIZE!=SIZE) wblog(FL,"ERR size mismatch in C: %s <> %s",
-          SSTR_(this), SSTR(C));
+          SSTR(*this), SSTR(C));
       C+=X;
    }
 };
@@ -2661,7 +2837,7 @@ wbarray<T>& wbarray<T>::ExpandDiagonal() {
    wbarray<T> X;
 
    if (!isVector()) 
-      wblog(FL,"ERR %s() got %s array",FCT,SSTR_(this));
+      wblog(FL,"ERR %s() got %s array",FCT,SSTR(*this));
 
    save2(X); init(n,n);
    for (i=0; i<n; ++i) data[i+n*i]=X.data[i];
@@ -2676,7 +2852,7 @@ wbarray<T>& wbarray<T>::ExpandDiagonal(unsigned i1, unsigned i2) {
       "ERR %s() invalid indices (%d %d; %d)",FCT,i1+1,i2+1,SIZE.len);
    if (SIZE[i1]!=1 && SIZE[i2]!=1) wblog(FL,
       "ERR %s() array should be diagonal in (%s; %d %d)",
-       FCT, SSTR_(this), i1+1, i2+1);
+       FCT, SSTR(*this), i1+1, i2+1);
    if (SIZE[i1]==1 && SIZE[i2]==1) { return *this; }
 
    if (SIZE[i1]!=1) SWAP(i1,i2); 
@@ -2712,7 +2888,7 @@ wbarray<T>& wbarray<T>::Expand2Projector(T eps) {
    if (n==0) { if (SIZE.len>1) SIZE[0]=0; return *this; }
    if (!isVector()) wblog(FL,
       "ERR %s() array must be 1-dim vector (got %s)",
-       FCT, SSTR_(this)
+       FCT, SSTR(*this)
    );
 
    for (m=i=0; i<n; i++) if (Wb::abs(data[i])>eps) { mark[i]=1; m++; }
@@ -2730,7 +2906,7 @@ T wbarray<T>::froNorm2(const wbarray<T> &B) const {
    T x=0;
 
    if (!sameSize(B)) wblog(FL,"ERR %s() size mismatch (%s/%s)",
-   FCT, SSTR_(this), SSTR(B));
+   FCT, SSTR(*this), SSTR(B));
 
    for (size_t n=numel(), i=0; i<n; i++) x+=Wb::CONJ(data[i])*B.data[i];
    return x;
@@ -2766,7 +2942,7 @@ template<class T> inline
 T wbarray<T>::normCol2(size_t k) const {
 
    if (SIZE.len!=2) wblog(FL,
-      "ERR %s() invalid matrix %s",FCT,SSTR_(this));
+      "ERR %s() invalid matrix %s",FCT,SSTR(*this));
    if (k>=SIZE[1]) wblog(FL,
       "ERR %s() index out of bounds (%d/%d)",FCT,k,SIZE[1]);
 
@@ -2782,7 +2958,7 @@ wbvector<T>& wbarray<T>::norm2Cols(wbvector<T> &x2_) const {
 
    if (!SIZE.len) { if (x2_.len) { x2_.init(); }; return x2_; }
    if (SIZE.len!=2) wblog(FL,
-      "ERR %s() invalid matrix %s",FCT,SSTR_(this));
+      "ERR %s() invalid matrix %s",FCT,SSTR(*this));
 
    x2_.init(SIZE[1]); {
       T* x2=x2_.data; size_t i,j, l=0, dim1=SIZE[0], dim2=SIZE[1];
@@ -2808,7 +2984,7 @@ T wbarray<T>::scalarProd(const wbarray<T> &B) const {
    T x=0; size_t i=0, n=numel();  
 
    if (!sameSize(B)) wblog(FL,
-      "ERR %s() size mismatch: %s <> %s",FCT,SSTR_(this),SSTR(B));
+      "ERR %s() size mismatch: %s <> %s",FCT,SSTR(*this),SSTR(B));
    for (; i<n; i++) { x+=data[i]*B.data[i]; }
    return x;
 }
@@ -2821,7 +2997,7 @@ wbcomplex wbarray<wbcomplex>::scalarProd(
    wbcomplex x=0; size_t i=0, n=numel();
 
    if (!sameSize(B)) wblog(FL,
-      "ERR %s() size mismatch: %s <> %s",FCT,SSTR_(this),SSTR(B));
+      "ERR %s() size mismatch: %s <> %s",FCT,SSTR(*this),SSTR(B));
    for (; i<n; ++i) { x+=data[i]*B.data[i].conj(); }
 
    return x;
@@ -2838,10 +3014,7 @@ T wbarray<T>::sum() const {
 }
 
 template<class T> inline
-wbarray<T>& wbarray<T>::sum(
-    const WBINDEX &K,
-    wbarray<T>&A
-) const {
+wbarray<T>& wbarray<T>::sum(const WBINDEX &K, wbarray<T>&A) const {
 
     size_t i,j,k,q, r=SIZE.len, l=r-1, s=numel();
     WBINDEX S=SIZE;
@@ -2886,25 +3059,63 @@ T wbarray<T>::trace() const {
    if (SIZE.len%2) wblog(FL,
       "ERR %s() got object with odd rank %d",FCT,SIZE.len);
    if (!isSquare()) wblog(FL,
-      "WRN %s() of non-square array %s",FCT,SSTR_(this));
+      "WRN %s() of non-square array %s",FCT,SSTR(*this));
 
    if (SIZE.len) {
-      size_t n=SIZE[0], m;
+      size_t j=0, N=SIZE[0], M, dN;
+      T *d=data;
 
-      if (SIZE.len==2) { m=SIZE[1]; }
+      if (SIZE.len==2) { M=SIZE[1]; }
       else {
-         unsigned i=1, r2=SIZE.len/2; m=SIZE[r2];
+         unsigned i=1, r2=SIZE.len/2; M=SIZE[r2];
          for (; i<r2; ++i) {
-            n*=SIZE[i];
-            m*=SIZE[r2+i]; 
+            N*=SIZE[   i];
+            M*=SIZE[r2+i]; 
          }
       }
 
-      if (m>n) { m=n; } 
-      for (size_t i=0; i<m; ++i) { x+=data[i+i*n]; }
+      dN=N+1; if (M>N) { M=N; } 
+
+      for (; j<M; ++j, d+=dN) { x+=(*d); }
    }
 
    return x;
+};
+
+template<class T>
+wbvector<T>& wbarray<T>::trace(unsigned k, wbvector <T> &tt) const {
+
+   unsigned r=SIZE.len;
+
+   if (r%2!=1) wblog(FL,
+      "ERR %s() requires odd-rank tensor (r=%d; k=%d)",FCT,r,k);
+
+   if (int(k)<0) { k=r-1; } else
+   if (k && k+1!=r) wblog(FL,
+     "ERR %s() only accepts to be first or last index (k=%d/%d)",FCT,k,r);
+
+   unsigned r2=(r-1)/2;
+   const size_t *sz=SIZE.data+(k? 0:1); const T *x=data; T *t;
+   size_t i,j, n=SIZE[k], dN, N=1;
+
+   tt.init(n); t=tt.data;
+
+   for (i=0; i<r2; ++i) {
+      if (sz[i]!=sz[i+r2]) wblog(FL,"ERR %s() "
+         "got non-symmetric tensor (%s; k=%d/%d)",FCT,SSTR(*this),k,r);
+      N*=sz[i];
+   }
+
+   if (k) { dN=N+1; 
+      for (j=0; j<n; ++j, x+=(1-dN), ++t) { 
+      for (i=0; i<N; ++i, x+=dN) { (*t)+=(*x); }}
+   }
+   else { dN=n*(N+1); 
+      for (i=0; i<N; ++i, x+=dN) { 
+      for (j=0; j<n; ++j) { t[j]+=x[j]; }}
+   }
+
+   return tt;
 };
 
 #endif

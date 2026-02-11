@@ -45,7 +45,7 @@ function [qfmt,Q3]=getqfmt(A)
            case 'SU', compact=1; r=n-1;
            case 'Sp', compact=1; r=n/2;
            case 'SO', compact=1; r=floor(n/2); 
-           case {'Z','P'},       r=1;
+           case {'Z','P','A'},  r=1;
            otherwise wbdie('unexpected symmetry %s',sym{j});
         end
      end

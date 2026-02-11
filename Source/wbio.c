@@ -73,10 +73,11 @@ int Wb::tmpFile::sepline(const char *x, unsigned n) {
    unsigned l=0;
 
    if (!n || !ncall) { return l; }
-   if (int(n)<0) { n=72; } 
-   else if (int(n)>90) n=90; 
+   if (int(n)< 0) { n=72; } else 
+   if (int(n)>90) { n=90; } 
 
-   unsigned m=(x ? strlen(x) : 0); char s[n+1];
+   unsigned m=(x ? strlen(x) : 0);
+   wbvec<char> s_(n+1); char *s=s_.data;
 
    if (m<=1) { memset(s, m? x[0] :'-', n); }
    else {
@@ -126,14 +127,15 @@ int Wb::tmpFile::blogf(const char *F, int L, const char *fmt, ...) {
 void WbPrintMatrixC (
     const wbMatrix<wbcomplex> &M, const char *istr, int space
 ){
-    unsigned i,j,l=0,n=64; char dstr[n], sfmt[64];
+    unsigned i,j;
+    wbvec<char> dstr(64), sfmt(64);
 
     int rflag, iflag;
 
     PRINTF("%s%s", istr, istr[0] ? "\n" : "");
 
-    if (space<1) snprintf(sfmt,n," %%s");
-    else         snprintf(sfmt,n," %%%ds", space);
+    if (space<1) sfmt.catf(FL," %%s");
+    else         sfmt.catf(FL," %%%ds", space);
 
     for (i=0; i<M.dim1; i++) {
         for (j=0; j<M.dim2; j++) {
@@ -155,21 +157,21 @@ void WbPrintMatrixC (
             }
 
             if (rflag) {
-                l=snprintf(dstr,n,"% g",M(i,j).r);
+                dstr.catf(0,0,"% g",M(i,j).r);
                 if (iflag) {
                    if (abs(iflag)>1)
-                        l+=snprintf(dstr+l,n-l,"%+gi", M(i,j).i);
-                   else l+=snprintf(dstr+l,n-l,"%ci",  iflag==1? '+':'-');
+                        dstr.catf(0,0,"%+gi", M(i,j).i);
+                   else dstr.catf(0,0,"%ci",  iflag==1? '+':'-');
                 }
             }
             else {
                 if (iflag)
                    if (abs(iflag)>1)
-                        l=snprintf(dstr,n,"% gi", M(i,j).i);
-                   else l=snprintf(dstr,n,"%ci",  iflag==1? ' ':'-');
-                else {  l=snprintf(dstr,n,"%g", M(i,j).r); }
+                        dstr.catf(0,0,"% gi", M(i,j).i);
+                   else dstr.catf(0,0,"%ci",  iflag==1? ' ':'-');
+                else {  dstr.catf(0,0,"%g", M(i,j).r); }
             }
-            PRINTF(sfmt,dstr);
+            PRINTF(sfmt.data,dstr.data);
         }
         PRINTF("\n");
     }
@@ -177,11 +179,12 @@ void WbPrintMatrixC (
 };
 
 template<class T>
-int Str2Idx(
+int Wb::Str2Idx(
    const char *F, int L, 
    const char* s_, wbvector<T> &idx,
    T offset,             
-   char cmpct            
+   char cmpct,           
+   unsigned l_           
 ){
    if (!s_) {
       wblog(F_L,"ERR %s() got null input !?",FCT);
@@ -189,44 +192,48 @@ int Str2Idx(
    }
    if (!s_[0]) { idx.init(); return  0; } 
 
-   int i,j, n=0, e=0, l=strlen(s_),
-      ms=1, 
+   unsigned i,j, n=0,
+      ma=0, 
       mx=0, 
-      ma=0; 
+      ms=1; 
 
    char c, sx=0, bflag=0;
-   char s[l+1], *s1=NULL, *s2=s;
-   long int x;
+   long x; int e=0;
 
-   strcpy(s,s_); 
+   unsigned l=strlen(s_);
+      if (l>l_) { l=l_; } 
+      else      { l_=l; }
 
-   for (i=0; i<l && !e; ++i) { if (!isspace(c=s_[i])) {
+   wbvec<char> S_(l+1,s_); 
+   char *s=S_.data, *s1=s, *s2=s;
+
+   for (i=0; i<l && !e; ++i) { c=s[i]; if (!isspace(c)) {
       if (isalnum(c)) { ++ma; ms=0;
          if ((++n)>1 && !sx) { sx=','; }
-         for (++i; i<l; ++i) { if (isalnum(s_[i])) ++ma; else break; }
-         --i; continue;
+         for (++i; i<l; ++i) {
+            if (isalnum(s[i])) { ++ma; } else { --i; break; }}
+         continue;
       }
       else { ++mx; s[i]=' '; }
 
       if (c==',' || c==';') { ++ms;
          if (n && ms==1)       
-              { if (sx) { if (sx!=c) e=+__LINE__; } else { sx=c; }}
+              { if (!sx) { sx=c; } else if (sx!=c) e=+__LINE__; }
          else { e=+__LINE__; } 
       }
-      else if (c=='[') { if (n || bflag&1) e=-__LINE__; else bflag|=1; }
-      else if (c==']') { if (bflag&2) e=-__LINE__; else { bflag|=2;
-         for (++i; i<l && s_[i]; ++i) {
-            if (!isspace(s_[i])) { e=__LINE__; break; }
-         }
+      else if (c=='[') { if (!n && !bflag) { bflag|=1; } else { e=-__LINE__; }}
+      else if (c==']') { if (bflag&2) { e=-__LINE__; } else {
+         bflag|=2; ++i;
+         for (; i<l && s[i]; ++i) { if (!isspace(s[i])) { e=__LINE__; break; }}
       }}
       else { e=__LINE__; } 
    }}
 
    if (!n && !mx) { idx.init(); return 0; }
 
-   if (bflag && bflag!=3) { 
-      if (e) { if (e>0) e=-e; } else
-      e=-__LINE__; 
+   if (bflag && bflag!=3) {  
+      if (e) { if (e>0) e=-e; }
+      else { e=-__LINE__; }  
    }
 
    if (e<0) { if (F) wblog(F,L,  
@@ -236,31 +243,30 @@ int Str2Idx(
 
    if (e) { l=i; } 
 
-   if (n==1 && cmpct) { n=ma; idx.init(n); 
-      for (j=i=0; i<l; ++i) {
+   if (l>l_) wblog(F_L,"ERR %s() '%s' (e=%d, l=%d/%d)",FCT,s_,e,l,l_);
+
+   if (n==1 && cmpct) { 
+      n=ma; idx.init(n); j=-1;
+      for (i=0; i<l; ++i) {
          if (isalnum(s[i])) { c=s[i];
-            if (unsigned(j)>=idx.len) wblog(FL,
-               "ERR %s() j=%d/%d !?",FCT,l,idx.len);
-            if (c>='0' && c<='9') { idx[j++]=c-'0';    } else
-            if (c>='A' && c<='Z') { idx[j++]=c-'A'+10; } else
-            if (c>='a' && c<='z') { idx[j++]=c-'a'+36; }
-            else { e=-__LINE__; ++i; break; }
+            if ((++j)>=n) wblog(FL,"ERR %s() j=%d/%d !?",FCT,j,n);
+            if (c>='0' && c<='9') { idx[j]=c-'0';    } else
+            if (c>='A' && c<='Z') { idx[j]=c-'A'+10; } else
+            if (c>='a' && c<='z') { idx[j]=c-'a'+36; }
+            else { e=-__LINE__; ++i; break; } 
          }
       }
    }
    else { idx.init(n); 
-
-      for (n=0; n<=int(idx.len); ++n) { s1=s2;
-         x=strtol(s1,&s2,0); if (s1==s2 || n==int(idx.len)) { break; }
-
-         if ((long int)T(x)!=x) wblog(F_L,
-            "ERR %s() invalid '%s' %g/%ld !?",FCT,s_,double(T(x)),x);
-         idx[n]=T(x);
+      for (j=0; j<idx.len; ++j) { s1=s2;
+         x=strtol(s1,&s2,0); if (s2==s1) { break; }
+         idx[j]=T(x);
       }
-      if (n!=int(idx.len)) { e=-__LINE__; }
+      if (j!=idx.len || (s2-s)>l_) { e=-__LINE__; }
       if (!e) {
-         if (s1!=s2) { l=s2-s; e=__LINE__; } else {
-         for (; *s2; ++s2) { if (!isspace(*s2)) { l=s2-s; e=__LINE__; }}}
+         for (i=s2-s; i<l_; ++i) {
+             if (!isspace(s[i])) { l=i; e=__LINE__; }
+         }
       }
    }
 
@@ -270,7 +276,7 @@ int Str2Idx(
    }
 
    if (offset && e>=int(0)) {
-      for (i=0; i<int(idx.len); ++i) {
+      for (i=0; i<n; ++i) {
       if (idx[i]>=offset) { idx[i]-=offset; } else { e=-__LINE__; }}
    }
 
@@ -280,27 +286,24 @@ int Str2Idx(
       return -l;
    }
 
-   if (e) {
-      return -l;
+   if (e) { 
+      if (F) wblog(F,L,"WRN %s() trailing string in "
+        "'%s' [e=%d, l=%d, %d/%d]",FCT,s_,e,l,bflag,cmpct);
+      return -l; 
    }
 
    return idx.len;
 };
 
 template<class T>
-int Str2Idx(
-   const char* s, wbvector<T> &I, T offset, char cmpct
-){ return Str2Idx(FL,s,I,offset,cmpct); };
-
-template<class T>
-int Str2Idx(
+int Wb::Str2Idx(
    const char* F, int L, 
    wbvector<T> &I, const mxArray *a, T offset, char cmpct
 ){
    if (!a) wblog(FL,"ERR %s() got null mxArray",FCT);
 
    if (mxIsChar(a)) { wbstring s(a);
-      int n=Str2Idx(0,0,s.data,I,offset,cmpct);
+      int n=Wb::Str2Idx(0,0,s.data,I,offset,cmpct);
       if (n<0) wblog(F_L,
          "ERR %s() '%s' => [%s] @ e=%d !?",FCT,s.data,STR(I),n);
       return I.len; 

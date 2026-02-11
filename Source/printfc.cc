@@ -66,15 +66,15 @@ void mexFunction(
 
     for (i=0; i<l; ++i) { if (str[i]=='\\') { ++m; }}
     if (m) {
-       mxArray* args[nargin];
+       wbvec<mxArray*> args(nargin);
        for (j=i+m; i<=l; --i, --j) {
           str[j]=str[i]; if (str[i]=='\\') { str[--j]='\\'; }
        }
-       memcpy(args,argin,nargin*sizeof(mxArray*));
+       memcpy(args.data,argin,nargin*sizeof(mxArray*));
        args[0]=mxCreateString(str);
        if (!args[0]) { i=-1; }
        else {
-          i=mexCallMATLAB(1,&a,nargin,args,"sprintf");
+          i=mexCallMATLAB(1,&a,nargin,args.data,"sprintf");
           mxDestroyArray(args[0]);
        }
     }

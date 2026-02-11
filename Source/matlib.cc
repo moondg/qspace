@@ -86,18 +86,17 @@ double Wb::CallMatlab(
       catch (...) { e=-2; }
    }
 
-   if (e) { int l=0, n=64; char s[n]; s[0]=0;
+   if (e) { wbvec<char> s(64);
       if (e<0)
-           l=snprintf(s,n,"invalid command >> %s",cmd);
-      else l=snprintf(s,n,">> %s",cmd);
+           { s.catf(0,0,"invalid command >> %s",cmd); }
+      else { s.catf(0,0,">> %s",cmd); }
 
-      if (l<n && arg1) l+=snprintf(s+l,n-l,"('%s')",arg1);
-      if (l<n) l+=snprintf(s+l,n-l,
-         e>0? "  %% returned error e=%d":" %% (e=%d)",e);
+      if (arg1) { s.catf(0,0,"('%s')",arg1); }
+      s.catf(0,0,e>0? "  %% returned error e=%d":" %% (e=%d)", e);
 
       if (F)
-           wblog(F,L,"ERR %s %s",FCT,s);
-      else wblog(FL, "WRN %s %s",FCT,s);
+           { wblog(F,L,"ERR %s %s",FCT,s.data); }
+      else { wblog(FL, "WRN %s %s",FCT,s.data); }
 
       return q=0;
    }
@@ -105,10 +104,11 @@ double Wb::CallMatlab(
    mxGetNumber(argout[0],q);
    mxDestroyArray(argout[0]);
 
-   if (F) { unsigned l, n=32; char s[n];
-      l=snprintf(s,n,"%s",cmd);
-      if (arg1 && l<n) l+=snprintf(s+l,n-l,"('%s')",arg1);
-      wblog(F,L," *  %s >> %-24s %% %g",FCT,s,q);
+   if (F) {
+      wbvec<char> s(32);
+         s.catf(0,0,"%s",cmd);
+         if (arg1) s.catf(0,0,"('%s')",arg1);
+      wblog(F,L," *  %s >> %-24s %% %g",FCT,s.data,q);
    }
 
    return q;
@@ -139,7 +139,7 @@ void mexDisp(const mxArray *a, const char *vn) {
 
 void mexWRN(const char *s) {
 
-    unsigned n=32;  char tag[n];
+    const unsigned n=32;  char tag[n];
     snprintf(tag,n,"Wb:MEX:%.24s",myname);
 
     mexWarnMsgIdAndTxt(tag, s && s[0] ? s : "");

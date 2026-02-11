@@ -30,7 +30,7 @@ header('%M :: %s\n%s',regexprep(HAM.info.istr,'\n',' '),istr); addt2fig wb
 mat_to_headerSE
 
   if isset('NPsi')
-     npsi=getfield2(Inrg,'NPsi','--def',[]);
+     npsi=getfield2(Inrg,'NPsi',{[]});
      if ~isempty(npsi), NPsi=npsi;
      else
         d=getDimQS(HAM(1).Psi);

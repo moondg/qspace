@@ -29,100 +29,119 @@ class wbperm : public wbvector<wperm_t> {
 
   public:
 
-    wbperm() {}; 
+    wbperm() : inv(0), conj(0), fac(1) {};
 
-    wbperm(wperm_t n, char reverse=0) { Index(n,reverse); };
+    wbperm(wperm_t n, char reverse=0)
+    : inv(0), conj(0), fac(1) { Index(n,reverse); };
 
     wbperm(const wbperm &P, char iflag=0, unsigned r=-1)
-     : WBPERM() { init(P,iflag,r); };
+     : inv(0), conj(0), fac(P.fac) { init(P,iflag,r); };
 
-    wbperm(const wbperm &P, size_t r) { init_pad(P,r); };
+    wbperm(const char *F, int L,
+       const mxArray *a, unsigned offset=-1, unsigned r=-1)
+     : inv(0), conj(0), fac(1) { init(F,L,a,offset,r); };
 
     template<class T>
-    wbperm(const wbvector<T> &b, wperm_t offset=0) {
-       init(FL,b,offset);
+    explicit wbperm(const wbvector<T> &b, wperm_t offset=0, double fac_=1)
+     : inv(0), conj(0), fac(1) { init(FL,b,offset,fac_); };
+
+    explicit wbperm(const wbindex &P, double fac_=1); 
+
+    wbperm(const char *s, wperm_t offset=1)
+     : inv(0), conj(0), fac(1) { initStr(FL,s,offset); };
+
+    wbperm& init_bare(unsigned n) { WBPERM::init(n); return *this; };
+
+    wbperm& init(unsigned n=0, char reverse=0) {
+       inv=conj=0; fac=1;
+       return Index(n,reverse);
     };
 
-    wbperm(const wbindex &P); 
-
-    wbperm(const char *s, wperm_t offset=1) {
-       initStr(FL,s,offset);
-    }
-
-    wperm_t el1(wperm_t i) const { 
-       if (len) {
-          if (i>=len) wblog(FL,
-             "ERR element index out of bounds (%d/%d)",i+1/len);
-          return data[i];
-       }
-       else return i;
+    wbperm& init(unsigned n, const wperm_t* d, char ref=0, double fac_=1) {
+       WBPERM::init(n,d,ref); inv=conj=0; fac=fac_; isValidPerm(FL);
+       return *this;
     };
 
-    wbperm& operator= (const wbperm &P) { return init(P); }; 
-    wbperm& operator= (const char *s) {
-       initStr(FL,s,0); return *this;
+    wbperm& init(const wbperm &P, char iflag=0, unsigned r=-1);
+
+    wbperm& init_trafo(const wbperm &p1, const wbperm &p2);
+
+    int init(const char *s, wperm_t offset=1) { 
+       return initStr(FL,s,offset);
     };
 
     int initStr( 
        const char *F, int L, const char *s, wperm_t offset=1);
 
-    wbperm& init(const wbperm &P, char iflag=0, unsigned r=-1);
+    wperm_t at_(wperm_t i) const { return (i<len ? data[i] : i); };
+
+    wbperm& operator= (const wbperm &P) {
+       WBPERM::init(P); inv=P.inv; conj=P.conj; fac=P.fac;
+       return *this;
+    };
+
+    wbperm& operator= (const char *s) {
+       initStr(FL,s,1); 
+       return *this;
+    };
+
+    void swap(wbperm &P) { WBPERM::swap(P);
+       SWAP(inv ,P.inv );
+       SWAP(conj,P.conj);
+       SWAP(fac ,P.fac );
+    };
+
+    wbperm& save2(wbperm &P) {
+       WBPERM::save2(P); P.inv=inv; P.conj=conj; P.fac=fac;
+       inv=conj=0; fac=1;
+       return P;
+    };
+
     wbperm& Extend(wperm_t r);
 
-    wbperm& init_trafo(const wbperm &p1_, const wbperm &p2_);
-
-    wbperm& init_pad(const wbperm &P, wperm_t r) {
-       if (r<P.len) wblog(FL,
-          "ERR invalid %s contruction (%d/%d)",FCT,r,P.len);
-       RENEW(r); memcpy(data,P.data,P.len*sizeof(P.data[0]));
-       for (wperm_t i=P.len; i<r; i++) data[i]=i;
-       if (!isValidPerm()) dispInvalidPerm(FL);
-       return *this;
-    };
-
-    wbperm& init(unsigned n=0, char reverse=0) {
-       return Index(n,reverse);
-    };
-
-    wbperm& init(unsigned n, const wperm_t* d, char ref=0) {
-       wbvector<wperm_t>::init(n,d,ref); isValidPerm(FL);
-       return *this;
-    };
-
-    wbperm& init(const char *F, int L, const mxArray* a){
-       return init(F,L,a,mxIsChar(a) ? 1 : 0); 
-    };
-
     wbperm& init(const char *F, int L, 
-       const mxArray* a, wperm_t offset
-    ){
+       const mxArray* a, unsigned offset=-1, unsigned r=-1) {
+
+       inv=conj=0; fac=1;
+
        if (mxIsNumeric(a)) {
-          WBPERM::init(F,L,a); if (offset) { operator-=(offset); }
-          isValidPerm(F_L);
+          WBPERM::init(F,L,a); if (len) {
+             if (int(offset)<0) { offset=min(); }
+             if (offset) {
+                if (offset!=1) wblog(FL,
+                   "WRN %s() using offset=%d",C_FCT,offset);
+                operator-=(offset);
+             }
+             isValidPerm(F_L);
+          }
        }
        else if (mxIsChar(a)) {
-          int l=mxGetNumberOfElements(a)+1;
-          char s[l]; mxGetString(a,s,l);
-          initStr(F_L,s,offset);
+          wbvec<char> s(mxGetNumberOfElements(a)+1);
+          mxGetString(a,s.data,s.len);
+          if (int(offset)<0) { offset=1; } 
+          initStr(F_L,s.data,offset); 
        }
        else wblog(FL,
           "ERR %s() invalid input (%s) !?",FCT,mxGetClassName(a));
+
+       if (int(r)>=0) { Extend(r); }
+
        return *this;
     };
 
     template<class T>
-    wbperm& init(
-       const char *F, int L, const wbvector<T> &b, wperm_t offset=0
-    ){
-       initT(b.len,b.data);
+    wbperm& init(const char *F, int L,
+       const wbvector<T> &b, wperm_t offset=0, double fac_=1){
+       initT(b.len,b.data); inv=conj=0; fac=fac_;
        if (offset) { (*this)-=offset; }; isValidPerm(F_L);
        return *this;
     };
 
     wbperm& initTranspose(wperm_t r) {
-       WBPERM::init(r); wperm_t r2=r/2;
+       RENEW(r,NULL,0,0); wperm_t r2=r/2;
        if (r%2) wblog(FL,"ERR %s() even input rank required (%d)",FCT,r);
        for (wperm_t i=0; i<r2; ++i) { data[i]=r2+i; data[r2+i]=i; }
+       inv=conj=0; fac=1;
        return *this;
     };
 
@@ -136,15 +155,10 @@ class wbperm : public wbvector<wperm_t> {
        return *this;
     };
 
-    wbperm& initFirstTo (wperm_t k, wperm_t N) { 
-       Index(N); mvFirstTo(k); 
-       return *this;
-    };
+    wbperm& initMove(unsigned k, unsigned l, unsigned N); 
 
-    wbperm& initLastTo (wperm_t k, wperm_t N) {
-       Index(N); mvLastTo(k); 
-       return *this;
-    };
+    wbperm& initFirstTo(wperm_t k, wperm_t N); 
+    wbperm& initLastTo (wperm_t k, wperm_t N); 
 
     wbperm& init2Front(const WBPERM &I, wperm_t N);
     wbperm& init2End  (const WBPERM &I, wperm_t N);
@@ -156,7 +170,6 @@ class wbperm : public wbvector<wperm_t> {
     wbperm& init2End  (wperm_t k, wperm_t N);  
 
     wbperm& Cycle(wperm_t k1, wperm_t k2); 
-    wbperm& initCycle(wperm_t n, wperm_t k1, wperm_t k2);
 
     wbperm& Index(wperm_t n, char reverse=0) {
        RENEW(n); if (n==0) return *this;
@@ -175,46 +188,145 @@ class wbperm : public wbvector<wperm_t> {
        return *this;
     };
 
-    char isValidPerm(const char *F, int L, wperm_t r=-1) const;
-    char isValidPerm(wperm_t r=-1) const { return isValidPerm(0,0,r); };
-
-    wbperm& Complete(wperm_t l);
-
-    wbperm& Invert() { 
-       wbperm iP; this->invert(iP).save2(*this);
+    inline wbperm& Conj(char cflag=1) {
+       Wb::conj_add_z2(conj,cflag);
        return *this;
     };
 
-    wbperm& invert(wbperm &iP) const;
-
-    wbperm& Rotate(swperm_t l); 
-    wbperm& initRotate(wperm_t n, swperm_t k);
-
-    wbperm& Permute(const wbperm &P, char iflag, wperm_t r);
-    wbperm& Permute(const wbperm &P, char iflag=0) {
-       return Permute(P, iflag, len>P.len ? len : P.len);
+    inline wbperm& flatten(unsigned r=-1) {
+       if ((inv%=2)) {
+          if (len) { invert_data(); } 
+          fac=1./fac; 
+          inv=0; 
+       }
+       if (int(r)>=0) { Extend(r); } 
+       return *this;
     };
 
-    bool sameAs(const wbperm &b) const; 
-    bool isIdentityPerm() const;
+    wbperm& compact() { 
+       if (len) { unsigned i=len-1;
+          for (; i<len; --i) { if (data[i]!=i) break; }
+          if (++i<len) {
+             if (i) { len=i; }
+             else { WBPERM::init(); inv=0; }
+          }
+       }
+       return flatten();
+    };
+
+    inline wbperm& adapt(char iflag, char cflag=0, double fac_=1) {
+       if (iflag) { ++inv; } 
+       if (cflag) { Wb::conj_add_z2(conj,cflag); }
+
+       flatten(); fac*=fac_;
+       return *this;
+    };
+
+    inline char isValidPerm(wperm_t r=-1, char f=1) const;
+
+    inline char isValidPerm(
+       const char *F, int L, wperm_t r=-1, char f=1) const {
+
+       char q=isValidPerm(r,f);
+       if (q<=0 && F) { const unsigned n=32; char sx[n];
+          snprintf(sx,n,"(len=%ld/%ld, q=%d)",len,r,q);
+          if (len<10)
+               { wblog(FL,"ERR %s() '%s' %s",FCT,STR(*this),sx); }
+          else { wblog(FL,"ERR %s() %s",FCT,sx); }
+       }
+       return q;
+    };
+
+    wbperm& Complete (wperm_t l);
+
+    wbperm& Complete1();
+
+    wbperm& invert(wbperm &iP) const;
+    wbperm& Invert(char cflag=0);
+    wbperm  inverse() const { wbperm iP; return invert(iP); }
+
+    wbperm& Rotate(wperm_ts l); 
+    wbperm& initRotate(wperm_t n, wperm_ts k);
+
+    wbperm& Permute(wbperm P, unsigned r); 
+    wbperm& Permute(const wbperm &P) {
+       return Permute(P, MAX(len,P.len));
+    };
+
+    bool sameAs(const wbperm &b, char lflag=1) const; 
+
+    bool operator==(const wbperm &b) const { return  sameAs(b,0); };
+    bool operator!=(const wbperm &b) const { return !sameAs(b,0); };
+
     bool isIdentityPerm(const char *F, int L, wperm_t r=-1) const;
 
+    bool isIdentityPerm() const { 
+       for (wperm_t i=0; i<len; ++i) { if (data[i]!=i) { return 0; }}
+       return 1;
+    };
+
     bool isReversePerm() const;
-    bool isCyclic2F(wperm_t m, wperm_t n=-1,  char iflag=0) const;
+    bool isCyclic2F(wperm_t m, wperm_t n=-1, char iflag=0) const;
 
     bool isOpTranspose() const;
 
+    int getTranspositionsNN(wbMatrix<unsigned> &T2) const;
+
     explicit operator bool() const {
-         return (isEmpty() || isIdentityPerm() ? 0 : 1); };
-    bool operator! () const { return !bool(*this); }
+       return (!isIdentityPerm() || conj || fac!=1 ? 1 : 0); };
+
+    bool operator! () const {
+       return (!isIdentityPerm() || conj || fac!=1 ? 0 : 1); };
+
+    wbperm& Strip() { 
+       fac=1; conj=0; return flatten();
+    };
+
+    inline wbperm operator() (char ref=0) const {
+       wbperm B; 
+       B.WBPERM::init(len,data,ref); B.inv=inv;
+       B.conj=0; B.fac=1; 
+       return B;
+    };
+
+    bool isEmpty() const {
+       return (len || (conj%2) || fac!=1 ? 0 : 1);
+    };
+
+    char extras(char qref=0) const { char q=0; 
+       if (inv %2) { q|=1; }
+       if (conj%2) { q|=2; }
+       if (fac!=1) { q|=4; }
+       if (abs(inv)>1 || conj<0 || conj>1) { q|=64; } 
+       return (q^=(q&qref)); 
+    };
+
+    char relevant(const char *F=NULL, int L=0) const { 
+       char q=0;             
+          if (!isIdentityPerm(F_L)) { q|=1; } 
+          if (fac!=1) { q|=2; }
+          if (conj) { q|=4; }
+       return q;
+    };
+
+    char relevant(const char *F, int L, char qm) const {
+       char q=relevant(F_L);
+       if (qm>=0) {
+        if ( q!=(q&(qm|1)) || (!(qm&1) && inv) ) { 
+           if (F) wblog(F,L,
+              "ERR %s() unexpected %s (qm=%d)",FCT,STR(*this),qm);
+           q=-q;
+       }}
+       return q;
+    };
 
     wbperm& times(const wbperm &p2, wbperm &Pout) const {
-       if (!isValidPerm()) wblog(FL,
-          "ERR %s() invalid permutation (%s)",__FUNCTION__,toStr().data);
-       if (!p2.isValidPerm()) wblog(FL,
-          "ERR %s() invalid permutation (%s)",__FUNCTION__,STR(p2));
+       if (   isValidPerm()<=0) wblog(FL,
+          "ERR %s() invalid permutation (this: %s)",__FUNCTION__,STR(*this));
+       if (p2.isValidPerm()<=0) wblog(FL,
+          "ERR %s() invalid permutation (p2: %s)",__FUNCTION__,STR(p2));
        if (len!=p2.len) wblog(FL,
-          "ERR %s() incompatible permutations (%d/%d)",
+          "ERR %s() incompatible permutations (len=%d/%d)",
          __FUNCTION__,len,p2.len);
 
        wbperm P(len); 
@@ -243,74 +355,168 @@ class wbperm : public wbvector<wperm_t> {
         }
     }
 
-    wbstring toStr() const { 
+    wbstring toStr() const;
 
-       wbstring s_; 
-       unsigned i=0; char *s;
-
-       if (len<10) { 
-          s_.init(len+1); s=s_.data;
-          for (; i<len; ++i) { s[i]='1'+data[i]; }
-          s[i]=0;
-       }
-       else {
-          unsigned l=0, n=len*(log10(double(len))+2);
-          s_.init(n); s=s_.data;
-          for (; i<len && l<n; ++i) {
-             l+=snprintf(s+l,n-l," %d",(int)(data[i]+1));
-          }
-          if (l+3>=n) wblog(FL,"WRN %s() "
-             "string out of bounds (%d/%d; %d/%d)",FCT,l,n,i+1,len);
-          else { s[l]=' '; s[l+1]=0; }
-       }
-       return s_;
+    void wberr_invalid_perm(const char *F, int L, unsigned l=-1) const {
+       wbvec<char> s(64);
+          s.catf(0,0,"%s() invalid perm ",PROG); if (len<16) {
+          s.catf(0,0," %s",STR(*this)); };
+          if (int(l)>=0) { s.catf(0,0," (%d/%d)",len,l); } else
+          if (    len>4) { s.catf(0,0," (len=%d)", len); }
+       wblog(FL,"ERR %s",s.data);
     };
 
     mxArray* toMx(const char tflag=0) const {
-       return toMx_offset(1,tflag); 
+       if (fac==1 && !conj) {
+          if (inv)
+               { wbperm iP; invert(iP); return iP.toMx_offset(1,tflag); }
+          else { return toMx_offset(1,tflag); } 
+       }
+       else { return toStr().toMx(); }
     };
+
+    char inv;   
+
+    char conj;  
+    double fac; 
 
   protected:
   private:
 
-    void dispInvalidPerm(const char* F, int L) const {
-    wblog(F,L,"WRN invalid permutation [%s]",toStr().data); };
+   void invert_data(wperm_t *p) const {
+      wbvector<char> mark(len); char *m=mark.data;
+
+      for (unsigned i=0; i<len; ++i) {
+         if (data[i]<len && ++m[data[i]]==1) { p[data[i]]=i; }
+         else wblog(FL,"ERR %s() invalid permutation %s",FCT,STR(*this));
+      }
+   };
+
+   wbperm& invert_data() { 
+      wbvector<char> mark(len); char *m=mark.data;
+      WBPERM P(len,data); wperm_t *p=P.data;
+
+      for (unsigned i=0; i<len; ++i) {
+         if (p[i]<len && ++m[p[i]]==1) { data[p[i]]=i; }
+         else wblog(FL,"ERR %s() invalid permutation [%s]",FCT,STR(P));
+      }
+      return *this;
+   };
 
 };
 
-int isValidPerm(const char *s, wperm_t r=-1) {
-   int q=0; wbperm P; int i;
-   if ((i=P.initStr(0,0,s))<0) { q=-1; } else
-   if (P.isValidPerm(r)) { q=P.len; } else { q=-2; }
-   return q;
+namespace Wb {
+
+template <class T, ENABLE_IF_isINT(T)>
+char is_valid_perm( 
+    const T *data, size_t len, size_t n, char f=1) {
+
+    char q=(len ? 1 : 2); 
+    size_t i;
+
+    if (f>3) {
+       if (f=='l') { f=1; } else
+       if (f=='L') { f=3; } 
+    }
+    if (f<0 || f>3) wblog(FL,"ERR %s() invalid f=%s",FCT,cSTR(f));
+
+    if (long(n)<0) { n=len; } else
+    if (len<n) { q|=4; if (!(f&1)) { return -q; } else n=len; } else
+    if (len>n) { q|=8; if (!(f&2)) { return -q; } else {
+       for (i=n; i<len; ++i) { if (data[i]!=i) { return -q; }}
+    }}
+
+    if (n) { 
+       if (n==1) { if (data[0]) { return -q; } else { q|=2; }}
+       else {
+          size_t id=0; 
+          wbvector<char> mark(n);
+
+          for (i=0; i<n; ++i) {
+             if (data[i]<0 || data[i]>=n || mark[data[i]]++) { return -q; }
+             if (data[i]==i) { ++id; }
+          }
+          if (id==n) { q|=2; } 
+       }
+    }
+    return q;
 };
 
-int isValidPerm(const mxArray *a, wperm_t r=-1) {
-   int q=0; 
+char isValidPerm( 
+   const char *s, char f=1, wperm_t *r_=NULL) {
+
+   wbperm P; int l=P.initStr(0,0,s);
+   wperm_t r=-1; if (r_) { r=*r_; *r_=P.len; }
+   if (l>=0) 
+        { return is_valid_perm(P.data,P.len,r,f); }
+   else { return -32; } 
+};
+
+char isValidPerm( 
+  const mxArray *a, char f=1, wperm_t *r_=NULL) {
+
+   char q=0; 
+   int i;
+   wperm_t r=(r_ ? *r_ : -1);
 
    if (!a) { q=-11; } else
-   if (mxIsChar(a)) {
-      wbstring S(FL,a); if (S) {
-         q=isValidPerm(S.data,r); 
-      } 
+   if (mxIsChar(a)) { wbstring S(FL,a);
+      if (S) { q=isValidPerm(S.data,f,&r); } 
    }
    else if (!mxIsNumeric(a)) { q=-12; }
-   else if (!Mx::IsVector(a)) {
-      if (mxGetNumberOfElements(a)) q=-13; 
+   else if ((i=Mx::IsVector(a))<=0) {
+      q=(i && !(r=mxGetNumberOfElements(a)) ? 2 : -13);
    }
    else {
-      wbvector<double> X(FL,a);
-      if (int(r)>=0 && X.len!=r) { q=-3; } else
-      if (X) {
-         unsigned i=0, j, n=X.len; double *x=X.data;
-         wbvector<char> m(n+1);
-         for (; i<n; ++i) { j=x[i];
-            if (x[i]!=j || j>n || ++m[j]!=1) { break; }
-         }
-         q=(i<n || (m[0] && m[n]) ? -4 : n);
+      wbvector<double> P(FL,a);
+      if (P) {
+         if (P.min()==1) { P-=1; }
+         q=is_valid_perm(P.data,P.len,r,f);
+         r=P.len;
       }
    }
+   if (r_) { *r_=r; }
    return q;
+};
+
+template <class T, class TI, ENABLE_IF_isINT(TI)>
+inline void perm_data(const char *F, int L, 
+   T* b, const T *a, size_t N, const TI *p, size_t n, char iflag=0) {
+
+   size_t i;
+
+   if (!a || !b || !p || a==b) wblog(F_L,
+      "ERR %s() invalid input (%x / %x / %x)",FCT,a,b,p);
+   if (n>N) {
+      for (i=N; i<n; ++i) { if (p[i]!=i) wblog(F_L,
+         "ERR %s() permutation out of bounds (len=%d/%d) ",FCT,n,N); }
+      n=N;
+   }
+
+   if (!iflag)
+		{ for (i=0; i<n; ++i) { b[i]=a[p[i]]; }}
+   else { for (i=0; i<n; ++i) { b[p[i]]=a[i]; }}
+
+   for (; i<N; ++i) { b[i]=a[i]; }
+};
+
+} 
+
+char wbperm::isValidPerm(wperm_t r, char f) const {
+   if (!isfinite(fac)) { return -32; } 
+   return Wb::is_valid_perm(data,len,r,f);
+};
+
+bool wbperm::isIdentityPerm(const char *F, int L, wperm_t r) const {
+
+   char q=Wb::is_valid_perm(data,len,r,1); 
+
+   if (q<=0) { if (F) wblog(FL,
+      "ERR %s() invalid permutation (len=%d/%d)",FCT,len,r);
+      return 0;
+   }
+
+   return (q&2 ? 1 : 0); 
 };
 
 wbperm& wbperm::flipIdx(wbperm &P) const {

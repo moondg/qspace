@@ -25,9 +25,9 @@ QType load_store_qtype(const char *F, int L, const Wb::matFile &M) {
 
 void load_RCStore(const char *F, int L, const QVec &qvec) {
 
-   unsigned l,n=128;
    const char *sval, *stag="CG_STORE";
-   char fname[n], reload=0;
+   wbvec<char> fname(128);
+   char reload=0, *f=fname.data;
 
    for (unsigned it=0; it<qvec.len; ++it) {
       if (qvec[it].isAbelian()) continue;
@@ -36,14 +36,12 @@ void load_RCStore(const char *F, int L, const QVec &qvec) {
          "ERR undefined environmental variable %s\n"
          "(=> expect CStore in <%s>_%s.mat)",stag,stag,qvec[it].toStr('t').data);
 
-      l=snprintf(fname,n,"%s_%s.mat",sval,qvec[it].toStr('t').data);
-      if (l>=n) wblog(FL,
-         "ERR %s() env %s string out of bounds (%d/%d)",FCT,stag,l,n);
+      fname.catf(FL,"%s_%s.mat",sval,qvec[it].toStr('t').data);
 
-      if (!Wb::fexist(fname,'f')) wblog(F_L,
-         "ERR invalid CStore / non-existing file:\n%s",fname);
+      if (!Wb::fexist(f,'f')) wblog(F_L,
+         "ERR invalid CStore / non-existing file:\n%s",f);
       else {
-         struct stat fs; stat(fname,&fs);
+         struct stat fs; stat(f,&fs);
          time_t &ftime = load_cstore[qvec[it]];
 
          if (fs.st_mtime <= ftime) continue;
@@ -54,13 +52,13 @@ void load_RCStore(const char *F, int L, const QVec &qvec) {
 
       if (CG_VERBOSE) {
          wblog(PF_L,"--- %46R\ni/o %sloading R+CStore (%s)\n *  %s @ %s", "-",
-            reload?"re":"", myname, Wb::repHome(fname).data,
-            Wb::size2Str(Wb::getFileSize(fname)).data
+            reload?"re":"", myname, Wb::repHome(f).data,
+            Wb::size2Str(Wb::getFileSize(f)).data
          );
       }
 
-      gRS.LoadStore(F_L,fname);
-      gCS.LoadStore(F_L,fname);
+      gRS.LoadStore(F_L,f);
+      gCS.LoadStore(F_L,f);
    }
 
 #if 0

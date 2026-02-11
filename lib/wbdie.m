@@ -6,17 +6,22 @@ function wbdie(varargin)
 % see also deprecated wberr.m
 % Wb,Jan19,20
 
-  msg=''; vflag=1; k=2;
-  if nargin, l=0;
-     for i=1:nargin, q=varargin{i};
-        if ~isempty(q) && ischar(q) && q(1)=='-'
+  msg=''; vflag=1; k=2; l=0;
+  use_col=1;
+
+  if nargin
+     for i=l+1:nargin, q=varargin{i};
+        if ~isempty(q) && ischar(q) && q(1)=='-', l=i;
            if isequal(q,'-v'), vflag=2;
            elseif isequal(q,'-q'), vflag=0;
+           elseif isequal(q,'-k'), use_col=0;
            else
               fprintf(1,'\n   wbdie(): ignoring invalid option ''%s''\n',q);
            end
-           l=i;
-        elseif isnumber(q), k=2+q; l=i;
+        elseif isnumber(q), l=i;
+           if q<-1
+                use_col=0;
+           else k=2+q; end
         else break; end
      end
      if l<nargin
@@ -24,8 +29,13 @@ function wbdie(varargin)
      end
   end
 
-  if vflag || ~isempty(msg)
-     use_col=wblog('--hl-check');
+  S=dbstack('-completenames');
+
+  if use_col
+     if numel(S)>32, use_col=0;
+     elseif vflag || ~isempty(msg)
+        use_col=wblog('--hl-check');
+     end
   end
 
   if ~isempty(msg)
@@ -36,7 +46,6 @@ function wbdie(varargin)
      end
   end
 
-  S=dbstack('-completenames');
   if vflag && numel(S)>1, 
      L=getcols(); if L<60 || L>99, L=80; end
      L=repmat('─',1,L-1);

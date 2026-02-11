@@ -42,8 +42,8 @@ void mexFunction(
     MX_CHECK_HELPER_NARGS(2,2,4); 
 
     try { i=mxIsQSpace(FL,argin[0],r,'c'); }
-    catch (...) { wblog(FL,"ERR invalid QSpace argument"); }
-    if (i<=0) { wblog(FL,"ERR invalid QSpace argument"); }
+    catch (...) { wblog(FL,"ERR invalid QSpace input"); }
+    if (i<=0) { wblog(FL,"ERR invalid QSpace input"); }
 
     if (mxGetNumber(argin[1],k,'q')==0) {
        if (k==0 || (int)k>(int)r) wblog(FL,
@@ -60,7 +60,7 @@ void mexFunction(
     }
 
     if (mxIsQSpace(argin[0])>0) { 
-       const QSpace<gTQ,double> A(argin[0],'r',0);
+       const QSpace<gTQ,double> A(argin[0],'r',0,0);
        if (isop)     
             A.getQDim(  Q,dd,&dc);
        else A.getQDim(k,Q,dd,&dc);
@@ -69,7 +69,7 @@ void mexFunction(
        if (nargout>3) argout[3]=get_Qinfo(A);
     }
     else {
-       const QSpace<gTQ,wbcomplex> A(argin[0],'r',0);
+       const QSpace<gTQ,wbcomplex> A(argin[0],'r',0,0);
        if (isop)     
             A.getQDim(  Q,dd,&dc);
        else A.getQDim(k,Q,dd,&dc);

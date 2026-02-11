@@ -21,7 +21,7 @@ void mexFunction(
    char rflag=1, aflag=0, vflag=1, sflag=1;
    unsigned i, n2, d1=A.dim1, d2=A.dim2, n=d1*d2, nmax=6;
    int e1, e2, nx; long p,q, p2,q2;
-   double a,x,Ai,a2,x2, err2, r2=0, eps1=1E-6, eps2=1E-12;
+   double a,x,Ai,a2,x2, err2, r2=0, eps1=1e-6, eps2=1e-12;
    wbMatrix<double> P(d1,d2), Q(d1,d2), err(d1,d2);
    wbMatrix<unsigned> nn(d1,d2), ee(d1,d2);
    wbMatrix<int> gotr(d1,d2); 
@@ -78,7 +78,7 @@ void mexFunction(
        }
 
        if (!e1) {
-          if (err[i]>1E-12 && vflag) wblog(FL,
+          if (err[i]>1e-12 && vflag) wblog(FL,
              "WRN fixing number %8.5g => %8.5g (%.3g)",A[i],a,err[i]);
           r2+=(err[i]*err[i]);
 
@@ -102,7 +102,7 @@ void mexFunction(
        a=sqrt(a2); if (Ai<0) { a=-a; }
        x=Ai-a; r2+=(x*x);
 
-       if (::fabs(x)>1E-12  && vflag) { wblog(FL, 
+       if (::fabs(x)>1e-12  && vflag) { wblog(FL, 
           "WRN fixing number %8.5g => %8.5g (%.3g / %.3g)",A[i],a,x,err[i]);
        }
        A[i]=a; P[i]=p2; Q[i]=q2; gotr[i]=(Ai<0 ? -1:1);
@@ -114,11 +114,11 @@ void mexFunction(
        if (p2==1) { sprintf_str("%s1/sqrt(%ld)",a<0 ? "-":"",q2); }
 
        if (!str[0]) { x=sqrt(double(p2));
-          if (fabs(x-round(x))<1E-14) {
+          if (fabs(x-round(x))<1e-14) {
           sprintf_str("%s%ld/sqrt(%ld)",a<0 ? "-":"",long(x),q2);
        }}
        if (!str[0]) { x=sqrt(double(q2));
-          if (fabs(x-round(x))<1E-14) {
+          if (fabs(x-round(x))<1e-14) {
           sprintf_str("%ssqrt(%ld)/%ld",a<0 ? "-":"",p2,long(x));
        }}
        if (!str[0]) {
@@ -138,9 +138,9 @@ void mexFunction(
       );
    }
 
-   if (sflag)
-        { argout[0]=ss.toMx(); }
-   else { argout[0]= A.toMx(); } 
+   if (!sflag) { argout[0]= A.toMx(); } else 
+   if (n==1  ) { argout[0]=ss[0].toMx(); }
+   else        { argout[0]=ss.toMx(); }
 
    if (nargout>1) {
       MXPut IO; IO.add(P,"P").add(Q,"Q");

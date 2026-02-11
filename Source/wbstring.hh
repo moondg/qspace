@@ -29,23 +29,24 @@ namespace Wb {
    int findRegEx(const char *s, const char *pat, char icase=0);
 
    size_t string_hash(const char *s, unsigned n=-1, size_t hid=0);
-};
+
+}; 
 
 class wbstring : public wbvector<char> { 
 
   public:
 
-    wbstring (unsigned n=0) : wbvector<char>(n) {};
+    wbstring(unsigned n=0) : wbvector<char>(n) {};
 
-    wbstring (unsigned n, const char c)
+    wbstring(unsigned n, const char c)
      : wbvector<char>(n+1) { set(c); data[len-1]=0; };
 
-    wbstring (const char* s,unsigned n) { init(s,n); }
+    wbstring(const char* s,unsigned n) { init(s,n); }
 
-    wbstring (const wbstring &s) : wbvector<char>() { init(s.data); };
-    wbstring (const char* s1) : wbvector<char>() { init(s1); };
+    wbstring(const wbstring &s) : wbvector<char>() { init(s.data); };
+    wbstring(const char* s1) : wbvector<char>() { init(s1); };
 
-    wbstring (
+    wbstring(
        const char* s1, const char* s2,
        const char* s3=NULL, const char* s4=NULL
     ) : wbvector<char>() {
@@ -144,9 +145,9 @@ class wbstring : public wbvector<char> {
        return *this;
     };
 
-    void set(char c)  {
-       if (len) {
-       memset(data, c, len-1); data[len-1]=0; }
+    wbstring& set(char c)  {
+       if (len) { memset(data,c,len-1); data[len-1]=0; }
+       return *this;
     };
 
     wbstring& operator= (const char* s) { return init(s); }
@@ -318,7 +319,7 @@ class wbstring : public wbvector<char> {
         return 0;
     };
 
-    bool operator! () const { return (data && data[0] ? 0 : 1); }
+    bool     operator! ()    const { return (data && data[0] ? 0 : 1); };
     explicit operator bool() const { return (data && data[0] ? 1 : 0); };
 
     unsigned isName(int L=-1) const {
@@ -436,17 +437,20 @@ class wblogbuf_struct {
    wblogbuf_struct (const char *s) : file(NULL), line(0), text(NULL) {
       if (s) {
          unsigned n=strlen(s);
-         WB_NEW(text,n+1); strcpy(text,s);
+         WB_NEW(text,n+1,1); strcpy(text,s); 
       }
    };
 
    wblogbuf_struct (const char *F, int L, const char *s)
-    : file(NULL), line(L), text(NULL) { unsigned i=0,k=0,n;
-      if (F) {
-         for (; F[i]; i++) { if (F[i]=='/' || F[i]=='\\') k=i+1; }
-         n=strlen(F+k); WB_NEW(file,n+1); strcpy(file,F+k);
+    : file(NULL), line(L), text(NULL) {
+      if (F) { unsigned i=0, k=0, n;
+         for (; F[i]; ++i) { if (F[i]=='/' || F[i]=='\\') k=i+1; }
+         n=strlen(F+k); WB_NEW(file,n+1,1); strcpy(file,F+k);
       }
-      if (s) { n=strlen(s); WB_NEW(text,n+1); strcpy(text,s); }
+      if (s) {
+         unsigned n=strlen(s);
+         WB_NEW(text,n+1,1); strcpy(text,s); 
+      }
    };
 
    wblogbuf_struct(const wblogbuf_struct &S)

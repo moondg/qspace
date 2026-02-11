@@ -10,8 +10,8 @@ function [type,L,perBC,H]=lattice(HAM)
      wbdie('invalid usage (missing field HAM.info.HH)'); end
 
   L=numel(HAM.mpo);
-  perBC=getfield2(HAM,'info','param','perBC','--def',0);
-  naklt=getfield2(HAM,'info','param','naklt','--def',0);
+  perBC=getfield2(HAM,'info','param','perBC',{0});
+  naklt=getfield2(HAM,'info','param','naklt',{0});
 
   HH=HAM.info.HH;
   H=sparse(HH(:,1),HH(:,3),HH(:,end),L,L);

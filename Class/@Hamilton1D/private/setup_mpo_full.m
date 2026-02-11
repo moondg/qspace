@@ -29,11 +29,11 @@ function [HAM]=setup_mpo_full(HAM,varargin)
 
    if nargs>2, wbdie('invalid usage'); end
    if nargs, HS=args{1};
-   else
-      if isfield(HAM.info,'HS')
-           HS=HAM.info.HS; gotH=1;
-      else HS=HAM.info.HH; end
+   elseif isfield(HAM.info,'HS')
+        HS=HAM.info.HS; gotH=1;
+   else HS=HAM.info.HH;
    end
+
    if nargs>1, stype=args{2};
    else
       if isfield(HAM.info,'stype'), stype=HAM.info.stype;
@@ -55,13 +55,14 @@ function [HAM]=setup_mpo_full(HAM,varargin)
    end
 
    q=zeros(1,nH); for i=1:nH, q(i)=norm(HS(i).hcpl); end
-   i=find(q<1E-15);
+   heps=1e-24;
+   i=find(q<heps);
    if ~isempty(i)
       if numel(i)==nH
-         wbdie('invalid usage (got all-zero Hamiltonian terms)');
+         wbdie('invalid usage (got all-zero Hamiltonian terms; eps=%g)',heps);
       end
-      HS(i)=[]; q=[numel(i),norm(q)];
-      wblog(' * ','eliminating %g zero-terms in Hamiltonian (@ %.2g)',q);
+      HS(i)=[]; q=[numel(i),norm(q)]; wblog(' * ',...
+        'eliminating %g zero-terms in Hamiltonian (@ %.2g / %g)',q,heps);
       nH=numel(HS);
    end
 
@@ -102,7 +103,7 @@ function [HAM]=setup_mpo_full(HAM,varargin)
 
    q=[ntype, size(ops,2), size(oez,2)];
    if diff(q(2:3)), wbdie(...
-     'HAM.ops and HAM.oez size mistmatch (%g/%g)',q(2:3)); end
+     'HAM.ops and HAM.oez size mismatch (%g/%g)',q(2:3)); end
    if q(1)>q(2), wbdie('stype out of bounds (%g/%g)',q(1:2)); end
 
    if isempty(oez), wbdie('invalid usage (HAM.oez not yet setup)');
@@ -768,17 +769,20 @@ function [HAM]=setup_mpo_full(HAM,varargin)
           % tags: ORDER_START_STOP_NORM
             if k==k1
                if k>1, Q=contract(EM(k-1),'1*',Q,1); end
+               Q=setitags(Q,2,mpo(k),2);
                mpo(k)=oplus(mpo(k),Q,'first');
             elseif k==k2
                if k<L, Q=contract(EM(k+1),'1*',Q,2,[2 1 3]); end
+               Q=setitags(Q,1,mpo(k),1);
                mpo(k)=oplus(mpo(k),Q,'last');
             elseif mm(l,k)>0
+               Q=setitags(Q,1:2,mpo(k),1:2);
                mpo(k)=oplus(mpo(k),Q);
             else
                Q=appendSingletons(getIdentity(Q_,2),'  +-');
                Q(2)=oez(1,k); Q=untag(Q);
                Q=contract(Q(1),'34',Q(2),'12',[2 1 3]);
-               Q=setitags(Q,['-A:H,H,S@' ndig],k);
+               Q=setitags(Q,1:3,mpo(k),1:3);
                mpo(k)=oplus(mpo(k),Q);
             end
          end

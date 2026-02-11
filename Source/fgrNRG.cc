@@ -573,7 +573,7 @@ void MEX_FUNCTION(
    else wblog(FL,"<i> using stored DM set%N");
 
    if (locRho!=99) locRho=0;
-   Rho.initDef(2);
+   Rho.init(2);
 
    if (rixs) {
       if (C.KK.len && !B.KK.isEqual(C.KK)) wblog(FL,

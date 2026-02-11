@@ -61,36 +61,9 @@ class tmpFile {
   private:
 };
 
-}; 
-
 template<class T>
-int Str2Idx(       
-   const char *F, int L,
-   const char* s, wbvector<T> &idx, T offset=0, char cmpct=0
-);
-
-template<class T>
-int Str2Idx(
-   const char* s, wbvector<T> &idx, T offset=0, char cmpct=0
-);
-
-template<class T> int Str2Idx(
-   const char* s, wbvector<T> &idx, unsigned offset=0, char cmpct=0
-){ return Str2Idx(s,idx,T(offset),cmpct); };
-
-wbvector<unsigned> Str2Idx(
-   const char *F, int L, const char* s, unsigned offset=0
-){
-   wbvector<unsigned> I; 
-   int e=Str2Idx(F_L,s,I,offset);
-   if (e<0) wblog(FL, 
-      "ERR %s() invalid '%s' (%d;%d)",FCT,s?s:"null",-e,offset);
-   return I;
-};
-
-wbvector<unsigned> Str2Idx(const char* s, unsigned offset=0) {
-   return Str2Idx(FL,s,offset);
-};
+int Str2Idx(const char *F, int L, 
+   const char* s, wbvector<T> &idx, T offset=0, char cmpct=0, unsigned n=-1);
 
 template<class T>
 int Str2Idx(
@@ -102,6 +75,8 @@ template<class T>
 int Str2Idx(
    wbvector<T> &I, const mxArray *a, T offset=0, char cmpct=0
 ){ return Str2Idx(FL,I,a,offset,cmpct); };
+
+}; 
 
 void WbPrintMatrixC (
     const wbMatrix<wbcomplex> &M, const char *istr="", int space=10);

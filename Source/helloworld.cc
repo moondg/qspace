@@ -1,6 +1,7 @@
 
 #include <string.h>
 #include <mex.h>
+#include <vector> // std::vector
 
 // using helloworld without wblib.h
 // to include wblib.h -> see mexworld.cc // Wb,Jun27,23
@@ -14,7 +15,8 @@ void mexFunction(
 ){
    int i=0, l=0; char vflag=1;
 
-   char mark[nargin]; memset(mark,0,nargin);
+   std::vector<char> mark(nargin); 
+
    for (; i<nargin; ++i) {
       if (mxIsChar(argin[i])) { char str[8]; str[0]=0;
          if (!mxGetString(argin[i],str,7)) { 

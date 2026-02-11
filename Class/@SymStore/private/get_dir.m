@@ -12,7 +12,13 @@ function [D,sym,err]=get_dir(sym,varargin)
   D=getenv('RC_STORE');
   D=strread(D,'%s','delimiter',':');
 
-  ix=[]; nD=numel(D); DX={}; err=0;
+  nD=numel(D);
+
+  if nD==1 && ~exist([D{1} '/' sym '/CStore']);
+     getRC(sym,'--ping');
+  end
+
+  ix=[]; DX={}; err=0;
   for i=1:nD
      D{i}=[ D{i} '/' sym ];
      if ~exist(D{i},'dir')
@@ -63,7 +69,7 @@ function [D,sym,err]=get_dir(sym,varargin)
 
   if ~isempty(ix)
      if numel(ix)==numel(D)
-        wbdie('invalid RC_STORE (no valid %s)',Dx(2:end)); end
+        wbdie('invalid RC_STORE (./%s does not exist)',Dx(2:end)); end
      D(ix)=[];
   end
 

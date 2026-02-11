@@ -7,13 +7,19 @@ function display(A,varargin)
 %
 % Options
 %
-%    -a, -f    show all record entries even if many (-f like full, force)
+%    -a, -f    show (compact) listing of all QSpaces (-a=all, -f=full)
+%              i.e., no dots ⋮ showing subset only (first, largest, last)
+%
 %    -c        compact mode (e.g, shows combined CGS dimensions only)
 %    -C        compact mode (print 1-linesr for each QSpace element)
 %    -v        verbose flag (in case of QSpace array, show detailed content 
 %              for all entries
 %
-%    -E        sort QSpace wrt. data (energy) [assumes diagonal Hamiltonian]
+%    -E        sort QSpace wrt. data (`energy') and shows diagonal entries
+%              (if A is not diagonal yet, it will be diagonalized using eigQS)
+%    -R        similar to '-E', yet sorts in descending order (`reverse')
+%    -S        sort wrt. to size of data+cgr
+%
 %    -s        sort QIDX
 %   'sperm',.. sort QIDX using given permutation
 %
@@ -54,7 +60,8 @@ function display(A,varargin)
      wbdie('invalid usage (name specified twice !?)')
   end
 
-  if Eflag, [A,isd]=sort(A,os{:}); Eflag=isd;
+  if Eflag
+    [A,isd]=sort(A,os{:}); Eflag=isd;
   else
      if ~isempty(sperm)
         if length(A(1).Q)~=length(sperm), sperm
@@ -74,8 +81,6 @@ function display(A,varargin)
      nm=inputname(1);
   end
   eflag=0;
-
-  ov2s={'-f','nofac','sep'};
 
   nl=''; nl_=''; n2=0;
   if nA<=2 || bitand(vflag,2)
@@ -204,7 +209,7 @@ function display_1(A,m,Eflag,use_tex,vflag,varargin)
   if use_tex, o={'--tex'}; else o={}; end
   info(A,o{:},varargin{:});
 
-  r=length(A.Q); if ~r, return, end
+  r=numel(A.Q); if ~r, return, end
 
   Nd=numel(A.data);
   if ~Nd && ~isempty(A.Q) && isempty(A.Q{1})
@@ -216,7 +221,7 @@ function display_1(A,m,Eflag,use_tex,vflag,varargin)
 
   if cgflag
      ns=length(find(A.info.qtype==','))+1;
-     if ~isempty(A.Q) && ~isequal(size(A.info.cgr),[Nd, ns])
+     if r && ~isequal(size(A.info.cgr),[Nd, ns])
         wbdie('CG size mismatch');
      end
      nq=size(A.info.cgr,2);
@@ -225,14 +230,17 @@ function display_1(A,m,Eflag,use_tex,vflag,varargin)
         wbdie('invalid number of symmetries (%d/d)',nq,rsym); end
      isym=find(rsym);
 
-     sfmt=sprintf('%%-%ds', max(10,3*length(A.Q)));
+     sfmt={
+        sprintf('%%-%ds', max(10,1+3*r))
+        sprintf('%%-%ds', max( 8,  2*r))
+     };
   else
-     sfmt=sprintf('%%-%ds', 5+4*length(A.Q));
+     sfmt=sprintf('%%-%ds', 5+4*r); 
   end
 
   fstr={ '%11.6g'
          '  %-11s  %s%s\n'
-         '  %s\n' }; % '  %8s\n'
+         '  %s\n' };        % '  %8s\n'
 
   lfmt=isequal(get(0,'Format'),'long');
   if lfmt, fstr{1}='%16.13g'; end
@@ -240,8 +248,6 @@ function display_1(A,m,Eflag,use_tex,vflag,varargin)
   if ~isempty(A.Q)
      [qfmt,Q3]=getqfmt(A);
   else Q3=[]; end
-
-  ov2s={'-f','nofac','sep'};
 
   if isempty(m) || sum(m(:))>Nd, m=[Nd Nd 0];
   else
@@ -301,14 +307,16 @@ function display_1(A,m,Eflag,use_tex,vflag,varargin)
 
         if ~vflag
            sc=prod(sc,1);
-           s2=sprintf(sfmt,dim_to_str(sc,r));
+           s2=sprintf(sfmt{2},dim_to_str(sc,r));
         else
            n=size(sc,1); s2=cell(1,n);
-           for j=1:n, s2{j}=vec2str(sc(j,:),'fmt','%g',ov2s{:},'x'); end
-           s2=sprintf(' %6s',s2{:}); s2=s2(2:end);
+           for j=1:n
+              s2{j}=dim_to_str(sc(j,:),r);
+           end
+           s2=sprintf([' ' sfmt{2}],s2{:}); s2=s2(2:end); % ' x%6s'
         end
 
-        sout{l}=sprintf(['%6d.  ' sfmt ' | %s' ],i,s1,s2);
+        sout{l}=sprintf(['%6d.  ' sfmt{1} ' | %s' ],i,s1,s2);
      else
         sout{l}=sprintf(sfmt, sprintf('%6d.  %s',i,s1));
      end
@@ -353,14 +361,15 @@ function display_1(A,m,Eflag,use_tex,vflag,varargin)
         if numel(find(sa>1))>1
            wbdie('invalid data{} (diagonal representation expected)');
         end
+        if all(abs(Ai-round(Ai))<1E-8), fstr_1='%2g'; else fstr_1=fstr{1}; end
         n=numel(Ai);
         if n<4
-           q=sprintf([' ' fstr{1}],Ai);
+           q=sprintf([' ' fstr_1],Ai);
         else q=[ ...
-           sprintf([' ' fstr{1}],Ai(1:2)), sprintf(' ..(%d).. ',n-3), ...
-           sprintf(fstr{1},Ai(end)) ];
+           sprintf([' ' fstr_1],Ai(1:2)), sprintf(' ..(%d).. ',n-3), ...
+           sprintf(fstr_1,Ai(end)) ];
         end
-        sout{l}=sprintf(';  %s %s\n\n', q(2:end), sc); l=l+1;
+        sout{l}=sprintf(';  [%11s ] %s\n', q, sc); l=l+1;
         continue
      end
 
@@ -386,15 +395,13 @@ end
 
 function s=dim_to_str(sz,r)
 
-   l=length(sz);
-   if l<=r
-      s=sprintf('x%g',sz); s=s(2:end);
-   elseif l==r+1
-      s=sprintf('x%g',sz(1:r));
-      s=[ s(2:end) sprintf(' @%g',sz(r+1)) ];
+   n=numel(sz); if r>n, sz(end+1:r)=1; n=r; end
+
+   s=sprintf('x%g',sz(1:r)); 
+   if n<=r, s=s(2:end);
    else
-      s={ sprintf('x%g',sz(1:r)), sprintf('x%g',sz(r+1:end)) };
-      s=[ s{1}(2:end), ' @' s{2}(2:end) ];
+     s_=sprintf('x%g',sz(r+1:end));
+     s=[ s(2:end) '_' s_(2:end) ];
    end
 end
 

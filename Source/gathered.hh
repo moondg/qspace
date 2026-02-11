@@ -27,12 +27,15 @@ namespace Wb {
    const char* basename(const char *data, char c='/');
 
    void print_backtrace(
-      const char *F=NULL, int L=0, const char *istr=NULL);
+      const char *F=nullptr, int L=0, const char *istr=nullptr);
 
    int GetNumThreads(const char *F, int L, int &n, const char *name);
 
    template<class T>
    int GetEnv(const char *F, int L, const char *name, T& val);
+
+   int GetEnvInt(const char *F, int L,
+      const char *VN, int *val, const char *vn=nullptr, int q=0);
 
    int EnvIsSet(const char *F, int L, const char *name);
 
@@ -40,7 +43,7 @@ namespace Wb {
 
    inline int INT(const double a) { 
       int i=::round(a);
-      if (std::fabs(i-a)>1E-10) wblog(FL,"ERR %s(%g) !?",FCT,a);
+      if (std::fabs(i-a)>1e-10) wblog(FL,"ERR %s(%g) !?",FCT,a);
       return i;
    }
 
@@ -73,7 +76,9 @@ namespace Wb {
    template <class T>
    double mod(double a, T b) {
        if (b<=0) wblog(FL,"ERR %s() got b=%g",FCT,b);
-       a=::fmod(a,double(b)); if (a<0) { a+=b; }
+       a=::fmod(a,double(b));
+          if (a<0) { a+=b; } else
+          if (::signbit(a)) { a=-a; }  
        return a;
    };
 
@@ -124,7 +129,7 @@ char GOT_EPS(const T &a, const T2 &eps) {
 void setSigHandler(char i); 
 void wbSigHandler(int sig);
 
-char *gsh_F=NULL; int gsh_L=0;
+char *gsh_F=nullptr; int gsh_L=0;
 
 namespace Wb {
 class SigHandler {
@@ -152,7 +157,7 @@ class SigHandler {
     #else
        setSigHandler('r');
     #endif
-       gsh_L=0; if (gsh_F) { delete [] gsh_F; gsh_F=NULL; }
+       gsh_L=0; if (gsh_F) { delete [] gsh_F; gsh_F=nullptr; }
     };
 
     int check911(char tflag=0) { doflush();
@@ -165,7 +170,7 @@ class SigHandler {
        else { return check911_(); }
     };
 
-    static int check911_(const char *F=NULL, int L=0) {
+    static int check911_(const char *F=nullptr, int L=0) {
        int i=SigHandler::icount,
            a=SigHandler::acount, n=SigHandler::NC0;
 
@@ -242,7 +247,7 @@ class num2Fmt {
    template<class T> inline
    unsigned checkInt(
       const char *F, int L, const T* x, size_t n,
-      double eps=1E-14
+      double eps=1e-14
    );
 
    char* strpad(char *s, char c, unsigned n, unsigned w=1) {
@@ -351,7 +356,19 @@ class num2Fmt {
    );
 
    template <class T, class TB> 
-   void cpyRange(T* a, const TB* b, size_t n, T afac, TB bfac);
+   void cpyRange     (T* A, const TB* B, size_t n, T afac, TB bfac);
+
+   template <class T, class TB> 
+   void cpyRange_conj(T* A, const TB* B, size_t n, T afac, TB bfac);
+
+   template <class T, class TB> 
+   inline void cpyRange(
+      T* A, const TB* B, size_t n, T a, TB b, char conj
+    ) {
+      if (!Wb::conj2bool(conj) || !ISCOMPLX_(T))
+           { Wb::cpyRange(A,B,n,a,b); }
+      else { Wb::cpyRange_conj(A,B,n,a,b); }
+   };
 
    template <class T>        
    void cpyRange(T* a, const T* b, size_t n); 
@@ -400,18 +417,18 @@ class num2Fmt {
    void timesRange(TD* d, TX x, const size_t n, size_t stride=1);
 
    template <class T> 
-   T rangeNorm2(const T* d, size_t n, size_t *k=NULL);
+   T rangeNorm2(const T* d, size_t n, size_t *k=nullptr);
 
    template <class T> 
    T rangeNormDiff2(const T* d1, const T* d2, size_t n,
-      const T &fac, size_t *k=NULL
+      const T &fac, size_t *k=nullptr
    );
 
    template <class T> 
    T rangeNormDiff2(const T* d1, const T* d2, size_t n);
 
    template <class T>
-   T rangeMaxDiff(const T* d1, const T* d2, size_t n, size_t *k=NULL);
+   T rangeMaxDiff(const T* d1, const T* d2, size_t n, size_t *k=nullptr);
 
    template<class T>
    T overlap(
@@ -436,6 +453,64 @@ class num2Fmt {
    };
 
    size_t countNaN(double* a, size_t m);
+
+   template<class T, ENABLE_IF_not_isFloat(T)>
+   inline void rangeTimes(T* data, size_t n, double fac, char conj=0) {
+      if (fac!=1 || conj) { wblog(FL,"WRN %s() "
+         "ignoring fac=%g, conj=%d for type %s",FCT,fac,conj,TSTR(T));
+      }
+   };
+
+   template<class T, ENABLE_IF_isFloat(T)>
+   inline void rangeTimes(T* data, size_t n, double fac, char conj=0) {
+      if (!n) { return; }
+      if (!fac) { MEM_SET_ZERO(data,n); return; }
+
+      size_t i=0; T x(fac);
+      if (!conj || !ISCOMPLX_(T)) {
+         if (fac==-1) { for (; i<n; ++i) { data[i]=-data[i]; }} else
+         if (fac!= 1) { for (; i<n; ++i) { data[i]*=x;       }}
+      }
+      else {
+         if (fac== 1) { for (; i<n; ++i) { data[i]=  CONJ(data[i]); }} else
+         if (fac==-1) { for (; i<n; ++i) { data[i]= -CONJ(data[i]); }}
+         else         { for (; i<n; ++i) { data[i]=x*CONJ(data[i]); }}
+      }
+   };
+
+   template<class T, ENABLE_IF_not_isFloat(T)>
+   inline void rangeTimes(
+      T* data, const T *d0, size_t n, double fac, char conj=0) {
+
+      size_t i=0; T x(fac);
+
+      if (fac!=1 || conj) wblog(FL,"WRN %s() "
+         "got fac=%g, conj=%d for type %s",FCT,fac,conj,TSTR(T));
+
+      if (x== 1) { for (; i<n; ++i) { data[i]=  d0[i]; }} else 
+      if (x==-1) { for (; i<n; ++i) { data[i]= -d0[i]; }}
+      else       { for (; i<n; ++i) { data[i]=x*d0[i]; }}
+   };
+
+   template<class T, ENABLE_IF_isFloat(T)>
+   inline void rangeTimes(
+      T* data, const T* d0, size_t n, double fac, char conj=0) {
+
+      if (!n) { return; }
+      if (!fac) { MEM_SET_ZERO(data,n); return; }
+
+      size_t i=0; T x(fac);
+      if (!conj || !ISCOMPLX_(T)) { 
+         if (fac== 1) { Wb::MemCpy(data,d0,n);                } else
+         if (fac==-1) { for (; i<n; ++i) { data[i]=-data[i]; }} else
+         if (fac!= 1) { for (; i<n; ++i) { data[i]*=x;       }}
+      }
+      else {
+         if (fac== 1) { for (; i<n; ++i) { data[i]=  CONJ(data[i]); }} else
+         if (fac==-1) { for (; i<n; ++i) { data[i]= -CONJ(data[i]); }}
+         else         { for (; i<n; ++i) { data[i]=x*CONJ(data[i]); }}
+      }
+   };
 
    template<class T>
    void chopTiny_float(
@@ -480,7 +555,7 @@ class num2Fmt {
    template <class T> inline
    int recCompare( 
       const T* a, const T* b, const size_t n, char lex,
-      T eps, int *nwrn_=NULL
+      T eps, int *nwrn_=nullptr
    ){
       if (eps<=T(0)) return recCompare(a,b,n,lex);
 

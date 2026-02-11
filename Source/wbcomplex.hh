@@ -357,5 +357,11 @@ template <> inline double absdiff_f(
 
 }; 
 
+   template <> inline constexpr
+      char WbUtil<wbcomplex>::isFloat() { return 3; };
+
+   template <> inline constexpr
+      double WbUtil<wbcomplex>::eps() { return double(DBL_EPSILON); };
+
 #endif
 

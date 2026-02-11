@@ -18,7 +18,7 @@ function A=rmAbelian(A,ix)
      [r,sym]=getsym(Ak,'-r'); n=numel(r);
      if ix>n, wbdie('index for symmetry out of bounds (ix=%d/%d)',ix,n); end
      if r(ix), wbdie(...
-       'invalid usage (got non-abelian %s for ix=%d)',sym{ix},ix);
+        'invalid usage (got non-abelian %s for ix=%d)',sym{ix},ix);
      end
 
      r1=r; r1(r1<1)=1; j=sum(r1(1:ix));
@@ -33,6 +33,26 @@ function A=rmAbelian(A,ix)
         sym(ix)=[];
         Ak.info.qtype=strjoin(sym,',');
      end
+     if isfield(Ak.info,'fdir'), q=Ak.info.fdir;
+        if ~isempty(q)
+            if ~ischar(q) || isempty(grep(q,'^[+-]+\/\d+$'))
+                disp(q), wbdie('unexpected fdir');
+            end
+            i=find(q=='/'); isym=double(q(i+1:end)-'0');
+            j=find(isym==ix); if ~isempty(j)
+                if ~isequal(getenv('QS_FERM'),'0'), wblog('WRN',...
+                   'removing fermionic fdir (symmetry #%d)',isym(j)); end
+                isym(j)=[];
+            end
+            j=find(isym>ix); isym(j)=isym(j)-1;
+            if isempty(isym), q='';
+            else
+               q=[q(1:i) sprintf('%g',isym)];
+            end
+            Ak.info.fdir=q;
+        end
+     end
+
      A(k)=Ak;
   end
 end

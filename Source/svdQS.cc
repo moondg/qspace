@@ -202,7 +202,7 @@ void MPS_ORTHO_1(
       wblog(FL,"ERR invalid index set%N%N%s%N",str);
    K=r-I.len; iP.init(P,'i');
 
-   PSI.Permute(P,0,'c');
+   PSI.Permute(P,'c');
 
    Sout=getSVD(
       PSI, UQ, SQ, VQ, K,  

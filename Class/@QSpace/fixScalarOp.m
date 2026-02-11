@@ -29,31 +29,39 @@ function varargout=fixScalarOp(varargin)
      if ischar(varargin{i})
         wbdie('invalid usage (got intermediate option)');
      end
-     for j=1:n, q=varargin{i}(j);
-        if isempty(q) || numel(q.Q)<3, continue; end
-        d=getDimQS(q); ok=0;
+     for k=1:n, Ak=varargin{i}(k);
+        if isempty(Ak) || numel(Ak.Q)<3, continue; end
+        d=getDimQS(Ak); ok=0;
         if size(d,2)==3 && d(end,3)==1
-           nrmQ=norm(q.Q{3});
-           if nrmQ && ~lflag, wblog('WRN',...
+           q=norm(Ak.Q{3});
+           if q && ~lflag, wblog('WRN',...
              'skipping scalar operator dim with non-zero Q-labels');
               wbstack
            end
 
-           if isempty(q.info), q.Q(3)=[]; ok=1;
-           elseif isempty(q.info.cgr), q.Q(3)=[]; ok=2;
-              t=q.info.itags; if ~isempty(t)
+           if     isempty(Ak.info    ), Ak.Q(3)=[]; ok=1;
+           elseif isempty(Ak.info.cgr), Ak.Q(3)=[]; ok=2;
+              t=Ak.info.itags; if ~isempty(t)
                  if ~iscell(t), t=strread(ff,'%s','delimiter',',; '); end
-                 t(3)=[]; q.info.itags=t;
+                 t(3)=[]; Ak.info.itags=t;
               end
-              varargin{i}(j)=q;
-           elseif nrmQ==0
-              q.info.otype='operator'; q=QSpace(q); ok=3;
-              E3=getIdentityQS(q,getvac(q));
-              varargin{i}(j)=QSpace(contractQS(q,'23',E3,'12'));
+
+              q=getfield2(Ak.info,'fdir',{''});
+              if ~isempty(q)
+                 if numel(q)<5 || q(4)~='@', disp(fdir);
+                    wbdie('unexpected fdir'); end
+                 Ak.info.fdir=q([1:2,4:end]);
+              end
+
+              varargin{i}(k)=Ak;
+           elseif ~q
+              Ak.info.otype='operator'; Ak=QSpace(Ak); ok=3;
+              E3=getIdentityQS(Ak,getvac(Ak));
+              varargin{i}(k)=QSpace(contractQS(Ak,'23',E3,'12'));
             end
         end
         if ~ok && fflag
-           wbdie('got non-reducible QSpace (%g,%g)',i,j);
+           wbdie('got non-reducible QSpace (%g,%g)',i,k);
         end
      end
   end

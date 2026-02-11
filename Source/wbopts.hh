@@ -112,27 +112,6 @@ int OPTS::findOpt(const char* vn) {
    };
 
    return k;
-}
-
-void OPTS::init(const mxArray** ain, const unsigned l) {
-
-   unsigned n=128; char s[n];
-   if (MAT.mfp) wblog(FL,
-      "ERR OPTS already initialized by file\n%s",MAT.fname.data);
-
-   aa.init(l, (mxArray**)ain);
-   name.init(l);
-
-   for (unsigned i=0; i<aa.len; ++i) {
-       if (!mxIsChar(aa[i])) { continue; } else
-       if (mxGetString(aa[i],s,n)) { wblog(FL,
-          "WRN failed to read OPTS string (len<%d?)",n);
-          continue;
-       }
-
-       name[i].init(s);
-       aa[i]=NULL; 
-   }
 };
 
 void OPTS::init (const char *fname) {
@@ -228,7 +207,8 @@ bool OPTS::getOpt(const char *F, int L,
    wbstring &x, char force, const char *istr
 ){
    int lflag=0;
-   if (MAT.mfp) { unsigned n=128; char s[n]; s[0]=0;
+   if (MAT.mfp) {
+      wbvec<char> s(128);
       mxArray *a = matGetVariable(MAT.mfp, vn);
       if (!a) {
          if (force) wblog(F_L,"ERR %s() missing input for '%s'",FCT,vn);
@@ -237,11 +217,11 @@ bool OPTS::getOpt(const char *F, int L,
 
       if (!mxIsChar(a)) wblog(F_L,
          "ERR %s() invalid type `%s' for '%s'",FCT,mxGetClassName(a),vn);
-      if (mxGetString(a,s,n)) wblog(F_L,
-         "ERR %s() failed to read string for '%s' (len<%d?)",FCT,vn,n);
+      if (mxGetString(a,s.data,s.len)) wblog(F_L,
+         "ERR %s() failed to read string for '%s' (len<%d?)",FCT,vn,s.len);
 
-      if (x.data && !strcmp(x.data,s)) { ++lflag; }
-      x=s; mxDestroyArray(a);
+      if (x.data && !strcmp(x.data,s.data)) { ++lflag; }
+      x=s.data; mxDestroyArray(a);
    }
    else {
       int i; unsigned k,e=0;

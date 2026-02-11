@@ -37,21 +37,22 @@ void mexFunction(
    MX_CHECK_HELPER_NARGS(2,-1,2); 
 
    if (!Mx::IsDblArr(FL,argin[0]) || !Mx::IsDblArr(FL,argin[1]) ||
-       mxIsComplex(argin[0]) || mxIsComplex(argin[1])) wblog(FL,
-   "ERR first two arguments must be real arrays (%s)",
-    mxGetClassName(argin[1]));
+       mxIsComplex(argin[0]) || mxIsComplex(argin[1])) { wblog(FL,
+      "ERR first two arguments must be real arrays (%s)",
+       mxGetClassName(argin[1]));
+   }
 
-   if (!Mx::IsVector(argin[0])) wblog(FL,
-   "ERR first argument must be vector");
+   if (Mx::IsVector(argin[0])<=0) wblog(FL,
+      "ERR first argument must be vector");
 
    xi.init(FL,argin[0]); N=xi.len;
    yi.init(argin[1]);
 
    if (yi.dim1!=N && yi.dim2!=N) wblog(FL,
-   "ERR Dimension mismatch of arguments (%dx%d; %d)",yi.dim1,yi.dim2,N);
+      "ERR Dimension mismatch of arguments (%dx%d; %d)",yi.dim1,yi.dim2,N);
 
    for (i=1; i<N; i++) if (xi[i]<=xi[i-1]) wblog(FL,
-   "ERR first argument must contain data \nin strictly ascending order");
+      "ERR first argument must contain data \nin strictly ascending order");
 
    if (yi.dim2!=N) { tflag=1; yi.Transpose(); }
 

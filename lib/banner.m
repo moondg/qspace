@@ -3,7 +3,7 @@ function banner(varargin)
 %
 %     print text (handed over to sprintf) as banner
 %     with wtype setting the flashiness
-%       1   most flashy
+%       1   most flashy (default)
 %       2   intermediate
 %       3   less flashy
 %       4   least flashy
@@ -36,7 +36,7 @@ function banner(varargin)
   elseif nargs, sout=varargin{1};
   else sout=''; end
 
-  L=getcols(); if L<60 || L>160, L=85; end
+  L=getcols(); if L<60 || L>160, L=90; end
 
   if isequal(wtype,5)
      nl=char(10); 

@@ -26,20 +26,18 @@
 template <class T>
 wbstring Wb::sptr<T>::toStr() const {
 
-   wbstring s(128); 
-   unsigned l=0;
+   wbvec<char> s(128);
 
-   if (mtype!=Wb::MEM_DEF) {
-   l+=snprintf(s.data+l,s.len-l,"%s ",Wb::MTYPE_STR[mtype]); }
+   if (mtype!=Wb::MEM_DEF) { s.catf(FL,"%s ",Wb::MTYPE_STR[mtype]); }
 
    if (data || len)
-        { l+=snprintf(s.data+l,s.len-l,"%p %s[%.3g]",data,sTSTR(T),double(len)); }
-   else { l+=snprintf(s.data+l,s.len-l,"%p",data); }
+        { s.catf(FL,"%p -> %p: %s[%3g]",this,data,sTSTR(T),double(len)); }
+   else { s.catf(FL,"%p -> %p",this,data); }
 
-   if (nref) {
-   l+=snprintf(s.data+l,s.len-l," w/ %d refs",nref); }
+   if (nref || mtype) s.catf(FL,
+     " @ %d ref%s / %s",nref, nref>1?"s":"", MTYPE_STR[mtype]);
 
-   return s;
+   return s.data;
 };
 
 template <class T> inline
@@ -47,7 +45,7 @@ T* Wb::sptr<T>::malloc_base(size_t n, char init, Wb::MTYPE mt) {
 
    char do_alloc=(n>0);
    if (data) {
-      if (check_consistency(0)) wblog(FL,"ERR Wb::sptr() %s",STR_(this));
+      if (check_consistency(0)) wblog(FL,"ERR Wb::sptr() %s",STR(*this));
       if (n!=len || nref) rm_dref();
       else {
          do_alloc=0;
@@ -55,34 +53,41 @@ T* Wb::sptr<T>::malloc_base(size_t n, char init, Wb::MTYPE mt) {
    }
 
    if (do_alloc) {
-      if (data || len) wblog(FL,"ERR %s() %s !?",FCT,STR_(this));
+      if (data || len) wblog(FL,"ERR %s() %s !?",FCT,STR(*this));
       len=n; mtype=mt;
 
-      if (mtype==Wb::MEM_DEF) { WB_NEW(data,n); } else
-      if (mtype==Wb::MEX_RETURN) {
+      if (mtype==Wb::MEM_DEF) {
+         WB_NEW(data,n, init ? 0 : 1); 
+         init=0; 
+      }
+      else if (mtype==Wb::MEX_RETURN) {
          if (typeid(T)==typeid(double)) {
             mxArray *a=Mx::Array<double>(1,&n).Return();
+            init=0; 
+
             data=(T*)mxGetDoubles(a); 
-            P2X.add(data,a); 
+            gP2X.add(data,a); 
 
             nref=0; 
          }
          else if (typeid(T)==typeid(wbcomplex)) {
             mxArray *a=Mx::Array<wbcomplex>(1,&n).Return();
+            init=0; 
+
             data=(T*)mxGetComplexDoubles(a); 
-            P2X.add(data,a); 
+            gP2X.add(data,a); 
          }
          else wblog(FL,"ERR %s() got %s",FCT,TSTR(T));
 
-         if (WBLOG_MMEX) wblog(FL,"new %s",STR_(this));
+         if (WBLOG_MMEX) wblog(FL,"new %s",STR(*this));
       }
    }
-   if (n && init) { T z=T();
-      for (size_t i=0; i<n; ++i) data[i]=z;
+   if (n && init) { T z=T(); 
+      for (size_t i=0; i<n; ++i) { data[i]=z; }
    }
 
    if ((!len ^ !data) || (nref && !len)) wblog(FL,
-      "ERR Wb::sptr<%s>=%p -> %s",sTSTR(T),this,STR_(this));
+      "ERR Wb::sptr<%s>=%p -> %s",sTSTR(T),this,STR(*this));
 
    return data;
 };
@@ -104,7 +109,7 @@ template <class T> inline
 T* Wb::sptr<T>::init2ref(size_t n, const T* d0) {
 
    if (data==d0 && len==n && nref) { return data; }
-   if (data || len || nref) wblog(FL,"ERR %s() got %s",FCT,STR_(this));
+   if (data || len || nref) wblog(FL,"ERR %s() got %s",FCT,STR(*this));
    if (!d0 ^ !n) wblog(FL,"ERR %s() got n=%ld with %p",FCT,n,d0);
 
   #pragma omp critical (manage_SPTR) 
@@ -131,7 +136,7 @@ unsigned Wb::sptr<T>::add_dref() {
 template <class T> inline
 int Wb::sptr<T>::rm_dref(char mflag) {
 
-   int rval=0, e=0;
+   int done=0, e=0;
 
    #pragma omp critical (manage_SPTR)
    { try {
@@ -144,23 +149,23 @@ int Wb::sptr<T>::rm_dref(char mflag) {
             if (nref) { --nref; } 
             else {
                WB_DELETE(data); 
-               rval=1; 
+               done=1; 
             }
          }
          else if (mtype==Wb::MEM_REF) {
-            if (nref==1) { rval=2; } 
+            if (nref==1) { done=2; } 
             else if (nref>1) { --nref; }
             else { e|=16; }
          }
          else if (mtype==Wb::MEX_RETURN) {
-            if (!nref) { rval=3; } 
+            if (!nref) { done=3; } 
             else { e|=32; }
 
-            if (mflag) { 
-               mxArray *a=P2X.Return(0,0,data);
+            if (mflag || (wbl::status & WBL_ERR__)) { 
+               mxArray *a=gP2X.Return(0,0,data);
                if (a) { mxDestroyArray(a); data=NULL; }
             }
-            else if (P2X.erase(data)) { e|=64; }  
+            else if (gP2X.erase(data)) { e|=64; } 
          }
          else e|=128;
       }
@@ -168,15 +173,14 @@ int Wb::sptr<T>::rm_dref(char mflag) {
 
    if (e) {
       if (e==64)
-           { wblog(FL,"WRN %s() got %s",FCT,STR_(this)); }
-      else { wblog(FL,"ERR %s() got e=%d\n%s",FCT,e,STR_(this)); }
+           { wblog(FL,"WRN %s() got %s",FCT,STR(*this)); }
+      else { wblog(FL,"ERR %s() got e=%d\n%s",FCT,e,STR(*this)); }
    }
 
-   if (rval) { init_def(); }
+   if (done) { init_def(); } 
+   else if (!data) { mtype=Wb::MEM_DEF; } 
 
-   if (!data) { mtype=Wb::MEM_DEF; }
-
-   return rval;
+   return done;
 };
 
 template <class T> inline
@@ -190,7 +194,7 @@ T* Wb::sptr<T>::save_dref(const char *F, int L) {
      else if (len) { len=0; data=NULL; }
    }
 
-   if (e) wblog(F_L,"ERR %s() %s got e=%d !?",FCT,STR_(this),e);
+   if (e) wblog(F_L,"ERR %s() %s got e=%d !?",FCT,STR(*this),e);
    return dref;
 };
 

@@ -30,7 +30,16 @@ function A=initQSpaceCD(C,perm)
         c.qdir=Ck.qdir;
         c.cid=Ck.cid;
         c.size=Ck.cgd.S;
-        c.cgw=repmat(int8(['0',0]'),1,m); c.cgw(1,l)='1';
+
+        if r==2, i=1;
+        elseif r==3,    i=find(c.qdir>0); n=numel(i);
+           if n == r-1, i=find(c.qdir<0);
+           elseif n~=1, i=-1; end
+        else i=-1;
+        end
+        if i>0
+             c.cgw=sqrt(double(c.size(i)));
+        else c.cgw=1; end
 
         Ak.info.cgr(l,1)=c;
      end

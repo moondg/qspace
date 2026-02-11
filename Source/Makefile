@@ -232,8 +232,10 @@ mpsall: mpsset mpsother rcdata
 # NB! util als tries to compile util.cc
 # dealstruct cell2matc mat2cellc // Wb,May07,19
 utils: helloworld mexworld printfc getchar filestat \
-       kramers matchIndex mpfr2dec sparse2wb \
+       kramers matchIndex mpfr2dec mpfrplus sparse2wb \
        uniquerows wbeig wbhash wbhist wbrat wbsvd # wbtrace getpid 
+
+mpfr: mpfr2dec mpfrplus
 
 world: helloworld mexworld
 

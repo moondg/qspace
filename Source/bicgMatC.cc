@@ -100,7 +100,7 @@ void getCtrPattern(
        ic=getFlag(mxGetCell(P,1));
        if (ic==0 || ic>2) wblog(FL,"ERR Invalid index ic (%d)", ic);
 
-       map.initDef(d);
+       map.init(d);
 
        for (i=0; i<d; i++) {
            m=map.data+i;
@@ -146,7 +146,7 @@ void getCtrPattern(
            if (sz.dim1!=d || sz.dim2!=d) wblog(FL, 
            "ERR Dimension mismatch (%dx%d; %d)",sz.dim1,sz.dim2,d);
 
-           map.initDef(sz.nnz()); n=0;
+           map.init(sz.nnz()); n=0;
 
            for (i=0; i<d; i++)
            for (j=0; j<d; j++) if (sz(i,j)!=double(0)) {
@@ -167,7 +167,7 @@ void getCtrPattern(
 
            mxGetVector(FL,a3,ff);
 
-           map.initDef(d*d); n=0;
+           map.init(d*d); n=0;
 
            for (i=0; i<d; i++)
            for (j=0; j<d; j++) {

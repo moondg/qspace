@@ -23,90 +23,96 @@
 #ifdef QS_USING_OMP
 
 wbstring Wb::ompID2Str(char vflag) {
-   wbstring s(8); 
-   unsigned k=(vflag ? 16 : 0),
-   i=omp_get_thread_num(), n=omp_get_num_threads(), l=omp_get_level();
 
-   if (!i && n==1 && !l) { s.init(8+k); strcpy(s.data,"serial"); l=6; }
-   else if (l!=1) 
-        { s.init(16+k); l=snprintf(s.data,s.len,"OMP-%d/%d@%d",i,n,l); }
-   else { s.init(12+k); l=snprintf(s.data,s.len,"OMP-%d/%d",   i,n  ); }
+   unsigned i=omp_get_thread_num(), n=omp_get_num_threads();
+   unsigned k=(vflag? 16:0), l=omp_get_level();
+   wbvec<char> sx;
 
-   if (k && l<s.len) {
-      l+=snprintf(s.data+l, s.len-l,", %s",Wb::hostid(vflag).data);
+   if (!i && n==1 && !l) { sx.init(8+k); sx.cat(FL,"serial"); l=6; }
+   else if (l==1)
+        { sx.init(12+k); sx.catf(FL,"OMP-%d/%d",   i,n  ); } 
+   else { sx.init(16+k); sx.catf(FL,"OMP-%d/%d@%d",i,n,l); } 
+
+   if (k) {
+      sx.catf(0,0,", %s",Wb::hostid(vflag).data);
    }
 
-   return s;
+   return sx.data;
+};
+
+inline int Wb::omp_parallel() {
+   return omp_get_level();
+};
+
+unsigned Wb::get_omp_tid_nn(
+   unsigned *l_,
+   char check 
+){
+   unsigned tid=0; 
+   int q=0, l=omp_get_level(); if (l_) { *l_=l; }
+   for (; l>=0; --l) {
+      if ((q=omp_get_ancestor_thread_num(l))>0) {
+         if (tid) wblog(FL,
+            "ERR %s() got nested parallelization: tid=%d/%d (l=%d/%d)",
+            FCT,q,tid,l, omp_get_level());
+         tid=q; if (!check) { break; }
+      }
+   }
+   return tid;
 };
 
 int Wb::ompStatus(const char *F, int L) {
-    unsigned l=0, n=1024;
-    char fmt[]="  %-30s %2d\n", s[n];
+    char fmt[]="  %-30s %2d\n";
+    wbvec<char> s(1024);
 
-    if (l<n) l+=snprintf(s+l,n-l,fmt,
-      "omp_get_active_level", omp_get_active_level()); 
-    if (l<n) l+=snprintf(s+l,n-l,fmt,
-      "omp_get_cancellation", omp_get_cancellation());  
-    if (l<n) l+=snprintf(s+l,n-l,fmt,
-      "omp_get_default_device", omp_get_default_device()); 
-    if (l<n) l+=snprintf(s+l,n-l,fmt,
-      "omp_get_dynamic", omp_get_dynamic());   
-    if (l<n) l+=snprintf(s+l,n-l,fmt,
-      "omp_get_level", omp_get_level());       
-    if (l<n) l+=snprintf(s+l,n-l,fmt,
-      "omp_get_max_task_priority", omp_get_max_task_priority()); 
-    if (l<n) l+=snprintf(s+l,n-l,fmt,
-      "omp_get_max_threads", omp_get_max_threads());  
-    if (l<n) l+=snprintf(s+l,n-l,fmt,   
-      "omp_get_max_active_levels", omp_get_max_active_levels());
-    if (l<n) l+=snprintf(s+l,n-l,fmt,
-      "omp_get_num_procs", omp_get_num_procs()); 
-    if (l<n) l+=snprintf(s+l,n-l,fmt,
-      "omp_get_num_teams", omp_get_num_teams()); 
-    if (l<n) l+=snprintf(s+l,n-l,fmt,
-      "omp_get_num_threads", omp_get_num_threads());  
+    s.catf(0,0,fmt,"omp_get_active_level", omp_get_active_level());
+    s.catf(0,0,fmt,"omp_get_cancellation", omp_get_cancellation());  
+    s.catf(0,0,fmt,"omp_get_default_device", omp_get_default_device()); 
+    s.catf(0,0,fmt,"omp_get_dynamic", omp_get_dynamic()); 
+    s.catf(0,0,fmt,"omp_get_level",   omp_get_level());   
+    s.catf(0,0,fmt,"omp_get_max_task_priority", omp_get_max_task_priority()); 
+    s.catf(0,0,fmt,"omp_get_max_threads", omp_get_max_threads());  
+    s.catf(0,0,fmt,"omp_get_max_active_levels", omp_get_max_active_levels());
+    s.catf(0,0,fmt,"omp_get_num_procs", omp_get_num_procs()); 
+    s.catf(0,0,fmt,"omp_get_num_teams", omp_get_num_teams()); 
+    s.catf(0,0,fmt,"omp_get_num_threads", omp_get_num_threads());
 
-    if (l<n) l+=snprintf(s+l,n-l,fmt,
-      "omp_get_proc_bind", omp_get_proc_bind());
-    if (l<n) l+=snprintf(s+l,n-l,fmt,
-      "omp_get_team_num", omp_get_team_num());
-    if (l<n) l+=snprintf(s+l,n-l,"\n"); 
-    if (l<n) l+=snprintf(s+l,n-l,fmt,
-      "omp_get_thread_num", omp_get_thread_num()); 
-    if (l<n) l+=snprintf(s+l,n-l,fmt,
-      "omp_in_parallel", omp_in_parallel());
-    if (l<n) l+=snprintf(s+l,n-l,fmt,
-      "omp_in_final", omp_in_final());
-    if (l<n) l+=snprintf(s+l,n-l,fmt,
-      "omp_is_initial_device", omp_is_initial_device());
+    s.catf(0,0,fmt,"omp_get_proc_bind", omp_get_proc_bind());
+    s.catf(0,0,fmt,"omp_get_team_num", omp_get_team_num());
+    s.catf(0,0,fmt,"\n"); 
+    s.catf(0,0,fmt,"omp_get_thread_num", omp_get_thread_num()); 
+    s.catf(0,0,fmt,"omp_in_parallel", omp_in_parallel());
+    s.catf(0,0,fmt,"omp_in_final", omp_in_final());
+    s.catf(0,0,fmt,"omp_is_initial_device", omp_is_initial_device());
 
     fprintf(stdout,"\n%-18s %s -> %s()\n\n",shortFL(F_L),myname,FCT);
-    if (l<n)
-         fprintf(stdout,"%s\n",s);
-    else fprintf(stdout,"%s  ... (%d/%d)\n",s,l,n);
+    if (s.check_bounds()>=0)
+         { fprintf(stdout,"%s\n",s.data); }
+    else { fprintf(stdout,"%s  ... (%d/%d)\n",s.data,s.l,s.len); }
 
     return 0;
 };
 
 int Wb::ompNLock::acquire() {
 
-   omp_set_nest_lock(&_nlk);
-   owner=omp_get_thread_num(); ++ntot; ++level;
+   omp_set_nest_lock(&lk_n);
+   owner=omp_get_thread_num(); ++level; ++ntot;
 
-#if defined(DBG_GCX_LOCKS) && ( DBG_GCX_LOCKS & 12 ) 
-   LKF.blogf(FL," +  %s%s",STR_(this), check_BUF_size().data);
-#endif
+ # if defined(DBG_GCX_LOCKS) && ( DBG_GCX_LOCKS & 12 ) 
+   LKF.blogf(FL," +  %s%s",STR(*this), check_BUF_size().data);
+ # endif
 
    return level;
 };
 
 int Wb::ompNLock::test_acquire() {
-   int l=omp_test_nest_lock(&_nlk);
-   if (!l) return l;
+   int l=omp_test_nest_lock(&lk_n);
+   if (l) {
+      owner=omp_get_thread_num();
+      l=++level; ++ntot;
 
-   owner=omp_get_thread_num(); ++ntot; ++level;
-
-   return level;
+   }
+   return l;
 };
 
 int Wb::ompNLock::release() {
@@ -121,16 +127,16 @@ int Wb::ompNLock::release() {
       );
    }
 
-   if (level<=0) wblog(FL,"WRN %s() %s",FCT,STR_(this));
+   if (level<=0) wblog(FL,"WRN %s() %s",FCT,STR(*this));
 
    int l=(--level); 
    if (l<=0) owner=-1; 
 
    #if defined(DBG_GCX_LOCKS) && ( DBG_GCX_LOCKS & 12 ) 
-    LKF.blogf(FL," -  %s%s",STR_(this),check_BUF_size().data);
+    LKF.blogf(FL," -  %s%s",STR(*this),check_BUF_size().data);
    #endif
 
-   omp_unset_nest_lock(&_nlk);
+   omp_unset_nest_lock(&lk_n);
 
    return (l>0? l : 0);
 };
@@ -172,22 +178,22 @@ wbstring Wb::ompNLock::toStr(const char *istr_) const {
    wbstring sout(128); 
    unsigned l=0, n=sout.len; char *s=sout.data;
 
-   if ( nactive && !ntot ) l+=snprintf(s,n,"%d/%d", level,nactive); else
-   if (!nactive && ntot>9) l+=snprintf(s,n,"%d/%03ld", level,ntot );
-   else                    l+=snprintf(s,n,"%d/%d/%ld",level,nactive,ntot);
+   if ( nactive && !ntot ) l+=snprintf(s,n,"%d:%d", level,nactive); else
+   if (!nactive && ntot>9) l+=snprintf(s,n,"%d:%03ld", level,ntot);
+   else                    l+=snprintf(s,n,"%d:%d/%ld",level,nactive,ntot);
 
    l+=Wb::strpad_(s+l,8-l);
-   l+=snprintf(s+l,n-l," %2d",owner); 
+   l+=snprintf(s+l,n-l," %02d",owner); 
 
    if (l<n) {
-      if (istr && istr[0]) l+=snprintf(s+l, n-l," %s", istr );
-      else if (istr_)      l+=snprintf(s+l, n-l,"`%s'",istr_);
+      if (istr && *istr) { l+=snprintf(s+l,n-l," %s", istr ); }
+      else if (istr_)    { l+=snprintf(s+l,n-l,"`%s'",istr_); }
       else {
          l+=snprintf(s+l, n-l," (null)");
          wblog(FL,"WRN %s() got null istr",FCT);
       }
    }
-   if (l<n && (!istr || !istr[0])) {
+   if (l<n && (!istr || !*istr)) {
       l+=snprintf(s+l, n-l," %p",this); 
    }
    return sout;
@@ -195,7 +201,7 @@ wbstring Wb::ompNLock::toStr(const char *istr_) const {
 
 void Wb::ompNLock::set_istr(const char *s) {
 
-   if ((!istr || !istr[0]) && s && s[0]) {
+   if ((!istr || !*istr) && s && *s) {
       if (istr) { delete [] istr; }
       istr = new char[strlen(s)+1];
       strcpy(istr,s);
@@ -204,28 +210,40 @@ void Wb::ompNLock::set_istr(const char *s) {
 
 void Wb::ompGuard::acquire(const char *F, int L, ompNLock &lk, int lmax) {
 
+   if (!Wb::omp_parallel()) { return; } 
+
    if (lp) wblog(FL,"ERR %s() already initialized with lock",FCT);
 
-   if (lk.level<lmax) { lp=&lk;
-      lk.acquire();
+   lk.acquire();
+   lp=&lk;
 
-      if (lk.ntot<=1 && F) {
-         Wb::termcolor Tc("WRN");
-         fprintf(stdout,"\n  %sTST %s %s() "
-           "using ompCriticial `%s'%s\n\n",Tc.e1,shortFL(F_L),FCT,
-            lk.istr? lk.istr:"(unnamed ompNLock)",Tc.em);
-         fflush(0);
+   if (lk.ntot<=3 && F) { Wb::termcolor Tc("WRN");
+      fprintf(stdout,"\n  %sTST %s %s() "
+        "using ompCriticial `%s'%s\n\n",Tc.e1,shortFL(F_L),FCT,
+         lk.istr? lk.istr:"(unnamed ompNLock)",Tc.em);
+      fflush(0);
+   }
+
+   if (lk.level>lmax) {
+      char sx[48]; snprintf(sx,48,"got lk.level=%d/%d",lk.level,lmax);
+      if (lk.level<lmax+8)
+           { fprintf(stdout,"%s %s WRN %s\n",shortFLT,sx); }
+      else { fprintf(stdout,"%s %s ERR %s\n",shortFLT,sx);
+         throw Wb::LogException(ERR);
       }
    }
-   else if (lk.level>lmax) fprintf(stdout,"%s %s "
-   "WRN got lk.level=%d/%d\n",shortFLT,lk.level,lmax);
+};
+
+wbstring Wb::ompGuard::toStr(const char *istr_) const {
+   return (lp ? lp->toStr(istr_) : "(null)");
 };
 
 #ifdef LD_CLEBSCH_QS
 
 namespace CG {
 
-   Wb::ompNLock* Guard::find(size_t h) {
+   Wb::ompNLock* Guard::find(size_t h) { 
+      Wb::ompGuard myLK(CG_locks);
       auto it = CG::lock_map.find(h);
       if (it==CG::lock_map.end())
            { return NULL; }
@@ -236,8 +254,8 @@ namespace CG {
    wbstring Guard::Status(const QSet<TQ> &Q, const char *tag) {
       size_t h1=QHash<TQ>()(Q,tag); wbstring istr=Q.toStr();
       if (tag && tag[0]) {
-         unsigned l=strlen(tag)+4; char sx[l];
-         snprintf(sx,l," '%s'",tag); istr+=sx;
+         wbvec<char> sx(strlen(tag)+4);
+         sx.catf(0,0," '%s'",tag); istr+=sx.data;
       }
       return Status(h1,istr.data);
    };
@@ -267,7 +285,7 @@ namespace CG {
               { snprintf(s.data,s.len,"(undefined) %s",istr_); }
          else { snprintf(s.data,s.len,"(undefined; h=0 !?) %s",istr_); }
       }
-      else { s.init(32);
+      else { s.init(48);
          if (h)
               { snprintf(s.data,s.len,"(undefined; h=0x%lX)",h); }
          else { snprintf(s.data,s.len,"(undefined; h=0)"); }
@@ -298,12 +316,20 @@ namespace CG {
    };
 };
 
-int CG::Guard::print_CG_locks() { 
-   unsigned i=0;
+int CG::Guard::print_CG_locks(const char *F, int L) {
 
-   fprintf(stdout,"level/nactive/nuse, owner_thread    info_string\n");
-   for (auto I=CG::lock_map.begin(); I!=CG::lock_map.end(); ++I) {
-      fprintf(stdout,"%2d. %s\n",++i,STR_(I->second));
+   Wb::ompGuard myLK(CG_locks);
+
+   if (CG::lock_map.size()) { unsigned i=0;
+      fprintf(stdout,"\n%s %s() *tid=%d/%d (systid=%d) got %ld CG::locks total\n"
+        "## level/n_active/n_use  owner-thread  source::line "
+        "lock-info-string\n\n", shortFL(F_L), FCT,
+         omp_get_thread_num(), omp_get_num_threads(),
+         Wb::system_tid(), CG::lock_map.size());
+
+      for (auto I=CG::lock_map.begin(); I!=CG::lock_map.end(); ++I) {
+         fprintf(stdout,"%2d. %s\n",++i,STR_(I->second));
+      }; fprintf(stdout,"\n");
    }
 
    return 0; 
@@ -340,7 +366,7 @@ int CG::Guard::deal_with_cond(
    unsigned i=0;
 
    if (cond[0]=='?') { 
-      { Wb::ompGuard gLK(CG_locks);
+      { Wb::ompGuard myLK(CG_locks);
         const auto lp=CG::lock_map.find(h0);
         if (lp==CG::lock_map.end() || !lp->second->level) { ntry=0; }
       }; i=1;
@@ -357,13 +383,14 @@ int CG::Guard::acquire(
    const char *F, int L, const CG::FileLock &flk,
    const char *tag, const char *cond 
 ) {
-   if (omp_get_num_threads()<=1) { return 0; }
+   if (!Wb::omp_parallel()) { return 0; }
 
    if (hid.len) wblog(FL,
       "ERR Guard() already initialized (len=%d)",hid.len);
 
-   size_t h0; unsigned l,l2,n=64;
-   int ntry=-1; const char *sR; char s[n]; const char* ss[1]={s};
+   size_t h0;
+   wbvec<char> s(64);
+   int ntry=-1; const char *sR; const char* ss[1]={s.data};
 
    flk.ensureFOpen(FL);
 
@@ -374,7 +401,6 @@ int CG::Guard::acquire(
       if (sR>s0) { --sR; }
       else { sR=s0; } 
    }
-   l2=strlen(sR);
 
    h0 = Wb::string_hash(tag ? tag : mytag)
       ^ Wb::string_hash(sR);
@@ -385,13 +411,12 @@ int CG::Guard::acquire(
    }
 
    if (tag && tag[0]) 
-        { l=snprintf(s,n,"%s", shortFL(F_L,-1,  tag,'*')); }
-   else { l=snprintf(s,n,"%s", shortFL(F_L,-1,mytag,'/')); }
-   for (; l<24; ++l) { s[l]=' '; } 
+        { s.catf(0,0,"%s", shortFL(F_L,-1,  tag,'*')); }
+   else { s.catf(0,0,"%s", shortFL(F_L,-1,mytag,'/')); }
+   s.pad(' ',24); 
 
-   if (l+l2+1>=n) wblog(FL,
-      "ERR %s() string out of bounds (%d+%d/%d)\n%s %s",FCT,l,l2,n,s,sR);
-   l+=snprintf(s+l,n-l," %s",sR);
+   s.catf(0,0," %s",sR);
+   s.check_bounds(FL,1);
 
    hid.init(1,&h0);
 
@@ -403,7 +428,7 @@ int CG::Guard::acquire(
    const char *F, int L, const QSet<TQ> &Q, const char *tag,
    const char *cond 
 ) {
-   if (omp_get_num_threads()<=1) { return 0; }
+   if (!Wb::omp_parallel()) { return 0; } 
 
    size_t h0=QHash<TQ>()(Q,tag);
 
@@ -411,20 +436,18 @@ int CG::Guard::acquire(
    if (cond && cond[0]) {
       ntry=deal_with_cond(F,L,h0,cond); if (!ntry) return 0; }
 
-   unsigned l, n=64; char s[n]; const char* ss[1]={s};
+   wbvec<char> s(64);
+   const char* ss[1]={s.data};
+
    if (hid.len) wblog(FL,
       "ERR Guard() already initialized (len=%d)",hid.len);
 
    if (tag && tag[0]) 
-        { l=snprintf(s,n,"%s", shortFL(F_L,-1,  tag,'*')); }
-   else { l=snprintf(s,n,"%s", shortFL(F_L,-1,mytag,'/')); }
+        { s.catf(0,0,"%s", shortFL(F_L,-1,  tag,'*')); }
+   else { s.catf(0,0,"%s", shortFL(F_L,-1,mytag,'/')); }
 
-   if (l<n) {
-      for (; l<24; ++l) { s[l]=' '; } 
-      l+=snprintf(s+l,n-l," %s",STR(Q));
-   }
-   if (l>=n) wblog(FL,
-      "ERR %s() string out of bounds (%d/%d)\n%s",FCT,l,n,s);
+   s.pad(' ',24); 
+   s.catf(F,L," %s",STR(Q));
 
    hid.init(1,&h0);
 
@@ -436,18 +459,22 @@ int CG::Guard::acquire(
    const char *F, int L, const cgc_contract_id<TM> &idc,
    const char *cond 
 ){
-   if (omp_get_num_threads()<=1) return 0; 
+   if (!Wb::omp_parallel()) { return 0; } 
 
-   int ntry=-1; size_t h0=MHash<TM>()(idc);
-   if (cond && cond[0]) {
-      ntry=deal_with_cond(F,L,h0,cond); if (!ntry) return 0;
+   int ntry=-1;
+   size_t h0=MHash<TM>()(idc);
+
+   if (cond && *cond) {
+      ntry=deal_with_cond(F,L,h0,cond);
+      if (!ntry) { return 0; }
    }
 
-   unsigned n=128; char s[n]; const char* ss[1]={s};
+   wbvec<char> s(128);
+   const char* ss[1]={s.data};
    if (hid.len) wblog(FL,
       "ERR Guard() already initialized (len=%d)",hid.len);
 
-   snprintf(s,n,"%-20s %s", 
+   s.catf(0,0,"%-20s %s", 
       shortFL(F_L,-1,mytag,'/'), 
       STR2(idc,0) 
    );
@@ -461,9 +488,11 @@ template<class TQ>
 void CG::Guard::acquire(
    const char *F, int L, const QSet<TQ> *Q[], unsigned n
 ){
-   if (omp_get_num_threads()<=1) return; 
+   if (!Wb::omp_parallel()) { return; } 
 
-   unsigned i=0, k=0, slen=64; char* ss[n];
+   unsigned i=0, k=0, slen=64;
+   wbvec<char*> ss(n);
+
    if (hid.len) wblog(FL,
       "ERR Guard() already initialized (len=%d)",hid.len);
    hid.init(n);
@@ -483,7 +512,7 @@ void CG::Guard::acquire(
       "ERR Guard() got no relevant QSet data (%d/%d)",k,n);
    hid.len=k; for (; k<n; ++k) { ss[k]=NULL; }
 
-   acquire_set((const char**)ss);
+   acquire_set((const char**)ss.data);
 
    for (i=0; i<n; ++i) { if (ss[i]) { delete [] ss[i]; }}
 };
@@ -495,7 +524,7 @@ int CG::Guard::acquire_set_iter(
    int nlks=0; 
    unsigned i=0, gotnew;
 
-   { Wb::ompGuard gLK(CG_locks);
+   { Wb::ompGuard myLK(CG_locks);
      for (; i<hid.len; ++i) {
         Wb::ompNLock *&lp=CG::lock_map[hid[i]]; 
         if ((gotnew=(lp ? 0 : 1))) { 
@@ -525,21 +554,21 @@ int CG::Guard::acquire_set_wait(
    int *got, Wb::ompNLock *lk[], const char *ss[], int ntry) {
 
    int nlks=0; unsigned i, missed=0, ndead=0, nlog=0;
-   int iter=1;
+   int itry=1;
 
    double wt=-1,
       wt1=60,  
       wt2=600; 
 
    if (ntry<=0) {
-      if (!ntry) wblog(FL,"WRN %s() got ntry=%d !?",FCT,ntry);
+      if (!ntry) wblog(FL,"WRN %s() got ntry=%d",FCT,ntry);
       ntry=1200;
    }
 
    Wb::thread_xlink xl; 
 
-   for (; iter<ntry; ++iter) {
-      nlks=acquire_set_iter(got,lk,ss,iter); 
+   for (; itry<ntry; ++itry) {
+      nlks=acquire_set_iter(got,lk,ss,itry); 
 
       missed=(nlks<=0 ? 1 : 0);
       if (!missed) break; 
@@ -548,7 +577,7 @@ int CG::Guard::acquire_set_wait(
       for (i=0; i<hid.len; ++i) { if (!got[i]) xl.add(FL,lk[i]); }
 
       if (wt<=0) {
-         wt=0.01*std::rand()/double(RAND_MAX); if (wt<1E-4) wt=1E-4; }
+         wt=0.01*std::rand()/double(RAND_MAX); if (wt<1e-4) wt=1e-4; }
       else {
          double x=1+std::rand()/double(RAND_MAX);
          if ((wt*=x)>wt2) { wt=wt2; } 
@@ -562,41 +591,43 @@ int CG::Guard::acquire_set_wait(
          wbstring sout; sprintf_locks(sout,got,ss," ");
 
          fprintf(stdout,"\n%-12s %s "
-           "itry %d/%d @ dt=%4.3gs %s(ith=%d/%d)%s\n%s",
-            shortFLT, iter,ntry,wt, Tc.e1,xl.t0,xl.nt,Tc.em, sout.data);
+           "itry %d/%d @ dt=%4.3gs %s(th=%d/%d)%s\n%s",
+            shortFLT, itry,ntry,wt, Tc.e1,xl.t0,xl.nt,Tc.em, sout.data);
 
-         unsigned l, n=64; char sx[n];
-         l=snprintf(sx,n,"%d/%d OMP deadlocks? ",i,ndead);
-         snprintf(sx+l,n-l,"(ith=%d/%d)",xl.t0,xl.nt); 
+         char *sx1;
+         wbvec<char> sx(64);
+
+         sx.catf(0,0,"itry=%d/%d: %d OMP deadlocks? ",itry,ndead,i);
+         sx1=sx.current();
+         sx.catf(0,0,"(th=%d/%d)",xl.t0,xl.nt);
 
          if (ndead) { char xflag=(wt>wt1 && ndead>10);
-            if (++nlog==1 || xflag) {
-               Wb::termcolor Tc("WRN");
+            if (++nlog==1 || xflag) { Wb::termcolor Tc("WRN");
                fprintf(stdout,
-                  "%s %s %sWRN %d deadlocks?%s (%ld locks total)\n\n",
+                  "%s %s %sWRN %d OMP deadlocks?%s (%ld CG::locks total)\n",
                    shortFLT, Tc.e1,i,Tc.em, CG::lock_map.size());
-               print_CG_locks();
+               print_CG_locks(FL);
             }
 
             if (xflag)
-                 { wblog(FL,"ERR %s %.3g, %d",sx,wt,ndead); }
-            else { wblog(FL,"WRN %s",sx); }
+                 { wblog(FL,"ERR %s %.3g, %d",sx.data,wt,ndead); }
+            else { wblog(FL,"WRN %s",sx.data); }
          }
          else wblog(FL,
-            "WRN waiting for OMP lock%ss %s", hid.len==1? "":"s",sx+l);
+            "WRN waiting for OMP lock%ss %s", hid.len==1? "":"s",sx1);
       }
       Wb::pause(wt);
    }
 
    if ((missed && ntry>99)
      #if defined(DBG_GCX_LOCKS) && ( DBG_GCX_LOCKS & 8 )
-      || (iter>1) 
+      || (itry>1) 
      #endif
    ) {
       char sx[64]; wbstring sout; sprintf_locks(sout,got,ss);
 
       snprintf(sx,64,"%ld lock%s (%d %s @ %.3g; %d/%d)", hid.len,
-         hid.len==1?"":"s",iter,iter!=1?"tries":"try",wt,xl.t0,xl.nt);
+         hid.len==1?"":"s",itry,itry!=1?"tries":"try",wt,xl.t0,xl.nt);
 
      #if defined(DBG_GCX_LOCKS) && ( DBG_GCX_LOCKS & 8 )
       LKF.blogf(FL, missed? "ERR %s\n%s":"ok. %s\n%s",sx,sout.data);
@@ -612,40 +643,53 @@ int CG::Guard::acquire_set_wait(
 void CG::Guard::release() {
    if (!hid.len) { active=false; return; }
 
-   unsigned i=0; char err[hid.len];
+   unsigned i;
+   wbvec<char> err(hid.len);
 
+ { Wb::ompNLock *lp;
    map <size_t, Wb::ompNLock*>::iterator it;
-   Wb::ompNLock *lp;
- { Wb::ompGuard gLK(CG_locks);
+   Wb::ompGuard myLK(CG_locks);
 
    for (i=0; i<hid.len; ++i) { err[i]=0;
       it=CG::lock_map.find(hid[i]);
       if (it!=CG::lock_map.end()) { lp=it->second;
          if (lp) {
-            if (active) { lp->release(); } 
-            else if (lp->owner==omp_get_thread_num()) { err[i]|=1; }
+            if (active) {
+               lp->release(); 
+            }
+            else if (lp->owner && lp->owner==omp_get_thread_num()) {
+               err[i]|=1;
+            }
 
             if ((--lp->nactive)<=0) {
-               #if defined(DBG_GCX_LOCKS) && ( DBG_GCX_LOCKS & 8 )
-                LKF.blogf(FL,"rm  %s",STR_(lp));
-               #endif
+             # if defined(DBG_GCX_LOCKS) && ( DBG_GCX_LOCKS & 8 )
+               LKF.blogf(FL,"rm  %s",STR_(lp));
+             # endif
 
                delete lp; CG::lock_map.erase(it);
             }
          } else err[i]|=2;
       } else err[i]|=4;
-  }}
+   }
+ }
 
-   for (i=0; i<hid.len; ++i) { if (err[i]) { if (i) { err[0]|=err[i]; }
-      if (err[i] & 1) wblog(FL,"ERR %s() " 
-         "still owner of released lock %d/%d #%lx",FCT,i+1,hid.len,hid[i]);
-      else if (err[i] & 2) wblog(FL,"ERR %s() "
-         "got null lock %d/%d #%lx",FCT,i+1,hid.len,hid[i]);
-      else if (err[i] & 4) wblog(FL,"ERR %s() "
-         "lock %d/%d #%lx no longer exists !?",FCT,i+1,hid.len,hid[i]);
-   }}; if (err[0]) fflush(0);
+   for (i=0; i<hid.len; ++i) { if (err[i]) {
+      if (i) { err[0]|=err[i]; }
+      if (err[i] & 1) { wblog(FL, 
+        "ERR %s() still owner of released lock %d/%d #%lx",
+         FCT,i+1,hid.len,hid[i]);
+      }
+      else if (err[i] & 2) { wblog(FL,
+        "ERR %s() got null lock %d/%d #%lx",FCT,i+1,hid.len,hid[i]);
+      }
+      else if (err[i] & 4) {wblog(FL,
+        "ERR %s() lock %d/%d #%lx no longer exists",FCT,i+1,hid.len,hid[i]);
+      }
+   }}
+   if (err[0]) { fflush(0); }
 
-   hid.init(); active=false;
+   hid.init();
+   active=false;
 };
 
 void CG::Guard::print(const char *F, int L) {
@@ -659,7 +703,7 @@ void CG::Guard::print(const char *F, int L) {
         wblog(F_L," *  CG::Guard() got single lock entry");
    else wblog(F_L," *  CG::Guard() contains %d locks",hid.len,hid.len);
 
-   Wb::ompGuard gLK(CG_locks);
+   Wb::ompGuard myLK(CG_locks);
    for (unsigned i=0; i<hid.len; ++i) {
       auto it=CG::lock_map.find(hid[i]);
       wblog(FL," *   %d. %-24s #%lx",i+1,
@@ -670,6 +714,7 @@ void CG::Guard::print(const char *F, int L) {
 };
 
 int Wb::thread_xlink::add(const char *F, int L, size_t h) {
+   Wb::ompGuard myLK(CG_locks);
    const auto im = CG::lock_map.find(h);
    if (im==CG::lock_map.end()) wblog(FL,
       "ERR %s() non existing lock CG::lock_map[%x]",FCT,h);

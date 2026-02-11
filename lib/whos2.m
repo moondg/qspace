@@ -1,45 +1,70 @@
 function [S,sz]=whos2(varargin)
 % Function [S,sz]=whos2(varargin)
 %
-%    To be used exactly the same way as whos but accepts further
-%    sort instructions. Also, input may be a simple structure,
-%    which then generates a `whos' for all its fields.
+%    Wrapper routine to Matlab's `whos' routine
+%    which accepts further functionality like sort instructions. 
+%
+% Options
 %
 %    -s    sort with respect to byte-size
-%    -s#   sort with respect to field number # in struct whos
+%    -s#   sort with respect to field number # in struct returned by whos
 %    -r    same as -s, but reverse sort
 %
-% Wb,Apr06,08
+% Usage #2: whos2(S,...)
+%
+%    If input S is a plain structure,
+%    this generates a `whos' output for all its fields where as with whos,
+%    subsequent options may contrain matching field names
+%
+% Usage #3: whos2(x,field)
+%
+%    If input x is not a string, then this returns the specified
+%    field out of `whos' for given object x. For example, then
+%    whos2(x,'class') returns the class name of object x.
+%
+% Wb,Apr06,08 ; Wb,Jun16,25
+
+% Examples (usage #3): whos2(Q,'class') gets the class name for object Q
+% tags: getClassName, classname, get_class_name
 
   sopt=''; sflag=0; vflag=0; mark=zeros(1,nargin);
   for i=1:nargin
-     if ~ischar(varargin{i}), continue
-     elseif ~sflag && ~isempty(regexp(varargin{i},'^-[rs]'))
-        sflag=varargin{i}(2); sopt=varargin{i}(3:end); mark(i)=1;
+     if ~ischar(varargin{i}), mark(i)=-1; continue
+     elseif ~sflag && ~isempty(regexp(varargin{i},'^-[rs]')), mark(i)=1;
+        sflag=varargin{i}(2);
+        sopt=varargin{i}(3:end);
      elseif ~vflag && isequal(varargin{i},'-v')
         vflag=1; mark(i)=2;
      end
   end
-  varargin(find(mark))=[];
-  narg=numel(varargin); w='whos';
 
-  if narg && isstruct(varargin{1})
-     if narg>1, w=[ w '(' strhcat('-a',varargin(2:end)) ')']; end
-     setuser(0,'whos2__',w);
+  i=find(mark>0); if ~isempty(i)
+     varargin(i)=[]; mark(i)=[];
+  end
+  narg=numel(varargin); cmd='whos';
+
+  if isequal(mark,[-1 0]) && ~sflag && ~vflag
+     q=varargin{1};
+     q=whos('q');
+     S=getfield(q,varargin{2}); sz=q.bytes;
+     return
+  elseif narg && isstruct(varargin{1})
+     if narg>1, cmd=[ cmd '(' strhcat('-a',varargin(2:end)) ')']; end
+     setuser(0,'whos2__',cmd);
 
      if sflag || nargout
         S=whos_struct(varargin{1});
      else whos_struct(varargin{1}); return
      end
   else
-     if narg, w=[ w '(' strhcat('-a',varargin) ')']; end
+     if narg, cmd=[ cmd '(' strhcat('-a',varargin) ')']; end
      if sflag || nargout
         s=['u=get(0,''UserData''); ' ...
-           'u=setfield(u,''whos2__'', ' w '); set(0,''UserData'',u)'];
+           'u=setfield(u,''whos2__'', ' cmd '); set(0,''UserData'',u)'];
         evalin('caller',s);
         S=getuser(0,'-rm','whos2__');
      else
-        evalin('caller',w);
+        evalin('caller',cmd);
         return
      end
   end

@@ -216,7 +216,7 @@ void mexFunction(
 
       for (l=n=i=0; i<RR.len; ++i) {
          d2[l++]=dz[i];
-         if (RR[i].q.type>QTYPE_ASEP) d2[l++]=dz[i];
+         if (RR[i].q.type>QT_ABELIAN) d2[l++]=dz[i];
       }
       d2.len=l; n=d2.sum();
       QZ.init(D,n);
@@ -235,7 +235,7 @@ void mexFunction(
          if (d!=Z.dim1) wblog(FL,"ERR %d/%d !?",d,Z.dim1);
 
          for (k=r=iq=0; iq<RR.len; ++iq, k+=m, r+=m) { m=dz[iq];
-            if (RR[iq].q.type>QTYPE_ASEP) {
+            if (RR[iq].q.type>QT_ABELIAN) {
                for (i=0; i<d; ++i) {
                   Wb::cpyRange(QZ.ref(l+i,k), J.data+r, m,'!'); 
                }; k+=m;

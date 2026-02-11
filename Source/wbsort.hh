@@ -9,29 +9,26 @@ namespace Wb {
 /* ------------------------------------------------------------------ */
 
 template<class T>
-int hpsort(
+void hpsort(
     T *A,          
     size_t lda,    
     size_t N,      
     wbperm &P,
     char dir=+1,   
-    char lex=+1    
-);
+    char lex=+1);  
 
 template<class T>
-int hpsort(
+void hpsort(
     wbMatrix<T> &ra,
     wbperm &P,
     char dir=+1,   
-    char lex=+1    
-);
+    char lex=+1);  
 
 template<class T>
 void hpsort(
     wbvector<T> &ra,  
     wbperm &P,
-    char dir=+1    
-);
+    char dir=+1);  
 
 template<class T>
 void hpsort(wbvector<T> &ra);

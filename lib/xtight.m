@@ -64,7 +64,7 @@ function xl=xtight(varargin)
         end
      end
   elseif isequal(get(ah,'YScale'),'log') && xl(1)==0
-     xl=xlim__(ah,getxlim(ah,'-data','-pos'));
+     xl=xlim__(ah,getxlim(ah,'-pos')); % ,'-data'
   end
 
   if ~isempty(x1) || ~isempty(x2), xl=xlim(ah);

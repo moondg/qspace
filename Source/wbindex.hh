@@ -20,10 +20,7 @@
 #ifndef __WB_INDEX_HH__
 #define __WB_INDEX_HH__
 
-// ----------------------------------------------------------------- //
-// index class
-// Wb,Apr19,06
-// ----------------------------------------------------------------- //
+#define QS_SEP_IFERM  '/'  // 's' 'f' '/' '@' // Wb,Sep19,25
 
 class wbindex : public wbvector<widx_t> { 
 
@@ -35,11 +32,11 @@ class wbindex : public wbvector<widx_t> {
 
     wbindex(const ctrIdx& ic) { init(ic); };
 
-    explicit wbindex(widx_t n, const widx_t* d)
+    wbindex(widx_t n, const widx_t* d)
     : wbvector<widx_t>(n,d) {};
 
-    explicit wbindex(const char* s, unsigned offset=0) {
-       int i=Str2Idx(s,*this,offset);
+    wbindex(const char* s, widx_t offset=0) {
+       int i=Wb::Str2Idx(0,0,s,*this,offset);
        if (i<=0) wblog(FL,"ERR %s() invalid index '%s' (%d)",FCT,s,i);
     };
 
@@ -62,8 +59,19 @@ class wbindex : public wbvector<widx_t> {
        return init(0,0,a,offset);
     };
 
+    wbindex& initGroup(const wbvector<widx_t> &D) { 
+       if (!D) { return init(); }
+       else {
+          widx_t i,d, l=0, ig=0; init(D.sum());
+          for (; ig<D.len; ++ig) { d=D[ig];
+             for (i=0; i<d; ++i, ++l) { data[l]=ig; }
+          }
+          return *this;
+       }
+    };
+
     wbindex& initGroup(
-       const wbvector<widx_t> &P, wbvector<widx_t> &D
+       const wbvector<widx_t> &P, const wbvector<widx_t> &D
     ){
        widx_t i,d, k=0, ig=0, m=D.sum();
        if (m!=P.len) wblog(FL,
@@ -79,7 +87,7 @@ class wbindex : public wbvector<widx_t> {
     };
 
     wbindex& initGroup0(
-       const wbvector<widx_t> &P, wbvector<widx_t> &D
+       const wbvector<widx_t> &P, const wbvector<widx_t> &D
     ){
        widx_t l=0, i=0; init(D.len);
        for (; i<D.len; ++i) {
@@ -90,18 +98,18 @@ class wbindex : public wbvector<widx_t> {
     };
 
     void initStr(const char* s, widx_t offset=0) {
-       int i=Str2Idx(s,*this,offset);
+       int i=Wb::Str2Idx(0,0,s,*this,offset);
        if (i<=0) wblog(FL,"ERR %s() invalid index '%s' (%d)",FCT,s,i);
     };
 
-    bool isIndex(widx_t n=0) {
+    bool isIndex(widx_t n=0) { 
        if (n) {
-          if (swidx_t(n)>0) {  
+          if (widx_ts(n)>0) {  
              for (widx_t i=0; i<len; ++i) {
              if (data[i]!=(n+i)) return 0; }
           }
           else { 
-             n=(1-n-len); if (swidx_t(n)<0) return 0;
+             n=(1-n-len); if (widx_ts(n)<0) return 0;
              for (widx_t i=0; i<len; ++i) {
              if (data[i]!=(n+i)) return 0; }
           }
@@ -112,22 +120,8 @@ class wbindex : public wbvector<widx_t> {
        return 1;
     };
 
-    wbindex& Index(widx_t n) {
-       init(n);
-       if (n) { for (widx_t i=0; i<n; ++i) data[i]=i; }
-       return *this;
-    };
-
-    wbindex& Index_ex(widx_t n, widx_t ix) {
-       widx_t i,k;
-
-       if (ix>=n) wblog(FL,
-       "WRN index to be excluded of no relevance (%d/%d)",ix,n);
-
-       init(ix<n ? n-1 : n); if (n==0) return *this;
-
-       for (k=i=0; i<n; i++) if (i!=ix) data[k++]=i;
-
+    wbindex& Index(widx_t n) { 
+       init(n); for (widx_t i=0; i<n; ++i) { data[i]=i; }
        return *this;
     };
 
@@ -136,6 +130,16 @@ class wbindex : public wbvector<widx_t> {
        init(i2-i1+1);
        for (widx_t i=0; i<len; ++i) data[i]=i+i1;
 
+       return *this;
+    };
+
+    wbindex& Index_ex(widx_t n, widx_t ix) {
+       widx_t i,k;
+       if (ix>=n) wblog(FL,
+          "WRN index to be excluded of no relevance (%d/%d)",ix,n);
+
+       init(ix<n ? n-1 : n);
+       if (n) { for (k=i=0; i<n; ++i) { if (i!=ix) { data[k++]=i; }}}
        return *this;
     };
 
@@ -200,7 +204,7 @@ class wbindex : public wbvector<widx_t> {
     };
 
     wbindex& operator= (const char* s) {
-       int i=Str2Idx(s,*this,0);
+       int i=Wb::Str2Idx(0,0,s,*this,(widx_t)0);
        if (i<=0) wblog(FL,"ERR %s() invalid index '%s' (%d)",FCT,s,i);
        return *this;
     };
@@ -210,7 +214,7 @@ class wbindex : public wbvector<widx_t> {
     void toPerm(wbperm &P) const {
         P.initT(len, data);
 
-        if (!P.isValidPerm()) { print("this");
+        if (P.isValidPerm()<=0) { print("this");
         wblog(FL, "WRN No valid perm."); }
     };
 
@@ -233,9 +237,9 @@ class wbindex : public wbvector<widx_t> {
 
 };
 
-wbperm::wbperm (const wbindex &P) {
+wbperm::wbperm (const wbindex &P, double fac_) : fac(fac_) {
    RENEW(P.len,P.data);
-   if (!isValidPerm()) { dispInvalidPerm(FL); }
+   isValidPerm(FL);
 };
 
 class wbIndex : public wbvector<widx_t> { 
@@ -317,10 +321,9 @@ class wbIndex : public wbvector<widx_t> {
     wbIndex& set(wbvector<widx_t> &I) {
        widx_t k=0, *const &i=I.data, *const &s=SIZE.data;
        if (I.len!=len) wblog(FL,
-          "ERR wbIndex::%s() size mismatch (%d/%d)",FCT,I.len,len);
-       for (; k<len; k++) if (i[k]>=s[k]) {
-           wblog(FL,"ERR wbIndex::%s() index out of bounds (%d: %d/%d)",
-              FCT,k+1,i[k],s[k]);
+          "ERR %s() size mismatch (%d/%d)",C_FCT,I.len,len);
+       for (; k<len; k++) if (i[k]>=s[k]) { wblog(FL,
+          "ERR %s() index out of bounds (%d: %d/%d)",C_FCT,k+1,i[k],s[k]);
            data[k]=i[k];
        }
        return *this;
@@ -334,7 +337,7 @@ class wbIndex : public wbvector<widx_t> {
 
     void checkValid(const char *F, int L) const {
        if (!isValid()) wblog(F_L,
-          "ERR %s() invalid hyperindex\n%s",FCT,STR_(this));
+          "ERR %s() invalid hyperindex\n%s",FCT,STR(*this));
     };
 
     bool operator++() {
@@ -349,7 +352,7 @@ class wbIndex : public wbvector<widx_t> {
 
        if (data[k]>=s[k]) {
           if (k!=l) wblog(FL,"WRN wbIndex::++ "
-             "premature stop (%d/%d: %s)",k+1,len,STR_(this));
+             "premature stop (%d/%d: %s)",k+1,len,STR(*this));
           return 0;
        }
        return 1;
@@ -363,11 +366,11 @@ class wbIndex : public wbvector<widx_t> {
        if (!len) { return 0; }
 
        k=0; data[0]--; 
-       while (swidx_t(data[k])==-1 && k<l) { data[k]=s[k]-1; --data[++k]; }
+       while (widx_ts(data[k])==-1 && k<l) { data[k]=s[k]-1; --data[++k]; }
 
        if (data[k]>=s[k]) {
           if (k!=l) wblog(FL,"WRN wbIndex::-- "
-             "premature stop (%d/%d: %s)",k+1,len,STR_(this));
+             "premature stop (%d/%d: %s)",k+1,len,STR(*this));
           return 0;
        }
        return 1;
@@ -388,7 +391,7 @@ class wbIndex : public wbvector<widx_t> {
        for (widx_t i=0; i<len; ++i) {
           if (data[i]+1<SIZE.data[i]) return 1; else
           if (data[i]>=SIZE.data[i]) wblog(FL,
-             "WRN %s() index out of bounds (%s)",FCT,STR_(this)
+             "WRN %s() index out of bounds (%s)",FCT,STR(*this)
           );
        }
        return 0;
@@ -396,7 +399,7 @@ class wbIndex : public wbvector<widx_t> {
 
     bool isdiag() const {
        if (len%2) wblog(FL,"ERR %s() applies to "
-          "even-rank objects only (%s)",FCT,SSTR_(this));
+          "even-rank objects only (%s)",FCT,SSTR(*this));
        for (widx_t r=len/2, i=0; i<r; ++i) {
           if (data[i]!=data[i+r]) { return 0; }
        }
@@ -409,15 +412,15 @@ class wbIndex : public wbvector<widx_t> {
        widx_t l, k=len-1;
        const widx_t *s=SIZE.data;
 
-       if (!len) wblog(FL,"ERR wbIndex::%s() got empty object",FCT);
+       if (!len) wblog(FL,"ERR %s() got empty object",C_FCT);
        for (l=data[k--]; k<len; --k) { l = l*s[k] + data[k]; } 
        return l;
     };
 
     widx_t serial(const widx_t *stride) const {
        widx_t l=0;
-          if (!len   ) wblog(FL,"ERR wbIndex::%s() got empty object",FCT);
-          if (!stride) wblog(FL,"ERR wbIndex::%s() got null strides",FCT);
+          if (!len   ) wblog(FL,"ERR %s() got empty object",C_FCT);
+          if (!stride) wblog(FL,"ERR %s() got null strides",C_FCT);
        for (unsigned k=0; k<len; ++k) { l += data[k]*stride[k]; }
        return l;
     };
@@ -653,7 +656,7 @@ class itag_ {
 
    template<class TQ, class TD>
    itag_& init(const char *F, int L,
-      const wbvector< QSpace<TQ,TD> > &A, wbindex ia);
+      wbvector< const QSpace<TQ,TD>* > A, wbindex ia);
 
 #ifndef NOMEX
    itag_& init(const char* F, int L, const mxArray *a);
@@ -699,7 +702,7 @@ class itag_ {
    itag_& Set(const char *s) { char c=isConj();
       init(FL,s);
          if (isConj()) wblog(FL, 
-         "ERR %s() unexpected usage (%s; %d)",FCT,STR_(this),c);
+         "ERR %s() unexpected usage (%s; %d)",FCT,STR(*this),c);
       if (c) Conj(); 
       return *this;
    };
@@ -794,11 +797,12 @@ class itag_ {
       else { return AppendChar('D',"KD~"); }
    };
 
-   unsigned to_str(char *s, unsigned len, char cflag=1) const;
+   unsigned to_str(
+      const char *F, int L, char *s, unsigned len, char cflag=1) const;
 
    wbstring toStr(char cflag=1) const { 
       wbstring s(ITAG_LEN+4); 
-      to_str(s.data,s.len,cflag);
+      to_str(FL,s.data,s.len,cflag);
       return s;
    };
 
@@ -840,6 +844,7 @@ class iTags : public wbvector<itag_> {
 
    unsigned init(const char* F, int L, const char *s); 
    unsigned init(const char *s) { return init(FL,s); };
+   unsigned init(const QDir &qdir);
 
    iTags& init(unsigned n=0) {
       return (iTags&)wbvector<itag_>::init(n);
@@ -854,16 +859,16 @@ class iTags : public wbvector<itag_> {
    iTags& Update(const iTags &b) { 
       if (len!=b.len) { wblog(FL,
          "ERR %s() itag length mismatch (%d/%d) '%s' / '%s'",
-          FCT,len,b.len,STR_(this),STR(b));
+          FCT,len,b.len,STR(*this),STR(b));
       }
       for (unsigned i=0; i<len; ++i) {
          if (!data[i].isEmpty()) { if (data[i]!=b.data[i]) {
              wblog(FL,"ERR %s() itag mismatch '%s' / '%s'",
-             FCT,STR_(this),STR(b),len,b.len);
+             FCT,STR(*this),STR(b),len,b.len);
          }}
          else if (data[i].isConj() ^ b.data[i].isConj()) {
              wblog(FL,"ERR %s() itag conj mismatch '%s' / '%s'",
-             FCT,STR_(this),STR(b),len,b.len);
+             FCT,STR(*this),STR(b),len,b.len);
          }
       }
       return init(b);
@@ -872,7 +877,7 @@ class iTags : public wbvector<itag_> {
    iTags& tSet(const iTags &b) { 
       if (len!=b.len) { wblog(FL,
          "ERR %s() itag length mismatch (%d/%d) '%s' / '%s'",
-          FCT,len,b.len,STR_(this),STR(b));
+          FCT,len,b.len,STR(*this),STR(b));
       }
       for (unsigned i=0; i<len; ++i) { data[i].tSet(b.data[i]); }
       return *this;
@@ -910,11 +915,21 @@ class iTags : public wbvector<itag_> {
       unsigned k); 
 
    unsigned Set(const char* F, int L, const char *tag,
-       unsigned r=-1,  
-       const char *tom=NULL, 
-       unsigned m=-1,  
-       bool conjOM=1   
+      unsigned r=-1,  
+      const char *tom=NULL, 
+      unsigned m=-1,  
+      bool conjOM=1   
    );
+
+   iTags& permute(iTags &B, const wbperm &P) const {
+      wbvector<itag_>::permute(B,P('r'));
+      if (P.conj%2) { B.Conj(); }
+      return B;
+   };
+
+   iTags& Permute(const wbperm &P) {
+      return iTags(*this).permute(*this,P);
+   };
 
    iTags& SetConj(const char* F, int L, unsigned i) {
       if (len) {
@@ -1064,7 +1079,7 @@ class iTags : public wbvector<itag_> {
       unsigned i=0, l=len/2;
       for (; i<l; ++i) {
          if (!(x=data[i].isValid())) wblog(F_L,
-            "ERR %s() got invalid itags (%s)",FCT,STR_(this));
+            "ERR %s() got invalid itags (%s)",FCT,STR(*this));
          if (data[i].isConj() || data[i].conj()!=data[i+l]) return 0;
          if (q>0) { if (q!=x) q=-1; } else
          if (!q) { q=x; }
@@ -1090,7 +1105,7 @@ class iTags : public wbvector<itag_> {
          for (i=0; i<len; ++i)
          for (j=i+1; j<len; ++j) if (data[i].t==data[j].t) {
             if (F) wblog(F,L,
-               "WRN got non-unique itags (%s)",STR_(this));
+               "WRN got non-unique itags (%s)",STR(*this));
             return 0;
          }
       }
@@ -1099,13 +1114,141 @@ class iTags : public wbvector<itag_> {
 
 };
 
+class iFerm : public MVEC { 
+  public:
+    iFerm() : r(0) {};
+    iFerm(const iFerm &b) : r(0) { init(b); };
+    iFerm(const char *s) : r(0) { init(FL,s); };
+
+    iFerm(unsigned r_, unsigned nsym) : r(r_) { MVEC::init(r_+nsym); };
+
+    iFerm& operator=(const iFerm &b) { return init(b); }
+
+    explicit operator bool () const { return (len || r ? 1 : 0); }
+
+    bool operator==(const iFerm &b) const {
+       return (r==b.r && MVEC::operator==(b));
+    };
+    bool operator!=(const iFerm &b) const { return !(*this==b); };
+
+    iFerm& init() {
+       if (data) { MVEC::init(); r=0; }
+       return *this;
+    };
+
+    iFerm& init(const iFerm &b) {
+       MVEC::init(b); r=b.r;
+       return *this;
+    };
+
+    iFerm& init(unsigned r_, const iFerm &b) {
+       unsigned i=0, ns=b.nsym();
+       if (int(r_)<0 || ((!r_) ^ (!ns))) wblog(FL,
+          "ERR %s() invalid usage (r=%d for nsym=%d)",FCT,r_,ns);
+
+       MVEC::init(r_+ns); r=r_;
+       for (; i<ns; ++i) { data[r+i]=b.data[b.r+i]; } 
+
+       return *this;
+    };
+
+    iFerm& init(const char *F, int L, const char *s, unsigned r_=-1);
+    iFerm& init(const char *F, int L, const mxArray *a, unsigned r_=-1);
+
+    iFerm& init2ref(const iFerm &b) {
+       MVEC::init2ref(b); r=b.r;
+       return *this;
+    };
+
+    iFerm& init_op(const char *F, int L,
+       const char *fdr, char f, const iFerm &B);
+
+    iFerm& init_A(const char *F, int L,
+       const char *fdr, char fA, char fB, const iFerm &B);
+
+    iFerm& Conj() { 
+       if (len && (!r || r>=len)) wblog(FL,
+          "ERR %s() invalid fdir='%s'",FCT,STR(*this));
+       for (unsigned i=0; i<r; ++i) { data[i]=-data[i]; }
+       return *this;
+    };
+
+    iFerm& Permute(          const wbperm &P);
+    iFerm& permute(iFerm &B, const wbperm &P) const;
+
+    inline int check(
+       const char *F, int L, unsigned r_, const iFerm *B=NULL) const;
+
+    inline int check(unsigned r_, const iFerm *B=NULL) const {
+       return check(0,0,r_,B); };
+
+    char check(const char *F, int L, const QVec &qtype, unsigned QDIM=-1);
+
+    unsigned nsym() const {
+       int n=len-r;   
+          if (data) { if (n<=0 || n>9) { n=-10; }}
+          else if (r || len) { n=-20; }
+          if (n<0) wblog(FL,"ERR %s() invalid `%s'",C_FCT,STR(*this));
+       return n;
+    };
+
+    int8_t* iSym(unsigned *n_=NULL) const {
+       int n=len-r; if (n_) { (*n_)=n; } 
+       if ((data && n<=0) || (!data && (n || r))) wblog(FL,
+          "ERR %s() invalid object (%s)",C_FCT,STR(*this));
+       return (data+r);
+    };
+
+    unsigned iSym( 
+       wbvector<QType> &qt, wbindex &I, const QVec &qtype, unsigned QDIM=-1
+     ) const;
+
+    char get(const char *F, int L, const wbindex &I) const;
+
+    char* toStr(char *s, int n, char compact=-1) const;
+
+    wbstring toStr(char compact=-1) const;
+
+    mxArray* toMx() const {
+       return mxCreateString(this->toStr().data);
+    };
+
+    unsigned r;
+
+  protected:
+  private:
+
+    bool permits_compact() const {
+       bool rval=1; unsigned i=0;
+       for (; i<r; ++i) { if (abs(data[i])!=1) { return (rval=0); }}
+       for (; i<len; ++i) {
+          if (data[i]<0 || data[i]>9) wblog(FL,"ERR %s() "
+          "invalid iFerm (r=%d/%d; data[%d]=%d)",FCT,r,len,i,data[i]);
+       }
+       return rval;
+    };
+
+   char adapt(char f, char sf) {
+
+      if (sf=='+') { f= 1; } else
+      if (sf=='-') { f=-1; } else
+      if (sf=='m') { f=-f; } else
+      if (sf!='p') { f=-127; } 
+
+      return f;
+   };
+
+};
+
 #define CTR_IS_NUM(c)      (((c)>='1' && (c)<='9') || ((c)>='a' && (c)<='z'))
 
 #define CTR_IS_SEP_ANY(c)  (isspace(c) || (c)==',' || (c)==';')
-#define CTR_IS_CONJ(c)     ((c)=='*')
 #define CTR_IS_OTHER(c)    (CTR_IS_SEP_ANY(c) || CTR_IS_CONJ(c))
 
 #define CTR_IS_VALID(c)    (CTR_IS_NUM(c) || CTR_IS_OTHER(c))
+
+#define CTR_IS_CONJ(c)     ((c)=='*')
+#define IDX_IS_CONJ(c)     ((c)=='*') 
 
 class ctrIdx : public wbvector<unsigned> { 
 
@@ -1114,10 +1257,17 @@ class ctrIdx : public wbvector<unsigned> {
     ctrIdx() : conj(0) {}; 
 
     ctrIdx(unsigned l, unsigned *d, char c=0)
-     : wbvector<unsigned>(l,d), conj(c) {};
+     : wbvector<unsigned>(l,d), conj(0) {
+       if (c) { conj=Wb::conj2bool(c); }
+    };
 
-    ctrIdx(const char *F, int L, const char *s, char c=0)
-     : conj(c) { init(F,L,s); };
+    explicit ctrIdx(unsigned i, char c) 
+     : wbvector<unsigned>(1), conj(0) { data[0]=i;
+       if (c) { conj=Wb::conj2bool(c); }
+    };
+
+    ctrIdx(const char *F, int L, const char *s)
+     : conj(0) { init(F,L,s); };
 
     ctrIdx(const char *F, int L, const mxArray *a)
      : conj(0) { init(F,L,a); };
@@ -1126,34 +1276,44 @@ class ctrIdx : public wbvector<unsigned> {
      : wbvector<unsigned>(I), conj(I.conj), newtags(I.newtags) {};
 
     ctrIdx(const wbvector<unsigned> &I, char c=0)
-     : wbvector<unsigned>(I), conj(c) {};
+     : wbvector<unsigned>(I), conj(Wb::conj2bool(c)) { };
+
+    ctrIdx& init(const ctrIdx &I, char c=0) {
+       wbvector<unsigned>::init(I.len,I.data); conj=I.conj;
+       if (c) { Wb::conj_add_z2(conj,c); }
+       return *this;
+    };
 
     ctrIdx& init(unsigned l=0, unsigned *d=NULL, char c=0) {
-       wbvector<unsigned>::init(l,d); conj=c;
+       wbvector<unsigned>::init(l,d);
+       conj = (c? Wb::conj2bool(c) : 0);
        return *this;
     };
 
     template <class T>
     ctrIdx& initT(unsigned l=0, T* d=NULL, char c=0) {
-       wbvector<unsigned>::initT(l,d); conj=c;
+       wbvector<unsigned>::initT(l,d);
+       conj = (c? Wb::conj2bool(c) : 0);
        return *this;
     };
 
     ctrIdx& init(const wbvector<unsigned> &I, char c=0) {
-       wbvector<unsigned>::init(I); conj=c;
+       wbvector<unsigned>::init(I);
+       conj = (c? Wb::conj2bool(c) : 0);
        return *this;
     };
 
     ctrIdx& init1(unsigned k, char c=0) { 
-       wbvector<unsigned>::init(1); 
-       data[0]=k; conj=c;
+       wbvector<unsigned>::init(1); data[0]=k; 
+       conj = (c? Wb::conj2bool(c) : 0);
        return *this;
     };
 
     ctrIdx& init2(unsigned k1, unsigned k2, char c=0) { 
        wbvector<unsigned>::init(2); 
        if (k1==k2) wblog(FL,"ERR %s() got k=(%d,%d) !?",FCT,k1,k2);
-       data[0]=k1; data[1]=k2; conj=c;
+       data[0]=k1; data[1]=k2;
+       conj = (c? Wb::conj2bool(c) : 0);
        return *this;
     };
 
@@ -1167,12 +1327,32 @@ class ctrIdx : public wbvector<unsigned> {
     ctrIdx& init(const mxArray *a) { return init(FL,a); }
 
     ctrIdx& Index(unsigned l, char c=0) { 
-       wbvector<unsigned>::init(l); conj=c;
-       for (unsigned i=0; i<l; ++i) data[i]=i;
+       wbvector<unsigned>::init(l);
+       conj = (c? Wb::conj2bool(c) : 0);
+       for (unsigned i=0; i<l; ++i) { data[i]=i; }
        return *this;
     };
 
-    int checkUniqueS(const char *F=0, int L=0, const unsigned r=-1) const;
+    ctrIdx& operator=(const ctrIdx &I) { return init(I); };
+
+    explicit operator bool() const {
+       if (len ) { return 1; }
+       if (conj) { return (!conj || conj==1? conj : Wb::conj2bool(conj)); }
+       return 0;
+    };
+
+    bool operator==(const ctrIdx &I) const {
+       return (conj==I.conj && wbvector<unsigned>::operator==(I));
+    };
+
+    bool operator!=(const ctrIdx &I) const { 
+       return (conj!=I.conj || wbvector<unsigned>::operator!=(I));
+    };
+
+    int checkUniqueS(const char *F=0, int L=0, unsigned r=-1) const;
+
+    int checkUnique(
+       const char *F=0, int L=0, unsigned r=-1, char sorted=0) const;
 
     ctrIdx& Sort(wbperm &P, unsigned r=-1) {
        if (len) {
@@ -1198,11 +1378,11 @@ class ctrIdx : public wbvector<unsigned> {
 
     ctrIdx& Sort_(ctrIdx &J, unsigned r=-1) {
        if (len!=J.len) wblog(FL,
-          "ERR %s() length mismatch (%s/%s) !?",FCT,STR_(this),STR(J));
+          "ERR %s() length mismatch (%s/%s)",FCT,STR(*this),STR(J));
        if (len) {
           if (!isSorted()) {
-             wbperm P; wbvector<unsigned>::Sort(P);
-             J.wbvector<unsigned>::Permute(P);
+             wbperm P; UVEC::Sort(P);
+             J.UVEC::Permute(P); 
           }
           if (int(r)>=0) { checkUniqueS(FL,r); }
        }
@@ -1215,16 +1395,18 @@ class ctrIdx : public wbvector<unsigned> {
        return I.invert(r,*this);
     };
 
+    ctrIdx& Shift_x(unsigned i1, unsigned i2=-1);
+
     ctrIdx& Conj() {
-       conj=(conj ? 0 : 1); 
+       Wb::conj_iter_z2(conj); 
        return *this;
-    }; 
+    };
 
     int extend2Perm(widx_t N, wbperm &P, char toend=0) const;
 
     wbperm& extend2Perm(  unsigned ra, unsigned ma,
        const ctrIdx &icb, unsigned rb, unsigned mb,
-       const wbperm &pab, char conj, unsigned mc,
+       const wbperm &pab, unsigned mc,
        wbperm &Pbc, 
        ctrIdx &kb,  
        ctrIdx &kcb, 
@@ -1238,7 +1420,8 @@ class ctrIdx : public wbvector<unsigned> {
 
     mxArray* toMx() const { return toStr().toMx(); };
 
-    wbstring toStr(char xflag=0) const;
+    wbstring toStr() const { return toStr(0); }; 
+    wbstring toStr(char xflag) const;
 
     char conj;
 
@@ -1251,21 +1434,21 @@ class ctrIdx : public wbvector<unsigned> {
 
 bool isCtrIdx(const mxArray *a) {
 
-   unsigned i=0, r=60; 
+   unsigned i, r=60; 
 
    if (Mx::IsDblVector(0,0,a)) { wbvector<double> x(FL,a);
       if (mxGetM(a)!=1 || x.len>r) return 0;
 
-      for (; i<x.len; ++i) {
+      for (i=0; i<x.len; ++i) {
          if (x[i]<0 || double(int(x[i]))!=x[i] || x[i]>r) return 0;
       }
       if (!x.wbvector<double>::isUnique()) return 0;
       return 1;
    }
    else if (mxIsChar(a)) { ctrIdx idx; wbstring s(a);
-      if (idx.init(0,0,s.data)<=0) return 0;
-      for (; i<idx.len; ++i) { if (idx[i]>r) return 0; }
-      if (!idx.wbvector<unsigned>::isUnique()) return 0;
+      if (idx.init(0,0,s.data)<=0) { return 0; }
+      for (i=0; i<idx.len; ++i) { if (idx[i]>r) { return 0; }}
+      if (!idx.wbvector<unsigned>::isUnique()) { return 0; }
       return 1;
    }
    return 0;

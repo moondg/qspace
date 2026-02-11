@@ -11,8 +11,8 @@ function [HAM]=setup_empty(varargin)
 
   HAM.info=struct('istr','','host',mlinfo,'IS',struct,'mpo',[]);
 
-  HAM.oez=struct;
-  HAM.ops=struct;
+  HAM.oez=repmat(struct,1,0);
+  HAM.ops=repmat(struct,1,0);
 
     q=struct(...
       'M',M, ...

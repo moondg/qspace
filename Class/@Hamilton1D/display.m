@@ -15,7 +15,23 @@ function display(HAM,varargin)
   else vflag=0;
   end
 
+  if wblog('--hl-check')
+     er=[char(27) '[31m'];
+     eg=[char(27) '[38;5;8m'];
+     em=[char(27) '[0m'];
+  else
+     er=''; eg=''; em='';
+  end
+
   e=consistency_check(HAM,'-q');
+  if e<0, em=[em '\n\n'];
+     s={ sprintf('empty %s object', whos2(HAM,'class')), HAM.info.istr };
+     if ~isempty(s{2}),
+          fprintf(1,['\n   ' eg '(%s, ' er 'istr=''%s''' eg ')' em],s{:});
+     else fprintf(1,['\n   ' eg '(%s)' em],s{1});
+     end
+     return
+  end
 
   s=regexprep(HAM.info.istr,'[\n\s]*$','');
   s=regexprep(s,char(10),[char(10) '   ']);
@@ -23,9 +39,6 @@ function display(HAM,varargin)
 
   fprintf(1,'\n   %s\n',s);
   L=numel(HAM.mpo);
-
-  er=[char(27) '[31m'];
-  em=[char(27) '[0m'];
 
   if e, e=100+e; else
     AK=load_dmrg_data(HAM,1,'AK','-t'); vac=2;
@@ -41,7 +54,7 @@ function display(HAM,varargin)
           end
        end
     else
-       fprintf(1,['   ' er 'NB! AK data not yet initialized' em '\n']);
+       fprintf(1,['   ' eg 'NB! AK data not yet initialized' em '\n']);
        e=1;
     end
   end
@@ -188,8 +201,8 @@ function display(HAM,varargin)
      fprintf(1,'\n   Data is stored in %s\n',s);
      getCurrentSite(HAM,'-v');
   else
-     if e<100, s={s,'not yet initialized'};
-       fprintf(1,['\n    ' er 'data stored in %s''\n    %s' em '\n'],s{:});
+     if e<100, s={s,'(not yet initialized)'};
+       fprintf(1,['\n    ' eg 'Data to be stored in %s\n    %s' em '\n'],s{:});
      else
        printf('\n  \e[38;5;235m [%s]  \e[0m \n',s);
      end

@@ -12,8 +12,8 @@ wbstring wbcomplex::toStr(const char *fmt) const {
 
     double in=abs(), rn=0; 
     if (in) { rn=r/in; in=i/in;
-       if (std::fabs(rn)<1E-12) rn=0;
-       if (std::fabs(in)<1E-12) in=0;
+       if (std::fabs(rn)<1e-12) rn=0;
+       if (std::fabs(in)<1e-12) in=0;
     }
     else { in=i; rn=i; }
 
@@ -43,14 +43,12 @@ wbstring wbcomplex::toStr(const char *fmt) const {
 
 inline wbstring toStr(const wbcomplex &z, const char* fmt) {
    return z.toStr(fmt);
-}
+};
 
 inline wbstring toStr(const double &d, const char* fmt) {
 
-   size_t l=0, n=32; char s[n];
-   l=snprintf(s,n,fmt,d);
-   if (l>=n) wblog(FL,"ERR %s() string out of bounds (%d/%d)",FCT,l,n);
-   return s;
+   wbvec<char> s(32); s.catf(FL,fmt,d);
+   return s.data;
 };
 
 #endif

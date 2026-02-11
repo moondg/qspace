@@ -30,32 +30,98 @@ template<class TA, class TB, class TC >
 void DZGEMM(
    const wbarray<TA> &A,
    const wbarray<TB> &B, wbarray<TC> &C,
-   const unsigned k,  
+   size_t k, 
    char aflag='N', char bflag='N', 
    TA afac=1, TC cfac=0
-);
+) {
+   wblog(FL,"ERR %s() not defined yet for data type %s\n"
+   "A: %s %s, B: %s %s, afac=%g, cfac=%g (k=%d)",FCT,TSTR(TC),
+   SSTR(A),cSTR(aflag),SSTR(B),cSTR(bflag),double(afac),double(cfac),k);
 
-#ifdef QS_USING_MPFR
-
-template<> inline
-void DZGEMM(
-   const wbarray<Wb::quad> &A,
-   const wbarray<Wb::quad> &B, wbarray<Wb::quad> &C,
-   const unsigned k, char aflag, char bflag,
-   Wb::quad afac, Wb::quad cfac
-){
-   wblog(FL,"ERR %s() not yet defined for data type Wb::quad");
-   wblog(FL,"ERR %s() %p %p %p, %d %d %d, %p %p",
-   FCT,&A, &B, &C, k, aflag, bflag, &afac, &cfac);
+   wblog(FL,"ERR %s() %p %p %p",FCT,&A,&B,&C);
 };
 
+template<class TD> inline
+void DZGEMM_user_real( 
+    const wbarray<TD> &A,
+    const wbarray<TD> &B, wbarray<TD> &C,
+    size_t k,  
+    char aflag, char bflag,
+    TD afac, TD cfac
+){
+   if (A.SIZE.len!=2 || B.SIZE.len!=2) wblog(FL,
+      "ERR %s() matrices required (%s * %s)",FCT,SSTR(A), SSTR(B));
+   if (!strchr("NTC",aflag) || !strchr("NTC",bflag)) wblog(FL,
+      "ERR %s() invalid aflag=%s, bflag=%s",FCT,cSTR(aflag),cSTR(bflag));
+
+   unsigned 
+      a1=A.SIZE[aflag=='N'? 0:1], c1=C.SIZE[0], lda=A.SIZE[0],
+      b1=B.SIZE[bflag=='N'? 0:1], c2=C.SIZE[1], ldb=B.SIZE[0];
+
+   { unsigned
+      a2=A.SIZE[aflag=='N'? 1:0],
+      b2=B.SIZE[bflag=='N'? 1:0];
+
+      if (a1!=c1 || b2!=c2 || a2!=b1 || k!=a2) { wblog(FL,"ERR %s() "
+         "size mismatch\n(A: %s %s) * (B: %s %s) = %s (cfac=%g, k=%d)",
+         FCT,SSTR(A),cSTR(aflag),SSTR(B),cSTR(bflag),SSTR(C),double(cfac),k);
+      }
+   }
+
+   if (!cfac  ) { C.set(0); } else
+   if (cfac!=1) { C*=cfac;  }
+
+   if (!afac || !a1 || !b1 || !c2) { return; }
+
+#ifdef WB_CLOCK
+   stat_dgemm.account(a1*b1*c2);
+   Wb::Clock clk("xgemm",1);
 #endif
+
+   unsigned i,j; 
+   const TD  *a=A.data, *b=B.data; TD *c=C.data;
+
+   if (aflag=='N') {
+      if (bflag=='N') {
+         for (j=0; j<c2; ++j) 
+         for (i=0; i<c1; ++i, ++c)
+         for (k=0; k<b1; ++k) { *c += a[i+k*lda] * b[k+j*ldb]; }
+      }
+      else {
+         for (j=0; j<c2; ++j)
+         for (i=0; i<c1; ++i, ++c) 
+         for (k=0; k<b1; ++k) { *c += a[i+k*lda] * b[j+k*ldb]; }
+      }
+   }
+   else {
+      if (bflag=='N') {
+         for (j=0; j<c2; ++j)
+         for (i=0; i<c1; ++i, ++c) 
+         for (k=0; k<b1; ++k) { *c += a[k+i*lda] * b[k+j*ldb]; }
+      }
+      else {
+         for (j=0; j<c2; ++j)
+         for (i=0; i<c1; ++i, ++c)
+         for (k=0; k<b1; ++k) { *c += a[k+i*lda] * b[j+k*ldb]; }
+      }
+   }
+
+#ifdef WB_CLOCK
+ { if (clk.stop())
+        { Wb::Clock("xgeNX",1,0,&Wb::Clocks,&clk,0); }
+   else { Wb::Clock("xgeNN",1,0,&Wb::Clocks,&clk,0); }
+
+   clk.ncall+=2; 
+   clk.tcpu+= (long unsigned)(double(a1*a2*b2)*(4E-9*CLOCKS_PER_SEC)+1.5);
+ }
+#endif
+};
 
 template<> inline
 void DZGEMM(
     const wbarray<double> &A,
     const wbarray<double> &B, wbarray<double> &C,
-    const unsigned k,  
+    size_t k, 
     char aflag, char bflag,
     double afac, double cfac
 ){
@@ -63,13 +129,13 @@ void DZGEMM(
       "ERR %s() requires matrices (got: %s * %s = %s)",
       FCT, SSTR(A), SSTR(B), SSTR(C));
 
-   unsigned
+   long
       a1=A.SIZE[0],
       b1=B.SIZE[0],
-      c1=C.SIZE[0], c2=C.SIZE[1]; 
+      c1=C.SIZE[0], c2=C.SIZE[1];  
 
-   if (!a1 || !b1 || !c1 || !c2) {
-      if (A.SIZE[1]==b1 && B.SIZE[1]==c2 && a1==c1) { 
+   if (!a1 || !b1 || !c1 || !c2) { 
+      if ((long)A.SIZE[1]==b1 && (long)B.SIZE[1]==c2 && a1==c1) {
          if (cfac!=double(1)) C*=cfac;
          return;
       }
@@ -86,9 +152,9 @@ void DZGEMM(
 #endif
 
    dgemm(
-      aflag, bflag, (pINT)c1, (pINT)c2, (pINT)k,
-      afac, A.data, (pINT)a1, B.data, (pINT)b1,
-      cfac, C.data, (pINT)c1
+      &aflag, &bflag, &c1, &c2, &(long&)k,
+      &afac, A.data, &a1, B.data, &b1,
+      &cfac, C.data, &c1
    );
 };
 
@@ -96,7 +162,7 @@ template<> inline
 void DZGEMM(
     const wbarray<wbcomplex> &A,
     const wbarray<wbcomplex> &B, wbarray<wbcomplex> &C,
-    const unsigned k,  
+    size_t k, 
     char aflag, char bflag,
     wbcomplex afac, wbcomplex cfac
 ){
@@ -104,13 +170,13 @@ void DZGEMM(
       "ERR %s() matrices required (%s * %s)",FCT,
    A.sizeStr().data, B.sizeStr().data);
 
-   unsigned
+   long
       a1=A.SIZE[0],
       b1=B.SIZE[0],
-      c1=C.SIZE[0], c2=C.SIZE[1]; 
+      c1=C.SIZE[0], c2=C.SIZE[1];  
 
-   if (!a1 || !b1 || !c1 || !c2) {
-      if (A.SIZE[1]==b1 && B.SIZE[1]==c2 && a1==c1) { 
+   if (!a1 || !b1 || !c1 || !c2) { 
+      if ((long)A.SIZE[1]==b1 && (long)B.SIZE[1]==c2 && a1==c1) {
          if (cfac!=double(1)) C*=cfac;
          return;
       }
@@ -126,9 +192,9 @@ void DZGEMM(
 #endif
 
    zgemm (
-      aflag, bflag, (pINT)c1, (pINT)c2, (pINT)k,
-      afac, A.data, (pINT)a1, B.data, (pINT)b1,
-      cfac, C.data, (pINT)c1
+      &aflag, &bflag, &c1, &c2, &(long&)k,
+      (double*)&afac, (double*)A.data, &a1, (double*)B.data, &b1,
+      (double*)&cfac, (double*)C.data, &c1
    );
 
 #ifdef WB_CLOCK
@@ -144,11 +210,26 @@ void DZGEMM(
 #endif
 };
 
+#ifdef QS_USING_MPFR
+
+template<> inline
+void DZGEMM(
+    const wbarray<Wb::quad> &A,
+    const wbarray<Wb::quad> &B, wbarray<Wb::quad> &C,
+    size_t k, 
+    char aflag, char bflag,
+    Wb::quad afac, Wb::quad cfac
+){
+    DZGEMM_user_real(A,B,C,k,aflag,bflag,afac,cfac);
+};
+
+#endif
+
 template<> inline
 void DZGEMM(
     const wbarray<wbcomplex> &A,
     const wbarray<double> &B0, wbarray<wbcomplex> &C,
-    const unsigned k,  
+    size_t k, 
     char aflag, char bflag,
     wbcomplex afac, wbcomplex cfac
 ){
@@ -160,7 +241,7 @@ template<> inline
 void DZGEMM(
     const wbarray<double> &A0,
     const wbarray<wbcomplex> &B, wbarray<wbcomplex> &C,
-    const unsigned k,  
+    size_t k, 
     char aflag, char bflag,
     double afac, wbcomplex cfac
 ){
@@ -172,7 +253,7 @@ template<> inline
 void DZGEMM(
     const wbarray<double> &A,
     const wbarray<double> &B, wbarray<wbcomplex> &C,
-    const unsigned k,  
+    size_t k, 
     char aflag, char bflag, double afac, wbcomplex cfac
 ){
     wbarray<double> C0(C.SIZE); 
@@ -295,7 +376,7 @@ wbarray<TC>& Wb::MatProd(
       "ERR %s() size mismatch %dx%d * %dx%d",FCT,a1,a2,b1,b2);
 
    if (cfac!=TC(0)) {
-       if (C.data==NULL) { iflag=1;
+       if (C.data==nullptr) { iflag=1;
           if (cforce) wblog(FL,          
           "WRN C = A*B + c*[] with c=%s",toStr(double(cfac)).data);
        }
@@ -389,26 +470,24 @@ wbarray<double>& wbInverse(const char *F, int L, wbarray<double> &M) {
    if (M.rank()!=2 || M.SIZE[1]>M.SIZE[0]) wblog(F_L,
       "ERR %s() invalid rank-2 tensor (%s)",FCT,M.sizeStr().data);
 
-   pINT e=0, l=-1, m=M.SIZE[0], n=M.SIZE[1], N=m*n;
-   wbvector<pINT> ipiv(MIN(m,n));
+   long e=0, l=-1, m=M.SIZE[0], n=M.SIZE[1], N=m*n;
+   wbvector<long> ipiv(MIN(m,n));
    wbvector<double> work(1);
 
    if (n<m) wblog(FL,
       "ERR DGETRI() requires dim1>=dim2 (%dx%d)",m,n);
 
-   dgetrf(m,n,M.data,m,ipiv.data,e);
+   dgetrf(&m,&n,M.data,&m,ipiv.data,&e);
    if (e) wblog(FL,"ERR DGETRF() returned e=%d !?",FCT,e);
 
-   dgetri(n,M.data,m,ipiv.data,work.data,l,e);
+   dgetri(&n,M.data,&m,ipiv.data,work.data,&l,&e);
    if (e) wblog(FL,"ERR DGETRI() returned e=%d !?",FCT,e);
 
-   l=MIN(pINT(work[0]),N); work.init(l);
-   dgetri(n,M.data,m,ipiv.data,work.data,l,e);
-   if (e) {
-      if (e<0)
-           wblog(FL,"ERR DGETRI() got invalid argument #%d",-e);
-      else wblog(FL,"ERR DGETRI() got singular matrix (i=%d)",e);
-   }
+   l=MIN(long(work[0]),N); work.init(l);
+   dgetri(&n,M.data,&m,ipiv.data,work.data,&l,&e);
+
+   if (e<0) wblog(FL,"ERR DGETRI() got invalid argument #%d",-e); else
+   if (e)   wblog(FL,"ERR DGETRI() got singular matrix (i=%d)",e);
 
    return M;
 };
@@ -422,14 +501,14 @@ wbarray<double>& wbInverse(
 inline void wbEigenS(
    const wbarray<double> &M, wbarray<double> &V, wbvector<double> &E
 ){
-   unsigned n, r=M.SIZE.len, r2=r/2;
-   pINT ni=0, q=0; 
+   long n, r=M.SIZE.len, r2=r/2;
+   long ni=0, e=0, lw=-1; 
    double nd=0;
 
    if (r==0) { V.init(); E.init(); return; }
 
    if (r%2) wblog(FL,"ERR %s() even-rank required (%d)",FCT,r);
-   if (!M.isHConj(-1E-12)) { 
+   if (!M.isHConj(-1e-12)) { 
       MXPut(FL,"ans").add(M,"M").add(V,"V").add(E,"E").add(r,"r");
       wblog(FL,"ERR %s() got non-symmetric %s matrix",
       FCT, M.sizeStr().data);
@@ -443,53 +522,54 @@ inline void wbEigenS(
       V.SIZE[r2]=n; V.SIZE.len=r2+1;
    }
 
-   dsyevd('V','L',n,V.data,n,E.data,&nd,-1,&ni,-1,q); 
-   if (nd<1 || ni<1 || q) wblog(FL,
-      "ERR DSYEVD returned lwork=%g/%d (e=%d) !?",nd,ni,q);
+   dsyevd("V","L",&n,V.data,&n,E.data,&nd,&lw,&ni,&lw,&e); 
+   if (nd<1 || ni<1 || e) wblog(FL,
+      "ERR DSYEVD returned lwork=%g/%d (e=%d) !?",nd,ni,e);
 
-   wbvector<double> wd((pINT)nd);
-   wbvector<pINT> wi(ni);
+   wbvector<double> wd((long)nd);
+   wbvector<long> wi(ni);
 
    dsyevd(
-      'V',      
-      'L',      
-       n,       
+      "V",      
+      "L",      
+       &n,      
        V.data,  
-       n,       
+       &n,      
        E.data,  
-       wd.data, wd.len, 
-       wi.data, wi.len, 
-       q        
+       wd.data, &(long&)wd.len, 
+       wi.data, &(long&)wi.len, 
+       &e       
    );
 
-   if (q>0) { pINT q_=q; V.Reset(M.data);
-      dsyevd('V','U',n,V.data,n,E.data,wd.data,wd.len,wi.data, wi.len,q);
+   if (e>0) { long q_=e; V.Reset(M.data);
+      dsyevd("V","U",&n, V.data,&n,E.data,
+        wd.data, &(long&)wd.len,
+        wi.data, &(long&)wi.len, &e);
 
-      if (!q) wblog(FL,
+      if (!e) wblog(FL,
         "WRN DSYEVD() ok only for uplo=L->U (i=%d/%d) !?",q_,n);
       else wblog(FL,
         "ERR DSYEVD() failed to converge (info=%d/%d) !?\n"
-        "(D=%d @ l=%ld/%ld)",q_,q,n,E.len,wd.len,wi.len);
+        "(D=%d @ l=%ld/%ld)",q_,e,n,E.len,wd.len,wi.len);
    }
 
-   if (q) {
-      MXPut(FL,0,"tmpfile").add(M,"M").add(q,"q");
+   if (e) {
+      MXPut(FL,0,"tmpfile").add(M,"M").add(e,"e");
       wblog(FL,"ERR DSYEVD() returned "
-      "info=%d (D=%d; l=%ld/%ld) !?",q,n,wd.len,wi.len);
+      "info=%d (D=%d; l=%ld/%ld) !?",e,n,wd.len,wi.len);
    }
 };
 
 inline void wbEigenS(
    const wbarray<wbcomplex> &M, wbarray<wbcomplex> &V, wbvector<double> &E
 ){
-   unsigned n, r=M.SIZE.len, r2=r/2;
-   pINT ni=0, q=0; 
+   long n, r=M.SIZE.len, r2=r/2, ni=0, e=0, lw=-1; 
    wbcomplex nz=0; double nr=0;
 
    if (r==0) { V.init(); E.init(); return; }
 
    if (r%2) wblog(FL,"ERR %s() even-rank required (%d)",FCT,r);
-   if (!M.isHConj(-1E-12)) { 
+   if (!M.isHConj(-1e-12)) { 
       MXPut(FL,"ans").add(M,"M").add(V,"V").add(E,"E").add(r,"r");
       wblog(FL,"ERR %s() got non-hermitian %s matrix",FCT, SSTR(M));
    }
@@ -499,7 +579,7 @@ inline void wbEigenS(
    V=M; E.init(n);
    if (n<=1) {
       if (n) {
-         double x=V.SkipTiny_imag(1E-12); 
+         double x=V.SkipTiny_imag(1e-12); 
          if (x<0) wblog(FL,"ERR %s() got complex data @ %.3g",FCT,x);
          E.data[0]=V.data[0]; V.data[0]=1;
       }
@@ -510,40 +590,44 @@ inline void wbEigenS(
       V.SIZE[r2]=n; V.SIZE.len=r2+1;
    }
 
-   zheevd('V','U',n,V.data,n,E.data,&nz,-1,&nr,-1,&ni,-1,q); 
-   if (nz.r<1 || nr<1 || ni<1 || q) {
-      MXPut(FL,0,"tmpfile").add(M,"M").add(q,"q");
-      wblog(FL,"ERR ZHEEVD returned lwork=%g/%g/%d (e=%d)",nz.r,nr,ni,q);
+   zheevd("V","U",&n,
+     (double*)V.data,&n,E.data,
+     (double*)&nz,&lw,&nr,&lw,&ni,&lw,&e); 
+
+   if (nz.r<1 || nr<1 || ni<1 || e) {
+      MXPut(FL,0,"tmpfile").add(M,"M").add(e,"e");
+      wblog(FL,"ERR ZHEEVD returned lwork=%g/%g/%d (e=%d)",nz.r,nr,ni,e);
    }
 
    wbvector<wbcomplex> wz(nz.r);
    wbvector<double> wr(nr);
-   wbvector<pINT> wi(ni);
+   wbvector<long> wi(ni);
 
    zheevd(
-      'V',      
-      'U',      
-       n,       
-       V.data,  
-       n,       
+      "V",      
+      "U",      
+       &n,      
+       (double*)V.data,  
+       &n,      
        E.data,  
-       wz.data, wz.len, 
-       wr.data, wr.len, 
-       wi.data, wi.len, 
-       q        
+       (double*)wz.data, &(long&)wz.len, 
+       wr.data, &(long&)wr.len, 
+       wi.data, &(long&)wi.len, 
+       &e       
    );
 
-   if (!q) { return; }
-   if (q<0) wblog(FL,"ERR %s() ZHEEVD returned e=%d",FCT,q);
+   if (!e) { return; }
+   if (e<0) wblog(FL,"ERR %s() ZHEEVD returned e=%d",FCT,e);
 
    V=M; E.init(n);
 
-   wblog(FL,"WRN ZHEEVD returned i=%d / falling back to ZHEEV",q);
-   MXPut(FL,0,"tmpfile").add(M,"M").add(q,"q");
+   wblog(FL,"WRN ZHEEVD returned i=%d / falling back to ZHEEV",e);
+   MXPut(FL,0,"tmpfile").add(M,"M").add(e,"e");
 
    if (n<128) { ni=2*n-1; } 
    else { 
-      ni=ilaenv(1,"zhetrd","U",(pINT)n,(pINT)n,(pINT)n,(pINT)n);
+      long ispec=1;
+      ni=ilaenv(&ispec,"zhetrd","U",&n,&n,&n,&n,6,1);
       if (ni>n) wblog(FL,"WRN %s() got lwork=(%d+2)*%d",FCT,ni,n);
       ni=(ni+1)*n;
    }
@@ -552,18 +636,18 @@ inline void wbEigenS(
    nr=3*n-2; if (nr>wr.len) { wr.init(nr); }
 
    zheev(
-      'V',      
-      'U',      
-       n,       
-       V.data,  
-       n,       
+      "V",      
+      "U",      
+       &n,      
+       (double*)V.data,  
+       &n,      
        E.data,  
-       wz.data, ni,    
+       (double*)wz.data, &ni,    
        wr.data, 
-       q        
+       &e       
    );
 
-   if (q) wblog(FL,"ERR %s() ZHEEV returned e=%d",FCT,q);
+   if (e) wblog(FL,"ERR %s() ZHEEV returned e=%d",FCT,e);
 };
 
 void wbEigen_CS (
@@ -575,8 +659,8 @@ void wbEigen_CS (
    char tnorm,  
    char qflag
 ){
-   unsigned n=0, r=M.SIZE.len, r2=r/2;
-   char jobvl='N', jobvr='V', vflag=1; pINT q=0;
+   long n=0, r=M.SIZE.len, r2=r/2, e=0, lw=-1, n1=1;
+   char jobvl='N', jobvr='V', vflag=1;
 
    if (wjob) { wjob=toupper(wjob); jobvr=jobvl='N';
       switch (wjob) {
@@ -589,7 +673,7 @@ void wbEigen_CS (
 
    if (r==0) { V.init(); E.init(); return; }
 
-   if (!M.isOpS(n)) wblog(FL,
+   if (!M.isOpS(&(size_t&)n)) wblog(FL,
       "ERR %s() (generalized) square matrix required (%s)",
        FCT,M.sizeStr().data);
 
@@ -605,30 +689,32 @@ void wbEigen_CS (
    }
 
    if (issym) { tnorm=1;
-      double x=1E-12;
+      double x=1e-12;
       if (issym=='T') M.Symmetrize(FL,&x,0); 
       else if (issym=='H') M.Symmetrize(FL,&x,1); 
       else wblog(FL,"ERR invalid issym=%c<%d>",issym,issym);
 
-      if (x>1E-8) {
+      if (x>1e-8) {
 #ifdef MATLAB_MEX_FILE
          M.put("M_");
 #endif
          wblog(FL,"ERR operator not symmetric (%.3g)",x);
       }
-      else if (x>1E-12) wblog(FL,
+      else if (x>1e-12) wblog(FL,
       "WRN operator not quite symmetric (%.3g)",x);
    }
 
    wbvector<wbcomplex> aux;
-   wbvector<double> aux2(2*n);
+   wbvector<double> wd(2*n);
 
-   unsigned lwork=MAX(2U,n/4)*n; 
+   unsigned lwork=MAX(2L,n/4)*n; 
 
    if (n>127) { 
-      zgeev (
-         jobvl, jobvr, n, M.data, n, E.data, V.data, n, V.data, n,
-         aux.data, -1, aux2.data, q);
+      zgeev( &jobvl, &jobvr, &n,
+        (double*)M.data, &n,
+        (double*)E.data, (double*)V.data, &n, (double*)V.data, &n,
+        (double*)aux.data, &lw, wd.data, &e);
+
       lwork=(unsigned)aux[0].r; {
          unsigned b=lwork/n; if (b<2 || b>n)
          wblog(FL,"WRN %s() got lwork %g*%d",FCT,double(lwork)/n,n);
@@ -643,25 +729,25 @@ void wbEigen_CS (
 
  { wbarray<wbcomplex> X(M); 
    zgeev (
-       jobvl,     
-       jobvr,     
-       n,         
-       X.data,    
-       n,         
-       E.data,    
-       V.data,    
-       jobvl=='V' ? n : 1,         
-       V.data,    
-       jobvr=='V' ? n : 1,         
-       aux.data,  
-       aux.len,   
-       aux2.data, 
-       q          
+       &jobvl,    
+       &jobvr,    
+       &n,        
+       (double*)X.data, 
+       &n,                   
+       (double*)E.data,      
+       (double*)V.data,      
+       jobvl=='V'? &n : &n1, 
+       (double*)V.data,      
+       jobvr=='V'? &n : &n1, 
+       (double*)aux.data,    
+       &(long&)aux.len,      
+       wd.data,   
+       &e         
    ); }
 
-   if (q) {
-      MXPut(FL,0,"tmpfile").add(M,"M").add(q,"q");
-      wblog(FL,"ERR %s() CGEEV returned %d (%d/%d)",FCT,q,aux.len,n);
+   if (e) {
+      MXPut(FL,0,"tmpfile").add(M,"M").add(e,"e");
+      wblog(FL,"ERR %s() CGEEV returned %d (%d/%d)",FCT,e,aux.len,n);
    }
 
    if (tnorm) {
@@ -695,15 +781,15 @@ void wbEigen_CS_regen(
 
    unsigned i,i0=0, n=E.len; 
    WBINDEX S(2); S[0]=n;
-   double a, eps=1E-8, nmin=0, nmax=0;
+   double a, eps=1e-8, nmin=0, nmax=0;
 
    wbperm P; E.Sort(P); V.Select0(P,1); 
 
    V.NormalizeCols(FL,&nmin,&nmax,'T');
 
-   if (nmin>1+1E-14) wblog(FL,
+   if (nmin>1+1e-14) wblog(FL,
       "ERR zggeev() orthogonal matrix with t-norm = %.3g",nmin); else
-   if (nmin<1E-4) wblog(FL,
+   if (nmin<1e-4) wblog(FL,
       "ERR zggeev() orthogonal matrix with t-norm = %.3g",nmin); else
    if (nmin<0.01) wblog(FL, 
       "WRN zggeev() orthogonal matrix with t-norm = %.3g",nmin);
@@ -736,7 +822,7 @@ wblog(FL,"TST fixing degenerate block: %d:%d (%d)  \r\\",i0+1,i,n);
          Wb::MatProd(U,u2,X);
          memcpy(U.data,X.data,sizeof(T)*X.numel());
 
-         U.OrthoNormalizeCols(FL,'T',T(1E-14),2);
+         U.OrthoNormalizeCols(FL,'T',T(1e-14),2);
       }
       i0=i;
    }
@@ -753,7 +839,7 @@ void wbEigen_CS_regen_trial(
    if (!V.isRank(2) || E.len!=V.SIZE[1] || V.SIZE[0]!=V.SIZE[1])
    wblog(FL,"ERR invalid usage (%s; %d)",V.sizeStr().data,E.len);
 
-   unsigned i,j,k,i0=0, n=E.len; double a, eps=1E-8;
+   unsigned i,j,k,i0=0, n=E.len; double a, eps=1e-8;
 
    wbperm P; E.Sort(P); V.Select0(P,1); 
    wbcomplex *vr,*v,z,z2;
@@ -811,47 +897,47 @@ void GESVD_old(
    wbvector<double> &S,
    wbarray<double> &Vd
 ){
-   unsigned dim1=A.SIZE[0], dim2=A.SIZE[1], k=S.len;
-   pINT i;
+   long dim1=A.SIZE[0], dim2=A.SIZE[1], k=S.len, e=0;
 
-   pINT lwork=MAX3(1U, 3*MIN(dim1,dim2)+MAX(dim1,dim2), 5*MIN(dim1,dim2));
+   long lwork=MAX3(1L, 3*MIN(dim1,dim2)+MAX(dim1,dim2), 5*MIN(dim1,dim2));
 
    if (MIN(dim1,dim2)>=8) {
-      int e=0; double w; 
+      long i, q=-1; double w; 
       dgesvd(
-        'S','S', dim1, dim2, A.data, dim1, S.data,
-         U.data, dim1, Vd.data, k,
-         &w, -1, i); 
-      i=(pINT)w;
+        "S","S", &dim1, &dim2, A.data, &dim1, S.data,
+         U.data, &dim1, Vd.data, &k,
+         &w, &q, &e); 
+      i=long(w);
 
-      if (i<lwork) e=1; else
-      if (i>dim1*dim2 && i>(1<<20)) {
-         unsigned m=max(dim1,dim2); e=(i<(m*m) ? 2 : 3); 
+      if (!e) {
+         if (i<lwork) e=1; else
+         if (i>dim1*dim2 && i>(1<<20)) {
+            long n=max(dim1,dim2); e=(i<(n*n) ? 2 : 3); 
+         }
       }
-      if (e) { wblog(FL,
+      if (e) wblog(FL,
          "WRN dgesvd() lwork=%d/%d (%.4g; %dx%d; e=%d)",
-         i,lwork,double(i)/double(dim1*dim2),dim1,dim2,e);
-      }
+         i,lwork,i/double(dim1*dim2),dim1,dim2,e);
+
       lwork=i;
    }
 
    wbvector<double> W(lwork);
 
    dgesvd(
-     'S','S', dim1, dim2, A.data, dim1, S.data,
-      U.data, dim1,  
-      Vd.data, k,    
-      W.data, W.len, i
-   );
+     "S","S", &dim1, &dim2, A.data, &dim1, S.data,
+      U.data, &dim1,  
+      Vd.data, &k,    
+      W.data, &(long&)W.len, &e);
 
-   if (i) { if (i<0) { i=-i; wblog(FL,
-      "ERR %s() dgesvd: invalid argument %d\nhint: %s",FCT,i,
-      i==5 || i==8? "check input data for NAN or INF values":"??");
+   if (e) { if (e<0) { e=-e;
+      wblog(FL,"ERR %s() dgesvd: invalid argument %d\nhint: %s",
+      FCT,e, e==5 || e==8? "check input data for NAN or INF values":"??");
    }
-   else { wblog(FL,
+   else wblog(FL,
       "ERR %s() dgesvd returned e=%d\n"
-      "hint: check input data for NAN or INF values",FCT,i);
-   }}
+      "hint: check input data for NAN or INF values",FCT,e);
+   }
 };
 
 template<> inline
@@ -861,15 +947,15 @@ void GESVD_old(
    wbvector<double> &S,
    wbarray<wbcomplex> &Vd
 ){
-   unsigned dim1=A.SIZE[0], dim2=A.SIZE[1], k=S.len;
+   long dim1=A.SIZE[0], dim2=A.SIZE[1], k=S.len;
    wbvector<wbcomplex> W, RW(5*MIN(dim1,dim2)); 
-   pINT i, lwork=MAX(1U, 2*MIN(dim1,dim2)+MAX(dim1,dim2));
+   long i, e=-1, lwork=MAX(1L, 2*MIN(dim1,dim2)+MAX(dim1,dim2));
 
    if (MIN(dim1,dim2)>=8) { wbcomplex w; 
       zgesvd(
-        'S','S', dim1, dim2, A.data, dim1, S.data,
-         U.data, dim1, Vd.data, k,
-         &w, -1, RW.data, i  
+        "S","S", &dim1, &dim2, (double*)A.data, &dim1, S.data,
+         (double*)U.data, &dim1, (double*)Vd.data, &k,
+         (double*)&w, &e, (double*)RW.data, &i  
       );
 
       i=unsigned(w.r);
@@ -883,11 +969,10 @@ void GESVD_old(
    W.init(lwork);
 
    zgesvd(
-     'S','S', dim1, dim2, A.data, dim1, S.data,
-      U.data, dim1,
-      Vd.data, k,
-      W.data, W.len, RW.data, i
-   );
+     "S","S", &dim1, &dim2, (double*)A.data, &dim1, S.data,
+      (double*)U.data, &dim1,
+      (double*)Vd.data, &k,
+      (double*)W.data, &(long&)W.len, (double*)RW.data, &i);
 
    if (i) {
        if (i<0) { i=-i;
@@ -912,44 +997,42 @@ int GESVD(
    wbvector<double> &S,
    wbarray<double> &Vd, char lflag
 ){
-   unsigned dim1=A.SIZE[0], dim2=A.SIZE[1], k=S.len;
-   pINT q, ni=8*MIN(dim1,dim2); 
+   long dim1=A.SIZE[0], dim2=A.SIZE[1], k=S.len;
+   long e, lw=-1, ni=8*MIN(dim1,dim2); 
    double nd;
 
    wbvector<double> wd;
-   wbvector<pINT> wi(ni);
+   wbvector<long> wi(ni);
 
 #ifdef WB_CLOCK
    Wb::Clock clk("dgesvd",1); 
 #endif
 
-   dgesdd('S',dim1,dim2,A.data,dim1,S.data,U.data,dim1,Vd.data,k,
-      &nd,-1,wi.data,q);
-   if (nd<1 || q) wblog(FL,
-      "ERR DGESDD() returned lwork=%g (e=%d) !?",nd,q);
+   dgesdd("S",&dim1,&dim2,A.data,&dim1,S.data,U.data,&dim1,Vd.data,&k,
+      &nd,&lw,wi.data,&e);
+   if (nd<1 || e) wblog(FL,
+      "ERR DGESDD() returned lwork=%g (e=%d) !?",nd,e);
    wd.init(nd);
 
    dgesdd(
-     'S', dim1, dim2, A.data, dim1, S.data,
-      U.data, dim1,  
-      Vd.data, k,    
-      wd.data, wd.len, wi.data,
-      q
-   );
+     "S", &dim1, &dim2, A.data, &dim1, S.data,
+      U.data, &dim1,  
+      Vd.data, &k,    
+      wd.data, &(long&)wd.len, wi.data, &e);
 
-   if (q) {
-      if (q<0) { q=-q; wblog(FL,
-         "ERR DGESDD() invalid argument %d\n%s",q, q==5 || q==8 ?
+   if (e) {
+      if (e<0) { e=-e; wblog(FL,
+         "ERR DGESDD() invalid argument %d\n%s",e, e==5 || e==8 ?
          "hint: check input data for NAN or INF values" : ""); }
       else if (lflag) {
-         wblog(FL,"WRN DGESDD() did not converge (info=%d) !?",q);
+         wblog(FL,"WRN DGESDD() did not converge (info=%d) !?",e);
       }
       else {
-         MXPut(FL,0,"tmpfile").add(A,"A").add(q,"q");
-         wblog(FL,"ERR DGESDD() did not converge (info=%d) !?",q);
+         MXPut(FL,0,"tmpfile").add(A,"A").add(e,"e");
+         wblog(FL,"ERR DGESDD() did not converge (info=%d) !?",e);
       }
    }
-   return q;
+   return e;
 };
 
 template<> inline
@@ -959,10 +1042,10 @@ int GESVD(
    wbvector<double> &S,
    wbarray<wbcomplex> &Vd, char lflag
 ){
-   unsigned dim1=A.SIZE[0], dim2=A.SIZE[1], k=S.len;
-   pINT q, n1=MIN(dim1,dim2), n2=MAX(dim1,dim2);
+   long dim1=A.SIZE[0], dim2=A.SIZE[1], k=S.len;
+   long e, lw=-1, n1=MIN(dim1,dim2), n2=MAX(dim1,dim2);
 
-   pINT nd = n1*(3*n1+6 >= 2*n2 ? 5*n1+7 : 2*(n1+n2)+1);
+   long nd = n1*(3*n1+6 >= 2*n2 ? 5*n1+7 : 2*(n1+n2)+1);
 
 #ifdef WB_CLOCK
    Wb::Clock clk("zgesvd",1); 
@@ -971,35 +1054,36 @@ int GESVD(
    wbcomplex nz;
    wbvector<wbcomplex> wz;
    wbvector<double> wd(nd);
-   wbvector<pINT> wi(8*n1); 
+   wbvector<long> wi(8*n1); 
 
    if (!dim1 || !dim2) wblog(FL,
-      "ERR %s() got %dx%d matrix!?",FCT,dim1,dim2);
+      "ERR %s() got empty matrix %dx%d",FCT,dim1,dim2);
 
-   zgesdd('S',dim1,dim2,A.data,dim1,S.data,U.data,dim1,Vd.data,k,
-      &nz, -1, wd.data, wi.data, q);
-   if (nz.r<1 || q) wblog(FL,
-      "ERR ZGESDD() returned lwork=%g (e=%d) !?",nz.r,q);
+   zgesdd("S",&dim1,&dim2,(double*)A.data,&dim1,
+      S.data,(double*)U.data,&dim1,(double*)Vd.data,&k,
+      (double*)&nz, &lw, wd.data, wi.data, &e);
+
+   if (nz.r<1 || e) wblog(FL,
+      "ERR ZGESDD() returned lwork=%g (e=%d) !?",nz.r,e);
    wz.init(nz.r);
 
-   zgesdd(
-     'S',dim1,dim2,A.data,dim1,S.data, U.data,dim1,Vd.data,k,
-      wz.data, wz.len, wd.data, wi.data,
-      q
-   );
+   zgesdd("S",&dim1,&dim2,
+      (double*)A.data, &dim1, S.data,
+      (double*)U.data, &dim1, (double*)Vd.data,&k,
+      (double*)wz.data, &(long&)wz.len, wd.data, wi.data, &e);
 
-   if (q) {
-      if (q<0) { q=-q; wblog(FL,
-         "ERR ZGESDD() invalid argument %d\n%s",q, q==5 || q==8 ?
+   if (e) {
+      if (e<0) { e=-e; wblog(FL,
+         "ERR ZGESDD() invalid argument %d\n%s",e, e==5 || e==8 ?
          "hint: check input data for NAN or INF values" : ""); }
       else if (lflag) {
-         wblog(FL,"WRN ZGESDD() failed to converge (info=%d) !?",q);
+         wblog(FL,"WRN ZGESDD() failed to converge (info=%d) !?",e);
       }
       else {
-         wblog(FL,"ERR ZGESDD() failed to converge (info=%d) !?",q);
+         wblog(FL,"ERR ZGESDD() failed to converge (info=%d) !?",e);
       }
    }
-   return q;
+   return e;
 };
 
 template<class T>
@@ -1053,11 +1137,11 @@ void wbSVD(
       }
    }
 
-   #ifdef SVD_BUG_SAFEGUARD 
+   #ifdef SVD_BUG_SAFEGUARD
    { double a=Wb::sqrt(A.norm2()), s=Wb::sqrt(S.norm2());
      double e=fabs(a-s)/(a*sqrt(double(dim1)*double(dim2)));
 
-     if (e>1E-10) { char s_[128];
+     if (e>1e-10) { char s_[128];
         if (l==0) { X.init2ref(A); } else { A.toMatrixRef(X,I,1,P); }
         if (X.isRef()) X.Instantiate();
 
@@ -1075,9 +1159,9 @@ void wbSVD(
         else strcpy(s_,"DGESVD");
         snprintf(s_+10,118,"%dx%d @%9.3g -> %.2g",dim1,dim2,e,a);
 
-        if (a<1E-10)
-             wblog(FL,"WRN fixed %s bug: %s (ok)",   s_,s_+10);
-        else wblog(FL,"ERR failed to fix %s bug\n%s",s_,s_+10);
+        if (a<1e-10)
+             { wblog(FL,"WRN fixed %s bug: %s (ok)",    s_,s_+10); }
+        else { wblog(FL,"ERR SVD inconsistency\n%s: %s",s_,s_+10); }
      }
    }
    #endif

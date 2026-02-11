@@ -271,19 +271,19 @@ class MXPut {
 
     MXPut(const char *vn=0, const char *ws=0)
      : S(0), vname(0),F(0), L(0) {
-       strncpy(wsp, ws && ws[0]? ws:"caller",wlen-1); wsp[wlen-1]=0;
+       strncpy(wsp, ws && *ws? ws:"caller",wlen-1); wsp[wlen-1]=0;
        init(0,0,vn);
     };
 
     MXPut(const char *file, int line, const char *vn="ans", const char *ws=0)
      : S(0), vname(0),F(0), L(0) {
-       strncpy(wsp, ws && ws[0]? ws:"caller",wlen-1); wsp[wlen-1]=0;
+       strncpy(wsp, ws && *ws? ws:"caller",wlen-1); wsp[wlen-1]=0;
        init(file,line,vn);
     };
 
    ~MXPut() { put(); }
 
-    void init() {
+    MXPut& init() {
        if (F) { WB_DELETE(F); }; L=0;
        if (vname) { WB_DELETE(vname); }
        if (S) {
@@ -294,40 +294,51 @@ class MXPut {
           else { mxDestroyArray(S); }
           S=NULL;
        }
+       return *this;
     };
 
-    void init(const char *file, int line, const char *vn=NULL) {
+    MXPut& init(const char *file, int line, const char *vn=NULL) {
        if (S || F || vname) init();
        if (file && file[0]) { L=line;
-          WB_NEW(F,strlen(file)+1); strcpy(F,file);
+          WB_NEW(F,strlen(file)+1,1); 
+          strcpy(F,file);
        }
 
        if (vn && vn[0])
-            { WB_NEW(vname,strlen(vn)+1); strcpy(vname,vn); }
-       else { WB_NEW(vname,4); strcpy(vname,"ans"); }
+            { WB_NEW(vname,strlen(vn)+1,1); strcpy(vname,vn); }
+       else { WB_NEW(vname,4,1); strcpy(vname,"ans"); }
 
       #pragma omp critical (using_MEX_API)
        S=mxCreateStructMatrix(1,1,0,NULL);
 
        if (L) addFL();
+       return *this;
     };
 
-    void put(const char *ws=0, const char *vn=0) {
+    MXPut& put(const char *ws=0, const char *vn=0) {
+       return put(0,0,ws,vn);
+    };
+
+    MXPut& put(const char *file, int line, const char *ws=0, const char *vn=0) {
+       const char *F_=(file && *file? file : (F && *F? F : __FILE__));
+       int         L_=(file && *file? line : (F && *F? L : __LINE__));
        if (S) {
-          if (!vname) wblog(F_L,
+          if (!vname) wblog(F_,L_,
              "ERR %s() got empty variable name",FCT,vname);
           const char s0[]="ans", *s=((vn && vn[0]) ? vn : vname);
           if (!s || !s[0]) s=s0;
 
           if (!ws || !ws[0]) {
-             if (!wsp[0]) wblog(FL,"ERR %s() workspace not set",FCT);
+             if (!wsp[0]) wblog(F_,L_,"ERR %s() workspace not set",FCT);
              ws=wsp;
           }
 
-          mxPutAndDestroy(F,L,S,s,ws);
+          F_=(file && *file? file : (F && *F? F : NULL));
+          L_=(file && *file? line : (F && *F? L :    0));
+          mxPutAndDestroy(F_,L_,S,s,ws);
           S=NULL;
        }
-       init();
+       return init();
     };
 
     void save2(mxArray* &S0) { S0=S; S=NULL; init(); };
@@ -478,7 +489,7 @@ class mxArray_buf {
 
     void add(void *p, mxArray *a) {
        if (p) {
-          #pragma omp critical (using_mxArray_P2X)
+          #pragma omp critical (using_mxArray_gP2X)
           { auto im=BUF.insert({p,a});
             if (!im.second) wblog(FL,
                "ERR %s() %s already got entry for %p",PROG,name,p);
@@ -490,7 +501,7 @@ class mxArray_buf {
     mxArray* find(const char *F, int L, void *p) {
        mxArray *a=NULL;
 
-       #pragma omp critical (using_mxArray_P2X)
+       #pragma omp critical (using_mxArray_gP2X)
        { auto im=BUF.find(p);
          if (im!=BUF.end()) { a=im->second; }
        }
@@ -502,7 +513,7 @@ class mxArray_buf {
     mxArray* Return(const char *F, int L, void *p) {
        mxArray *a=NULL;
 
-       #pragma omp critical (using_mxArray_P2X)
+       #pragma omp critical (using_mxArray_gP2X)
        { auto im=BUF.find(p);
          if (im!=BUF.end()) {
             a=im->second; BUF.erase(im->first); 
@@ -515,7 +526,7 @@ class mxArray_buf {
 
     int erase(void *p) {
        int e=0;
-       #pragma omp critical (using_mxArray_P2X)
+       #pragma omp critical (using_mxArray_gP2X)
        { e=BUF.erase(p); } 
        return e;
     };
@@ -529,7 +540,7 @@ class mxArray_buf {
 
 };
 
-   mxArray_buf P2X("P2X");
+   mxArray_buf gP2X("gP2X");
 
 #endif
 

@@ -86,13 +86,12 @@ char USAGE[] =
 
 #define WB_CLOCK
 
-#define QTYPE int
-#define _TQ QTYPE
-#define _TD double
-
 #include "wblib.h"
 #include "mpsortho.cc"
 #include "cpat.hh" 
+
+#define _TQ gTQ
+#define _TD double
 
 template<class TQ, class TD>
 mxArray* RunDavidson(

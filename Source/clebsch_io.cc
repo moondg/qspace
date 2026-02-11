@@ -28,7 +28,7 @@ int RCStore::get_rcs_path(
    char mflag
  ) const {
 
-   unsigned l,
+   unsigned l=0,
       l1=(sub1 && sub1[0] ? strlen(sub1) : 0),
       l2=(sub2 && sub2[0] ? strlen(sub2) : 0),
       l3=(file && file[0] ? strlen(file) : 0);
@@ -65,34 +65,35 @@ int RCStore::get_rcs_path(
       }
    }
 
-   if (!t.validType()) wblog(F_L,
+   if (t.validType()<=0) wblog(F_L,
       "ERR %s() got invalid symmetry (%s)",FCT,STR(t));
    if (!path) wblog(F_L,"ERR %s() got NULL buffer",FCT);
 
    const char *stag = sync ? "RCSync" : "RCStore";
-   unsigned i0,i1,i2,i3, lx=128; char sub[lx]; sub[0]=0;
+   unsigned i0,i1,i2,i3;
+   wbvec<char> sub(128);
 
    if (sync && !l3) wblog(FL,
       "ERR %s() got empty file with %s",FCT,stag);
 
-   l=snprintf(sub,lx,"%s",STR2(t,'t'));               i1=i2=i3=l;
-   if (l1 && l<lx) { l+=snprintf(sub+l,lx-l,"/%s",sub1); i2=i3=l; }
-   if (l2 && l<lx) { l+=snprintf(sub+l,lx-l,"/%s",sub2);    i3=l; }
-   if (l3 && l<lx) { l+=snprintf(sub+l,lx-l,"/%s",file); }
-   if ((l1 && l>=lx) || (!l1 && l+16>=lx)) wblog(FL,
-      "ERR %s() string out of bounds (%d/%d)\n%s",FCT,l,lx,sub);
+   sub.catf(FL,"%s",STR2(t,'t'));  i1=i2=i3=sub.l;
+   if (l1) { sub.catf(FL,"/%s",sub1); i2=i3=sub.l; }
+   if (l2) { sub.catf(FL,"/%s",sub2);    i3=sub.l; }
+   if (l3) { sub.catf(FL,"/%s",file); }
 
-   {  unsigned k=0; char path_[len];
+   if (!l1) { sub.check_bounds(FL,1,-16); }
+
+   {  unsigned k=0; wbvec<char> path_(len);
 
       wbindex Ir; Ir.Index(ir,nr-1,+1); 
 
       for (k=0; k<Ir.len; ++k) {
-         char *p = (k ? path_ : path);
-         l=snprintf(p,len,"%s/%s",root[Ir[k]],sub);
+         char *p = (k ? path_.data : path);
+         l=snprintf(p,len,"%s/%s",root[Ir[k]],sub.data);
          if (l>=len) wblog(FL,
             "ERR %s() string out of bounds (%d/%d)\n%s",FCT,l,len,p);
          if (Wb::fexist(p)) { 
-            if (k) strcpy(path,path_);
+            if (k) strcpy(path,path_.data);
             break;
          }
       }
@@ -195,7 +196,7 @@ int RCStore::get_file_name(
    const QSet<TQ> &Q, const char *ext, char mflag) const {
 
    unsigned l, l1=35, l2=219, n=l1+l2+2; 
-   char sbuf[n], *s1=sbuf, *s2=s1+l1;
+   wbvec<char> sbuf(n); char *s1=sbuf.data, *s2=s1+l1;
    char is3 = (ext && (!strcmp(ext,"mp3") || !strcmp(ext,"c1j"))) ? 1 : 0;
    int q;
 
@@ -234,29 +235,26 @@ int RCStore::get_file_name(
  ) const {
 
    int i=0; 
-   unsigned l, l1=64; char s1[l1];
+   char *s_; wbvec<char> s1(64);
 
    if (!R.J.len || R.J.len>99) wblog(F_L,"ERR %s() "
       "got empty symmetry labels (J=[%s])",FCT,STR(R.J));
 
-   s1[0]='('; l=1;
+   s1.append(0,0,'('); s_=s1.current();
 
    if (CG::gotQAlpha(R.J.data,R.J.len)) { 
-      if (CG::qset2cstr(R.J.data,s1+l,R.J.len)) wblog(FL,
+      if (CG::qset2cstr(R.J.data,s_,R.J.len)) wblog(FL,
          "ERR %s() failed to obtain compact qset string",FCT);
-      l+=R.J.len;
+      s1.shift(0,0, R.J.len);
    }
    else {
       wbstring js=R.J.toStrf("", R.q.qlen()<2 ? "":" ");
-      l+=snprintf(s1+l,l1-l,"%s",js.data);
+      s1.catf(0,0,"%s",js.data);
    }
-
-   if (l<l1) l+=snprintf(s1+l,l1-l,").%s",ext?ext:"mat");
-   if (l>=l1) wblog(FL,
-      "ERR %s() string out of bounds (%d/%d)\n%s",FCT,l,l1,s1);
+   s1.catf(FL,").%s",ext?ext:"mat");
 
    file.init(256);
-   i=get_rcs_path(F_L,file.data,file.len,R.q,"RStore",NULL,s1,mflag);
+   i=get_rcs_path(F_L,file.data,file.len,R.q,"RStore",NULL,s1.data,mflag);
 
    return (i>0 ? 1:0); 
 };
@@ -268,7 +266,7 @@ int RCStore::get_file_name(
  ) const {
 
    unsigned l,rc, l1=35, l2=219, n=l1+l2+2;  
-   char sbuf[n], *s1=sbuf, *s2=s1+l1;
+   wbvec<char> sbuf(n); char *s1=sbuf.data, *s2=s1+l1;
    int q;
 
    ctrIdx ica,icb;
@@ -318,34 +316,41 @@ int RCStore::save_CData(const char *F, int L, const CData<TQ,TD> &A) {
    wbstring fs;
    int q=get_file_name(F_L,fs,(const QSet<TQ>&)A,"cgd",RC_SAVE);
 
+   if (Wb::envFullOM) { 
+      unsigned cid=A.getIQ('f');
+      if (A.cstat.cID!=cid) { wblog(FL,
+         "ERR %s() cID = %05X / %05X",FCT,A.cstat.cID,cid);
+      }
+   }
+
 #ifndef WB_SKIP_ASSERT
-   if (q>0) { int i; CDATA_TQ Cf;
-      A.Load_CRef(FL,Cf,fs.data); i=A.cmpOM(Cf);
-      if (i<0) wblog(FL,
+   if (q>0) { int i; CDATA_TQ B;
+      A.Load_CRef(FL,B,fs.data); i=A.cmpOM(B);
+      if (i<0) { wblog(FL,
          "ERR %s() got lower-OM CData (i=%d)\n%s: %s -> %s",
-         FCT,i,STR(Cf),STR(A)
-      );
+         FCT,i,STR(B),STR(A));
+      }
    }
 #endif
 
-   char *sx=strstr(fs.data,"/CStore"), sm[8]="";
+   char *sx=strstr(fs.data,"/CStore"), sm[8]=""; 
    unsigned dx=(sx ? sx-fs.data+1 : 0);
 
-   int m=A.gotOM(F_L); if (!m) m=A.checkOM(F_L);
+   unsigned m=A.numOM(F_L); 
    if (m) { snprintf(sm,8," @ %d",m); }
 
    gStore.rclog(A.t, PFL, CG_VERBOSE>6 && F,
-      "[%s] %s() #%05x %s%s", q>0?"W":"w",FCT,A.cstat.ID,fs.data+dx,sm);
+      "[%s] %s() #%05X %s%s", q>0?"W":"w",FCT,A.cstat.cID,fs.data+dx,sm);
 
-   if (!A.cstat.ctime) wblog(FL,"ERR %s() got empty time stamp / ID\n"
+   if (!A.cstat.ctime) wblog(FL,"ERR %s() got empty time stamp / cID\n"
       "%s\n%s", FCT, STR(A), A.cstat.toStr('V').data); 
-   if (A.cstat==CGD_REF_INIT) wblog(FL,"ERR %s() got REF_INIT CData\n"
+   if (A.cstat==CD_REF_INIT) wblog(FL,"ERR %s() got REF_INIT CData\n"
       "%s\n%s", FCT, STR(A), A.cstat.toStr('V').data); 
 
    gstatC.gotwrite(A.memSize());
 
    CData<TQ,TD> Ar; Ar.RefInit(FL,A);
-   Ar.cstat.t=A.cstat.t; 
+   Ar.cstat.ctype=A.cstat.ctype; 
 
    mxArray *a=Ar.toMx();
    mxArray *c=A.cgd.toMx();
@@ -363,25 +368,27 @@ int RCStore::save_CData(const char *F, int L, const CData<TQ,TD> &A) {
 
 template <class TQ, class TD>
 int RCStore::load_CData(
-   const char *F, int L, const QSet<TQ> &Q, CData<TQ,TD> &A,
-   char bflag
+   const char *F, int L, const QSet<TQ> &Q,
+   CData<TQ,TD> &A, char ref
 ){
    int q=0; wbstring fs; mxArray *a;
 
    CData<TQ,TD> B;
 
-   if (bflag && A.cstat.ID && Q!=(QSet<TQ>&)A) wblog(F_L,
+   char bflag=A.gotuser_BUF(); 
+
+   if (bflag && A.cstat.cID && Q!=(QSet<TQ>&)A) wblog(F_L,
       "WRN %s() got QSet mismatch\n%s\n%s",FCT,STR(Q),STR(A));
-   if (!bflag ^ !A.gotuser_BUF()) wblog(FL,
-      "WRN %s() got bflag=%c<%d>/%d",FCT,bflag,bflag,A.gotuser_BUF());
+   if (ref && (!bflag || ref!='r')) wblog(FL, 
+      "WRN %s() got ref=%s with bflag=%d",FCT,cSTR(ref),bflag);
 
    if ((q=get_file_name(F_L,fs,Q,"cgd"))<=0) {
-      if (!q && A.cstat.ID==CID_RANK1_Q0) {
+      if (!q && A.cstat.cID==CID_RANK1_Q0) {
          A.initScalar(Q); 
          return q;
       }
 
-      if (bflag && A.cstat.ID) {
+      if (bflag && A.cstat.cID) {
          wblog(F_L,"WRN %s() got missing CData file having (e=%d)\n"
          "Qin: %s\nBUF: %s\n%s",FCT,q,STR(Q),STR(A),STR2(A.cstat,'V'));
       }
@@ -394,16 +401,16 @@ int RCStore::load_CData(
    unsigned dx=(sx ? sx-fs.data+1 : 0);
 
    if (CG_VERBOSE>4 && F) wblog(PF_L,
-      "[r] %s() %s %s",FCT,fs.data+dx,cSTR(bflag));
+      "[r] %s() %s %s",FCT,fs.data+dx,cSTR(ref));
 
    Wb::matFile f(FL,fs.data,"r");
    if (!f.mfp) wblog(FL,"ERR %s() failed to open file\n%s",FCT,fs.data);
 
    a=matGetVariable(f.mfp,"CRef");
-   if (!a) wblog(FL,"ERR %s() "
-      "failed to read CRef from file\n%s",FCT,fs.data);
+   if (!a) wblog(FL,
+      "ERR %s() failed to read CRef from file\n%s",FCT,fs.data);
 
-   q=B.init_mxCRef(FL,a,0);
+   q=B.init_mxCRef(FL,a,0); 
    mxDestroyArray(a);
 
    if (B.qs && (B.qs!=Q.qs)) { str[0]=0;  
@@ -416,19 +423,17 @@ int RCStore::load_CData(
       wblog(FL,"ERR %s() QSet mismatch\n%s / %s%s",FCT,STR(Q),STR(B),str);
    }
 
-   if (bflag=='r') {
-      B.cstat.t=CGD_REF_INIT; 
+   if (ref) {
+      B.cstat.set(CD_REF_INIT); 
    }
    else {
-      if (bflag && bflag!='b') wblog(FL,
-         "WRN %s() got bflag=%s",FCT,cSTR(bflag));
       gstatC.aux1++;
 
       a=matGetVariable(f.mfp,"cdata");
       f.init(); 
 
       if (!a) {
-         if (CG_FIXIT) { wblog(FL,"FIX %s() "
+         if (CG_FIX) { wblog(FL,"FIX %s() "
             "got corrupted 'cdata' -> clear data\n%s",FCT,fs.data);
             A.init(); return (q=-1);
          }
@@ -451,8 +456,168 @@ int RCStore::load_CData(
    return q;
 };
 
+template <class TQ, class TD>
+int RCStore::save_1J(
+   const char *F, int L, const CData<TQ,TD> &A, const char *istr) {
+
+   int saved=0;
+   QSet<TQ> Q2; A.QSet<TQ>::reduceTo1J(F_L,Q2);
+
+   CData<TQ,TD> &S1=gCS.getBUF(0,0,Q2,LB_LOAD);        
+
+   if (S1.isEmpty()) {
+      A.reduceTo1J(F_L,S1); 
+      int io1=gStore.save_CData(0,0,S1); 
+
+      gStore.rclog(A.t, PF_L, CG_VERBOSE>6,
+         "[+]  %c CBUF[%03d] 1J symbol #%05X %s", io1? 'W':'w',
+         gCS.BUF.size(), S1.cstat.cID, STR(Q2));
+      saved++;
+   }
+   else {
+      CData<TQ,TD> Z;
+      A.reduceTo1J(F_L,Z); double e=S1.normDiff(FL,Z);
+
+      if (e>CG_EPS2 || CG_VERBOSE>2) { char s[256];
+         snprintf(s,256,"%sgot existing 1J symbol "
+            "@ %.3g\n   %s %s\n<> %s %s", istr?istr:"", e, STR(Z),
+            STR2(Z.cstat,'v'), STR(S1), STR2(S1.cstat,'v'));
+         if (e>CG_EPS2) { MXPut(FL,"x1j")
+            .add(A,"A").add(S1,"Z1").add(Z,"Z2").add(e,"e");
+            wblog(FL,"ERR %s",s);
+         }
+         gStore.rclog(A.t, F_L, CG_VERBOSE>6,"ok. %s",s);
+      }
+   }
+
+   if (A.cgd.SIZE.len==3) {
+      unsigned m=A.t.qlen(); const TQ *q=A.qs.data;
+      gCS.getIdentityC(F_L,A.t,q,  A.cgd.SIZE[0]); 
+      if (memcmp(q,q+m,m*sizeof(TQ))) {
+      gCS.getIdentityC(F_L,A.t,q+m,A.cgd.SIZE[1]); }
+   }
+
+   return saved;
+};
+
 template <class TQ>
-int RCStore::save_Std3(
+int RCStore::save_mp3_extended(
+   const char *F, int L, const QType &t, const qset<TQ> &J12,
+   const wbvector<double> *c2eps) const {
+
+   int gotnew=0; 
+   unsigned n1,n2, d1,d2,d3, m=t.qlen();
+   const TQ *qs=J12.data;
+   char got1D=0; 
+
+   const auto &M1=gCS.map3[t][J12];
+
+   if (save_mp3(F,L,t,J12,c2eps)<=0) { ++gotnew; }
+
+   if (!memcmp(qs,qs+m,m*sizeof(TQ))) {
+      for (auto I3=M1.begin(); I3!=M1.end(); ++I3) {
+         const qset<TQ> &J3=I3->first;
+         if (t.qdim(J3.data)==1) { ++got1D; }
+      }
+      n1=n2=M1.size(); 
+   }
+   else {
+      qset<TQ> J21(m,qs+m,m,qs);
+      auto &M2=gCS.map3[t][J21];
+      unsigned n2_=M2.size(), nx=0; n1=M1.size();
+
+      if (n2_>n1) wblog(FL,"ERR %s() unexpected %s J21=[%s] with n=%d/%d",
+         FCT,STR(t),STR(J21),n2_,n1);
+
+      for (auto I1=M1.begin(); I1!=M1.end(); ++I1) {
+         const qset<TQ> &J3=I1->first;
+         const CRef<TQ> &R=I1->second; CRef<TQ> &Rp=M2[J3];
+         if (!Rp.cgb) { ++nx; R.permute(Rp,"213"); }
+         if (t.qdim(J3.data)==1) { ++got1D; }
+      }
+
+      n2=M2.size();
+      if (n1!=n2) { wblog(FL,
+         "ERR %s() mp3 inconsistency for %s J21=[%s] (n=%d/%d, nx=%d)",
+         FCT,STR(t),STR(J21),n2,n1,nx);
+      }
+      if (n2_+nx!=n1) { wblog(FL,
+         "WRN %s() unexpected mp3 for %s J21=[%s] (n=%d+%d/%d)",
+         FCT,STR(t),STR(J21),n2_,nx,n1);
+      }
+      if (nx) {
+         if (save_mp3(F,L,t,J21,c2eps)<=0) { ++gotnew; };
+      }
+   }
+
+   d1=t.qdim(qs);
+   d2=t.qdim(qs+m);
+
+   if (d1>1 && d2>1) { if (!got1D) { return gotnew; }}
+   else if (n1!=1) { wblog(FL,
+      "ERR %s() got mp3 size n=%d/%d\nfor scalar input %s J12=[%s] (%dx%d)",
+      FCT,n1,n2,STR(t),STR(J12),d1,d2);
+   }
+
+   qset<TQ> J1(m,qs), J2(m,qs+m);
+   unsigned irep, nrep=(J1==J2? 1:2); 
+
+   for (auto I3=M1.begin(); I3!=M1.end(); ++I3) {
+      qset<TQ> J3(I3->first), J3_(J3); t.setDual(J3_.data); 
+      d3=t.qdim(J3.data);
+
+      if (n1>1 && d3>1) { continue; }
+      if (J3_==J1 || J3_==J2) { continue; }
+
+      CData<TQ,RTD> C, C3(I3->second); 
+
+      C3.Conj(2); 
+      for (irep=0; irep<nrep; ++irep) {
+         if (irep==0)
+              { C3.permute(C,"321").Conj(2); } 
+         else { C3.permute(C,"132").Conj(2); } 
+
+         if (!C.isSorted()) { C.Permute("213");
+         if (!C.isSorted()) wblog(FL,"ERR %s() unsorted CGT %s",FCT,STR(C)); }
+          C.cgd.NormSignC();
+
+         qset<TQ> q1(m,C.qs.data), q2(m,C.qs.data+m), q3(m,C.qs.data+2*m);
+         qset<TQ> q12(q1,q2);
+         auto &m12=gCS.map3[t][q12];
+
+         CData<TQ,RTD> &Cb=gCS.getBUF(0,0,(QSet<TQ>&)C,LB_REF);
+         if (Cb.isEmpty()) {
+            const cgdStatus &b=I3->second.cgb->cstat;
+            Cb=C;
+            if (b.isComplete()==3)
+                 { Cb.cstat_init_(b.ctype); } 
+            else { Cb.cstat.init (b.ctype); }
+
+            if (gStore.save_CData(0,0,Cb)<=0) { gotnew+=100; }
+         }
+
+         if (!m12.size()) {
+            CRef<TQ> &R=m12[q3];
+            R.initBase(C).NormStd(FL,3); 
+            if (save_mp3(F,L,t,q12,c2eps)<=0) { ++gotnew; }
+
+            if (q1!=q2) { qset<TQ> q21(q2,q1);
+               auto &m21=gCS.map3[t][q21];
+               if (!m21.size()) {
+                  CRef<TQ> &Rp=m21[q3];
+                  R.permute(Rp,"213");
+                  if (save_mp3(F,L,t,q21,c2eps)<=0) { ++gotnew; }
+               }
+            }
+         }
+      }
+   }
+
+   return gotnew;
+};
+
+template <class TQ>
+int RCStore::save_mp3( 
    const char *F, int L, const QType &t, const qset<TQ> &J12,
    const wbvector<double> *c2eps) const {
 
@@ -488,7 +653,7 @@ int RCStore::save_Std3(
 };
 
 template <class TQ>
-int RCStore::load_Std3(const char *F, int L,
+int RCStore::load_mp3(const char *F, int L,
    const QType &t, const qset<TQ> &J1, const qset<TQ> &J2,
    unsigned loadRC) const {
 
@@ -519,11 +684,18 @@ int RCStore::load_Std3(const char *F, int L,
 
    int q=get_file_name(F_L,fs,Q,"mp3");
    if (q<=0) {
-      if (!F) return -1;
+      if (!F) { return -1; }
 
       genRG_struct<TQ,RTD> &B=gRS.Buf(t);
 
-      q=B.getTensorProdReps_gen(J1,J2, F ? TP3_LDM : TP3_TST);
+      if (t.qrank()) {
+         q=B.getTensorProdReps_gen(J1,J2, F? TP3_LDM : TP3_TST);
+      }
+      else { wblog(FL,
+        "ERR %s() missing mp3 for tensor product %s %s x %s",
+         FCT,STR(t),STR(J1),STR(J2));
+      }
+
       if (q>0) {
          return gCS.map3[t][J12].size();
       }
@@ -600,7 +772,7 @@ int RCStore::save_RSet(
       gStore.load_RSet(0,0,X.q,X.J); 
 
       double e=X.normDiff(FL,R);
-      if (e>1E-12) wblog(FL,"ERR %s() "
+      if (e>1e-12) wblog(FL,"ERR %s() "
          "got RSet[%s] inconsistency (%.3g)",FCT,STR(X.J), e);
       return 2;
    }
@@ -632,6 +804,8 @@ template <class TQ>
 int RCStore::load_RSet(
    const char *F, int L, const QType &t, const qset<TQ> &J, char rclog
 ){
+   if (t<=QT_ABELIAN) { return -1; } 
+
    wbstring fs;
    genRG_base<TQ,RTD> R;
 
@@ -642,12 +816,12 @@ int RCStore::load_RSet(
 
    R.q=t; R.J=J;
 
-   if (R.J.len!=t.qrank()) wblog(FL,"ERR %s() "
+   if (R.J.len!=t.qlen()) wblog(FL,"ERR %s() "
       "got invalid qlabels (%s) len=%d/%d",FCT,STR2(J,t),J.len,t.qrank());
 
    if (get_file_name(F_L,fs,R,"rep")<=0) {
       if (F) { wblog(FL,
-         "ERR %s() got missing irrep (%s)\n%s\nhint: %s",
+         "ERR %s() got missing irep (%s)\n%s\nhint: %s",
          FCT,STR(J),Wb::repHome(fs.data).data, strstr(myname,"compactQS") ?
          "try to generate using getIdentityQS" : "missing file");
       }
@@ -706,22 +880,24 @@ int RCStore::load_XMap(
    }
 
    Wb::matFile f(FL,fs.data,"r");
-   if (!f.mfp) wblog(FL,"ERR %s() failed to open file\n%s",FCT,fs.data);
+   if (!f.mfp) wblog(FL,
+      "ERR %s() failed to open file\n%s",FCT,fs.data);
 
-   if (CG_VERBOSE>8) wblog(FL,"<-- %s",Wb::repHome(fs.data).data);
+   if (CG_VERBOSE>8) wblog(FL,
+      "<-- %s",Wb::repHome(fs.data).data);
 
    unsigned n;
    mxArray *a=matGetVariable(f.mfp,"x3m");
 
    if (!a) {
-   #ifdef QS_USING_OMP
+    # ifdef QS_USING_OMP
       wbstring istr=CG::Guard::Status(idc);
       wblog(FL,"ERR %s() having %s\n"
       "failed to read `x3m' from file%N%N%s%N",FCT,istr.data,fs.data);
-   #else
+    # else
       wblog(FL,"ERR %s() failed to read `x3m' from file%N%N%s%N",
       FCT,fs.data); 
-   #endif
+    # endif
    }
    if ((n=mxGetNumberOfElements(a))!=1) wblog(FL,
       "ERR %s() got invalid RSet (len=%d)",FCT,n);
@@ -932,11 +1108,11 @@ cdata<TD>& cdata<TD>::init(
 ){
    if (C==NULL) {
        if (k) wblog(FL,"ERR %s() got k=%d for NULL mxArray",FCT,k);
-       cgsparray::init();
+       SPARR_RTD::init();
        return *this;
    }
 
-   try { cgsparray::init(F_L,C,k); }
+   try { SPARR_RTD::init(F_L,C,k); }
    catch (...) { wblog(F_L,
       "ERR %s() invalid cdata (%s)",FCT,mxGetClassName(C));
    }
@@ -949,42 +1125,48 @@ cdata<TD>& cdata<TD>::init(
    );
 
    if (int(r)>=0) {
-   this->AddTrailingSingletons(FL,r); }
+   this->AppendTrailingSingletons(FL,r); }
 
    return *this;
 };
 
-CGR_TYPE cgdStatus::init(const char *F, int L, const mxArray* a) {
+CR_TYPE cgdStatus::init(const char *F, int L, const mxArray* a) {
 
-   CGR_TYPE rt=CGR_DEFAULT;
+   CR_TYPE rt=CR_DEFAULT;
 
    if (!a || mxIsEmpty(a)) {
-      init(CGD_UNKNOWN); return rt;
+      init(CD_UNKNOWN); return rt;
    }
 
    if (mxIsDouble(a)) {
-      wbvector<double> cid(F_L,a); int l=3;
-      if (cid.len<4 || cid.len>5) wblog(F_L,
+      wbvector<double> cid(F_L,a);
+      if (cid.len<4 || cid.len>6) wblog(F_L,
          "ERR %s() invalid CRef::cgb data (%d)",FCT,cid.len);
 
       ctime = cid[0];
       mtime = cid[1];
-      ID    = cid[2];
+      cID   = cid[2];
 
-      if (cid.len==5) { 
-         rt=CGR_TYPE(cid[l++]);
-         if (rt>=CGR_NUM_TYPES) wblog(F_L,
-            "ERR %s() rtype out of bounds (%d/%d)",FCT,rt,CGR_NUM_TYPES
-         );
+      if (cid.len==6) { 
+         init_type_(FL,cid[3],cid[4]);
+         rt=CR_TYPE(cid[5]);
       }
+      else { int l=3;
+         if (cid.len==5) {
+            if (cid[l]<0 || cid[l]>=CR_NUM_TYPES) wblog(F_L,
+               "ERR %s() rtype out of bounds (%d/%d)",FCT,cid[l],CR_NUM_TYPES);
+            rt=CR_TYPE(cid[l++]);
+         }
 
-      t=CGD_TYPE(cid[l]);
-      if (t>=CGD_NUM_TYPES) wblog(F_L,
-         "ERR %s() invalid CData type %g",FCT,double(cid[4])
-      );
+         if (cid[l]<0 || cid[l]>=CD_NUM_TYPES) { wblog(F_L,
+            "ERR %s() invalid CData type %g",FCT,cid[l]);
+         }
+         init_type_(CD_TYPE(cid[l]));
+      }
    }
    else if (mxIsStruct(a)) {
       unsigned n=mxGetNumberOfElements(a);
+      wbvector<double> f2;
       int ic=mxGetFieldNumber(a,"ctime"), id=mxGetFieldNumber(a,"ID"),
           im=mxGetFieldNumber(a,"mtime"), iflag=mxGetFieldNumber(a,"flag");
 
@@ -995,12 +1177,13 @@ CGR_TYPE cgdStatus::init(const char *F, int L, const mxArray* a) {
 
       mxGetNumber(mxGetFieldByNumber(a,0,ic), ctime);
       mxGetNumber(mxGetFieldByNumber(a,0,im), mtime);
-      mxGetNumber(mxGetFieldByNumber(a,0,id),    ID);
-      mxGetNumber(mxGetFieldByNumber(a,0,iflag),  t);
+      mxGetNumber(mxGetFieldByNumber(a,0,id),   cID);
 
-      if (t>=CGD_NUM_TYPES) wblog(F_L,
-         "ERR %s() invalid CData type %g",FCT,t
-      );
+      f2.init(FL,mxGetFieldByNumber(a,0,iflag));
+      if (f2.len==1) init_type_(CD_TYPE(f2[0])); else
+      if (f2.len==2) init_type_(FL,f2[0],f2[1] ); else { wblog(F_L,
+         "ERR %s() invalid CData type %s",FCT,STR(f2));
+      }
    }
    else wblog(F_L,
      "ERR %s() unexpected cgdStatus (%s)",FCT,mxGetClassName(a));
@@ -1008,14 +1191,15 @@ CGR_TYPE cgdStatus::init(const char *F, int L, const mxArray* a) {
    return rt;
 };
 
-mxArray* cgdStatus::toMx() const {
-   double cid[4]={ ctime, mtime, double(ID), double(t) };
-   return wbvector<double>(4,cid).toMx();
-};
-
-mxArray* cgdStatus::toMx(CGR_TYPE rt) const {
-   double cid[5]={ctime, mtime, double(ID), double(rt), double(t) };
-   return wbvector<double>(5,cid).toMx();
+mxArray* cgdStatus::toMx(CR_TYPE rt) const {
+   wbvector<double> cid(6);
+      cid[0]=ctime;
+      cid[1]=mtime;
+      cid[2]=cID;
+      cid[3]=(ctype & ((1<<CD_NUM_TYPES)-1)); 
+      cid[4]=(ctype>>CD_NUM_TYPES);           
+      cid[5]=rt;
+   return cid.toMx();
 };
 
 mxArray* cgdStatus::mxCreateStruct(unsigned m, unsigned n) const {
@@ -1028,9 +1212,9 @@ mxArray* cgdStatus::add2MxStruct(mxArray *S, unsigned k) const {
 
    mxSetFieldByNumber(S,k,0, numtoMx(ctime));
    mxSetFieldByNumber(S,k,1, numtoMx(mtime));
-   mxSetFieldByNumber(S,k,2, numtoMx(ID   ));
+   mxSetFieldByNumber(S,k,2, numtoMx(cID  ));
    mxSetFieldByNumber(S,k,3,
-     t==CGD_UNKNOWN ? wbstring("").toMx() : toStr().toMx());
+     (*this)==CD_UNKNOWN ? wbstring("").toMx() : toStr().toMx());
 
    return S;
 };
@@ -1189,14 +1373,14 @@ void CData<TQ,TD>::add2MxStruct(mxArray *S, unsigned i, char tst) const {
 
 template <class TQ>
 CRef<TQ>& CRef<TQ>::init( 
-   const char *F, int L, const mxArray *a, unsigned k,
-   char refC, const QSet<TQ> *QS,
-   char xflag 
-){
+   const char *F, int L, const mxArray *a, unsigned k, char refC,
+   const QSet<TQ> *Q_, 
+   char xflag  
+) {
    if (!a || mxIsEmpty(a)) {
       if (k) wblog(FL,
-         "ERR CRef::%s() got k=%d for null mxArray\n%s",FCT,k,
-         QS ? QS->toStr().data : "(no QS specified)");
+         "ERR CRef::%s() got k=%d for null mxArray\n%s",
+         FCT,k, Q_? STR_(Q_) : "(no Q_ specified)");
       return init();
    }
 
@@ -1245,14 +1429,14 @@ CRef<TQ>& CRef<TQ>::init(
       if (aq && mxGetNumberOfElements(aq)) e|= 8;
       if (ao && mxGetNumberOfElements(ao)) e|=16;
       if (e) wblog(FL,"ERR %s() "
-         "got invalid CRef (CGR_ABELIAN; k=%d, e=%s)",FCT,k+1,BITS(e));
+         "got invalid CRef (CR_ABELIAN; k=%d, e=%s)",FCT,k+1,BITS(e));
 
-      if (!QS || !xflag) {
-         rtype=CGR_ABELIAN;
+      if (!Q_ || !xflag) {
+         rtype=CR_ABELIAN;
          return *this;
       }
 
-      Q=(*QS); lflag=1;
+      Q=(*Q_); lflag=1;
       if (!cgw) { double x=1; cgw.init(1,1,&x); }
    }
    else {
@@ -1263,16 +1447,16 @@ CRef<TQ>& CRef<TQ>::init(
       Q.qdir.init(F_L,ao);
 
       lflag=S.isEmpty();
-      if (lflag ^ st.isEmpty()) wblog(FL,
+      if (lflag ^ st.isEmpty()) { wblog(FL,
          "ERR %s() got invalid minimal CRef data (%d,%d)\n"
          "(empty size and cid required to indicate initialization)!",
-         FCT, lflag, STR2(st,'v')
-      );
+         FCT, lflag, STR2(st,'v'));
+      }
 
-      if (QS) {
-         if (Q!=(*QS)) wblog(FL, 
-            "ERR %s() got CGR QSet mismatch\n%s <> %s",
-            FCT,STR_(QS),STR(Q)
+      if (Q_) {
+         if (Q!=(*Q_)) wblog(PFL, 
+            "ERR %s() got CGR QSet mismatch (k=%d)\n%s <> %s",
+            FCT,k,STR_(Q_),STR(Q)
          );
       }
    }
@@ -1284,9 +1468,10 @@ CRef<TQ>& CRef<TQ>::init(
       }}
    }
 
-   Q.Sort(&cgp,&conj,'i');
-   CDATA_TQ &Cb=(
-      refC && !lflag ? gCS.getBUF(0,0,Q,LB_REF) : gCS.getBUF(FL,Q,LB_UPD)
+   Q.Sort(&cgp,'i');
+   CDATA_TQ &Cb=( refC && !lflag ?
+        gCS.getBUF(0,0,Q,LB_REF)
+      : gCS.getBUF(FL, Q,LB_UPD)
    );
 
    char gotC=(Cb.isEmpty() ? 0 : (Cb.isRefInit() ? -1 : 1));
@@ -1313,33 +1498,33 @@ CRef<TQ>& CRef<TQ>::init(
       cgb=(&Cb); 
 
       if (CG_VERBOSE>6) wblog(PFL,
-         " *  got minimal CRef %s",STR_(this));
+         " *  got minimal CRef %s",STR(*this));
       return *this;
    }
 
-   if (st==CGD_UNKNOWN) wblog(FL,
+   if (st==CD_UNKNOWN) { wblog(FL,
       "ERR %s() got invalid CData status\n%s",FCT,st.toStr('v').data);
-
-   if (Q.t.isAbelian()) {
-      if (st.ctime) wblog(FL,
-         "WRN %s() got cstat for abelian symmetry\n%s\n%s",
-         FCT,STR(Q),st.toStr('V').data
-      );
    }
-   else if ((e=st.inValid())) wblog(FL,
+   else if (Q.t.isAbelian()) {
+      if (st.ctime) { wblog(FL,
+         "WRN %s() got cstat for abelian symmetry\n%s\n%s",
+         FCT,STR(Q),st.toStr('V').data);
+      }
+   }
+   else if ((e=st.inValid())) { wblog(FL,
       "WRN %s() inalid cstat for non-abelian symmetry (e=%d)"
-      "\n%s\n%s", FCT,STR(Q),STR2(st,'V'), e
-   );
+      "\n%s\n%s", FCT, e, STR(Q),STR2(st,'V'));
+   }
 
    if (cgp.len && !cgp.isIdentityPerm()) {
       wbvector<SPIDX_T> Sx(S);
       if (cgp.len+1<S.len || cgp.len>S.len) wblog(FL,
          "ERR %s() invalid S.len=%d/%d",FCT,S.len,cgp.len);
-      for (unsigned i=0; i<cgp.len; ++i) { Sx.el(cgp[i])=S[i]; }
+      for (unsigned i=0; i<cgp.len; ++i) { Sx.at(cgp[i])=S[i]; }
       Sx.save2(S);
    }
 
-   rtype=CGR_DEFAULT; 
+   rtype=CR_DEFAULT; 
 
    if (!gotC) { 
       if (!S.len) wblog(FL,"ERR %s() got empty cgb.size",FCT);
@@ -1349,11 +1534,11 @@ CRef<TQ>& CRef<TQ>::init(
       if (Cb.t.isAbelian()) {
          if (!S.allEqual(1)) wblog(FL,
             "ERR %s() invalid scalar size (%s)",FCT,Cb.cgd.sizeStr().data);
-         Cb.cstat.init(CGD_ABELIAN);
+         Cb.cstat.init(CD_ABELIAN);
          Cb.cgd.wbsparray<RTD>::init();
       }
       else if (refC) {
-         Cb.cstat.t=CGD_REF_INIT; 
+         Cb.cstat.init_type_(CD_REF_INIT); 
          ix=mxGetFieldNumber(a,"cgt");
          if (ix<0) Cb.cgd.init(S); 
       }
@@ -1363,8 +1548,8 @@ CRef<TQ>& CRef<TQ>::init(
       );
    }
    else if (gotC>0) {
-      if (Cb.cstat.t==CGD_REF_INIT) wblog(FL, 
-         "ERR %s() %s got cstat.t=%s",FCT,STR(Cb),Cb.cstat.tstr());
+      if (Cb.cstat==CD_REF_INIT) wblog(FL, 
+         "ERR %s() %s got cstat.t=%s",FCT,STR(Cb),Cb.cstat.tstr().data);
       if (Cb!=Q) wblog(FL,"ERR %s() got BUF inconsistency\n"
          "(%s <> %s)",FCT,STR(Cb),STR(Q));
 
@@ -1388,7 +1573,7 @@ CRef<TQ>& CRef<TQ>::init(
             "CRef unexpected cstat (q=%d)\n   %s\n<> %s (cgw %s)\n"
             "%s%N%N CData: %s%N CRef : %s%N",
              FCT, q, SSTR(Cb), SSTR(S), SSTR(cgw), STR(Cb),
-             Cb.cstat.toStr('V').data, st.toStr('V').data);
+             STR2(Cb.cstat,'V'), STR2(st,'V'));
          Cb.Reduce2Ref(FL,'!'); 
       }
       else { q=Cb.cstat.cmp(0,0,st); if (q) {
@@ -1409,7 +1594,7 @@ CRef<TQ>& CRef<TQ>::init(
       }}
    }
    else { 
-      if (Cb.cstat.t!=CGD_REF_INIT || !refC) wblog(FL,
+      if (Cb.cstat!=CD_REF_INIT || !refC) wblog(FL,
          "ERR %s() got isref CData.cstat='%s' (%d)",
          FCT,STR(Cb.cstat),refC);
       if (Cb!=Q) wblog(FL,"ERR %s() got BUF inconsistency\n"
@@ -1426,18 +1611,25 @@ CRef<TQ>& CRef<TQ>::init(
             if (!Cb.cstat.sameAs(st,1)) { wrn=1; }
          }
 
-      if (wrn) {
-         PRINTF("\n  CRef status mismatch [w=%d] for",wrn);
-         if (Q==Cb)
-              { PRINTF(" %s",STR(Q)); }
-         else { PRINTF("\n     %s\n  <> %s\n", STR((QSet<TQ>&)Cb), STR(Q)); }
-         PRINTF("\n     %s\n  <> %s\n", STR2(Cb.cstat,'V'), STR2(st,'V'));
+         if (wrn) {
+            if (Q==Cb) { PRINTF("\n> %s\n",STR(Cb)); }
+            else { PRINTF("\n"
+             "   Cb> %s\n"
+             "   Q > %s\n",STR((QSet<TQ>&)Cb),STR(Q)); }
 
-         if (wrn>1 || (Cb.gotuser_BUF() && Cb.cstat.ID!=st.ID)) {
-            PRINTF("  hint: got different RC_STORE?\n\n"); }
+            PRINTF("\n> cstat:\n"
+             "   Cb> %s\n"
+             "   st> %s\n", STR2(Cb.cstat,'V'), STR2(st,'V'));
 
-         wblog(FL, wrn<2? "WRN %s() %s":"ERR %s() %s",FCT,PSTR);
-      }}
+            if (wrn>1 || (Cb.gotuser_BUF() && Cb.cstat.cID!=st.cID))
+               PRINTF("  hint: got different RC_STORE?\n\n");
+
+            char msg[64];
+               snprintf(msg,64,"%s %s() CRef status mismatch [wrn=%d]\n%s",
+               wrn<2?"WRN":"ERR",FCT,wrn,PSTR);
+            wblog(FL,msg);
+         }
+      }
 
       if (q==2) {
          if ((q=Cb.cstat.cmp(0,0,st))!=-1) wblog(FL,"ERR %s() "
@@ -1458,7 +1650,7 @@ CRef<TQ>& CRef<TQ>::init(
    if (ix>=0) {
       const mxArray *ax=mxGetFieldByNumber(a,k,ix);
 
-      if (Cb.cstat.t!=CGD_REF_INIT) wblog(FL, 
+      if (Cb.cstat!=CD_REF_INIT) wblog(FL, 
          "ERR %s() got non-ref CData\n%s",FCT,STR(Cb));
       if (r && S.len>r) {
          if (Cb.cgd.SIZE.len==S.len && Cb.cgd.SIZE[r]>S[r]) wblog(FL,
@@ -1510,9 +1702,9 @@ CRef<TQ>& CRef<TQ>::init(
 
    n=wdim1();
    if (n>cgb->getOM() && !Cb.isRefInit()) wblog(FL, 
-      "ERR %s() OM out of bounds (%s /%d; %d,%d,%d,%d) #%05x\n%s",
+      "ERR %s() OM out of bounds (%s /%d; %d,%d,%d,%d) #%05X\n%s",
       FCT, SSTR(cgw), cgb->getOM(),
-      refC, lflag, gotC, ix, cgb->cstat.ID, STR_(this)
+      refC, lflag, gotC, ix, cgb->cstat.cID, STR(*this)
    );
 
    return *this;
@@ -1556,14 +1748,14 @@ void CRef<TQ>::add2MxStruct(mxArray *S, unsigned k, char flag) const {
          "ERR %s() got non-sorted CData\n%s",FCT,STR_(cgb));
 
       if (anyTrafo()) {
-         QSet<TQ> QS; 
-         if (!isSortedDegQ(&QS)) wblog(FL,
-            "ERR %s() got non-standard CRef\n%s",FCT,STR_(this));
+         QSet<TQ> Q; 
+         if (!isSortedDegQ(nullptr,&Q)) wblog(FL,
+            "ERR %s() got non-standard CRef\n%s",FCT,STR(*this));
 
-         mxSetFieldByNumber(S,k,0, QS.t   .toMx('t'));
-         mxSetFieldByNumber(S,k,1, QS.qs  .toMx());
-         mxSetFieldByNumber(S,k,2, QS.qdir.toMx());
-         mxSetFieldByNumber(S,k,4, S2     .toMx());
+         mxSetFieldByNumber(S,k,0, Q.t   .toMx('t'));
+         mxSetFieldByNumber(S,k,1, Q.qs  .toMx());
+         mxSetFieldByNumber(S,k,2, Q.qdir.toMx());
+         mxSetFieldByNumber(S,k,4, S2    .toMx());
       }
       else {
          const CDATA_TQ &C=*cgb;
@@ -1575,8 +1767,8 @@ void CRef<TQ>::add2MxStruct(mxArray *S, unsigned k, char flag) const {
 
       if (!flag) { 
          wbvector<double> cgt; 
-         if (rtype.t==CGR_CTR_ZERO) wblog(FL,
-            "WRN CRef::toMx() got %s rtype=%s",STR_(this),STR(rtype));
+         if (rtype.t==CR_CTR_ZERO) wblog(FL,
+            "WRN CRef::toMx() got %s rtype=%s",STR(*this),STR(rtype));
 
          mxSetFieldByNumber(S,k,3, cgb->cstat.toMx(rtype.t));
 
@@ -1611,7 +1803,7 @@ mxArray* genRG_base<TQ,TD>::mxCreateStruct(unsigned m, unsigned n) const {
 template <class TQ, class TD>
 void genRG_base<TQ,TD>::add2MxStruct(mxArray *S, unsigned i) const {
 
-   if (q.type==QTYPE_UNKNOWN) {
+   if (q.type==QT_UNKNOWN) {
       if (J.isEmpty())
          mxSetFieldByNumber(S,i,0, wbstring().toMx());
       else {
@@ -1770,19 +1962,18 @@ unsigned CStore<TQ>::add3(const QType &q,
       }
    }
 
-   if (n!=M3.size()) wblog(FL,
-      "ERR %s() size mismatch (n=%d/%d)",FCT,n,M3.size());
-
    if (!M3x) {
+      if (n!=M3.size()) wblog(FL,
+         "ERR %s() size mismatch (n=%d/%d)",FCT,n,M3.size());
       map3[q][J12].swap(M3); 
-      if ((j=M3.size())) wblog(FL,
-         "ERR %s() got Std3 race condition (%s; %d/%d/%d)",
-         FCT,STR(J12), j,n, map3[q][J12].size()
-      );
    }
    else {
       n=0; 
    }
+
+   if ((j=M3.size())) wblog(FL, 
+      "ERR %s() got Std3 race condition (%s; %d/%d/%d)",
+      FCT,STR(J12), j,n, map3[q][J12].size());
 
    return n;
 };
@@ -1792,7 +1983,7 @@ mxArray* CStore<TQ>::toMx(const QType &q_) const {
 
    const char *field0[]={"std"};
 
-   mxArray *c,*S, *C=mxCreateStructMatrix(1,1,0,NULL);
+   mxArray *c,*S, *C=mxCreateStructMatrix(1,1,0,nullptr);
 
    CDATA_TQ X_; 
 
@@ -1858,7 +2049,7 @@ mxArray* RStore<TQ,TD>::toMx(const QType &q_, char bflag) const {
    char aflag=(q_.isKnown() ? 0 : 1); 
    mxArray *c, *C=NULL;
 
-   if (aflag) C=mxCreateStructMatrix(1,1,0,NULL);
+   if (aflag) C=mxCreateStructMatrix(1,1,0,nullptr);
 
    for (auto it=buf.begin(); it!=buf.end(); ++it) {
       if (aflag || q_==it->first) {
@@ -1893,10 +2084,13 @@ unsigned RStore<TQ,TD>::add(
       q.toStr('t').data, k+1, mxGetNumberOfElements(S));
 
    if (k==0) {
-      int id[5]={ mxGetFieldNumber(S,"type"),
-         mxGetFieldNumber(S,"J"),  mxGetFieldNumber(S,"Z"),
-         mxGetFieldNumber(S,"Sp"), mxGetFieldNumber(S,"Sz")
-      };
+      int id[5]={
+         mxGetFieldNumber(S,"type"),
+         mxGetFieldNumber(S,"J"   ),
+         mxGetFieldNumber(S,"Z"   ),
+         mxGetFieldNumber(S,"Sp"  ),
+         mxGetFieldNumber(S,"Sz"  ) };
+
       if (itype<0) {
          if ((itype = id[0])<0 || (iJ = id[1])<0 || (iZ = id[2])<0 ||
              (iSp = id[3])<0 || (iSz = id[4])<0) wblog(FL,
@@ -1914,7 +2108,7 @@ unsigned RStore<TQ,TD>::add(
       }
    }
 
-   unsigned i;
+   unsigned i, rs=0;
    char xflag=0; 
 
    qset<TQ> qs(FL,mxGetFieldByNumber(S,k,iJ),0,'!'); 
@@ -1936,15 +2130,24 @@ unsigned RStore<TQ,TD>::add(
    X.J=qs;
    X.Z.init(FL, mxGetFieldByNumber(S,k,iZ));
 
-   if (!(ap=mxGetFieldByNumber(S,k,iSp)) || mxGetNumberOfElements(ap)!=qs.len)
-      wblog(FL,"ERR %s() invalid %s RSet(%d)->Sp",FCT,q.toStr('t').data,k);
-   if (!(az=mxGetFieldByNumber(S,k,iSz)) || mxGetNumberOfElements(az)!=qs.len)
-      wblog(FL,"ERR %s() invalid %s RSet(%d)->Sz",FCT,q.toStr('t').data,k);
+   ap=mxGetFieldByNumber(S,k,iSp);
+   rs=(ap? mxGetNumberOfElements(ap) : 0); 
 
-   X.Sp.init(qs.len);
-   X.Sz.init(qs.len);
+   if (rs!=q.qrank()) { wblog(FL,
+      "ERR %s() invalid %s RSet(%d)->Sp (len=%d/%d)",
+      FCT,q.toStr('t').data,k,rs,q.qrank());
+   }
+   if (rs) {
+      if (!ap || rs!=qs.len)
+         wblog(FL,"ERR %s() invalid %s RSet(%d)->Sp",FCT,q.toStr('t').data,k);
+      if (!(az=mxGetFieldByNumber(S,k,iSz)) || mxGetNumberOfElements(az)!=rs)
+         wblog(FL,"ERR %s() invalid %s RSet(%d)->Sz",FCT,q.toStr('t').data,k);
+   }
 
-   for (i=0; i<qs.len; ++i) {
+   X.Sp.init(rs);
+   X.Sz.init(rs);
+
+   for (i=0; i<rs; ++i) {
       X.Sp[i].init(FL,ap,i);
       X.Sz[i].init(FL,az,i);
    }
@@ -1972,7 +2175,7 @@ unsigned RStore<TQ,TD>::add(
 
          E2=sqrt(E2);
          snprintf(s,32,"q=(%s) (@ %.3g)",STR2(R.J,q),E2);
-         if (E2>1E-10)
+         if (E2>1e-10)
               wblog(FL,"ERR %s() %s",FCT,s);
          else wblog(FL,"WRN %s() %s",FCT,s);
       }
@@ -1986,14 +2189,15 @@ unsigned RStore<TQ,TD>::add(
 template <class TQ, class TD>
 mxArray* x3map<TQ,TD>::mxCreateStruct(unsigned m, unsigned n) const {
 
-   const char *fields[]={ "idc", 
-      "a","ica","b","icb","c", "x3",
-      "Pab","conj","rtype"
+   const char *fields[]={ "idc",     
+      "a","ica","b","icb","c", "x3", 
+      "Pab", 
+      "rtype"
    };
-   return mxCreateStructMatrix(m,n,10,fields);
+   return mxCreateStructMatrix(m,n,9,fields);
 };
 
-template <class TQ, class TD> 
+template <class TQ, class TD>
 void x3map<TQ,TD>::add2MxStruct(
    mxArray *S, unsigned l, const cgc_contract_id<MTI> *idc) const {
 
@@ -2036,7 +2240,7 @@ void x3map<TQ,TD>::add2MxStruct(
       mxSetFieldByNumber(S,l,4, icb.toMx());
    }
 
-   if (rtype!=CGR_CTR_ZERO) {
+   if (rtype!=CR_CTR_ZERO) {
       mxSetFieldByNumber(S,l,5, c .toMx());
    }
 
@@ -2048,22 +2252,27 @@ void x3map<TQ,TD>::add2MxStruct(
    mxSetFieldByNumber(S,l,6, x3.toMx());
 #endif
 
-   mxSetFieldByNumber(S,l,7, pab.toMx());
-   mxSetFieldByNumber(S,l,8, numtoMx(conj));
-   mxSetFieldByNumber(S,l,9, numtoMx(rtype.t));
+   mxSetFieldByNumber(S,l,7, pab.toMx());    
+   mxSetFieldByNumber(S,l,8, numtoMx(rtype.t));
 };
 
 template <class TQ, class TD>
-x3map<TQ,TD>& x3map<TQ,TD>::init( 
+x3map<TQ,TD>& x3map<TQ,TD>::init(
    const char *F, int L, const mxArray* S, unsigned k,
    ctrIdx *ica_, ctrIdx *icb_, char recalc
 ){
-   int n, q=-99;
-   ctrIdx ica, icb; 
+   int l,n,q;
+   const mxArray *a7;
 
-   if (!S) wblog(FL,"ERR %s() got null mxArray",FCT);
-   if ((n=mxGetNumberOfElements(S))!=1) wblog(FL,
-      "ERR %s() got invalid number of elements (%d)",FCT,n);
+   ctrIdx ica, icb;
+
+   n=(S? mxGetNumberOfElements(S) : -1);
+   if (n <0) wblog(FL,"ERR x3map::%s() got null mxArray (n=%d)",FCT,n); else
+   if (n!=1) wblog(FL,"ERR x3map::%s() invalid input (n=%d)",FCT,n);
+
+   n=(mxIsStruct(S) ? mxGetNumberOfFields(S) : -1);
+   if (n<9 || n>10) wblog(FL,
+      "ERR x3map::%s() invalid input (%d fields)",FCT,n);
 
    a  .init_mxCRef(FL, mxGetFieldByNumber(S,k,1), 0);
    ica.init(FL, mxGetFieldByNumber(S,k,2));
@@ -2074,50 +2283,58 @@ x3map<TQ,TD>& x3map<TQ,TD>::init(
     X3.init(FL, mxGetFieldByNumber(S,k,6));
     x3.initT(X3);
 
-   pab.init(FL, mxGetFieldByNumber(S,k,7), 1); 
+   pab.init(FL,(a7=mxGetFieldByNumber(S,k,7)),1); 
 
-   mxGetNumber(mxGetFieldByNumber(S,k,8), conj);
-   mxGetNumber(mxGetFieldByNumber(S,k,9), rtype.t);
+   l=8;
+   if (n>9) { char conj=0;
+      mxGetNumber(mxGetFieldByNumber(S,k,l++), conj);  
+      if (pab.conj) wblog(FL,
+         "ERR %s() invalid input (Pab.conj=%d/%d)",FCT,pab.conj,conj);
+      if (!mxIsNumeric(a7)) wblog(FL,
+         "WRN %s() unexpected input (Pab of type %s)",FCT,mxGetClassName(a7));
+      pab.conj=conj;
+   }
+   mxGetNumber(mxGetFieldByNumber(S,k,l), rtype.t); 
 
-   if (rtype==CGR_CTR_ZERO || rtype==CGR_CTR_SCALAR) {
+   if (rtype==CR_CTR_ZERO || rtype==CR_CTR_SCALAR) {
       if (!c.qdir.isEmpty() || !c.qs.isEmpty()) wblog(FL,
      "ERR %s() got %s (%s)",FCT,STR(c),rtype.tostr());
       if (c.t.isUnknown()) c.t=a.t;
    }
    else {
-      if (rtype!=CGR_DEFAULT) wblog(F_L,
+      if (rtype!=CR_DEFAULT) wblog(F_L,
      "WRN %s() got rtype=%s",FCT,rtype.tostr());
    }
 
    gstatX.gotread(this->memSize());
 
-   n=0;
-   if (rtype==CGR_CTR_ZERO) {
+   q=0;
+   if (rtype==CR_CTR_ZERO) {
       if (!x3.isEmpty()) wblog(FL,"ERR %s()",FCT); }
    else {
       if (x3.SIZE.len!=3)
          wblog(FL,"ERR %s() [%s]",FCT,SSTR(x3));
-      if (rtype==CGR_DEFAULT) n=1; else
-      if (rtype!=CGR_CTR_SCALAR) {
+      if (rtype==CR_DEFAULT) q=1; else
+      if (rtype!=CR_CTR_SCALAR) {
          wblog(FL,"ERR %s() [%s]",FCT,rtype.tostr());
       }
    }
 
-   if (n) {
+   if (q) { q=-99;
       CDATA_TQ &Cb = gCS.getBUF(0,0,(QSet<TQ>&)c,LB_REF); 
 
-      rtype=CGR_DEFAULT; 
+      rtype=CR_DEFAULT; 
       cgb=&Cb;
 
       if (Cb.isEmpty()) {
-         if (c.cstat!=CGD_REF_INIT) wblog(FL, 
+         if (c.cstat!=CD_REF_INIT) wblog(FL, 
             "ERR %s() unexpected cstat (%s)",FCT,STR(Cb.cstat));
          Cb=c; 
       }
       else if (Cb.cstat.sameID(c.cstat)) {
          q=Cb.cstat.cmp(FL,c.cstat);
          if (q<0) {
-            if (Cb.cstat==CGD_REF_INIT) {
+            if (Cb.cstat==CD_REF_INIT) {
                Cb=c;
             }
             else {
@@ -2128,9 +2345,9 @@ x3map<TQ,TD>& x3map<TQ,TD>::init(
       else {
 
          gStore.rclog(Cb.t, PF_L,1,
-            "WRN X3Map::%s() got ID mismatch (#%05x <> #%05x)"
+            "WRN X3Map::%s() got cID mismatch (#%05X <> #%05X)"
             "%N  a: %s @ %s%N  b: %s @ %s%N  c: %-26s %s%N"
-            "?Cb? %-26s %s%N", FCT, c.cstat.ID, Cb.cstat.ID,
+            "?Cb? %-26s %s%N", FCT, c.cstat.cID, Cb.cstat.cID,
             STR(a),STR(ica), STR(b),STR(icb),
             STR(c),STR2(c.cstat,'V'), STR(Cb),STR2(Cb.cstat,'V'));
 
@@ -2149,7 +2366,7 @@ x3map<TQ,TD>& x3map<TQ,TD>::init(
             }
          }
          else if (c.qdir.len==3) { 
-            if (recalc==1 && (CG_FIXIT & FIX_CID3)) {
+            if (recalc==1 && (CG_FIX & cgfix_CID3)) {
                CRef<TQ> A(a,0), B(b,0);
                wbperm cgp;
 
@@ -2159,7 +2376,7 @@ x3map<TQ,TD>& x3map<TQ,TD>::init(
                  "TST X3Map::%s() %s [recalc=%d]",FCT,STR(Cb),recalc);
                c.cstat.init();
 
-               this->initCtr(FL,a,ica,b,icb,cgp,'!'); 
+               this->contract_x3(FL,a,ica,b,icb,cgp); 
 
                if (zflag) wblog(FL,
                   "ERR %s() got CTR_ZERO (%d)",FCT,zflag);
@@ -2184,11 +2401,11 @@ x3map<TQ,TD>& x3map<TQ,TD>::init(
    if (ica_) { ica.save2(*ica_); }
    if (icb_) { icb.save2(*icb_); }
 
-   if (CG_VERBOSE>8) wblog(PF_L, 
+   if (CG_VERBOSE>8) { wblog(PF_L, 
       "(+) XBUF[%03d] %s\n    %s @ %s\n    %s @ %s\n"
       "--> %s", gXS.XBUF.size(), x3Str().data,
-      STR(a), STR(ica), STR(b), STR(icb), STR(c)
-   );
+      STR(a), STR(ica), STR(b), STR(icb), STR(c));
+   }
 
    return *this;
 };
@@ -2226,18 +2443,18 @@ mxArray* X3Map<TQ,TD>::toMx() const {
       const wbvector<SPIDX_T> &sa=M.a.cgd.SIZE, &sb=M.b.cgd.SIZE;
       s3x.Cat(sa.data,sa.len, sb.data,sb.len, sc.data,sc.len, &i,1);
 
-      if (M.c.t.isUnknown() && (!M.c.isEmpty() || M.rtype!=CGR_CTR_ZERO))
+      if (M.c.t.isUnknown() && (!M.c.isEmpty() || M.rtype!=CR_CTR_ZERO))
          wblog(FL,"WRN %s()\n%s\n%s\n%s",FCT,STR(M.a),STR(M.b),STR(M.c));
       X1[M.c.t][r3][s3x]=&(it->first);
    }
 
-   S1=mxCreateStructMatrix(1,1,0,NULL);
+   S1=mxCreateStructMatrix(1,1,0,nullptr);
    char s_[16];
 
    for (auto it1=X1.begin(); it1!=X1.end(); ++it1) {
       const auto &X2=it1->second;
 
-      mxArray *S2=mxCreateStructMatrix(1,1,0,NULL);
+      mxArray *S2=mxCreateStructMatrix(1,1,0,nullptr);
 
    for (auto it2=X2.begin(); it2!=X2.end(); ++it2) {
       const auto &X3=it2->second;
@@ -2334,6 +2551,8 @@ void map3_add2MxStruct(
    mxArray *S, unsigned k, const QType &q, const qset<TQ> &J12) {
 
    const auto &M3=gCS.map3[q][J12];
+   if (!M3.size()) wblog(FL,"ERR %s() got empty mp3",FCT);
+
    wbMatrix<TQ> JJ(M3.size(),J12.len/2);
    wbvector<unsigned> OM(M3.size());
 
@@ -2343,8 +2562,8 @@ void map3_add2MxStruct(
    mxArray *a=R_.mxCreateStruct(OM.len,1);
 
    for (auto I3=M3.begin(); I3!=M3.end(); ++I3, ++i) {
-      const qset<TQ> &J=I3->first;
-      const CRef<TQ> &c3=I3->second;
+      const qset<TQ> &J =I3->first;
+      const CRef<TQ> &c3=I3->second; 
       if (!c3.cgw) wblog(FL,"ERR %s() got empty cg3",FCT);
 
       if (c3.got3(FL,q,J12,J)!=0) wblog(FL, 

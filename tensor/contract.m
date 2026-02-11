@@ -97,7 +97,7 @@ function C=contract(varargin);
   if isempty(ia)
      wbdie('invalid usage (empty contraction index set)'); 
   elseif ~isequal(sa(ia),sb(ib))
-     wbdie('size mistmatch of contracted indices: %s <> %s',...
+     wbdie('size mismatch of contracted indices: %s <> %s',...
      vec2str(sa(ia),'-f'), vec2str(sb(ib),'-f'));
   end
 

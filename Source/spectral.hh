@@ -57,8 +57,8 @@ class Spectral {
  public:
 
     Spectral()
-     : sigma(0.6), sigma2(0.5), alpha(0.25), Emin(1E-8), Emax(10.),
-       eps(1E-6), nlog(128), l0(0), fac(1.), Delta(0.) {};
+     : sigma(0.6), sigma2(0.5), alpha(0.25), Emin(1e-8), Emax(10.),
+       eps(1e-6), nlog(128), l0(0), fac(1.), Delta(0.) {};
 
     void init() {
        Ap.init(); An.init(); Ap_buf.init(); An_buf.init();
@@ -226,7 +226,7 @@ class TDSpectral {
     void init(const char *F, int L,
        const char *istr0, const wbvector<double> &t0,
        unsigned Nnrg, unsigned Nop,
-       double Emin=1E-8, double Emax=10., unsigned nl=512,
+       double Emin=1e-8, double Emax=10., unsigned nl=512,
        char vflag=1
     );
 
@@ -809,9 +809,9 @@ void Spectral<TS>::dispSumRule() {
    }
 
    if (sp.len) { w=Wb::real(sp[0]); }
-   for (i=0; i<sp.len; ++i) { if (Wb::abs(sp[i]-w)>1E-2) break; }
+   for (i=0; i<sp.len; ++i) { if (Wb::abs(sp[i]-w)>1e-2) break; }
 
-   if (i==sp.len && fabs(w)>1E-4 && fabs(w-round(w))<1E-4) { sp-=w;
+   if (i==sp.len && fabs(w)>1e-4 && fabs(w-round(w))<1e-4) { sp-=w;
       wblog(FL,"\r%60s\r   %s\\","",Tc.e1);
       printf("total%-+7g: %s",-w,sp.toStrf("%8.2g").data);
       printf("%s\n",Tc.em);
@@ -819,7 +819,7 @@ void Spectral<TS>::dispSumRule() {
    else {
       printf("       %stotal   : ",Tc.e1);
       for (i=0; i<sp.len; ++i) { w=round(Wb::real(sp[i]));
-         if (Wb::abs(sp[i]-w)<1E-5) {
+         if (Wb::abs(sp[i]-w)<1e-5) {
             if (w!=0)
                  printf("%2g%+5.0E ",w,Wb::real(sp[i])-w);
             else printf("%8.1E ",Wb::real(sp[i]));
@@ -853,7 +853,7 @@ void Spectral<TS>::dispSumRule(
 
    if (s.len) {
       for (m=round(Wb::real(s[0])), i=0; i<s.len; ++i) {
-        if (Wb::abs(s[i]-m)>1E-2) break;
+        if (Wb::abs(s[i]-m)>1e-2) break;
       }
       if (m && i==s.len) { s-=m;
          char ms[8]; Wb::termcolor Tc(Wb::TCOLS::BLUE);
@@ -924,7 +924,7 @@ void Spectral<TS>::getSmoothSpec(
             else {
                dbl = (log(aom)-log(eps))/sigma;
                x = exp(-dbl*dbl);
-               if (x<1E-10) x=0.;
+               if (x<1e-10) x=0.;
             }
         }
 
@@ -1009,7 +1009,7 @@ void Spectral<TS>::KKreal(
 #if 0
    wblog(FL,"TST Get smooth data ...");
 
-   getSmoothSpec(OM, II, 1E-6, 0.3, 0); Nom=OM.len;
+   getSmoothSpec(OM, II, 1e-6, 0.3, 0); Nom=OM.len;
    Wb::getDiff(OM,DOM);
 
    for (s=0; s<d; s++)
@@ -1153,7 +1153,7 @@ void TDSpectral<TS>::Add(
       if (iter_last!=(int)iter) {
 wblog(FL,"%NTST iter=%d",iter);
          if (RAW.len) addPartialFourier();
-         RAW.initDef(AP.dim(2));
+         RAW.init(AP.dim(2));
 wblog(FL,"TST done");
       }
 
@@ -1361,7 +1361,7 @@ void TDSpectral<TS>::Fourier(
        TKS(it,ik,is)+=kso*expi(oi*tt[it]);
    }
 
-   TKS.permute(KST,"2 3 1");
+   TKS.permute(KST,"231");
    ST.init(ns,nt);
 
    for (is=0; is<ns; ++is)
@@ -1438,7 +1438,7 @@ void Wb::Fourier(
    if (vflag) wblog(FL," *  %s() spectral data "
       "(alpha=%.4g, %s)",FCT,alpha, domflag? "func":"disc");
 
-   AZ.initDef(nt<D ? 1 : nt/D); 
+   AZ.init(nt<D ? 1 : nt/D); 
 
    for (l=b1=0; !stop; l++,b1+=D) {
       b2=b1+D-1; if (b2+D>=nt) { b2=nt-1; stop=1; }
@@ -1500,7 +1500,7 @@ void TDSpectral<TS>::dispSumRule() {
 
    if (sp.len) {
       m=Wb::round(Wb::real(sp[0]));
-      for (i=0; i<sp.len; i++) if (Wb::abs(sp[i]-m)>1E-2) break;
+      for (i=0; i<sp.len; i++) if (Wb::abs(sp[i]-m)>1e-2) break;
    }
 
    Wb::termcolor Tc(Wb::TCOLS::BLUE);
@@ -1529,7 +1529,7 @@ void Wb::dispSumRule(
 
    if (s.len) {
       for (m=Wb::round(s[0]), i=1; i<s.len; ++i) {
-         if (Wb::abs(s[i]-m)>1E-2) { break; }
+         if (Wb::abs(s[i]-m)>1e-2) { break; }
       }
       if (i==s.len) { s-=m;
          wblog(FL,"%s *  total-%g     = %s%s",
@@ -1684,7 +1684,7 @@ void TDSpectral<TS>::initLG(
    wlg*=(1./wlg.sum());
 
    for (i=0; i<2; ++i)
-   for (j=0; j<n; ++j) if (fabs(wlg(i,j))<1E-20) wlg(i,j)=0;
+   for (j=0; j<n; ++j) if (fabs(wlg(i,j))<1e-20) wlg(i,j)=0;
 };
 
 template <class TS> inline

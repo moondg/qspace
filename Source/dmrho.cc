@@ -95,57 +95,54 @@ void initG_SR(
 );
 
 template <class TQ, class TD>
-void checkRho (const char *F, int L,
-    const QSpace<TQ,TD> &Rho,
-    const double traceRho=1.
-){
-    unsigned i,n=Rho.QIDX.dim1;
-    double rsum=0, rmin=0;
+void checkRho(
+   const char *F, int L, const QSpace<TQ,TD> &Rho, double nrm=1) {
 
-    wbvector< wbvector<double> > E(n);
-    wbvector<double> rr;
-    wbarray<TD> U;
+   unsigned i,n=Rho.QIDX.dim1;
+   double rsum=0, rmin=0;
 
-    char cgflag=Rho.gotCGS(FL);
+   wbvector< wbvector<double> > E(n);
+   wbvector<double> rr;
+   wbarray<TD> U;
 
-    if (cgflag>0 && Rho.qtype.permitsOM()>1) {
-       cgflag=2;
-    }
+   char cgflag=Rho.gotCGS(FL);
 
-    if (!Rho.isConsistent_r(2) || !Rho.isBlockDiagMatrix() || !Rho.isHConj())
-    wblog(F,L,"ERR %s() inconsistency in Rho QSpace (%d;%d;%d)",
-    FCT, Rho.isBlockDiagMatrix(), Rho.isHConj());
+   if (cgflag>0 && Rho.qtype.permitsOM()>1) {
+      cgflag=2;
+   }
 
-    for (i=0; i<n; i++) {
-       wbEigenS(*(Rho.DATA[i]),U,E[i]);
-       if (cgflag>0) {
-          unsigned d=Rho.cgsDimScalar(i);
-          if (cgflag<=1) { 
-             unsigned d0=Rho.qtype.QDim(Rho.QIDX.rec(i)); if (d0!=d)
-             wblog(FL,"ERR %s() cgsDim inconsistency! (%d/%d)",FCT,d,d0);
-          }
-          E[i]*=d;
-       }
-    }
-    rr.Cat(E);
+   if (!Rho.isConsistent_r(2) || !Rho.isBlockDiagMatrix() || !Rho.isHConj())
+   wblog(F,L,"ERR %s() inconsistency in Rho QSpace (%d;%d;%d)",
+   FCT, Rho.isBlockDiagMatrix(), Rho.isHConj());
 
-    rmin=rr.min();
-    rsum=rr.sum();
+   for (i=0; i<n; ++i) {
+      wbEigenS(*(Rho.DATA[i]),U,E[i]);
+      if (cgflag>0) {
+         unsigned d=Rho.cgsDimScalar(i);
+         if (cgflag<=1) { 
+            unsigned d0=Rho.qtype.QDim(Rho.QIDX.rec(i)); if (d0!=d)
+            wblog(FL,"ERR %s() cgsDim inconsistency! (%d/%d)",FCT,d,d0);
+         }
+         E[i]*=d;
+      }
+   }
+   rr.Cat(E);
 
-    if (rmin<-EPS) { wblog(F,L,
-       "ERR eig(rho) is in (%.4g .. %.4g; %.4g)",rmin,rr.max(),rsum);
-    }
-    else if (fabs(rsum-traceRho)>EPS) {
-       char e=(fabs(rsum-traceRho)>1E-8 && rsum>1E-8 && traceRho>1E-8);
-       if (e) {
-          printf("\n\n");
-          MXPut(FL).add(Rho,"Rho").add(rr,"rr").add(traceRho,"t");
-       }
-       sprintf_str("%s tr(rho) inconsistency !?\n"
-         "%.4g / %.4g @ %.3g (%.2g; %.2g; %.2g)", e ? "ERR":"WRN",
-          rsum,traceRho,rsum-traceRho,DEPS,DEPS2,EPS); printf("\n");
-       wblog(F,L,str);
-    }
+   rmin=rr.min();
+   rsum=rr.sum();
+
+   if (rmin<-EPS) { wblog(F,L,
+      "ERR eig(rho) is in (%.4g .. %.4g; %.4g)",rmin,rr.max(),rsum);
+   }
+   else if (fabs(rsum-nrm)>EPS) {
+      char e=(fabs(rsum-nrm)>1e-8 && rsum>1e-8 && nrm>1e-8);
+      if (e) MXPut(FL,"Idbg","base")
+        .add(Rho,"Rho").add(E,"E").add(rr,"rr").add(nrm,"nrm");
+
+      sprintf_str("%s tr(rho) inconsistency: %.4g / %.4g @ %.2g",
+         e? "ERR":"WRN", rsum,nrm, rsum-nrm); PRINTF("\n");
+      wblog(F,L,str);
+   }
 };
 
 template <class TQ, class TD>
@@ -162,7 +159,7 @@ double initRHO(
    wbvector<double> R;
    wbvector<unsigned> D;
    double dbl, dfac=1; 
-   double DFAC=DBL_MAX*1E-2;
+   double DFAC=DBL_MAX*1e-2;
 
    if (NRho>N) wblog(FL,"ERR NRho out of bounds (%d/%d)");
 
@@ -295,7 +292,7 @@ void getEData(
           else { l+=d; }
        }}
        else { if (S.len!=2) e++; else {
-          if (d>1 && (fabs(E0[1])>1E-12 || fabs(E0[d])>1E-12)) wblog(FL,
+          if (d>1 && (fabs(E0[1])>1e-12 || fabs(E0[d])>1e-12)) wblog(FL,
           "WRN HK[%d] not E diagonal (%g,%g)", k+1,E0[1], E0[d]);
 
           for (i=0; i<d; ++i,++l) {
@@ -467,7 +464,7 @@ void updateRho(QSpace<TQ,TD> &Rho, const QSpace<TQ,TD> &AK) {
       "WRN %s() Rho not blockdiag !?",FCT);
 
    AK.contract(2,Rho,1,Xk); 
-   Xk.contract("3,2",AK,"2,3;*",Rho); 
+   Xk.contract("32",AK,"23*",Rho); 
 };
 
 template <class TQ, class TD>

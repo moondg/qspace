@@ -74,8 +74,9 @@ void mexFunction(
           B.checkInit(FL,t);
 
           if (nargin<2 || nargout>2) usage(FL,
-             "ERR invalid number of I/O arguments.");
+             "ERR invalid number of I/O arguments");
 
+          if (Mx::IsEqual(argin[1],"--ping")) { return; } 
           if (Mx::IsEqual(argin[1],"--info")) { 
              a=gRS.toMx(); if (nargout>1) {
              argout[1]=gCS.toMx(); }

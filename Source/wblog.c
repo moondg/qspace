@@ -25,107 +25,105 @@
 
 #ifndef LIBQS_SETUP
 
-void usage(const char *F, int L, const char* estr) {
+void usage(const char *F, int L, const char* fmt, ...) {
 
-    int l=0;
-    while (isspace(USAGE[l])) { ++l; }
+   int l=0;
+   while (isspace(USAGE[l])) { ++l; }
 
-    if (USAGE[l]) { printf("\n%s%s\n",l?"":"   ",USAGE); }
-    else {
-       const char *f=mexFunctionName();
-       if (f && f[0]) {
-          char cmd[256]; l=snprintf(cmd,256,
-             "if exist('%s.m','file')==2, fprintf(1,'\\n'); help %s;\n"
-             "else fprintf(1,'"
-             "   ERR failed to find help %s.m file for mex function %s()\\n'); "
-             "end", f,f,f,f);
+   if (USAGE[l]) { printf("\n%s%s\n",l?"":"   ",USAGE); }
+   else {
+      const char *f=mexFunctionName();
+      if (f && f[0]) {
+         char cmd[256]; l=snprintf(cmd,256,
+            "if exist('%s.m','file')==2, fprintf(1,'\\n'); help %s;\n"
+            "else fprintf(1,'"
+            "   ERR failed to find help %s.m file for mex function %s()\\n'); "
+            "end", f,f,f,f);
 
-          if (l<256) {
-             if (F && F[0]) { mexPrintf("\n   usage %s\n",shortFL(F,L)); }
-             mexEvalString(cmd);
-          }
-          else wblog(FL,"WRN %s() got f=%s (l=%d/256) !?",FCT,f,l);
-       }
-    }
+         if (l<256) {
+            if (F && F[0]) { mexPrintf("\n   usage %s\n",shortFL(F,L)); }
+            mexEvalString(cmd);
+         }
+         else wblog(FL,"WRN %s() got f=%s (l=%d/256) !?",FCT,f,l);
+      }
+   }
 
-    if (estr && estr[0]) { wbdie(F,L,estr); }
+   if (fmt && fmt[0]) {
+      for (l=0; fmt[l]; ++l) { if (fmt[l]=='%') break; }
+      if (fmt[l]) { 
+         char estr[256]; {
+            va_list args; Wb::ARGV wd(&args); 
+            va_start(args,fmt); vsnprintf(estr,256,fmt,args);
+         }; wbdie(F,L,estr);
+      }
+      else { wbdie(F,L,fmt); }
+   }
 };
 
 #endif
 
-const char* shortFL(const char *F, int L,
-   unsigned n, 
-   const char *P, char sep 
+std::string ShortFL(const char *F, int L,
+   unsigned n,    
+   const char *p, 
+   char sep       
 ) {
 
-   static char fstr[512]="", *fs=fstr; 
-   unsigned i,l, j=0, nx=(P? 40 : 32);
-   char *sout=fstr, sx[nx]; 
+   unsigned i, j=0, l; const unsigned n_=32;
 
-   if (int(n)<0) { n=WBL_HLEN; } 
-   else if (n<16 || n>=nx) { 
-      if (!n && !F && !L)
-           { memset(fstr,0,512); return sout; }
-      else { wblog(FL,"ERR %s() got n=%d/%d\n\n",FCT,n+1,nx); }
+   std::string sx_; sx_.resize(n_); 
+   char *sx=&sx_[0];
+
+   if (int(n)<0) {
+      n=WBL_HLEN-1; 
    }
+   if (n<16 || n>=n_) wblog(F_L, 
+      "ERR %s() got n=%d/%d\n\n",FCT,n+1,n_);
+   if (!F || !*F) { sx_[0]=0; return sx_; }
 
-  #pragma omp critical (using_shortFL)
-   { if (fs+n-fstr<512) 
-          { sout=fs; fs+=(n+1); } 
-     else { sout=fs=fstr; }
-   }
-
-   if (!F || !F[0]) { sout[0]=0; return sout; }
-   if (F[0]=='/' || F[0]=='.') { l=strlen(F);
+   if (*F=='/' || *F=='.') { l=strlen(F);
       for (i=l-1; i<l; --i) { if (F[i]=='.') { break; }}
       for (     ; i<l; --i) { if (F[i]=='/') { j=i+1; break; }}
    }
 
-   if (P && !P[0]) { 
-      P=mytag; if (!P || !P[0]) { P=myname; }
+   if (p && !*p) { 
+      p=mytag; if (!p || !*p) { p=myname; }
      #ifdef PROG
-      if (P && P[0]) { l=strlen(P);
-         if (!strncmp(F+j,P, l>3? 3:l)) { P=NULL; }
+      if (p && *p) { l=strlen(p);
+         if (!strncmp(F+j,p, l>3? 3:l)) { p=NULL; }
       }
      #endif
    }
 
-   if (!P || !P[0]) {
-      if (L>0)
-           { l=snprintf(sx,nx,"%.24s:%d",F+j,L); }
-      else { l=snprintf(sx,nx,"%.24s:",  F+j  ); }
+   if (p && *p) {
+      if (L>0)  
+           { l=snprintf(sx,n_,"%.3s%c%.20s:%d",p,sep,F+j,L); }
+      else { l=snprintf(sx,n_,"%.3s%c%.20s:",  p,sep,F+j  ); }
    }
-   else {
-      if (L>0)
-           { l=snprintf(sx,nx,"%.3s%c%.20s:%d",P,sep,F+j,L); }
-      else { l=snprintf(sx,nx,"%.3s%c%.20s:",  P,sep,F+j  ); }
-   }
+   else if (L>0)
+        { l=snprintf(sx,n_,"%.24s:%d",F+j,L); }
+   else { l=snprintf(sx,n_,"%.24s:",  F+j  ); }
 
-   if (l>=nx) wblog(FL,
-      "WRN %s() string out of bounds (%d/%d)\n%s",FCT,l,nx,sx);
+   if (l>n_) { l=n_; }
 
-   if (l<=n) { strcpy(sout,sx); } 
-   else {
+   if (l>=n) {
       for (i=l-1; i<l; --i) { if (sx[i]=='.') { break; }}
       for (j=i;   j<l; --j) { if (sx[j]=='_' || sx[j]=='-') { break; }}
-      if (j<l && (l-j)<n-3) { 
-         i=n+j-l; 
-         strncpy(sout,sx,i);
-         sout[i]='\''; 
-         strcpy(sout+i+1,sx+j+1);
+
+      if (j<l && (l-j)<(n-3)) { i=n-(l-j); 
       }
-      else if (i<l && (l-i)<n-8) { 
-         j=n+i-l; 
-         strncpy(sout,sx,j);
-         sout[j]='\''; 
-         strcpy(sout+j+1,sx+i+1);
+      else if (i<l && (l-i)<(n-8)) { j=n-(l-i); 
+         SWAP(i,j); 
       }
-      else { i=5;
-         strncpy(sout,sx,i); sout[i]='\'';
-         strcpy(sout+i+1,sx+l-n+i+1);
+      else { i=5; j=l-(n-i);
       }
+
+      sx[i]='\'';  
+      for (++j; j<l; ++j) { sx[++i]=sx[j]; }   
+      sx[n]=0;                                 
+
+      if (++i!=n) wblog(FL,"ERR %s() size inconsistency %d/%d",FCT,i,n);
    }
-   return sout;
+   return sx_;
 };
 
 const char* tmpmatFL(
@@ -170,6 +168,7 @@ unsigned Wb::VersionInfo::str_cpy(char *s, unsigned n, const char *a) {
 Wb::VersionInfo& Wb::VersionInfo::init() {
 
    unsigned i,l,m,n; char *s;
+   wbvec<char> sx;
 
    str_cpy(fctn,sizeof(fctn),myname);
   #ifdef PROG_TAG
@@ -210,17 +209,16 @@ Wb::VersionInfo& Wb::VersionInfo::init() {
 #endif
 
 #ifdef LD_CLEBSCH_QS
-   n=sizeof(qspace);
-   l=snprintf(qspace,n,"%.1f",double(QS_VERSION));
+   sx.init2ref(sizeof(qspace),qspace);
+
+   sx.catf(FL,"%.1f",double(QS_VERSION));
 
    i=strlen(QS_VERSION_SUB_);
    if (QS_VERSION_SUB || !i)
-          { l+=snprintf(qspace+l,n-l,".%g",double(QS_VERSION_SUB)); }
-   if (i) { l+=snprintf(qspace+l,n-l,"-%s",QS_VERSION_SUB_); }
+          { sx.catf(FL,".%g",double(QS_VERSION_SUB)); }
+   if (i) { sx.catf(FL,"-%s",QS_VERSION_SUB_); }
 #  ifdef QS_VERSION_XSTR
-   if (l<n) { 
-      l+=snprintf(qspace+l,n-l," / %s",PP_STRFY(QS_VERSION_XSTR));
-   }
+   sx.catf(0,0," / %s",PP_STRFY(QS_VERSION_XSTR)); 
 #  endif
 #endif
 
@@ -228,74 +226,56 @@ Wb::VersionInfo& Wb::VersionInfo::init() {
    str_cpy(git,sizeof(git),PP_STRFY(__QS_GIT_BRANCH__));
 #endif
 
-   n=sizeof(flags); l=0;
+   sx.init2ref(sizeof(flags),flags);
 
 #ifdef MAIN
-   l+=snprintf(flags+l,n-l,"%s","MAIN");
+   sx.catf(FL,"%s","MAIN");
 #endif
 #ifdef MATLAB_MEX_FILE
-   l+=snprintf(flags+l,n-l,"%s%s",l? ", ":"","MEX_FILE");
+   sx.catf(FL,"%s%s",sx? ", ":"","MEX_FILE");
 #endif
 
-   i=l; m=0;
-   l+=snprintf(flags+l,n-l," using");
+   i=sx.l; m=0;
+   sx.catf(FL," using");
 
 #ifdef LD_CLEBSCH_QS
-   if (l<n) { l+=snprintf(flags+l,n-l," QS"  ); ++m; }
+   sx.catf(0,0," QS"); ++m;
 #endif
 #ifdef QS_USING_OMP
-   if (l<n) { l+=snprintf(flags+l,n-l," OMP" ); ++m; }
+   sx.catf(0,0," OMP"); ++m;
 #endif
 #ifdef QS_USING_MPFR
-   if (l<n) { l+=snprintf(flags+l,n-l," MPFR"); ++m; }
+   sx.catf(FL," MPFR"); ++m;
 #endif
 #ifdef QS_USING_HPTT  
-   if (l<n) { l+=snprintf(flags+l,n-l," HPTT"); ++m; }
+   sx.catf(FL," HPTT"); ++m;
 #endif
 
    if (m)
-        { i=l; m=0; if (l+3<n) { strcpy(flags+l,", "); l+=2; }}
+        { i=sx.l; m=0; sx.cat(0,0,", "); }
    else { l=i; m=1; } 
 
 #ifdef WB_SKIP_ASSERT
-   if (l<n) {
-      l+=snprintf(flags+l,n-l,"%s%s",m? ", ":"","SKIP_ASSERT");
-   }; ++m;
+   sx.catf(0,0,"%s%s",m? ", ":"","SKIP_ASSERT"); ++m;
 #endif
 #ifdef MEX_CXX_FLAGS 
-   if (l<n) {
-      l+=snprintf(flags+l,n-l,"%s%s",m?", ":"",PP_STRFY(MEX_CXX_FLAGS));
-   }; ++m;
+   sx.catf(0,0,"%s%s",m?", ":"",PP_STRFY(MEX_CXX_FLAGS)); ++m;
 #endif
 #ifdef __WBDEBUG__
-   if (l<n) {
-      l+=snprintf(flags+l,n-l,"%s%s",m?", ":"","DEBUG");
-   }; ++m;
+   sx.catf(0,0,"%s%s",m?", ":"","DEBUG"); ++m;
 #endif
 #ifdef DBSTOP
-   if (l<n) {
-      l+=snprintf(flags+l,n-l,"%s%s",m?", ":"","DBSTOP");
-   }; ++m;
+   sx.catf(0,0,"%s%s",m?", ":"","DBSTOP"); ++m;
 #endif
 #ifdef DBG_GCX_LOCKS
-   if (l<n) { l+=snprintf(flags+l,n-l,
-      "%s%s=%g",m?", ":"","DBG_GCX_LOCKS", double(DBG_GCX_LOCKS));
-   }; ++m;
+   sx.catf(0,0,"%s%s=%g",m?", ":"","DBG_GCX_LOCKS",double(DBG_GCX_LOCKS)); ++m;
 #endif
 #ifdef DBG_QSX_BUF
-   if (l<n) { l+=snprintf(flags+l,n-l,
-      "%s%s=%g",m?", ":"","DBG_QSX_BUF", double(DBG_QSX_BUF));
-   }; ++m;
+   sx.catf(0,0,"%s%s=%g",m?", ":"","DBG_QSX_BUF", double(DBG_QSX_BUF)); ++m;
 #endif
 #ifdef __WB_MEM_CHECK__
-   if (l<n) {
-      l+=snprintf(flags+l,n-l,"%s%s",m?", ":"","MEM_CHECK");
-   }; ++m;
+   sx.catf(0,0,"%s%s",m?", ":"","MEM_CHECK"); ++m;
 #endif
-
-   if (m)
-        { i=l; m=0; }
-   else { l=i; }
 
    l=snprintf(compiled,sizeof(compiled),"%s on %s",
      #ifdef __DATE_COMP__
@@ -437,18 +417,16 @@ Wb::LogException::LogException(WBLOG_TYPE l, const char *s)
 
 void Wb::LogException::report(const char *F, int L, const char *func) {
    if (type || count) { 
-      unsigned l, n=128; char s[n]; 
+      wbvec<char> s(128);  
 
-      l=snprintf(s,n,
-         "%s ERR %s() at nerr=%d",shortFL(F_L),func?func:FCT,count);
-      if (l<n) {
-         if (ith<=1 && nth<=1)
-              l+=snprintf(s+l,n-l," (serial @ %d/%d)",ith,nth);
-         else l+=snprintf(s+l,n-l," (parallel section thread %d/%d)",ith,nth);
-      }
+      s.catf(0,0,"%s ERR %s() at nerr=%d",shortFL(F_L),func?func:FCT,count);
 
-      if (type)  { PRINTF("\n%s\n\n",s); throw(*this); } else
-      if (count) { ExitMsg(s); }
+      if (ith<=1 && nth<=1)
+           { s.catf(0,0," (serial @ %d/%d)",ith,nth); }
+      else { s.catf(0,0," (parallel section thread %d/%d)",ith,nth); }
+
+      if (type)  { PRINTF("\n%s\n\n",s.data); throw(*this); } else
+      if (count) { ExitMsg(s.data); }
    }
    init();
 };
@@ -476,11 +454,209 @@ wbstring Wb::LogException::toStr() const {
    return sout;
 };
 
+void wbl::sbuf::flush(FILE *fid, char fflag) {
+
+   if (!len || !data) { return; }
+
+   if (l && *data) {
+
+     #ifdef MATLAB_MEX_FILE
+      if (fid==stdout || fid==stderr) { int tid=omp_get_thread_num();
+
+         if (omp_get_level()>0 || tid!=Wb::my_caller_tid) {
+            wbl::myIO.push_back(wbl::stdio_buf(*this,fid,tid)); 
+         }
+         else {
+            wbl::myIO.clear();
+
+            if (Wb::envDKT==1) { mexPrintf("%s",data); }
+            else {
+               PRINTF("%s",data);
+               fflush(stdout);
+            }
+         }
+      }
+      else { fprintf(fid,"%s",data); fflush(fid); } 
+     #else
+      { fprintf(fid,"%s",data); fflush(fid); }
+     #endif
+
+      if (fflag && (fid==stdout || fid==stderr)) { doflush(); }
+   }
+
+   if (data) { data[0]=0; l=0; }
+};
+
+void wbl::sbuf::print(const char *F, int L, const char *istr) {
+
+   if (!l) { return; }
+   if (!len || l>len) { fprintf(stderr,
+      "\n\n%s %s got l=%d/%d !?\n\n",shortFLT,l,len);
+      return;
+   }
+
+   unsigned j=(data[0]=='\n' ? 1:0);
+   char *sj=data+j, c=data[l]; data[l]=0; 
+   wbvec<char> sout(l+64);
+
+   if (istr) { 
+      sout.catf(0,0,"\n%s (%s in %s)\n%s", shortFL(F_L),istr,myname,sj); }
+   else if (F) { sout.catf(0,0,"\n%s\n%s",shortFL(F,L),sj); }
+   else        { sout.catf(0,0,"\rTST> `%s'",sj); }
+
+   fprintf(stdout,"\e[3%dm%s\e[0m\n",j?1:5,sout.data); 
+
+   data[l]=c;
+};
+
+wbl::sbuf& wbl::sbuf::increase_size(const char *F, int L, unsigned n) {
+
+   if (n<=len) { return *this; }
+
+   if (ref) { char s[64];
+      snprintf(s,64,"\n\n%s "
+        "ERR cannot increase size %d -> %d for ref=%d data\n\n",
+         shortFL(F_L),len,n,ref);
+      ExitMsg(s); 
+   }
+   else if (wbl::SLEN<=32) { 
+      char s[64]; snprintf(s,64,"\n\n%s ERR got %p @ %d->%d / %d !?\n\n",
+         shortFL(F_L),data,len,n,wbl::SLEN);
+      ExitMsg(s);
+   }
+
+   unsigned nx=(1+(n-1)/wbl::SLEN)*wbl::SLEN;
+
+   if (len && (l>=len || nx<=len)) { 
+      char s[256]; data[len-1]=0; snprintf(s,256,
+      "\n\n%s got l=%d/%d -> %d\n\n%s\n\n",shortFL(F_L),l,len,nx,data);
+      if (nx>len)
+           { mexWarnMsgIdAndTxt("Wb::MEX:sbuf",s); }
+      else { ExitMsg(s); } 
+   }
+
+   if (!len || !data) {
+      if (len || data) {
+         wberr_bounds(F_L,FCT,""); 
+         ExitMsg("invalid sbuf");  
+      }
+      return init(nx); 
+   }
+
+   char *sx = new char[nx]; 
+   if (!sx) { char s[64]; snprintf(s,64,
+      "\n\n%s ERR allocation error (n=%d)\n\n",shortFL(F_L),nx);
+      ExitMsg(s);
+   }
+   data[len-1]=0; 
+   strcpy(sx,data); delete [] data;
+   data=sx; len=nx;
+
+   return *this;
+};
+
+void wbl::sbuf::wberr_bounds(
+   const char *F, int L, const char *fct, const char *fmt) {
+
+   if (data && len) { data[len-1]=0; 
+      fprintf(stderr,
+        "\n\n%s  ERR %s() string out of bounds (l=%d%+ld/%d):\n\n%s\n\n",
+         shortFL(F_L),fct?fct:"(fct)",l, fmt? strlen(fmt):-1, len, data);
+      if (fmt   ) { fprintf(stderr,"  ERR fmt = '%s'\n\n",fmt); }
+      if (l>=len) { ExitMsg(""); }
+   }
+   else { char s[128];
+      snprintf(s,128,
+        "\n\n%s ERR %s() got uninitialized %p @ l=%d%+ld/%d !?\n\n",
+         shortFL(F_L),fct?fct:"(fct)",data,l,fmt ? strlen(fmt):-1,len);
+      ExitMsg(s);
+   }
+};
+
+int wbl::sbuf::cat(const char *s) {
+   int n=0; 
+
+   if (s && s[0]) { 
+      n=strlen(s); if (l+n>=len) { increase_size(FL,l+n+1); }
+      strcpy(data+l,s); l+=n;
+   }
+   return n;
+};
+
+int wbl::sbuf::catf(const char *fmt, ...) {
+
+   int n=0;
+   if (fmt && fmt[0]) {
+      va_list args; Wb::ARGV wd(&args); 
+      va_start(args,fmt);
+      n=vcatf(fmt,args); 
+   }
+   return n;
+};
+
+int wbl::sbuf::vcatf(const char *fmt, va_list args) {
+
+   unsigned n=0; if (!fmt || !fmt[0]) { return n; }
+
+   n=strlen(fmt)+32; 
+   if (l+n>=len) { increase_size(FL,l+n); }
+   if (l>=len) { 
+      fprintf(stdout,"%s %s ERR got l=%d/%d (%+d)",shortFLT,l,len,n);
+      fflush(stdout);
+   }
+
+   va_list args_;
+   va_copy(args_,args); Wb::ARGV wd(&args_);   
+
+   n=vsnprintf(data+l,len-l,fmt,args);
+   if (l+n>=len) {
+      if (WBLOG_RESIZE) { fprintf(stderr,"%s " 
+         "TST increasing string [%d -> (%d+%d=%d)+1]\n",SHORT_FL,len,l,n,l+n);
+         if (Wb::envVRB & 8) fprintf(stderr,   
+         "having '%s' (%X)\n\n",data,Wb::envVRB);  
+      }
+      increase_size(FL,l+n+1);
+
+      n=vsnprintf(data+l,len-l,fmt,args_); 
+      if (l+n>=len) { fprintf(stdout, "\n%s %s ERR "
+         "failed to accommodate string (%d+%d / %d)\n\n",shortFLT,l,n,len);
+      }
+   }
+
+   l+=n; return n;
+};
+
+int wbl::sbuf::skipEscCols() {
+   int nesc=0, nskip=0; 
+   if (!data) { return (nesc=-1); }
+   unsigned i=0, k=0, j=0;
+
+   for (; data[i]; ++i) {
+      if (data[i]=='\e' && data[i+1]=='[') { j=i+2; } else
+      if (data[i]=='\\' && data[i+1]=='e' && data[i+2]=='[') { j=j+3; }
+      if (!j) { if (k<i) { data[k]=data[i]; }; ++k; }
+      else {
+         for (; data[j]; ++j) {
+            if (!isdigit(data[j]) && data[j]!=';') { break; }
+         }
+         if (data[j]=='m')
+              { ++nesc; i=j; }
+         else { ++nskip; if (k<i) { data[k]=data[i]; }; ++k; }
+         j=0;
+      }
+   }
+
+   if (k<i) { data[k]=0; l=k; }
+
+   if (!nesc) { nesc=-nskip; }
+   return nesc;
+};
+
 void init_header(
    char *hstr, unsigned hlen, 
    const char *F, int L,
    const char *time_stamp, const char *tag, int xcol,
-   unsigned lenFL=21 
+   unsigned lenFL=20 
 ){
    unsigned i,k=0,n; 
 
@@ -509,9 +685,9 @@ void init_header(
       if (i>=hlen) wblog(FL,"ERR %s() "
          "string out of bounds (%d/%d)%N%N`%s'",FCT,i,hlen,hstr);
 
-      n=strlen(hstr); if (n>lenFL) {
-          i=lenFL/2; hstr[i]=hstr[i+1]='.'; i+=2;
-          for (k=n-lenFL/2+2; k<n; ++k, ++i) hstr[i]=hstr[k];
+      n=strlen(hstr); if (n>=lenFL) {         
+          i=lenFL/2; hstr[i]='\''; i+=1; 
+          for (k=n-lenFL/2+2; k<n; ++k, ++i) { hstr[i]=hstr[k]; }
           hstr[i]=0;
       }
    }
@@ -542,8 +718,16 @@ void init_header(
            { i+=snprintf(hstr+i,hlen-i," %s ",tag); }
       else { hstr[i]=' '; hstr[++i]=0; } 
    }
-   if (i>=hlen) wblog(FL,"ERR %s() "
-     "string out of bounds (%d/%d)%N%N`%s'",FCT,i,hlen,hstr);
+
+   if (wbl::level) {
+      for (unsigned l=0; l<wbl::level && i<hlen; ++l) {
+         i+=snprintf(hstr+i,hlen-i,"│ ");
+      }
+   }
+
+   if (i>=hlen) { wblog(FL,"ERR %s() "
+      "string out of bounds (%d/%d)%N%N`%s'",FCT,i,hlen,hstr);
+   }
 };
 
 int check_update_header(
@@ -598,19 +782,20 @@ int check_update_header(
        wblogf(stdout,0,0,"log_level",l);
    };
 
-int wblogf(FILE *fid,
+int vwblogf(FILE *fid,
    const char* file, int line, const char *fmt, va_list args
 ) {
    #ifdef QS_USING_OMP
-      Wb::ompGuard myLK(wblog_lock,1); 
+      Wb::ompGuard myLK(wblog_lk,1); 
+
    #endif
 
-   Wb::SBUF S; int l; Wb::LogException e;
+   wbl::sbuf S(wbl::SLEN); int l; Wb::LogException e;
 
    WBL_COLOR_SCHEME xcol=WLC_OFF;
    if (Wb::useCol && (fid==stdout || fid==stderr)) { xcol=WLC_DARK; }
 
-   try { l=wblogs(S,xcol,file,line,fmt,args); }
+   try { l=vwblogs(S,xcol,file,line,fmt,args); }
    catch (Wb::LogException &e_) { e=e_; l=-11; }
    catch (...) { l=-12; }
 
@@ -618,7 +803,7 @@ int wblogf(FILE *fid,
 
    if (e.type) { throw(e); } else
    if (l<-10) { 
-      sprintf_str("ERR wblog.h:%d encountered l=%d !?",__LINE__,l);
+      sprintf_str("wblog.h:%d ERR %s() caught error (l=%d)",__LINE__,FCT,l);
       ExitMsg(str);
    }
 
@@ -633,8 +818,8 @@ int wblog1(const char* file, int line, const char *fmt, ...) {
    WBL_COLOR_SCHEME xcol=WLC_OFF;
    if (Wb::useCol) { xcol=WLC_DARK; }
 
-   Wb::SBUF S; int l; Wb::LogException e;
-   try { l=wblogs(S,xcol,file,line,fmt,args,1); } 
+   wbl::sbuf S(wbl::SLEN); int l; Wb::LogException e;
+   try { l=vwblogs(S,xcol,file,line,fmt,args,1); } 
    catch (Wb::LogException &e_) { e=e_; l=-11; }
    catch (...) { l=-12; }
 
@@ -649,8 +834,8 @@ int wblog1(const char* file, int line, const char *fmt, ...) {
    return l;
 };
 
-int wblogs( 
-    Wb::SBUF &Sb, WBL_COLOR_SCHEME xcol_,
+int vwblogs( 
+    wbl::sbuf &Sb, WBL_COLOR_SCHEME xcol_,
     const char* file, int line,
     const char *fmt, va_list args,
     char Hflag 
@@ -660,13 +845,13 @@ int wblogs(
 
     int rval=0, xcol=0;
 
-    unsigned i,j,k,l,m, nesc=0, hlen=128, flen=128;
-    const unsigned nt=32;
+    unsigned i,j,k,l,m, nesc=0;
+    const unsigned hlen=128, flen=128, nt=32;
 
-    char isfmt=0, hflag=1, bflag=0, iflag=0, eflag=0, wflag=0, fwd=0;
+    char isfmt=0, hflag=1, bflag=0, tag=0, err=0, wrn=0, fwd=0;
 
     char fstr[flen];  
-    char time_stamp[nt], tag[8];
+    char time_stamp[nt], stag[8]; 
 
     char c, *cp, cb, log_header[hlen];
 
@@ -685,37 +870,43 @@ int wblogs(
 
     for (; *fmt; ++fmt) { if (*fmt=='\n') Sb.cat("\n"); else break; }
 
-    tag[0]=0;
+    stag[0]=0;
 
-    eflag=wblog_check_tag(fmt,"ERR",tag); if (!eflag) {
-    wflag=wblog_check_tag(fmt,"WRN",tag); if (!wflag) {
+    err=wblog_check_tag(fmt,"ERR",stag); if (!err) {
+    wrn=wblog_check_tag(fmt,"WRN",stag); if ( wrn) {
+       tag=wrn; 
+       if (wrn>=5 && isdigit(fmt[0]) && fmt[1]==':') 
+            { wrn=(fmt[0]-'0'); }
+       else { wrn=15; }
+    }
+    else { 
        if (fmt[0]=='\b') { fmt+=1; } 
        else {
-           unsigned i=0, k,l;
-           for (; fmt[i]; ++i) { if (fmt[i]!='\n') break; }
-           for (k=i, l=k+3; i<l && fmt[i]; ++i) {
-               if (fmt[i]=='%' || !isprint(fmt[i])) break; }
+          unsigned i=0, k,l;
+          for (; fmt[i]; ++i) { if (fmt[i]!='\n') break; }
+          for (k=i, l=k+3; i<l && fmt[i]; ++i) {
+              if (fmt[i]=='%' || !isprint(fmt[i])) break; }
 
-           if (i==l && fmt[i]==' ') {
-              memcpy(tag,fmt+k,3); tag[3]=0; iflag=i+1;
-           }
+          if (i==l && fmt[i]==' ') {
+             memcpy(stag,fmt+k,3); stag[3]=0; tag=i+1;
+          }
 
-           if (xcol_ && iflag) {
-              xcol=Wb::termcolor::ID(tag);
-           }
-        }
-    }
-    else { iflag=wflag; }}
+          if (xcol_ && tag) {
+             xcol=Wb::termcolor::ID(stag);
+             }
+          }
+       } 
+    } 
 
     if ((log_level & 15)==0) { 
-    if (!eflag && !iflag) return 0; }
+    if (!err && !tag) return 0; }
 
     if (xcol_ && !xcol) { 
-       xcol=Wb::termcolor::ID(tag); 
+       xcol=Wb::termcolor::ID(stag); 
     }
 
-    if (eflag || iflag) fmt+=(eflag+iflag);
-    if (eflag) Sb.cat("\n");
+    if (err || tag) fmt+=(err+tag);
+    if (err) Sb.cat("\n");
 
    #pragma omp critical (got_CPTR_TIME)
    { time_t curr_time=time(NULL);
@@ -745,12 +936,12 @@ int wblogs(
      then=tblock->tm_yday; 
    } 
 
-   if (!fmt[0] && !eflag && !iflag) {
+   if (!fmt[0] && !err && !tag) {
        return 0;
    }
 
-   init_header(log_header,hlen,file,line,time_stamp,tag,
-     xcol ? xcol : (xcol_ ? -1 : 0));
+   init_header(log_header,hlen,file,line,time_stamp,stag,
+     xcol? xcol : (xcol_? -1:0));
 
    for (;;) {
       if (fmt[0]=='%' && fmt[1]=='N') { Sb.cat("\n"); fmt+=2; }
@@ -812,7 +1003,8 @@ int wblogs(
          if ((!s0[k] && k<4) || i>2) { Sb.catf(fstr,s0); }
          else {
             char ck=s0[k]; if (ck) { k+=strlen(s0+k); }
-            char s1_[k+1]; char *s1=s1_; 
+            wbvec<char> s1_(k+1); char *s1=s1_.data;
+
             strcpy(s1,s0);
             for (k=0; s1[k] || !k;) { 
                while (s1[k]) {
@@ -982,63 +1174,68 @@ int wblogs(
       Sb.skipEscCols();
    }
 
-   if (eflag) { rval|=8; }
-   if (wflag) { rval|=4; }
-   if (iflag) { rval|=2; }; rval|=1;
+   if (err) { rval|=8; wbl::status |= WBL_ERR__; }
+   if (wrn) { rval|=4; wbl::status |= WBL_WRN__; }
+   if (tag) { rval|=2; }; rval|=1;
 
    #ifdef DBG_GCX_LOCKS
-    if (!Hflag && (eflag || wflag)) { LKF.flush(); }
+    if (!Hflag && (err || wrn)) { LKF.flush(); }
    #endif
 
-   if (eflag) { if (Hflag) { ++wblog::ERR_pending; } else {
+   if (err) { if (Hflag) { ++wbl::ERR_pending; } else {
       #ifdef DBSTOP
-      {  unsigned n=wblog::myIO.size(); 
+      {  unsigned n=wbl::myIO.size(); 
          if (n) {
             fprintf(stdout,"\n"
               "Got %d pending entr%s in I/O buffer:\n\n",n,n==1?"y":"ies");
-            for (const wblog::stdio_buf &b : wblog::myIO) {
+            for (const wbl::stdio_buf &b : wbl::myIO) {
                b.print_stdout(stdout);
             }
          }
-         Sb.print(FL,"DBSTOP"); fflush(stdout);
+         Sb.print(FL,"DBSTOP"); fflush(NULL);
       }
       #endif
+
       throw Wb::LogException(ERR); 
    }}
 #ifdef DBSTOP
-   else if (wflag) {
+   else if (Wb::envDBG & (wrn&15)) { char stop=0; 
       Sb.print(FL,"DBSTOP");
       dbstop(file ? file : __FILE__, file ? line : __LINE__);
+
+      if (stop) {
+         mexErrMsgIdAndTxt("Wb:ERR:mex","execution stopped in debugger");
+      }
    }
 #endif
 
-   if (!Hflag) { wblog::check_ERR_pending(); } 
+   if (!Hflag) { wbl::check_ERR_pending(); } 
 
    return rval;
 };
 
-void wblog::check_ERR_pending() {
-   if (wblog::ERR_pending) { char s[32];
-      int q=wblog::ERR_pending; wblog::ERR_pending=0;
+void wbl::check_ERR_pending() {
+   if (wbl::ERR_pending) { char s[32];
+      int q=wbl::ERR_pending; wbl::ERR_pending=0;
       snprintf(s,32,"pending error%s (e=%d)",q>1? "s":"",q);
       ExitMsg(s); 
    }
 };
 
-unsigned wblog_check_tag(const char *fmt, const char *t0, char *tag) {
+unsigned wblog_check_tag(const char *fmt, const char *t0, char *stag) {
 
     const char *s;
     int i,k,l=strlen(t0); if (!l) { return 0; }
 
-    s=strstr(fmt,t0); if (!s) { return 0; }
-    k=s-fmt;
+    s=strstr(fmt,t0); if ( !s) { return 0; }
+    k=s-fmt;          if (k>4) { return 0; } 
 
     if (isalnum(s[l])) { return 0; } 
     for (i=0; i<k; ++i) {            
        if (isspace(fmt[i])) { return 0; }
     }
 
-    memcpy(tag,t0,l); tag[l]=0;
+    memcpy(stag,t0,l); stag[l]=0;
 
     l+=k; if (fmt[l]) { ++l; } 
 
@@ -1059,211 +1256,38 @@ char wblog_findtoken(const char *istr, const char *tok, int maxoffset) {
     return f;
 }
 
-void Wb::SBUF::flush(FILE *fid, char fflag) {
-
-   if (!slen || !sbuf) { return; }
-
-   if (l && sbuf[0]) {
-
-     #ifdef MATLAB_MEX_FILE
-      if (fid==stdout || fid==stderr) { int tid=omp_get_thread_num();
-
-         if (tid!=Wb::my_caller_tid) {
-            wblog::myIO.push_back(wblog::stdio_buf(*this,fid,tid)); 
-         }
-         else {
-            wblog::myIO.clear(); 
-
-            if (Wb::envDKT==1) { mexPrintf("%s",sbuf); }
-            else {
-               PRINTF("%s",sbuf);
-               fflush(stdout);
-            }
-         }
-      }
-      else { fprintf(fid,"%s",sbuf); fflush(fid); } 
-     #else
-      { fprintf(fid,"%s",sbuf); fflush(fid); }
-     #endif
-
-      if (fflag && (fid==stdout || fid==stderr)) { doflush(); }
-   }
-
-   if (sbuf) { sbuf[0]=0; l=0; }
-};
-
-void Wb::SBUF::print(const char *F, int L, const char *istr) {
-
-   if (!l) return;
-   if (!slen || l>slen) { fprintf(stderr,
-      "\n\n%s %s got l=%d/%d !?\n\n",shortFLT,l,slen);
-      return;
-   }
-
-   unsigned n=l+64, j=(sbuf[0]=='\n' ? 1:0); char s[n];
-   char *sj=sbuf+j, c=sbuf[l]; sbuf[l]=0; 
-
-   if (istr) { snprintf(s,n, 
-      "\n%s (%s in %s)\n%s", shortFL(F_L),istr,myname,sj);
-   }
-   else if (F) { snprintf(s,n,"\n%s\n%s",shortFL(F,L),sj); }
-   else        { snprintf(s,n,"\rTST> `%s'",sj); }
-
-   PRINTF("\e[3%dm%s\e[0m\n",j?1:5,s); 
-
-   sbuf[l]=c;
-};
-
-void Wb::SBUF::increase_size(const char *F, int L, unsigned n) {
-
-   if (!slen || !sbuf || l>=slen) {
-      error_bounds(F_L,FCT,"");
-      ExitMsg(""); 
-   }
-   else if (ref) { char s[64];
-      snprintf(s,64,"\n\n%s "
-        "ERR cannot increase size %d -> %d for ref=%d data\n\n",
-         shortFL(F_L),slen,n,ref);
-      ExitMsg(s);
-   }
-   else if (wblog::SLEN<=32) { char s[64];
-      snprintf(s,64,"\n\n%s ERR got %p @ %d, L=%d !?\n\n",
-         shortFL(F_L),sbuf,slen,wblog::SLEN);
-      ExitMsg(s);
-   }
-   else if (n>=slen) {
-
-      unsigned nx=(1+(n+1)/wblog::SLEN)*wblog::SLEN;
-      char *sx = new char[nx];
-      if (!sx) { char s[64]; snprintf(s,64,
-         "\n\n%s ERR allocation error (n=%d)\n\n",shortFL(F_L),nx);
-         ExitMsg(s);
-      }
-      sbuf[slen-1]=0; 
-      strcpy(sx,sbuf); delete [] sbuf; sbuf=sx; slen=nx;
-
-     #if 0
-      nx=strlen(sbuf); 
-      fprintf(stderr,"%s TST increasing sbuf[ %d -> %d ] having "
-        "l=%d%+d (%d)\n",SHORT_FL,nx+1,slen, l,n-l,n);
-      if (Wb::envVRB & 8) 
-         fprintf(stderr,"%s' (%X)\n\n",sbuf,Wb::envVRB);
-     #endif
-   }
-};
-
-void Wb::SBUF::error_bounds(
-   const char *F, int L, const char *fct, const char *fmt) {
-
-   if (sbuf && slen) {
-      sbuf[slen-1]=0; 
-      fprintf(stderr,
-        "\n\n%s  ERR %s() string out of bounds (l=%d%+ld/%d):\n\n%s\n\n",
-         shortFL(F_L),fct?fct:"(fct)",l,fmt ? strlen(fmt):-1,slen,sbuf);
-      if (fmt) fprintf(stderr,"  ERR fmt = '%s'\n\n",fmt);
-      if (l>=slen) ExitMsg("");
-   }
-   else {
-      char s[128]; snprintf(s,128,
-        "\n\n%s ERR %s() got uninitialized %p @ l=%d%+ld/%d !?\n\n",
-         shortFL(F_L),fct?fct:"(fct)",sbuf,l,fmt ? strlen(fmt):-1,slen);
-      ExitMsg(s);
-   }
-};
-
-int Wb::SBUF::cat(const char *s) {
-   int n=0; 
-
-   if (s && s[0]) {
-      n=strlen(s); if (l+n>=slen) { increase_size(FL,l+n); }
-      strcpy(sbuf+l,s); l+=n;
-   }
-   return n;
-};
-
-int Wb::SBUF::catf(const char *fmt, ...) {
-
-   if (!fmt || !fmt[0]) { return 0; }
-
-   va_list args; Wb::ARGV wd(&args); 
-   va_start(args,fmt);
-
-   unsigned iter=0, n=strlen(fmt)+32; 
-   if (l+n>=slen) { increase_size(FL,l+n); }
-   if (l>=slen) { 
-      fprintf(stdout,"%s %s ERR got l=%d/%d (%+d)",shortFLT,l,slen,n);
-      fflush(stdout);
-   }
-
-   while (1) {
-      n=vsnprintf(sbuf+l,slen-l,fmt,args);
-      if (l+n<slen) { break; } else increase_size(FL,l+n);
-
-      va_end(args); va_start(args,fmt); 
-      if (++iter>2) fprintf(stdout,"%s %s ERR got iter=%d",shortFLT,iter);
-   }
-
-   if (iter>1) {
-      fprintf(stderr,"%s TST increasing sbuf[%d->%d] having "
-        "l=%d%+d (%d)\n",SHORT_FL, wblog::SLEN, slen, l,n, l+n);
-      if (Wb::envVRB & 8) 
-         fprintf(stderr,"\n`%s' (%X)\n\n",sbuf,Wb::envVRB);
-   }
-
-   l+=n; return n;
-};
-
-int Wb::SBUF::skipEscCols() {
-   int nesc=0, nskip=0; 
-   if (!sbuf) { return (nesc=-1); }
-   unsigned i=0, k=0, j=0;
-
-   for (; sbuf[i]; ++i) {
-      if (sbuf[i]=='\e' && sbuf[i+1]=='[') { j=i+2; } else
-      if (sbuf[i]=='\\' && sbuf[i+1]=='e' && sbuf[i+2]=='[') { j=j+3; }
-      if (!j) { if (k<i) { sbuf[k]=sbuf[i]; }; ++k; }
-      else {
-         for (; sbuf[j]; ++j) {
-            if (!isdigit(sbuf[j]) && sbuf[j]!=';') { break; }
-         }
-         if (sbuf[j]=='m')
-              { ++nesc; i=j; }
-         else { ++nskip; if (k<i) { sbuf[k]=sbuf[i]; }; ++k; }
-         j=0;
-      }
-   }
-
-   if (k<i) { sbuf[k]=0; l=k; }
-
-   if (!nesc) { nesc=-nskip; }
-   return nesc;
-};
-
 char* Wb::surdStrf(wbstring &s, const char *fmt, ...) {
    va_list args; Wb::ARGV wd(&args); 
    va_start(args,fmt);
    if (!s) { s.init(32); }
-   return surdStrf(s.data,s.len,fmt,args);
+   return vsurdStrf(s.data,s.len,fmt,args);
 };
 
-char* Wb::surdStrf(char *s, unsigned n, const char *fmt, va_list args) {
+char* Wb::vsurdStrf(char *s, unsigned n, const char *fmt, va_list args) {
 
    if (!s || n<8) wblog(FL,"ERR %s() invalid usage (s=%g, n=%d)",FCT,s,n);
-   if (!fmt || !fmt[0]) { s[0]=0; return s; }
+   if (!fmt || !*fmt) { s[0]=0; return s; }
 
-   unsigned i,k,l;
+   unsigned i,l;
 
-   k=std::wcrtomb(s,u'\u221A',NULL); 
+   int k=std::wcrtomb(s,u'\u221A',NULL); 
+
+   if (k<0) { 
+      setlocale(LC_ALL,"en_US.UTF-8");
+      k=std::wcrtomb(s,u'\u221A',NULL);
+      if (k<0) wblog(FL,
+         "ERR %s() failed to generate \\surd symbol (UTF-8; e=%d)",FCT,k);
+   }
 
    i=l=k+1; 
    l+=vsnprintf(s+l,n-l,fmt,args);
 
-   for (; i<n && s[i]; ++i) { if (s[i]<'0' || s[i]>'9') break; }
+   for (; i<n && s[i]; ++i) { if (!isdigit(s[i])) break; }
 
    if (l+(s[i] ? 1:0)>=n) wblog(FL,
       "WRN %s() string out of bounds (%d/%d)\n'%s'",FCT,l,n,s);
 
-   if (s[i]) {
+   if (s[i] && (s[i]!='(' || s[l-1]!=')')) {
       s[k]='('; s[l]=')'; i=0; 
    }
    else {
@@ -1277,7 +1301,7 @@ Wb::termcolor& Wb::termcolor::init(unsigned k) {
 
    if (em) { delete [] em; em=e1=NULL; }
 
-   if (!Wb::useCol) { em=e1 = new char[1]; em[0]=0; }
+   if (!Wb::useCol) { em=e1 = new char[1]; *em=0; }
    else {
       unsigned l, n=(k<8 ? 12 : 18);
       em = new char[n];
@@ -1295,42 +1319,47 @@ Wb::termcolor& Wb::termcolor::init(unsigned k) {
    return *this;
 };
 
-int Wb::termcolor::ID(const char *tag) {
+int Wb::termcolor::ID(const char *stag) {
 
    int i=0; 
 
-   if (Wb::useCol && tag && tag[0]) {
-   switch (tag[0]) {
+   if (Wb::useCol && stag && stag[0]) {
+   switch (stag[0]) {
     case 'h':  
-       if (!strcmp(tag,"hdr")) { i=240; } 
+       if (!strcmp(stag,"hdr")) { i=240; } 
        break;
     case 'E':
-       if (!strcmp(tag,"ERR")) { i=  1; } else 
-       if (!strcmp(tag,"ENV")) { i=240; } 
+       if (!strcmp(stag,"ERR")) { i=  1; } else 
+       if (!strcmp(stag,"ENV")) { i=240; } 
        break;
     case 'W':
-       if (!strcmp(tag,"WRN")) { i=  9; } 
+       if (!strcmp(stag,"WRN")) { i=  9; } 
        break;
     case ' ':
-       if (!strcmp(tag,"  *")) { i=243; } else 
-       if (!strcmp(tag," * ")) { i=246; }      
+       if (!strcmp(stag,"  *")) { i=243; } else 
+       if (!strcmp(stag," * ")) { i=246; }      
        break;
     case 'T':
-       if (!strcmp(tag,"TST")) { i=246; } 
+       if (!strcmp(stag,"TST")) { i=246; } 
        break;
     case 'N':
-       if (!strcmp(tag,"NB!")) { i= 34; } 
+       if (!strcmp(stag,"NB!")) { i= 34; } 
+    case 'o':  
+    case 'O':  
+       if (!strcasecmp(stag,"ok!")) { i= 34; } 
+       if (!strcasecmp(stag,"ok.")) { i= 10; } 
+       break;
        break;
     case 'D':
-        if (!strcmp(tag,"DBG")) { i=130; } 
+        if (!strcmp(stag,"DBG")) { i=202; } 
         break;
     case 'X':
-       if (tag[1]=='X') {
-          if (tag[2]=='E') { i=1; } else 
-          if (tag[2]=='W') { i=9; } else 
-          if (tag[2]=='G') { i=2; } else 
-          if (tag[2]=='Y') { i=3; } else 
-          if (tag[2]=='B') { i=4; }      
+       if (stag[1]=='X') {
+          if (stag[2]=='E') { i=1; } else 
+          if (stag[2]=='W') { i=9; } else 
+          if (stag[2]=='G') { i=2; } else 
+          if (stag[2]=='Y') { i=3; } else 
+          if (stag[2]=='B') { i=4; }      
        }
        break;
    }}

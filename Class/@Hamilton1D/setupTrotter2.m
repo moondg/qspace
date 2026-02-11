@@ -130,8 +130,8 @@ function [HAM,Iout]=setupTrotter2(HAM,dt,varargin)
      HAM.user.trotter=struct('info',[],'mpo',q,'data',[],'mat',mat);
   end
 
-  q={ getfield2(HAM.user.trotter,'-q','info','dt' )
-      getfield2(HAM.user.trotter,'-q','info','ops') };
+  q={ getfield2(HAM.user.trotter,'info','dt', {[]})
+      getfield2(HAM.user.trotter,'info','ops',{[]}) };
 
   if ~force && isequal(dt,q{1}) && (isempty(ops_) || isequal(ops_,q{2}))
      if nargout<2, return; end

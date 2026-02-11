@@ -259,11 +259,10 @@ class counter {
 
    ~counter() { if (n) {
        if (!fmt) wblog(FL,"ERR %s() got undefined fmt",FCT);
-       unsigned n=128; char s[n];
-       snprintf(s,n,fmt.data,n);
+       wbvec<char> s(128); s.catf(FL,fmt.data,n);
        if (file)
-            { wblog(file.data, line,"--> %s",s); }
-       else { wblog(FL,             "--> %s",s); }
+            { wblog(file.data, line,"--> %s",s.data); }
+       else { wblog(FL,             "--> %s",s.data); }
     }};
 
     counter& operator++() { ++n; return *this; }

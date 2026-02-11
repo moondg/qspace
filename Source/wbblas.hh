@@ -18,8 +18,7 @@
 extern "C" {
 
 #define dgemm dgemm_         
-void dgemm (   
-
+void dgemm(   
    const char   &,    
    const char   &,    
    const pINT   &,    
@@ -32,12 +31,10 @@ void dgemm (
    const pINT   &,    
    const double &,    
          double [],   
-   const pINT   &     
-);
+   const pINT   &);   
 
 #define zgemm zgemm_         
-void zgemm (   
-
+void zgemm(   
    const char   &,    
    const char   &,    
    const pINT   &,    
@@ -50,8 +47,7 @@ void zgemm (
    const pINT   &,    
    const wbcomplex &, 
          wbcomplex[], 
-   const pINT   &     
-);
+   const pINT   &);   
 
 #define ilaenv ilaenv_
 
@@ -62,8 +58,7 @@ void zgemm (
        const pINT &,    
        const pINT &,    
        const pINT &,    
-       const pINT &     
-   );
+       const pINT &);   
 
 #define dgetri dgetri_
 void dgetri(   
@@ -73,8 +68,7 @@ void dgetri(
          pINT   [],   
          double [],   
    const pINT   &,    
-         pINT   &     
-);                    
+         pINT   &);   
 
 #define dgetrf dgetrf_
 void dgetrf(   
@@ -83,8 +77,7 @@ void dgetrf(
          double [],   
    const pINT   &,    
          pINT   [],   
-         pINT   &     
-);                    
+         pINT   &);   
 
 #define dsyevd dsyevd_ 
 
@@ -99,8 +92,7 @@ void dsyevd(
  const pINT   &,    
        pINT   [],   
  const pINT   &,    
-       pINT   &     
-);
+       pINT   &);   
 
 #define zheev zheev_
 
@@ -113,8 +105,7 @@ void zheev (
        double [],   
  wbcomplex[], const pINT &,  
        double [],            
-       pINT   &     
-);
+       pINT   &);   
 
 #define zheevd zheevd_
 
@@ -128,12 +119,10 @@ void zheevd(
  wbcomplex[], const pINT &, 
  double [],   const pINT &, 
  pINT   [],   const pINT &, 
-       pINT   &     
-);
+       pINT   &);   
 
 #define dgeev dgeev_
 void dgeev (  
-
  const char   &,    
  const char   &,    
  const pINT   &,    
@@ -147,12 +136,10 @@ void dgeev (
  const pINT   &,    
        double [],   
  const pINT   &,    
-       pINT   &     
-);
+       pINT   &);   
 
 #define zgeev zgeev_
 void zgeev (  
-
  const char   &,    
  const char   &,    
  const pINT   &,    
@@ -166,8 +153,7 @@ void zgeev (
     wbcomplex [],   
  const pINT   &,    
     double    [],   
-       pINT   &     
-);
+       pINT   &);   
 
 #define dgesvd dgesvd_ 
 
@@ -186,12 +172,11 @@ void dgesvd (
 
        double [],   
  const pINT   &,    
-       pINT   &     
-);
+       pINT   &);   
 
 #define dgesdd dgesdd_ 
 
-void dgesdd (
+void dgesdd(
  const char   &,    
  const pINT   &,    
  const pINT   &,    
@@ -202,12 +187,10 @@ void dgesdd (
  const pINT   &,    
        double [],   
  const pINT   &,    
-
        double [],   
  const pINT   &,    
        pINT   [],   
-       pINT   &     
-);
+       pINT   &);   
 
 #define zgesvd zgesvd_ 
 
@@ -226,12 +209,11 @@ void zgesvd (
      wbcomplex[],   
  const pINT   &,    
      wbcomplex[],   
-       pINT   &     
-);
+       pINT   &);   
 
 #define zgesdd zgesdd_ 
 
-void zgesdd (
+void zgesdd(
  const char   &,    
  const pINT   &,    
  const pINT   &,    
@@ -246,8 +228,7 @@ void zgesdd (
  const pINT   &,    
        double[],    
        pINT  [],    
-       pINT   &     
-);
+       pINT   &);   
 
 }  
 

@@ -427,7 +427,6 @@ function [HAM]=setup_Heisenberg(varargin)
 
   if perBC
      wblog('NB!','using periodic BC (interleaved setup)'); 
-     L2=ceil(L/2);
 
      XY=[ (1:L)', zeros(L,1) ]; XY(2:2:end,2)=1;
      HAM.info.XY=XY;

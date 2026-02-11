@@ -164,7 +164,7 @@ void MPS_ORTHO_1(
       "ERR invalid index set%N%N%s%N",str);
    iP.init(P,'i');
 
-   PSI.Permute(P,0,'i'); K=I.len;
+   PSI.Permute(P,'c'); K=I.len;
 
    if (Nkeep<0) {
    Nkeep=get_Nkeep_estimate(PSI,K); }
@@ -229,7 +229,7 @@ void MPS_ORTHO_2(
          "ERR invalid index set%N%N%s%N",str);
       iP.init(P,'i');
 
-      PSI.Permute(P,0,'i'); K=I.len; 
+      PSI.Permute(P,'c'); K=I.len; 
 
       if (Nkeep<0) {
       Nkeep=get_Nkeep_estimate(PSI,K); }
@@ -263,7 +263,7 @@ void MPS_ORTHO_2(
          "ERR invalid index set%N%N%s%N",str);
       iP.init(P,'i');
 
-      PSI.Permute(P,0,'i'); K=r-I.len; 
+      PSI.Permute(P,'c'); K=r-I.len; 
 
       if (Nkeep<0) {
       Nkeep=get_Nkeep_estimate(PSI,K); }
@@ -285,8 +285,8 @@ void MPS_ORTHO_2(
          P.save2(pb);
       }
 
-      if (!pa.isIdentityPerm()) A1.Permute(pa); 
-      if (!pb.isIdentityPerm()) A2.Permute(pb);
+      if (!pa.isIdentityPerm()) { A1.Permute(pa); } 
+      if (!pb.isIdentityPerm()) { A2.Permute(pb); }
 
       argout[0]=A1.toMx();
       argout[1]=A2.toMx();

@@ -19,31 +19,39 @@ template<class TQ, class TD>
 inline QSpace<TQ,TD>& MPS_PLUS_QS(
    QSpace<TQ,TD> &C, const mxArray *argin[], int nargin
 ){
-   const QSpace<TQ,TD> A(FL,argin[0],'r');
-   const QSpace<TQ,TD> B(FL,argin[1],'r');
+   double bfac=1;
 
-   double bfac=1; str[0]=0;
-   unsigned l=nargin-1; char vflag=0;
-   if (l>=2 && mxIsChar(argin[l])) { str[0]=0;
-      mxGetString(argin[l],str,128);
-      if (!strcmp(str,"-v")) { vflag='v'; --l; --nargin; }
-      else wblog(FL,
-         "ERR %s() invalid input option '%s' [%d]",str,FCT,l+1
-      );
+   unsigned l=nargin-1;
+   char vflag=0, xflag=0, str[8]; str[0]=0;
+
+   for (; l>=2 && mxIsChar(argin[l]); --l) {
+      mxGetString(argin[l],str,8);
+      if (!strcmp(str,"-v")) { ++vflag; } else
+      if (!strcmp(str,"-x")) { ++xflag; }
+      else wblog(FL,"ERR %s() invalid input option '%s' [%d]",FCT,str,l+1);
    }
-   if (nargin>2) if (mxGetNumber(argin[2], bfac)) wblog(FL,str);
+
+   if (l>2) wblog(FL,"ERR invalid usage (nargin=%d)",nargin);
+   if (l==2) {
+      if (mxGetNumber(argin[l], bfac))
+      wblog(FL,"ERR %s() invalid option '%s'",FCT,str);
+   }
+
+   const QSpace<TQ,TD> A(FL,argin[0],'r',1, xflag? 0:1);
+   const QSpace<TQ,TD> B(FL,argin[1],'r',1, xflag? 0:1);
 
    if (A.gotCGS(FL)<2) {
       C.mt=Wb::MEX_RETURN; 
       A.plus_plain(B,C,bfac); 
-      C.NormCGW();
    }
    else {
       C.Cat(FL,A,B,TD(1),TD(bfac),vflag? vflag:1);
    }
 
    C.SkipZeroData();   
+   C.NormCGW();
 
+   C.SetFDir(FL,A,B);  
    C.ctime=Wb::getTimeNow();
 
    return C;

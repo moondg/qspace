@@ -8,12 +8,12 @@ namespace Wb {
 class matFile { 
    public:
 
-      matFile() : mfp(NULL) {};
+      matFile() : mfp(nullptr) {};
 
       matFile(const char *F, int L, const char *fname, const char *rw
-      ) : mfp(NULL) { open(F,L,fname,rw,1); }; 
+      ) : mfp(nullptr) { open(F,L,fname,rw,1); }; 
 
-      matFile(const matFile &X) : mfp(NULL) {
+      matFile(const matFile &X) : mfp(nullptr) {
          wblog(FL,"ERR do not copy matFile object! (0x%lX)",&X);
       };
 
@@ -27,7 +27,7 @@ class matFile {
             wblog(F.data,L,"WRN Could not close file %s%s /%s !?",
             strlen(fname.data)>20 ? "\n" : "", fname.data, rw.data);
          }
-         mfp=NULL; F.init(); L=0; fname.init(); rw.init();
+         mfp=nullptr; F.init(); L=0; fname.init(); rw.init();
       };
 
       int Open(const char *F, int L, const char *FName, const char *RW
@@ -92,7 +92,7 @@ class matFile {
 
       int existsVar(const char* vn) const {
          mxArray *a=matGetVariableInfo(mfp,vn);
-         int r=(a!=NULL);
+         int r=(a!=nullptr);
          mxDestroyArray(a);
          return r;
       };

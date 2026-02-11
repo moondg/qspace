@@ -111,43 +111,45 @@ class Clock {
 
    ~Clock() {  done(); } 
 
-    void done() {
+    Clock& done() {
        if (ncall) { stop(); } 
        if (gcs) {
           Clock *g = gcs->use(name.data,0);
           g->Add(*this); 
        }
        else if (WBLOG_CLK) { info(); }
-       init();
+       init(); return *this;
     }
 
-    void init() {
+    Clock& init() {
        ttot=ctot=tneg=0; tref=CHRONO_CLOCK();
        nz=ncall=clk_flags=user=0; cref=0; gcs=NULL;
-       name.init();
+       name.init(); return *this;
     };
 
-    void reset() {
+    Clock& reset() {
        ttot=ctot=tneg=0; tref=CHRONO_CLOCK();
-       nz=ncall=0; cref=0;
+       nz=ncall=0; cref=0; return *this;
     };
 
-    void init(const char *s, char use_tag=1) {
+    Clock& init(const char *s, char use_tag=1) {
        reset();
        get_Clock_name(name,s,use_tag);
+       return *this;
     };
 
-    void start() {
+    Clock& start() {
        cref=clock(); ctot=ttot=tneg=0; nz=0; ncall=1;
-       tref=CHRONO_NOW();
+       tref=CHRONO_NOW(); return *this;
     };
 
-    void resume() {
+    Clock& resume() {
        if (!ncall) { start(); } else
        if ((ncall%2)==0) { 
           cref=clock(); ++ncall;
           tref=CHRONO_NOW();
        }
+       return *this;
     };
 
     int stop(const char *F=NULL, int L=0) {
@@ -165,7 +167,7 @@ class Clock {
        }
     };
 
-    double gettime(char cflag=0) const; 
+    double gettime(char cpu=0) const; 
 
     void Add(const Clock &t) { 
        if (ncall%2) { wblog(FL,"WRN %s() clock still running",FCT); }
@@ -222,11 +224,11 @@ class Clock {
 
 }; 
 
-double Wb::Clock::gettime(char cflag) const {
+double Wb::Clock::gettime(char cpu) const {
 
    double dt=0; 
 
-   if (cflag) {
+   if (cpu) {
       dt=ctot; if (ncall%2) { 
       dt+=double(clock()-cref)/CLOCKS_PER_SEC; }
    }
@@ -249,16 +251,16 @@ void Wb::Clock::info(const char *istr, char vflag) const {
    }
    if (!ncall && vflag<2) { return; }
 
-   unsigned l=0, n=16; char s[n];
+   wbvec<char> s(16);
    double tc=gettime('c'), tw=gettime();
 
    if (nz) {
       double p0=1-nz/(double)(ncall/2); 
-      l=snprintf(s,16,"/%5.1f%%", 100*p0);
-   }  else s[0]=0;
+      s.catf(FL,"/%5.1f%%", 100*p0);
+   }
 
-   if (clk_flags && l<n) {
-   l+=snprintf(s+l,n-l,"/%d", clk_flags); } 
+   if (clk_flags) {
+   s.catf(FL,"/%d", clk_flags); } 
 
    if (first_call) { first_call=0;
       PRINTF("\n   %-28s Count   CPU-time  Wall-time     / call\n",
@@ -268,7 +270,7 @@ void Wb::Clock::info(const char *istr, char vflag) const {
    PRINTF(" %c %-26s%8ld %10s %10s  %9.3g  %s\n",
       (ncall%2) ? '*':' ', istr? istr:name.data, ncall/2, 
       sec2Str(tc).data, sec2Str(tw).data,  
-      tw/(ncall/2), s
+      tw/(ncall/2), s.data
    );
 };
 

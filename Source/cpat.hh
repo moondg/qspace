@@ -170,7 +170,7 @@ void CPAT<TQ,TD>::init(
 
    z=oz;
 
-   CP.initDef(N);
+   CP.init(N);
 
    for (p=k=0; k<N; k++) {
       if (!mxIsCell(aa[k]))
@@ -180,7 +180,7 @@ void CPAT<TQ,TD>::init(
 
       if (!n) wbdie(FL,str);
 
-      CP[p].initDef(n);
+      CP[p].init(n);
 
       if (n==1) { 
          e=CP[p][0].init(aa[k],ic1,r1,ic2,r2,twoSite,ldir);
@@ -249,7 +249,7 @@ int CPAT_Set<TQ,TD>::init(
    a=mxGetCell(C,0);
 
    if (mxIsQSpace(0,0,a,r,isC)>0) { 
-      A.initDef(1);
+      A.init(1);
       A[0].init(FL,a,'r');
 
       if (!A[0].isConsistent_r(2)) {
@@ -342,7 +342,7 @@ int CPAT_Set<TQ,TD>::init(
    if (opA!='N') {
       char tflag= (opA=='T' || opA=='C'),
            cflag= (opA=='C' || opA=='*');
-      wbperm P("2 1");
+      wbperm P("21");
 
       for (unsigned i=0; i<A.len; i++) {
          if (A[i].isEmpty()) continue; 
@@ -397,10 +397,10 @@ int CPAT_Set<TQ,TD>::getCtrIndex(const QSpace<TQ,TD> &PSI) {
 
    unsigned i,m=0,n=A.len;
 
-   if (CIn.len!=n) { CIn.initDef(n); m++; }
-   if (CIt.len!=n) { CIt.initDef(n); m++; }
-   if (CQn.len!=n) { CQn.initDef(n); m++; }
-   if (CQt.len!=n) { CQt.initDef(n); m++; }
+   if (CIn.len!=n) { CIn.init(n); m++; }
+   if (CIt.len!=n) { CIt.init(n); m++; }
+   if (CQn.len!=n) { CQn.init(n); m++; }
+   if (CQt.len!=n) { CQt.init(n); m++; }
 
    if (A.len==0) return (m!=0);
 
@@ -426,12 +426,12 @@ int CPAT_Set<TQ,TD>::getCtrIndex(
    "ERR Invalid flag %c<%d>",tflag,tflag);
 
    if (tflag=='N') {
-      if (CIn.len!=n) { CIn.initDef(n); m++; }
-      if (CQn.len!=n) { CQn.initDef(n); m++; }
+      if (CIn.len!=n) { CIn.init(n); m++; }
+      if (CQn.len!=n) { CQn.init(n); m++; }
    }
    else {
-      if (CIt.len!=n) { CIt.initDef(n); m++; }
-      if (CQt.len!=n) { CQt.initDef(n); m++; }
+      if (CIt.len!=n) { CIt.init(n); m++; }
+      if (CQt.len!=n) { CQt.init(n); m++; }
    }
 
    if (n==0) return (m!=0);
@@ -466,13 +466,17 @@ int CPAT_Set<TQ,TD>::getCtrIndex(
 
    QSpace<TQ,TD> CQ0;
    const wbMatrix<unsigned> CI0(CIi);
+   MVEC z2;
 
    if (!ica) wblog(FL, "ERR Invalid flag %c<%d>",tflag,tflag);
 
    CQ0.QDIM=CQi.QDIM; CQi.QDIM=PSI.QDIM;
    CQ0.QIDX=CQi.QIDX;
 
-   e=A[i].contract_getIdxSet(ica, PSI, ic+1, CQi.QIDX, CIi);
+   if (PSI.isFerm()) wblog(FL,
+      "ERR %s() iFerm not yet implemented with CPAT",FCT);
+
+   e=A[i].contract_getIdxSet(ica, PSI, ic+1, CQi.QIDX, CIi, z2);
    if (e<0) wbdie(FL,str); 
 
    CQi.PermuteQ(P);
@@ -647,8 +651,8 @@ inline void QSpace<TQ,TD>::ExpandQ(
    wbperm p1,p2;
    TD n1,n2;
 
-   QQ.initDef(r);
-   SS.initDef(r);
+   QQ.init(r);
+   SS.init(r);
 
    for (i=0; i<r; i++) {
       CP.getQRange(i,QQ[i],SS[i], this); 
@@ -945,7 +949,7 @@ inline void CPAT_Set<TQ,TD>::contract(
 ) const {
 
    unsigned i,n=A.len;
-   if (C.len!=n) C.initDef(n);
+   if (C.len!=n) C.init(n);
 
    for (i=0; i<n; i++)
    contract(i,PSI,C[i],tflag);
@@ -959,7 +963,7 @@ inline void CPAT_Set<TQ,TD>::contract_diag(
 ) const {
 
    unsigned i,n=A.len;
-   if (C.len!=n) C.initDef(n);
+   if (C.len!=n) C.init(n);
 
    for (i=0; i<n; i++)
    contract_diag(i,PSI,C[i],a,b,Iflag);
@@ -973,7 +977,7 @@ inline void CPAT_Set<TQ,TD>::contract(
 ) const {
 
    unsigned i,n=A.len;
-   if (C.len!=n) C.initDef(n);
+   if (C.len!=n) C.init(n);
 
    for (i=0; i<n; i++)
    contract(i,PSI1[i],C[i],tflag);
@@ -987,7 +991,7 @@ inline void CPAT_Set<TQ,TD>::contract_diag(
 ) const {
 
    unsigned i,n=A.len;
-   if (C.len!=n) C.initDef(n);
+   if (C.len!=n) C.init(n);
 
    for (i=0; i<n; i++)
    contract_diag(i,PSI1[i],C[i],a,b,Iflag);

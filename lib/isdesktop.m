@@ -9,7 +9,8 @@ function i=isdesktop()
 
   if ~isfield(u,'ml_env')
      if isempty(u), set_global; u=get(0,'UserData');
-     else wbdie('invalid getuser(0) - empty or struct expected'); 
+     else
+         wbdie(-2,'invalid getuser(0) - empty or struct expected'); 
      end
   end
 

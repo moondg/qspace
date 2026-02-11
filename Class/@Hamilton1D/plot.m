@@ -10,6 +10,11 @@ function plot(HAM,varargin)
      mpflag=getopt('--map');
      vflag=getopt('-v');
 
+     if getopt('-f')
+          mflag=1E9;
+     else mflag=10;
+     end
+
      dx2=getopt('dx',0.025); nxb=0;
 
   getopt('check_error');
@@ -86,7 +91,7 @@ setax(ah(1,1))
   else ah(1)=mergeax(ah(1,:));
   end
 
-  x=[min(xy(:,1)),max(xy(:,1))]; mflag=10;
+  x=[min(xy(:,1)),max(xy(:,1))];
   if diff(x)>2.6*mflag
      ah(1,1:2)=splitax(ah(1,1),[1 2],'dx',10);
      setax(ah(1,1));

@@ -22,8 +22,7 @@ function s=cgr_size(A,i,j)
   elseif l==r+1
      if isfield(c,'cgw'), w=size(c.cgw);
         if numel(w)~=2 || diff(w)>0 || any(w>s(end)), wbdie(...
-            'unexpected OM dimensions of cgr(%d,%d).cgw @ OM=%d',i,j,s(end));
-        else s(end)=min(s(end),w(2));
+          'unexpected OM dimensions of cgr(%d,%d).cgw @ OM=%d',i,j,s(end));
         end
      end
   elseif l>r+1

@@ -29,6 +29,7 @@ function [isd,istr]=isdiag(A,varargin)
 % (in response to Jeongmin Shim's email stating that QSpace/trace
 % (which uses isdiag!) is much slower than QSpace/norm which
 % directly wraps to normQS.
+
 % [11/15/2012] also removed error in case of not diagonal!
 % rather check return value in caller! also wrapped earlier
 % error string istr into info string istr.

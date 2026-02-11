@@ -21,8 +21,8 @@ function xx=getxlim(varargin)
 
   switch varargin{l}
     case '-pos',  xx=getXLimData(ah,varargin{l});
-    case '-view', xx=getXLimView(ah);
     case '-data', xx=getXLimData(ah);
+    case '-view', xx=getXLimView(ah);
     otherwise wbdie('invalid usage')
   end
 

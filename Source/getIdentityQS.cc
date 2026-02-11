@@ -302,7 +302,7 @@ void mexFunction(
                "ERR invalid itag option '%s' (arg#%d)",sx,l+1); }
             t3s[2]=sx;
          }
-         else if (!P.len && isValidPerm(s)>0) {
+         else if (!P.len && Wb::isValidPerm(s)>0) {
             P.initStr(FL,s);
          }
          else wblog(FL,"ERR %s() invalid option '%s'\n"
@@ -340,9 +340,10 @@ void mexFunction(
          mxInitQSpaceVec(FL,argin[iB],B,'r');
          if (Ib.len) check_idx_bounds(FL,Ib,B,"i2");
 
-         C.initIdentityCG(A,Ia,B,Ib,vflag); 
+         C.initIdentityCG(cPVEC__(A),Ia,cPVEC__(B),Ib,vflag); 
             if (t3s.any()) set_ctags(FL,C,A,B,t3s);
-            if (P.len) C.Permute(P);
+            C.SetFDir_Atensor(FL,A[0].fdir,Ia,B[0].fdir,Ib);
+            if (P) C.Permute(P);
          a=C.save2Mx(vflag_);
       }
       else if (!isrb) {
@@ -352,9 +353,10 @@ void mexFunction(
          mxInitQSpaceVec(FL,argin[iB],B);
          if (Ib.len) check_idx_bounds(FL,Ib,B,"i2");
 
-         C.initIdentityCG(A,Ia,B,Ib,vflag); 
+         C.initIdentityCG(cPVEC__(A),Ia,cPVEC__(B),Ib,vflag); 
             if (t3s.any()) set_ctags(FL,C,A,B,t3s);
-            if (P.len) C.Permute(P);
+            C.SetFDir_Atensor(FL,A[0].fdir,Ia,B[0].fdir,Ib);
+            if (P) C.Permute(P);
          a=C.save2Mx(vflag_);
       }
       else {
@@ -364,15 +366,16 @@ void mexFunction(
          if (A.len==1 && A[0].isScalar()) { 
             if (t3s.any()) wblog(FL,
                "ERR %s() got itag specs with scalar QSpace !?",myname);
-            if (P.len) wblog(FL,
+            if (P) wblog(FL,
                "ERR %s() got P=[%s] with scalar QSpace !?",myname,STR(P));
             C=A[0]; C.DATA[0]->data[0]=1;
          }
          else {
-            C.initIdentityCG(A,Ia,zflag); 
-            if (t3s.any()) set_ctags(FL,
-               C, A, wbvector<QSpace<gTQ,double> >(), t3s);
-            if (P.len) C.Permute(P);
+            C.initIdentityCG(cPVEC__(A),Ia,zflag); 
+            if (t3s.any()) set_ctags(FL,C,A,
+               wbvector<QSpace<gTQ,double> >(), t3s);
+            C.SetFDir_op(FL,A[0].fdir,Ia); 
+            if (P) C.Permute(P);
          }
          a=C.save2Mx(vflag_);
       }
@@ -392,9 +395,10 @@ void mexFunction(
          mxInitQSpaceVec(FL,argin[iB],B,'r');
          if (Ib.len) check_idx_bounds(FL,Ib,B,"i2");
 
-         C.initIdentityCG(A,Ia,B,Ib,vflag); 
+         C.initIdentityCG(cPVEC__(A),Ia,cPVEC__(B),Ib,vflag); 
             if (t3s.any()) set_ctags(FL,C,A,B,t3s);
-            if (P.len) C.Permute(P);
+            C.SetFDir_Atensor(FL,A[0].fdir,Ia,B[0].fdir,Ib);
+            if (P) C.Permute(P);
          a=C.save2Mx(vflag_);
       }
       else if (!isrb) {
@@ -404,19 +408,21 @@ void mexFunction(
          mxInitQSpaceVec(FL,argin[iB],B);
          if (Ib.len) check_idx_bounds(FL,Ib,B,"i2");
 
-         C.initIdentityCG(A,Ia,B,Ib,vflag); 
+         C.initIdentityCG(cPVEC__(A),Ia,cPVEC__(B),Ib,vflag); 
             if (t3s.any()) set_ctags(FL,C,A,B,t3s);
-            if (P.len) C.Permute(P);
+            C.SetFDir_Atensor(FL,A[0].fdir,Ia,B[0].fdir,Ib);
+            if (P) C.Permute(P);
          a=C.save2Mx(vflag_);
       }
       else {
          QSpace<gTQ,wbcomplex> C;
          if (!Ib.isEmpty()) wblog(FL,"ERR invalid usage (%d)",Ib.len);
 
-         C.initIdentityCG(A,Ia,zflag); 
-            if (t3s.any()) set_ctags(FL,
-               C, A, wbvector<QSpace<gTQ,double> > (), t3s);
-            if (P.len) C.Permute(P);
+         C.initIdentityCG(cPVEC__(A),Ia,zflag); 
+            if (t3s.any()) { set_ctags(FL, C, A,
+                wbvector<QSpace<gTQ,double> > (), t3s); }
+            C.SetFDir_op(FL,A[0].fdir,Ia); 
+            if (P) C.Permute(P);
          a=C.save2Mx(vflag_);
       }
    }

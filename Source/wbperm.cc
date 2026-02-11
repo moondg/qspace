@@ -22,57 +22,60 @@
 
 // ----------------------------------------------------------------- //
 // ----------------------------------------------------------------- //
-
-char wbperm::isValidPerm(const char *F, int L, wperm_t r) const {
-
-   char rval=0, id=0; 
-
-   if (swperm_t(r)>=0 && r!=len) { if (F) wblog(F,L,
-      "ERR invalid permutation [%s; %d]",toStr().data,r);
-      return rval;
-   }
-
-   if (len) { wbvector<char> mark(len);
-      for (wperm_t i=0; i<len; ++i) {
-         if (i==data[i]) { ++id; } else
-         if (data[i]>=len || mark[data[i]]++) { if (F) wblog(F,L,
-            "ERR invalid permutation [%s]",toStr().data);
-            return rval;
-         }
-      }
-   }
-   return (rval=( unsigned(id)==len? 2:1));
-};
+// flattens result -> ensures inv=0
 
 wbperm& wbperm::init(const wbperm &P, char iflag, unsigned r) {
-   if (&P!=this) {
-      if (iflag)
-           { P.invert(*this); }
-      else { RENEW(P.len,P.data); }
+
+   if (abs(iflag)>1 && iflag!='i') wblog(FL,
+      "WRN %s() got iflag=%s",FCT,cSTR(iflag));
+   if (abs(P.inv)>1) wblog(FL,"WRN %s() got '%s'",FCT,STR(P));
+
+   if (&P==this) {
+      if (iflag) { ++inv; }
+      if ((inv%=2)) { flatten(); }
    }
-   else if (iflag) { Invert(); }
+   else if (iflag) {
+      if (P.inv)
+           { (*this)=P; inv=0; }
+      else { P.invert(*this); }  
+   }
+   else {
+      (*this)=P; if (P.inv) {
+         if (len) { P.invert_data(data); }
+         fac=1./fac; 
+         inv=0; 
+      }
+   }
 
    if (int(r)>=0) { Extend(r); } 
 
    return *this;
 };
 
-wbperm& wbperm::invert(wbperm &iP) const { 
-   if (&iP==this) {
-      wbperm X; this->invert(X).save2(iP);
-      return iP;
+wbperm& wbperm::Invert(char cflag) {
+
+   if ((inv%=2)) { inv=0; }
+   else if (!fac) { wblog(FL,"ERR %s() got %s",FCT,STR(*this)); }
+   else {
+      invert_data(); 
+      fac=1./fac;    
    }
 
- #ifndef SKIP_WB_ASSERT
-   isValidPerm(FL);
- #endif
+   if (cflag) { Wb::conj_add_z2(conj,cflag); }
 
-   iP.RENEW(len);
+   return *this;
+};
 
-   for (wperm_t *p=iP.data, i=0; i<len; ++i) {
-      if (data[i]>=len) wblog(FL,"ERR %s() "
-         "permutation out of bounds (%d/%d)",FCT,data[i],len);
-      p[data[i]]=i;
+wbperm& wbperm::invert(wbperm &iP) const {
+
+   if (&iP==this) { return iP.Invert(); }
+   iP=(*this); 
+
+   if ((iP.inv%=2)) { iP.inv=0; }
+   else if (!fac) { wblog(FL,"ERR %s() got %s",FCT,STR(*this)); }
+   else {
+      this->invert_data(iP.data);
+      iP.fac=1./fac;
    }
    return iP;
 };
@@ -80,20 +83,21 @@ wbperm& wbperm::invert(wbperm &iP) const {
 wbperm& wbperm::Extend(wperm_t r) {
 
    if (r!=len) {
-   if (int(r)<=0) wblog(FL,"ERR %s() requesting r=%d/%d",FCT,r,len);
+      if (int(r)<0) wblog(FL,"ERR %s() requesting r=%d/%d",FCT,r,len);
 
-   if (r>len) {
-      wbperm P(r);  
-      if (len) { memcpy(P.data,data,len*sizeof(wperm_t)); }
-      P.save2(*this);
-   }
-   else {
-      for (unsigned i=r; i<len; ++i) {  
-         if (data[i]!=i) wblog(FL,
-         "ERR %s() invalid r=%d having %s",FCT,r,STR_(this));
+      if (r>len) {
+         wbperm P(r);  
+         if (len) { memcpy(P.data,data,len*sizeof(wperm_t)); }
+         P.WBPERM::save2(*this); 
       }
-      Shorten2(r);
-   }}
+      else {
+         for (unsigned i=r; i<len; ++i) {  
+            if (data[i]!=i) wblog(FL,
+            "ERR %s() invalid r=%d having %s",FCT,r,STR(*this));
+         }
+         WBPERM::Shorten2(r);
+      }
+   }
    return *this;
 };
 
@@ -105,7 +109,7 @@ wbperm& wbperm::Complete(wperm_t l) {
             if (data[i]>=len) wblog(FL,"ERR %s() invalid partial perm\n"
                "(index out of bounds i=%d: %d/%d)",FCT,i+1,data[i],len);
             if (++mark[data[i]]!=1) wblog(FL,"ERR %s() "
-               "invalid partial perm (non-unique: %s)",FCT,STR_(this));
+               "invalid partial perm (non-unique: %s)",FCT,STR(*this));
          }
          for (i=0; i<len; ++i) { if (!mark[i]) { data[l++]=i; }}
       }
@@ -117,19 +121,73 @@ wbperm& wbperm::Complete(wperm_t l) {
    return *this;
 };
 
+wbperm& wbperm::Complete1() {
+   unsigned i,j;
+   MVEC mark(len); wbperm P;
+   P.init_bare(len); 
+
+   for (i=0; i<len; ++i) {
+      if (data[i]) { j=data[i]-1; ++mark[i];
+         if (j>=len) wblog(FL,"ERR %s() invalid partial perm\n"
+            "(index out of bounds i=%d: %d/%d)",FCT,i+1,data[i],len);
+         if (P[j]) wblog(FL,"ERR %s() "
+            "invalid partial perm (non-unique: %s)",FCT,STR(*this));
+         P[j]=i+1; 
+      }
+   }
+
+   for (i=-1, j=0; j<len; ++j) {
+      if (P[j])
+           { --P[j]; } 
+      else { for (++i; i<len; ++i) { if (!mark[i]) { P[j]=i; break; }}}
+   }
+   if (i>=len) wblog(FL,"ERR %s() failed to complete perm "
+      "(%s; i=%d/%d, q=%d)",FCT,STR(P),i,len,P.isValidPerm());
+   return P.save2(*this);
+};
+
 int wbperm::initStr(
-   const char *F, int L, const char *s, wperm_t offset
-){
+   const char *F, int L, const char *s, wperm_t offset) {
 
-   if (!s) { init(); return -1; } 
-   while (isspace(*s) && *s) ++s; 
-   if (!*s){ init(); return 0; }  
+   if (!s) { init(); return -1; }     
 
-   unsigned i=0, n=0;
-   while (isdigit(s[n])) ++n;
-   for (i=n; isspace(s[i]); ++i) {}; 
+   while (isspace(*s) && *s) { ++s; } 
+   if (!*s){ init(); return 0; }      
 
-   if (!s[i]) { init(n); 
+   unsigned i=0, n=strlen(s);
+
+   inv=conj=0; fac=1;
+
+   for (; i<n; ++i) { if (s[i]=='x') break; }
+   if (i<n) { const char *s1=s+i+1; char *s2;
+      double x=strtod(s1,&s2);
+
+      if (s2==s1) wblog(FL,"ERR %s() invalid factor in '%s'",C_FCT,s);
+      while (isspace(*s2)) { ++s2; } 
+      if (*s2) { wblog(FL,"ERR %s() "
+         "invalid trailing string\nafter factor in '%s'",C_FCT,s); }
+      fac*=x;
+
+      while (--i<n && isspace(s[i])) {}
+      n=i+1;
+   }
+
+   if (n) {
+      for (i=n-1; i<n; --i) {
+         if (CTR_IS_CONJ(s[i])) { ++conj; } else 
+         if (!isspace(s[i])) { break; }
+      }
+      if (conj) { conj%=2; } 
+      n=i+1;
+   }
+
+   while (n>=3 && !strncmp(s+n-3,"^-1",3)) { ++inv;
+      for (n-=3; n && isspace(s[n-1]); --n) { }
+   }; inv%=2;
+
+   for (i=0; i<n && isdigit(s[i]); ++i) { }
+
+   if (i==n) { WBPERM::init(n); 
       for (i=0; i<n; ++i) { data[i]=s[i]-'0'; }
       if (int(offset)>=0) {
          for (i=0; i<n; ++i) {
@@ -140,53 +198,133 @@ int wbperm::initStr(
             data[i]-=offset;
          }
       }
-      else { 
-         char mark[n+1]; memset(mark,0,n+1);
-         for (i=0; i<n; ++i) { 
-            if (data[i]>n || ++mark[data[i]]!=1) { return -4; }
-         }
-         if (!mark[0]) {
-            for (i=0; i<n; ++i) { --data[i]; }
-         }
-         return len; 
+      else {
+         if (min()==1) { (*this)-=1; }
       }
    }
    else {
-      if (isdigit(s[i]) || isspace(s[i]) || s[i]==',' || s[i]==';') {
-         i=Str2Idx(s,*this,offset);
+      if (isdigit(s[i]) || isspace(s[i]) || strchr("[,;]",s[i])) {
+         i=Wb::Str2Idx(0,0,s,*this,offset,0,n);
       }
       else { i=-(i+1); } 
 
       if (int(i)<0) { if (F) wblog(FL, 
-         "ERR %s() invalid permutation (i=%d, offset=%d)"
-         "%N%N    s = '%s' %N",FCT,-i,offset,s);
+         "ERR %s() invalid permutation \"%s\" @ %d\n"
+         "having extended format (offset=%d)",FCT,s,-i,offset);
          else return -3;
       }
    }
 
-   i=isValidPerm(F ? F : NULL,F ? L : 0);
+   return ( isValidPerm(FL_)>0 ? len : -4 );
+};
 
-   return (i ? len : -4);
+wbstring wbperm::toStr() const {
+   unsigned i=0, nx=(fac==1 ? 0 : 16);
+   wbvec<char> sx;
+
+   if (inv ) { nx+=3; } 
+   if (conj) { nx+=1; } 
+
+   if (len<10) { 
+      sx.init( (len?len:2) + nx+1);
+      if (len) { for (; i<len; ++i) { sx.append(0,0,'1'+data[i]); }}
+   }
+   else {
+      if (nx) { nx+=3; } 
+      sx.init(nx + len*(log10(double(len))+2));
+      if (nx) { sx.append('['); }
+      for (; i<len; ++i) { sx.catf(0,0," %d",(int)(data[i]+1)); }
+      if (nx)
+           { sx.cat(" ]"); }
+      else { sx.append(' '); }
+   }
+
+   if (inv   ) { sx.cat("^-1");  }
+   if (conj  ) { sx.append('*'); } 
+   if (fac!=1) { sx.catf(0,0," x%.4g",fac); }
+   sx.check_bounds(FL);
+
+   return sx.data;
 };
 
 wbperm& wbperm::init_trafo(const wbperm &p1, const wbperm &p2) {
 
-   if (!p1.len) {
-      if (p2.len) return init(p2); 
-      else return init();
+   if (this==&p1 || this==&p2) {
+      wbperm X; X.init_trafo(p1,p2);
+      return X.save2(*this);
    }
-   if (!p2.len) { return init(p1,'i'); }  
+
+   if (!p1.len || !p2.len) { 
+      if (!p1.len)
+           { if (p2.len) { init(p2); } else { init(); }}
+      else { init(p1,'i'); }
+
+      conj=p1.conj; Wb::conj_add_z2(conj, p2.conj);
+      return *this;
+   }
 
    if (p1.len!=p2.len) wblog(FL,
       "ERR %s() length mismatch (%d/%d)",FCT,p1.len,p2.len);
 
-   if (this==&p1 || this==&p2) {
-      wbperm X; X.init_trafo(p1,p2);
-      X.save2(*this); return *this;
+   init(p1,'i').Permute(p2); 
+   return *this;
+};
+
+wbperm& wbperm::initMove(unsigned k, unsigned l, unsigned N) {
+   size_t i=0;        
+
+   if (int(k)<0) { k+=N; }
+   if (int(l)<0) { l+=N; }
+   if (k>=N || l>=N) wblog(FL,
+      "ERR %s() index out of bounds (%d,%d / %d)",FCT,k,l);
+
+   if (k==l) { return Index(N); }
+
+   RENEW(N,NULL,0,0);
+
+   if (k<l) {
+      for (; i<k; ++i) { data[i]=i;   }
+      for (; i<l; ++i) { data[i]=i+1; }; data[i++]=k;
+      for (; i<N; ++i) { data[i]=i;   }
+   }
+   else if (k>l) { 
+      for (; i<l; ++i) { data[i]=i;   }; data[i++]=k;
+      for (;i<=k; ++i) { data[i]=i-1; }
+      for (; i<N; ++i) { data[i]=i;   }
    }
 
-   init(p1,'i').Permute(p2); 
+   return *this;
+};
 
+wbperm& wbperm::initFirstTo(wperm_t k, wperm_t N) {
+   size_t i=0; RENEW(N,NULL,0,0); 
+   if (k>=N) wblog(FL,"ERR %s() index out of bounds (%d/%d)",FCT,k,N);
+   for (   ; i<k; ++i) { data[i]=i+1; }; data[k]=0;
+   for (++i; i<N; ++i) { data[i]=i;   };
+   return *this;
+};
+
+wbperm& wbperm::initLastTo(wperm_t k, wperm_t N) {
+   size_t i=0; RENEW(N,NULL,0,0); 
+   if (k>=N) wblog(FL,"ERR %s() index out of bounds (%d/%d)",FCT,k,N);
+   for (   ; i<k; ++i) { data[i]=i;   }; data[k]=N-1;
+   for (++i; i<N; ++i) { data[i]=i-1; };
+   return *this;
+};
+
+wbperm& wbperm::init2Front(wperm_t k, wperm_t N) { 
+   if (k>=N) wblog(FL,"ERR %s() index out of bounds (%d/%d)",FCT,k,N);
+   wperm_t i=0; RENEW(N,NULL,0,0); data[0]=k;
+   for (   ; i<k; ++i) { data[i+1]=i; }
+   for (++i; i<N; ++i) { data[i  ]=i; }
+   return *this;
+};
+
+wbperm& wbperm::init2End(wperm_t k, wperm_t N) { 
+   if (k>=N) wblog(FL,"ERR %s() index out of bounds (%d/%d)",FCT,k,N);
+   wperm_t i=0; RENEW(N,NULL,0,0);
+   for (   ; i<k; ++i) { data[i  ]=i; }
+   for (++i; i<N; ++i) { data[i-1]=i; }; data[N-1]=k;
    return *this;
 };
 
@@ -196,34 +334,35 @@ wbperm& wbperm::init2Front(const wbvector<wperm_t> &I, wperm_t N) {
    wbvector<char> mark(N); char *m=mark.data;
    if (I.len>N) wblog(FL,"ERR index too long (%d/%d)",I.len,N);
 
-   init(N);
-   for (i=0; i<I.len; i++) { j=I[i];
+   RENEW(N,NULL,0,0);
+   for (i=0; i<I.len; ++i) { j=I[i];
       if (j>=N) wblog(FL,"ERR index out of bounds (%d/%d)",j,N);
       data[i]=j; if ((++m[j])>1) {
       wblog(FL,"ERR %s() index not unique (%d/%d)",FCT,j,N); }
    }
 
-   if (i<N) 
-   for (j=0; j<N; j++) { if (!m[j]) data[i++]=j; }
-
+   if (i<N) { 
+      for (j=0; j<N; ++j) { if (!m[j]) data[i++]=j; }
+   }
    return *this;
 };
 
 wbperm& wbperm::init2End(const wbvector<wperm_t> &I, wperm_t N) {
+
    wperm_t i,j, l=N-I.len;
    wbvector<char> mark(N); char *m=mark.data;
    if (I.len>N) wblog(FL,"ERR index too long (%d/%d)",I.len,N);
 
-   init(N);
+   RENEW(N,NULL,0,0);
    for (i=0; i<I.len; i++) { j=I[i];
       if (j>=N) wblog(FL,"ERR index out of bounds (%d/%d)",j,N);
       data[l+i]=j; if ((++m[j])>1) {
       wblog(FL,"ERR %s() index not unique (%d/%d)",FCT,j,N); }
    }
 
-   if (l) 
-   for (i=j=0; j<N; j++) { if (!m[j]) data[i++]=j; }
-
+   if (l) { 
+      for (i=j=0; j<N; j++) { if (!m[j]) data[i++]=j; }
+   }
    return *this;
 };
 
@@ -253,24 +392,6 @@ wbperm& wbperm::init2EndB(wperm_t m, wperm_t N) {
    return *this;
 };
 
-wbperm& wbperm::init2Front(wperm_t k, wperm_t N) { 
-   if (k>=N) wblog(FL,
-      "ERR %s() index out of bounds (%d/%d)",FCT,k+1,N);
-   wperm_t i=0; RENEW(N); data[0]=k;
-   for (; i<k; ++i) { data[i+1]=i; }; ++i;
-   for (; i<N; ++i) { data[i  ]=i; };
-   return *this;
-};
-
-wbperm& wbperm::init2End(wperm_t k, wperm_t N) { 
-   if (k>=N) wblog(FL,
-      "ERR %s() index out of bounds (%d/%d)",FCT,k+1,N);
-   wperm_t i=0; RENEW(N); data[N-1]=k;
-   for (; i<k; ++i) { data[i  ]=i; }; ++i;
-   for (; i<N; ++i) { data[i-1]=i; };
-   return *this;
-};
-
 wbperm& wbperm::Cycle(wperm_t k1, wperm_t k2) { 
    if (k1>=len || k2>=len) wblog(FL,
       "ERR %s() index out of bounds [%d %d]/%d !?",FCT,k1,k2,len);
@@ -285,29 +406,7 @@ wbperm& wbperm::Cycle(wperm_t k1, wperm_t k2) {
    return *this;
 };
 
-wbperm& wbperm::initCycle(wperm_t r, wperm_t k1, wperm_t k2) { 
-
-   if (k1>=r || k2>=r) wblog(FL,
-      "ERR %s() index out of bounds [%d %d]/%d !?",FCT,k1,k2,len);
-   if (k1==k2) { return Index(r); }
-
-   RENEW(r);
-
-   if (k1<k2) { wperm_t k=0;
-      for (; k<k1; ++k) { data[k]=k; }
-      for (; k<k2; ++k) { data[k]=k+1; }; data[k++]=k1;
-      for (; k<r;  ++k) { data[k]=k; }
-   }
-   else { wperm_t k=r-1;
-      for (; k>k1; --k) { data[k]=k; }
-      for (; k>k2; --k) { data[k]=k-1; }; data[k--]=k1;
-      for (; k<r;  --k) { data[k]=k; }
-   }
-
-   return *this;
-};
-
-wbperm& wbperm::Rotate(swperm_t k) {
+wbperm& wbperm::Rotate(wperm_ts k) {
 
     if (!len) wblog(FL,
       "ERR %s() got empty permutation %d/%d !?",FCT,k,len);
@@ -319,8 +418,9 @@ wbperm& wbperm::Rotate(swperm_t k) {
     return *this;
 };
 
-wbperm& wbperm::initRotate(wperm_t r, swperm_t k) {
+wbperm& wbperm::initRotate(wperm_t r, wperm_ts k) {
 
+    fac=1;
     if (!r) {
        if (k) wblog(FL,
           "ERR %s() got empty permutation %d/%d !?",FCT,k,r);
@@ -328,54 +428,48 @@ wbperm& wbperm::initRotate(wperm_t r, swperm_t k) {
     }
 
     if ((k%=r)<0) k+=r; 
-    if (!k) return Index(r);
+    if (!k) { return Index(r); }
 
     RENEW(r);
     for (wperm_t i=0; i<len; ++i) { data[(i+k)%len]=i; }
     return *this;
 };
 
-bool wbperm::sameAs(const wbperm &b) const { 
-   if (!len) {
-      if (b.len)
-           { return b.isIdentityPerm(); }
-      else { return 1; }
+bool wbperm::sameAs(const wbperm &b, char lflag) const { 
+
+   bool q=0; if (conj!=b.conj) { return q; }
+   unsigned i=0;
+   char iflag = (inv+b.inv)%2;    
+
+   if (iflag) 
+        { if (!lflag || fabs(fac*b.fac-1)>1e-14) { return q; }}
+   else { if (fac!=b.fac) { return q; }}
+
+   if (!len  ) { if ( b.len && !b.isIdentityPerm()) { return q; }} else
+   if (!b.len) { if (            !isIdentityPerm()) { return q; }} else
+   if (iflag) {
+      if (len<=b.len) 
+           { for (i=0; i<  len; ++i) { if (b.at(data[i])!=i) { return q; }}}
+      else { for (i=0; i<b.len; ++i) { if (at(b.data[i])!=i) { return q; }}}
    }
-   if (!b.len)
-        { return isIdentityPerm(); }
-   else { return (*this)==b; }
-};
+   else {
+      unsigned n=MIN(len,b.len);
+      for (i=0; i<n; ++i) { if (data[i]!=b.data[i]) { return q; }}
+   }
 
-bool wbperm::isIdentityPerm() const {
-    bool id=1; if (len) { 
-       for (unsigned i=0; i<len; ++i) { if (data[i]!=i) { id=0; break; }};
-    }
-    return id;
-};
-
-bool wbperm::isIdentityPerm(const char *F, int L, wperm_t r) const {
-    if (int(r)>=0 && len!=r) { if (F) wblog(F,L,
-       "ERR %s() invalid permutation (len=%d/%d)",FCT,len,r);
-       return 0;
-    }
-    bool q=1; char mark[len]; memset(mark,0,len);
-    wperm_t i=0;
-
-    for (; i<len; ++i) {
-       if (data[i]==i) { ++mark[i]; } else { q=0; break; }
-    }
-    for (; i<len; ++i) {
-       if (data[i]>=len) wblog(F_L, "ERR %s() invalid permutation\n"
-          "(index out of range %d/%d)",FCT,data[i],len);
-       if ((++mark[data[i]])>1) wblog(F_L,"ERR %s() "
-          "invalid permutation (non-unique index)",FCT);
-    }
-    return q;
+   if (i && len!=b.len) {
+      if (len>b.len)
+           { for (; i<  len; ++i) { if (  data[i]!=i) return q; }}
+      else { for (; i<b.len; ++i) { if (b.data[i]!=i) return q; }}
+   }
+   return (q=1);
 };
 
 bool wbperm::isReversePerm() const {
-    if (len==0) return 0;
-    for (wperm_t m=len-1, i=0; i<len; i++) if (data[i]!=m-i) return 0;
+    if (!len) { return 0; }
+    for (wperm_t m=len-1, i=0; i<len; ++i) {
+       if (data[i]!=m-i) { return 0; }
+    }
     return 1;
 };
 
@@ -383,7 +477,7 @@ bool wbperm::isCyclic2F(wperm_t m, wperm_t n,
     char iflag 
   ) const {
 
-    if (swperm_t(n)<0) { n = (len>m ? (len-m) : 0); }
+    if (wperm_ts(n)<0) { n = (len>m ? (len-m) : 0); }
     if (!len) { return (m || n ? 0 : 1); }
     if (len!=m+n) wblog(FL,
        "ERR %s() length mismatch (%d / %d + %d)",FCT,len,m,n);
@@ -396,6 +490,41 @@ bool wbperm::isCyclic2F(wperm_t m, wperm_t n,
     return 1;
 };
 
+int wbperm::getTranspositionsNN(wbMatrix<unsigned> &T2) const {
+
+   unsigned i,j, l=-1;
+
+   wbperm P(*this); wperm_t p_, *p=P.data;
+
+   T2.init((len*(len-1))/2,2);  
+   unsigned *t2=T2.data;
+
+   for (i=0; i<len; ++i) { if (p[i]!=i) {
+      for (j=i+1; j<len; ++j) { if (p[j]==i) { break; }}
+      if (j==len) wblog(FL,
+         "ERR %s() invalid permutation [%d-%d: %s]",FCT,i,j,STR(P));
+
+      for (; j>i; --j, t2+=T2.dim2) {
+         if (++l>=T2.dim1) wblog(FL,"ERR %s() "
+            "nT2 out of bounds (n=%d -> l=%d/%d",FCT,len,l,T2.dim1);
+         if (p[j-1]<p[j]) 
+              { t2[0]=p[j-1]; t2[1]=p[j]; }
+         else { t2[1]=p[j-1]; t2[0]=p[j]; }
+
+         p_=p[j-1]; p[j-1]=p[j]; p[j]=p_;
+      }
+
+      if (p[i]!=i) wblog(FL,"ERR %s() "
+      "failed to transform to Id [%s] -> [%s]",FCT,STR(*this),STR(P));
+   }}
+
+   if (++l==0)
+        { T2.init(); } 
+   else { T2.dim1=l; }
+
+   return l;
+};
+
 bool wbperm::isOpTranspose() const {
 
     if (len!=3 && len%2) { return 0; }
@@ -406,24 +535,56 @@ bool wbperm::isOpTranspose() const {
     return 1;
 };
 
-wbperm& wbperm::Permute(const wbperm &P, char iflag, wperm_t r){
+wbperm& wbperm::Permute(wbperm P, unsigned r) {
 
-   if (P.len && !P.isIdentityPerm(FL,r)) { 
-      if (!len || isIdentityPerm(FL,r)) {
-         if (iflag)
-              { P.invert(*this); }
-         else { init(P); }
+   char q=(isEmpty() ? 1 : (P.isEmpty() ? 2:0));
+   if (q) {
+      if (q&1) { init(P); }
+      if (int(r)>=0 && len!=r) { Extend(r); } 
+      return *this;
+   }
+
+   P.flatten();
+
+   if (isIdentityPerm()) {
+      double f0=((inv%2) ? 1/fac : fac);
+      char c0=conj;
+
+      init(P); 
+      if (inv) wblog(FL,"ERR %s() got inv=%d",FCT,inv);
+
+      fac*=f0;
+      if (c0) { Wb::conj_add_z2(conj,c0); }
+
+      if (int(r)>=0 && len!=r) { Extend(r); }
+      return *this; 
+   }
+
+   this->flatten();
+   Wb::conj_add_z2(conj,P.conj);
+   fac *= P.fac;
+
+   if (!P.isIdentityPerm(FL)) {
+      unsigned i, n=P.len;
+      wperm_t *p=P.data;
+
+      if ((int(r)<0 || r<P.len) && n) { 
+         for (i=n-1; i; --i) { if (p[i]!=i) { n=i+1; break; }}
+         if (int(r)>=0 && n<r) { n=r; } 
       }
-      else {
-         wbperm X(*this); 
-         wperm_t i=0, *x=X.data, *p=P.data;
 
-         if (iflag)
-              { for (; i<r; ++i) { data[p[i]] = x[i]; }}
-         else { for (; i<r; ++i) { data[i] = x[p[i]]; }}
+      if (len>=n && (int(r)<0 || r==len)) {
+         WBPERM X(n,data); 
+         for (i=0; i<n; ++i) { data[i] = X.data[p[i]]; } 
+      }
+      else { wbperm X(n);
+         for (i=0; i<n; ++i) { X.data[i] = at_(p[i]); }
+         if (int(r)>=0 && len!=r) { X.Extend(r); } 
+         X.WBPERM::save2(*this); 
       }
    }
-   return *this;
+
+   return *this; 
 };
 
 #endif

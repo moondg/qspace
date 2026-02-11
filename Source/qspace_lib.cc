@@ -31,44 +31,44 @@
  * AW (C) Jan 2006
  * ======================================================================= */
 
-void check_qdim     (C_MEX *C, unsigned &ma, wbvector<widx_t> &dq);
-void check_cidx     (C_MEX *a, const unsigned &adim, UVEC &ica);
-void getPerm        (C_MEX *a, const unsigned m, wbvector<unsigned> &P);
+void check_qdim     (cMEX *C, unsigned &ma, wbvector<widx_t> &dq);
+void check_cidx     (cMEX *a, const unsigned &adim, UVEC &ica);
+void getPerm        (cMEX *a, const unsigned m, wbvector<unsigned> &P);
 char isUInt         (const wbvector<double> &dd);
 
 void getDataSize    (const mxArray *AD, const unsigned nd, const unsigned ma,
                      wbMatrix<unsigned> &usa);
 
-void getQsub        (C_MEX *C, unsigned m, C_UVEC &dQ, C_UVEC &I, DMAT &Qc);
-void getQall        (C_MEX *A, wbMatrix<double> &Q);
-void getQall        (C_MEX *C, unsigned ma, C_UVEC &dq, wbMatrix<double> &Q);
-void getQBlock      (C_MEX *C, C_UINT ic, DMAT &Qc);
-void cell2mat       (C_MEX *C, unsigned *idx, unsigned n, DMAT &Qc);
+void getQsub        (cMEX *C, unsigned m, cUVEC &dQ, cUVEC &I, DMAT &Qc);
+void getQall        (cMEX *A, wbMatrix<double> &Q);
+void getQall        (cMEX *C, unsigned ma, cUVEC &dq, wbMatrix<double> &Q);
+void getQBlock      (cMEX *C, cUINT ic, DMAT &Qc);
+void cell2mat       (cMEX *C, unsigned *idx, unsigned n, DMAT &Qc);
 
 char isUnique       (wbMatrix<double> Q);
-char isUniqueSorted (C_DMAT &Q);
+char isUniqueSorted (cDMAT &Q);
 
 void makeUnique     (DMAT &Q, UVEC &Iu);
 void makeUnique     (DMAT &Q);
 
 int matchSortedIdx_old(
-   C_DMAT &QA, C_DMAT &QB,
+   cDMAT &QA, cDMAT &QB,
    wbvector<widx_t> &Ia, wbvector<widx_t> &Ib
 );
 
-int matchIndex_old(C_DMAT &QA, C_DMAT &QB,
+int matchIndex_old(cDMAT &QA, cDMAT &QB,
    wbvector<widx_t> &Ia, wbvector<widx_t> &Ib
 );
 
-void QtoCell        (C_DMAT &Q, C_UVEC &dab, mxArray *&S, int fieldnr,
-                     C_UVEC &P = wbvector<unsigned>());
-void Data2vec       (mxArray *AD, C_IMAT sda, wbvector<double> &Avec);
-void Sab2Cell       (C_IMAT &SA, C_IMAT &SB, C_UVEC &Ia, C_UVEC &Ib,
-                     C_UVEC &Iu, C_UVEC &ika, C_UVEC &ikb,
+void QtoCell        (cDMAT &Q, cUVEC &dab, mxArray *&S, int fieldnr,
+                     cUVEC &P = wbvector<unsigned>());
+void Data2vec       (mxArray *AD, cIMAT sda, wbvector<double> &Avec);
+void Sab2Cell       (cIMAT &SA, cIMAT &SB, cUVEC &Ia, cUVEC &Ib,
+                     cUVEC &Iu, cUVEC &ika, cUVEC &ikb,
                      mxArray* C, int fid1, int fid2);
 
-void DtoCell        (C_IMAT &SA, C_IMAT &SB, C_UVEC &Ia, C_UVEC &Ib,
-                     C_UMAT &IG, C_UVEC &ika, C_UVEC &ikb,
+void DtoCell        (cIMAT &SA, cIMAT &SB, cUVEC &Ia, cUVEC &Ib,
+                     cUMAT &IG, cUVEC &ika, cUVEC &ikb,
                      mxArray* C, int fid1, int fid2);
 
 void check_qdim(
@@ -114,7 +114,8 @@ void check_cidx(
     catch (...) { ++e; }
     if (e || !ica.len) usage(FLINE,"input arguments 3 and 4 must be vectors");
 
-    unsigned i=0, n=ica.max(); char mark[n];
+    unsigned i=0, n=ica.max();
+    std::vector<char> mark(n); 
 
     for (; i<ica.len; ++i) {
        if (--ica[i]>n || ++mark[ica[i]]>1) wblog(FL,
@@ -136,8 +137,8 @@ void getPerm(
     P.init(A.len); A.copyTo(P.data,'t'); 
     P-=1; 
 
-    if (!validPerm(P)) {
-       P.print("P"); wbdie(FLINE,"invalid permuation");
+    if (P.isValidPerm()<=0) {
+       P.print("P"); wbdie(FLINE,"invalid permutation");
     }
 };
 
@@ -662,7 +663,7 @@ void Sab2Site2Cell(
     const wbMatrix<unsigned> &IG,
     const wbvector<unsigned> &ika,
     const wbvector<unsigned> &ikb,
-    const wbvector<unsigned> &ikP,
+    const wbperm &ikP,
     mxArray* ST, int fid_Sab, int fid_SAB
 ){
     unsigned k,l,ia,ib, ng=IG.dim1, dk=ika.len+ikb.len; int *s1,*s2;

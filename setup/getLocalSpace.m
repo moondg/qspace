@@ -108,7 +108,7 @@ function varargout=getLocalSpace(model,varargin)
 
   if ~isempty(regexp(model,'^S[OU]\d$'))
      varargin=[{str2num(model(3:end))}, varargin];
-     model=[model(1:2) 'N'];
+     model=[model(1:2) 'N']; % e.g., 'SUN'
   elseif ~isempty(regexp(model,'^Sp\d$'))
      q=str2num(model(3:end)); if mod(q,2)
         wbdie('invalid symmetry ''%s''',model); end
@@ -131,6 +131,10 @@ function varargout=getLocalSpace(model,varargin)
              [varargout{:}]=getLocalSpace_SpinSUN(varargin{:});
         else [varargout{:}]=getLocalSpace_Spin(varargin{:});
         end
+
+     case 'A4'
+        n=2; varargout=cell(1,n);
+        [varargout{:}]=getLocalSpace_A4(varargin{:});
 
      case 'SUN'
         n=2; varargout=cell(1,n);
@@ -321,35 +325,36 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
   phflag=0; chflag=0; SONflag=0; Jflag=0; Sflag=0;
 
   Sym=strread(Sym_,'%s','whitespace',';, ')'; clear q
+  nsym=numel(Sym); iferm=[];
 
-  for sym1=Sym, sym1=sym1{1};
-    n=str2num(regexprep(sym1,'(SU|SO)(\d+)channel','$2'));
+  for isym=1:nsym, sym=Sym{isym};
+    n=str2num(regexprep(sym,'(SU|SO)(\d+)channel','$2'));
     if ~isempty(n)
        if ~isequal(n,NC), wbdie(...
          'invalid symmetry %s (having NC=%g)',Sym_,NC); end
-       sym1=[sym1(1:2) 'Nchannel'];
+       sym=[sym(1:2) 'Nchannel'];
     end
 
     n=0;
-    sym1=regexprep(sym1,'Sp(\d+)channel(?@n=str2num($1);)','');
+    sym=regexprep(sym,'Sp(\d+)channel(?@n=str2num($1);)','');
     if n
        if ~isequal(n,2*NC), wbdie(...
          'invalid symmetry %s (having NC=%g)',Sym{i},NC); end
-       sym1=['SpNchannel' sym1];
+       sym=['SpNchannel' sym];
     end
 
-    n=str2num(regexprep(sym1,'Z(\d+)charge','$1'));
+    n=str2num(regexprep(sym,'Z(\d+)charge','$1'));
     if ~isempty(n)
        if n<2, wbdie(...
          'invalid symmetry %s (having NC=%g)',Sym{i},NC); end
-       sym1='ZNcharge'; zs=sprintf('Z%g',n); nz=n;
+       sym='ZNcharge'; zs=sprintf('Z%g',n); nz=n;
     end
 
-    if isequal(sym1(end-2:end),'(:)')
-         cflag=1; if NC==1, sym1=sym1(1:end-3); end
+    if isequal(sym(end-2:end),'(:)')
+         cflag=1; if NC==1, sym=sym(1:end-3); end
     else cflag=0; end
 
-    switch sym1
+    switch sym
 
       case 'Pcharge'
           q=init_qstruct('total charge parity','P');
@@ -360,6 +365,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
           q.Sz=SymOp(['P[' q.Sz.istr ']'],diag(z),'-disc');
 
           if ~isempty(SOP), SOP(end+1)=q; else SOP=q; end
+          iferm(end+1)=numel(SOP);
 
       case 'ZNcharge'
           q=init_qstruct(sprintf('total charge %s',zs),zs);
@@ -376,6 +382,11 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
 
           if ~isempty(SOP), SOP(end+1)=q; else SOP=q; end
 
+          if mod(nz,2), wbwrn(...
+              'invalid usage Z%d charge incompatible with charge parity',nz);
+          else iferm(end+1)=numel(SOP);
+          end
+
       case 'Acharge'
 
           ic=[0, cumsum(NCx)];
@@ -391,6 +402,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
              q=init_qstruct(s,'A');
              q.Sz=2*sum(CZ(ir));
              if ~isempty(SOP), SOP(end+1)=q; else SOP=q; end
+             iferm(end+1)=numel(SOP);
           end
 
       case 'Acharge(:)'
@@ -398,6 +410,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
              q=init_qstruct(sprintf('charge U(1) [%d/%d]',i,NC),'A');
              q.Sz=2*CZ(i);
              if ~isempty(SOP), SOP(end+1)=q; else SOP=q; end
+             iferm(end+1)=numel(SOP);
           end
 
       case 'Aspin'
@@ -420,6 +433,8 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
           q.Sp=sum(CP);
           q.Sz=sum(CZ);
           if ~isempty(SOP), SOP(end+1)=q; else SOP=q; end
+          iferm(end+1)=numel(SOP);
+
           phflag=1;
 
       case 'SU2charge(:)'
@@ -429,6 +444,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
              q.Sp=CP(i);
              q.Sz=CZ(i);
              if ~isempty(SOP), SOP(end+1)=q; else SOP=q; end
+             iferm(end+1)=numel(SOP);
           end
           phflag=2;
 
@@ -462,7 +478,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
              JJ(p)=Q+sum(SS(:,p));
           end
 
-          if sym1(1)=='A'
+          if sym(1)=='A'
              s=sprintf('total U(1) spin (J=L+S)_z having 2l+1=NC=%g',NC);
              q=init_qstruct(s,'A'); Jflag=1;
              q.Sz=2*JJ(3);
@@ -502,17 +518,17 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
           chflag=1; clear Sp Sz
 
       case {'SpNchannel','SpNchannelS'}
-         if sym1(end)~='S', phflag=12;
+         if sym(end)~='S', phflag=12;
          else
             Sflag=1;
             if ~isempty(regexp(Sym_,'SU2charge')), wbdie(...
-              'invalid symmetry setting (%s requires abelian charge)',sym1);
+              'invalid symmetry setting (%s requires abelian charge)',sym);
             end
          end
          chflag=2;
 
           if NC<2, wbdie('Sp(2*NC) symmetry requires NC>=2 (%g)',NC); end
-          if NCsplit, wbdie('NC=(%s) not yet implemented for %s',NCxs,sym1); end
+          if NCsplit, wbdie('NC=(%s) not yet implemented for %s',NCxs,sym); end
 
           if phflag
              psi=FF; for i=1:size(FF,1), psi(i,2)=psi(i,2)'; end
@@ -551,7 +567,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
 
       case 'SONchannel'
           if NC~=3, wbdie(['invalid usage ' ... 
-            '(got %s with NC=%g; only implemented for NC=3)'],sym1,NC);
+            '(got %s with NC=%g; only implemented for NC=3)'],sym,NC);
           end
 
           Sp=SymOp(1,2); Sz=SymOp(1,2);
@@ -573,7 +589,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
 
           SONflag=1;
 
-      otherwise helpthis, wbdie('invalid symmetry %s (%s)',sym1,Sym_);
+      otherwise helpthis, wbdie('invalid symmetry %s (%s)',sym,Sym_);
     end
   end
 
@@ -599,7 +615,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
      if Jflag, transform(JJ,LL,U); end
 
      SOP=transform_all(SOP,U); transform(FF,NN,SS,CP,CZ,U);
-     SOP=resparse(SOP,1E-12);
+     SOP=resparse(SOP,1e-12);
 
      if ~isempty(P), U=P*U; end
   else
@@ -623,19 +639,14 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
   if gotsym, k=0; 
      while ~isempty(X), k=k+1;
         [x,Io,X]=getSymmetryOps(X(1),SOP,X,oP{:});
-
         for i=1:numel(x), x{i}=full(x{i}); end
         F(k)=compactQS(oc{:},sym,Is.QZ,Is.QZ,Io.QZ, cat(3,x{:}));
-
-        check_ferm_acomm(F(k),numel(x));
      end
 
      if numel(F)==numel(FF), F=reshape(F,size(FF)); end
   else
      x=cell(size(X)); for i=1:numel(x), x{i}=full(X(i).op); end
      F=QSpace([0;0;0],cat(3,x{:}),{'','*','*'});
-
-     check_ferm_acomm(F,numel(X));
   end
 
   if vflag,
@@ -647,16 +658,28 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
      wblog(' * ','%g F-op%s @ z=%.3g',n,iff(n~=1,'s',''),s(1)/s(2));
      if vflag>1, info(F(1)); end
   end
-
   F=setOpFlag(F);
+
+  if ~isempty(iferm)
+     if numel(SOP)>9
+        wbdie('invalid iferm = [ %s ]',vec2str(iferm,'-s')); end
+     iferm=['/' sprintf('%d',iferm)];
+
+     setop_fdir(iferm,F);
+  end
+
+  for k=1:numel(F)
+     dd=getDimQS(F(k));
+     check_ferm_acomm(F(k),dd(end));
+  end
 
 % --------------------------------------------------------------------
 % EZ-operators
 
   x=sum(NN(:));
-  if norm(x,'-offdiag')>1E-12, wbdie('N-operator not diagonal'); end
+  if norm(x,'-offdiag')>1e-12, wbdie('N-operator not diagonal'); end
   x=full(diag(x.op));
-  if norm(x-round(x))>1E-12, wbdie('N-operator is non-integer'); end
+  if norm(x-round(x))>1e-12, wbdie('N-operator is non-integer'); end
   x=round(x); oo={'E','Z'};
 
   E=eye(D);
@@ -665,6 +688,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
      z=[SOP.qzvac];
      E=QSpace(compactQS(oc{:},sym, Is.QZ,Is.QZ,z, E));
      Z=QSpace(compactQS(oc{:},sym, Is.QZ,Is.QZ,z, Z));
+     setop_fdir(iferm,E,Z);
   else
      E=QSpace([0;0],E,{'','*'});
      Z=QSpace([0;0],Z,{'','*'});
@@ -684,7 +708,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
   end
 
   nc=NC/size(SS,1);
-  if norm(nc-round(nc))>1E-12, wbdie(['failed to ' ... 
+  if norm(nc-round(nc))>1e-12, wbdie(['failed to ' ... 
     'determine effect number of channels for splitup spin-operator']);
   end
 
@@ -703,6 +727,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
         if i>1, S(i,:)=q; else S=q; end
      end
   end
+  setop_fdir(iferm,S);
 
   if SONflag
      i=findstrc({SOP.info},'SO');
@@ -737,11 +762,13 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
              [x,Io]=getSymmetryOps(sum(CZ),SOP);
         else [x,Io]=getSymmetryOps(CZ(i),SOP);
         end
-        x=mfull(x); x=cat(3,x{:}); x(find(abs(x)<1E-12))=0;
+        x=mfull(x); x=cat(3,x{:}); x(find(abs(x)<1e-12))=0;
 
         C3(i)=compactQS(oc{:},sym, Is.QZ,Is.QZ, Io.QZ, x);
         C2(i)=contractQS(C3(i),'13*',C3(i),'13');
      end
+
+     setop_fdir(iferm,C2,C3);
 
      Iout.C3=C3;
      Iout.C2=C2;
@@ -753,7 +780,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
      for j=1:n, Q=Q+contractQS(C3(i),'13*',C3(j),'13');
      end; end
 
-     Iout.Q2=(4/3)*Q;
+     Iout.Q2=(4/3)*setop_fdir(iferm,Q);
      % NB! C3(i) are proper C=1/2 `spin' operators
      % factor 4   from (1/2)^2 in definition of Cz
      % factor 1/3 since there are three ops in the IROP C3
@@ -801,11 +828,12 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
 
      [y1,I,D]=uniquerows(Y.Q{3}); Y2=QSpace; YY=QSpace(1,0); nY=numel(I);
      for i=nY:-1:1
-        Q=getsub(Y,I{i}); if norm(Q)>1E-12
+        Q=getsub(Y,I{i}); if norm(Q)>1e-12
            YY(end+1)=Q;
            Y2=Y2+contract(Q,'12*',Q,'12');
         end
      end
+     setop_fdir(iferm,YY,Y2);
 
      Iout.Y =YY; nY=numel(YY);
      Iout.Y2=Y2;
@@ -815,7 +843,7 @@ function [F,Z,S,Iout]=getLocalSpace_SpinfullFermions(Sym_,varargin)
    % => Cij=Fi'*Fj -> for i==j, must subtract 0.5*Id
    %    this also ensures that |Cij|^2=4 for all i and j
    % => this corresponds to making the scaler term in Y traceless!
-     if norm(YY(end).Q{3}(:))>1E-12, wbdie(...
+     if norm(YY(end).Q{3}(:))>1e-12, wbdie(...
        'invalid usage (misplaced scalar operator in Y ?!)'); end
      a=fixScalarOp(YY(end)); q=trace(a)/trace(E2);
      Iout.Y(end)=makeIrop(skipzeros(a-q*E2));
@@ -911,7 +939,7 @@ end
 function S=get_spin_ops(X,SOP,Is,NC,sym,Jflag)
   if nargin<6, Jflag=0; end
 
-  e=norm(comm(X(1),X(2))+X(3)); if e>1E-12
+  e=norm(comm(X(1),X(2))+X(3)); if e>1e-12
      wbdie('invalid (sparse) S-ops (%.3g)',e); end
 
   S=QSpace; k=0; X=fliplr(X);
@@ -933,7 +961,7 @@ function S=get_spin_ops(X,SOP,Is,NC,sym,Jflag)
      q=getDimQS(S(1)); q=q(end,:); q(end+1:3)=1;
      s(i,:)=q;
   end
-  if norm(diff(s(:,3)))>1E-12, wbdie('invalid S-ops'); end
+  if norm(diff(s(:,3)))>1e-12, wbdie('invalid S-ops'); end
   if s(1,3)==1
      i=reshape(flipud(reshape(1:numel(S),3,[])),size(S));
      S=S(i);
@@ -948,7 +976,7 @@ function S=get_spin_ops(X,SOP,Is,NC,sym,Jflag)
         - contractQS(S(1),'1*',S(1),1) - S(3));
      end
 
-     if e>1E-12, wbdie('invalid spin-CR'); end
+     if e>1e-12, wbdie('invalid spin-CR'); end
 
      if ~Jflag
         q=QSpace; for i=1:3
@@ -957,7 +985,7 @@ function S=get_spin_ops(X,SOP,Is,NC,sym,Jflag)
           else q=q+contractQS(S(i),'1*', S(i),'1' ); end
         end
         e=eigQS(q);
-        if norm(max(e(:,1))-(NC/2)*(NC/2+1))>1E-12
+        if norm(max(e(:,1))-(NC/2)*(NC/2+1))>1e-12
         wbdie('invalid S-ops'); end
      end
   end
@@ -1153,7 +1181,7 @@ function [F,Z,Iout]=getLocalSpace_SpinlessFermions(Sym_,varargin)
   [U,Is]=getSymStates(strip4mex(SOP)); U=sparse(U);
 
   SOP=transform_all(SOP,U); transform(FF,NN,U);
-  SOP=resparse(SOP,1E-12);
+  SOP=resparse(SOP,1e-12);
 
   if ~isempty(P), U=P*U; end
 
@@ -1192,9 +1220,9 @@ function [F,Z,Iout]=getLocalSpace_SpinlessFermions(Sym_,varargin)
 % -----------------------------------------------------------
 
   x=sum(NN(:));
-  if norm(x,'-offdiag')>1E-12, wbdie('N-operator not diagonal'); end
+  if norm(x,'-offdiag')>1e-12, wbdie('N-operator not diagonal'); end
   x=full(diag(x.op));
-  if norm(x-round(x))>1E-12, wbdie('N-operator is non-integer'); end
+  if norm(x-round(x))>1e-12, wbdie('N-operator is non-integer'); end
   x=round(x); oo={};
 
   z=[SOP.qzvac];
@@ -1274,7 +1302,7 @@ function [S,Iout]=getLocalSpace_Spin(qloc,varargin)
      S(3)=-S(2)'; S(3).info.itags{end}='*';
 
      q=sum(S); e=normQS(contractQS(q,'13*',q,'13') - 0.75*E);
-     if e>1E-12, wbdie('got spin-half operator inconsistency @ %.3g',e); end
+     if e>1e-12, wbdie('got spin-half operator inconsistency @ %.3g',e); end
 
      Iout=add2struct(Iout,SOP,sym,'U=[]','Is=struct',E,'S2=[]');
      return
@@ -1331,7 +1359,7 @@ function [S,Iout]=getLocalSpace_Spin(qloc,varargin)
   [U,Is]=getSymStates(strip4mex(SOP)); U=sparse(U);
 
   SOP=transform_all(SOP,U); transform(SS,U);
-  SOP=resparse(SOP,1E-12);
+  SOP=resparse(SOP,1e-12);
 
   if ~isempty(P), U=P*U; end
 
@@ -1361,7 +1389,7 @@ function [S,Iout]=getLocalSpace_Spin(qloc,varargin)
 
   k=0; S=QSpace; X=sum(SS,1); oo={};
 
-  e=norm(comm(X(1),X(2))+X(3)); if e>1E-12
+  e=norm(comm(X(1),X(2))+X(3)); if e>1e-12
      wbdie('invalid (sparse) S-ops (%.3g)',e);
   end
 
@@ -1405,7 +1433,7 @@ function [S,Iout]=getLocalSpace_Spin(qloc,varargin)
   end
 
   e=eigQS(q);
-  if norm(max(e(:,1))-qloc*(qloc+1))>1E-12
+  if norm(max(e(:,1))-qloc*(qloc+1))>1e-12
   wbdie('invalid S-ops'); end
 
   if vflag
@@ -1506,7 +1534,7 @@ function [S,Iout]=getLocalSpace_SpinSUN(sym,qloc,varargin)
          break;
       end
 
-      if k<n && (k==1 || dim(Ak,2)<1E6)
+      if k<n && (k==1 || dim(Ak,2)<1e6)
          if k>1
             Ak=QSpace(permuteQS(getIdentityQS(Ak,2,S0,1),[1 3 2]));
             Q=contractQS(Ak,1,Sk,2);  % RsL'o
@@ -1529,7 +1557,7 @@ function [S,Iout]=getLocalSpace_SpinSUN(sym,qloc,varargin)
       for j=1:prod(s(3:end)), qj=q(:,:,j);
           e=e+norm(qj-qj(1)*e2);
       end
-      if e>1E-12
+      if e>1e-12
          wbdie('got unexpected spin operator (e=%.3g)',e);
       else
          s(1:2)=1;
@@ -1644,7 +1672,7 @@ function [S0,Iout]=getLocalSpace_SUN(N,varargin)
   [U,Is]=getSymStates(strip4mex(SOP)); U=sparse(U);
 
   SOP=transform_all(SOP,U);
-  SOP=resparse(SOP,1E-12);
+  SOP=resparse(SOP,1e-12);
 
   if ~isempty(P), U=P*U; end
 
@@ -1889,6 +1917,67 @@ function [S,Iout]=getLocalSpace_Sp2N(N,qloc,varargin)
 end
 
 % -------------------------------------------------------------------- %
+% Hamiltonian with A4 symmetry
+% -------------------------------------------------------------------- %
+
+function [S,Iout]=getLocalSpace_A4(varargin)
+% function [S,Io]=getLocalSpace_A4([qloc,opts])
+%
+%    Get description of local site with single multiplet in
+%    the non-abelian discrete A4 symmetry. A4 may be seen as
+%    broken SO(3) symmetry where the SO(3) spin operator
+%    remains intact (first output argument),
+%    with all the other local IROPs returned in Iout.
+%
+% Wb,Jan15,26
+
+  getopt('INIT',varargin); oc={};
+     if getopt('-v'), vflag=1;
+     elseif getopt('-V'), vflag=2; else vflag=0; end
+  qloc=getopt('get_last',[]);
+
+  if isempty(qloc), qloc=3;
+  elseif numel(qloc)~=1 || isempty(find([-1 0 1 3]==qloc))
+     qloc, wbdie('invalid usage (qloc)');
+  elseif qloc~=3
+     wbdie(['local state q=%g (multiplet with 1 state!) ' ... 
+     'only supports trivial identity operator'],qloc); 
+  end
+
+  C=sprintf('%g;%g',qloc,qloc);
+  C=SymStore('A4','-C',C);
+
+  E=getIdentity(QSpace(C));
+  Z=getIdentity(E,1,'-0');
+
+  A=getIdentity(Z,1,Z,2);
+  Y0=contract(A,2,Z,'2*',[1 3 2]);
+
+  istr=regexprep(lineno,':\d+','');
+  istr=regexprep(istr,'\.m>',' -> ');
+
+  Iout=add2struct('-',istr,qloc,C,E,Z);
+  if ~isempty(varargin), Iout.args=varargin; end
+
+  Y   =sqrt(3)*getsub(Y0,2);
+  Y(2)=sqrt(3)*getsub(Y0,[1 3]); Y(2).data{1}=-Y(2).data{1};
+
+  Q=getsub(Y0,4);
+  x0=Q.data{1}; x0(:)=0;
+  u=eye(2);
+
+  for i=1:2
+     x=x0; if i==1, x(1)=sqrt(2); else x(end)=sqrt(2); end
+     Q.data{1}=x;
+     Q.info.cgr(1).cgw=sqrt(3)*u;
+     Y(i+2)=Q;
+  end
+
+  S=Y(3); Iout.Y=Y;
+
+end
+
+% -------------------------------------------------------------------- %
 % keep scalar operator dimension (3rd index)
 % if non-scalar operators exist within the same QSpace array
 
@@ -1900,7 +1989,7 @@ function F=fixMixedScalar(F)
    mark=zeros(sF); n=prod(sF); otype=cell(sF);
    for i=1:n, r=numel(F(i).Q); otype{i}=F(i).info.otype;
       if r==3, q=norm(F(i).Q{3});
-         if q>1E-12, mark(i)=1; else mark(i)=-1; end
+         if q>1e-12, mark(i)=1; else mark(i)=-1; end
       elseif r~=2
          wbdie('invalid usage (got r=%g !?)',r);
       end
@@ -1972,6 +2061,38 @@ function F=setOpFlag(F)
 end
 
 % -------------------------------------------------------------------- %
+% Wb,May05,25
+
+function Q=setop_fdir(iferm,varargin)
+
+  if nargout && nargin>2
+     wbdie('invalid usage (one output arg for %d inputs)',nargin-1);
+  end
+  if isempty(iferm)
+     if nargout, Q=varargin{1}; end
+     return
+  end
+
+  if nargout && nargin>2, wbdie('invalid usage'); end
+  if ~ischar(iferm) || isempty(regexp(iferm,'^\/\d+$'))
+     disp(iferm), wbdie('invalid iferm'); end
+
+  for l=2:nargin, Q=varargin{l-1};
+     if ~isfield(Q,'info'), wbdie('invalid usage'); end
+     for k=1:numel(Q)
+        Q(k).info.fdir=[ getqdir(Q(k),'-s'), iferm ];
+     end
+
+     if ~nargout
+        vn=inputname(l); if isempty(vn), wbdie('invalid usage'); end
+        assignin('caller',vn,Q);
+     end
+  end
+
+  if ~nargout, clear Q; end
+end
+
+% -------------------------------------------------------------------- %
 
 function SOP=transform_all(SOP,U)
 
@@ -2020,7 +2141,7 @@ function Upsi=psi2psi(U,psi)
 
   if numel(psi)~=size(U,1), wbdie(...
     'size mismatch (%g/%g)',size(U,1),numel(psi)); end
-  e=norm(U*U'-speye(size(U)),'fro'); if e>1E-12, wbdie(...
+  e=norm(U*U'-speye(size(U)),'fro'); if e>1e-12, wbdie(...
     'unitary matrix U expected! (%.3g)',e); end
 
   s=dim(psi); Upsi=SymOp(size(psi)); q0=sparse(s,s);
@@ -2043,7 +2164,7 @@ function check_commrels(SOP)
      S1=SOP(i).Sz; n1=numel(S1);
      for i1=1:n1, for i2=i1+1:n1
         e=norm(comm(S1(i1),S1(i2)));
-        if e>1E-12, wbdie('invalid z-operator'); end
+        if e>1e-12, wbdie('invalid z-operator'); end
      end, end
 
      S1=[ SOP(i).Sz, SOP(i).Sp ]; n1=numel(S1);
@@ -2052,7 +2173,7 @@ function check_commrels(SOP)
         S2=[ SOP(j).Sz, SOP(j).Sp ]; n2=numel(S2);
         for i1=1:n1, for i2=1:n2
            e=norm(comm(S1(i1),S2(i2)));
-           if e>1E-12, inl(1); disp(SOP(i)), disp(SOP(j))
+           if e>1e-12, inl(1); disp(SOP(i)), disp(SOP(j))
               wbdie(['got non-commuting symmetries ' ...
              'SOP(%d).%d and SOP(%d).%d (e=%g)'],i,i1,j,i2,e);
            end
@@ -2081,7 +2202,7 @@ function check_ferm_acomm(F,nops)
      e=abs(diff(n));
      if nargin<2, nops=n(2); else e(2)=abs(n(1)-nops); end
 
-     if any(e>1E-12), wbdie(1,...
+     if any(e>1e-12), wbdie(1,...
         'invalid fermionic creation/annihilation ops (n=%g)',n(1)); end
 
      Q=(1/nops)*Q;
@@ -2139,14 +2260,14 @@ function S=norm_SUNspin_def(S)
    end
    if nS>1
       q=S.data; q=permute(cat(4,q{:}),[4 3 1 2]);
-      if abs(q(1))<1E-12, q=fliplr(q); end
+      if abs(q(1))<1e-12, q=fliplr(q); end
       if norm(diff(size(q))) || norm(q-q(1)*eye(size(q)))
          wbdie('unexpected input spin operators'); 
       end
    end
 
    cgr=S.info.cgr; cgw=[cgr.cgw];
-   if size(cgr,2)~=1 || norm(diff(cgw(:)))>1E-12
+   if size(cgr,2)~=1 || norm(diff(cgw(:)))>1e-12
       wbdie('invalid CGR data'); end
    cgw=cgw(1);
 

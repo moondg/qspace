@@ -18,10 +18,12 @@ void mexFunction(
     int nargin, const mxArray *argin[]
 ){ Wb::CleanUp aclu; try { 
 
-    unsigned i,k,K,M,N, disc, func, vflag=1, r=0, nlog=100, slen=128; int e;
-    double eps=1E-8, sigma=-1, alpha=0., Lambda=-1, emin=1E-8, emax=10.;
+    unsigned i,k,K,M,N, disc, func, vflag=1, r=0, nlog=100; int e;
+    double eps=1e-8, sigma=-1, alpha=0., Lambda=-1, emin=1e-8, emax=10.;
     TDSpectral<double> tdmData;
-    char rawflag=0, istr[slen]; istr[0]=0;
+    char rawflag=0;
+
+    wbvec<char> istr(128);
 
     wbvector<double> tt,om;
     wbvector<unsigned> D;
@@ -130,22 +132,22 @@ void mexFunction(
     tdmData.getSpecData(om,a0);
 
     if (sigma>0) {
-       snprintf(istr,slen,"frequency broadened TDM data (sigma=%.4g)",sigma);
-       if (vflag) wblog(FL,"<i> %s",istr);
+       istr.catf(FL,"frequency broadened TDM data (sigma=%.4g)",sigma);
+       if (vflag) wblog(FL,"<i> %s",istr.data);
 
        tdmData.getSmoothSpec_t(sigma,eps,LOG_GAUSS_BRD,vflag);
        tdmData.Fourier(om,aa,tt,az,alpha,vflag); 
     }
     else if (alpha>0) {
        if (Lambda<=1) wblog(FL,"ERR alpha requires Lambda (%.4g)",Lambda);
-       snprintf(istr,slen,"time-domain broadened TDM data (alpha=%.4g)",alpha);
-       if (vflag) wblog(FL,"<i> %s",istr);
+       istr.catf(FL,"time-domain broadened TDM data (alpha=%.4g)",alpha);
+       if (vflag) wblog(FL,"<i> %s",istr.data);
 
        tdmData.Fourier(om,az,alpha,Lambda,vflag);
     }
     else {
-       snprintf(istr,slen,"plain Fourier transformed data (no broadening)");
-       if (vflag) wblog(FL,"<i> %s",istr);
+       istr.catf(FL,"plain Fourier transformed data (no broadening)");
+       if (vflag) wblog(FL,"<i> %s",istr.data);
 
        Wb::Fourier(om,a0,tt,az, func? 'f': 0); 
     }
@@ -156,7 +158,7 @@ void mexFunction(
     if (nargout>1) { mxArray *S;
        S=mxCreateStructMatrix(1,1,0,NULL);
 
-       mxAddField2Scalar(FL,S,"istr", wbstring(istr).toMx());
+       mxAddField2Scalar(FL,S,"istr", wbstring(istr.data).toMx());
        mxAddField2Scalar(FL,S,"sigma",numtoMx(sigma));
        mxAddField2Scalar(FL,S,"eps",  numtoMx(eps));
        mxAddField2Scalar(FL,S,"alpha",numtoMx(alpha));  if (alpha>0) {

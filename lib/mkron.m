@@ -1,12 +1,14 @@
 function XX = mkron(varargin)
 % Function: XX = mkron(varargin)
 %
-%    Extends matlabs kron() to more than two arguments
-%    NB! first index is assumed fastest.
+%    Extends Matlab's kron() to more than two arguments
+%    with the difference that, by default,
+%    thefirst index is assumed fastest (`column-major').
 %
 % Options (last argument)
 %
 %   'rowmajor'  take last index fastest
+%   (which is the behavior of Matlab's kron() routine).
 %
 % Wb,Jun16,07
 

@@ -36,12 +36,18 @@ function hflag=helpthis(nargs_out,varargin)
   if isequal(f(end-1:end),'.m'), f=f(1:end-2); end
 
   n=numel(s); fprintf(1,'\n');
-  if n==1, help(f);
-  elseif n==2 && ~isequal(f,s{end})
-     n=[f '>' s{end}]; help(n);
-  elseif n>1, help(f);
-     if n>2, fprintf(1,'  NB! got recursive call at level=%g\n',n); end
-  else wbdie('invalid usage (don''t know what to do with n=%g)',n); end
+  if n~=1
+     if n==2 && ~isequal(f,s{end})
+        f=[f '>' s{end}];
+     elseif n>1
+        if n>2, fprintf(1,'  NB! got recursive call at level=%g\n',n); end
+     else wbdie('invalid usage (don''t know what to do with n=%g)',n); end
+  end
+
+  if ~isdeployed, help(f);
+  else
+     fprintf(1,'\n>> help %s %% not available in deployed environment\n\n',f);
+  end
 
 end
 

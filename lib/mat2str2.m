@@ -1,4 +1,4 @@
-function [str,Iout] = mat2str2(M, varargin)
+function [sout,Iout] = mat2str2(M, varargin)
 % function s = mat2str2(M [,opts])
 %
 %    Writes matrix M as string
@@ -12,7 +12,9 @@ function [str,Iout] = mat2str2(M, varargin)
 %   'rowsep',..is the string to separate rows ('\n')
 %   'istr',..  info/intro string
 %   '-f'       no shortcuts (enforce full mode)
-%   'notiny'   no tiny numbers on the numerical noise level
+%   'eps',..   skip tiny numbers on the numerical noise level
+%              (default: auto; use eps=0 to turn off)
+%              
 %   'phase'    abs|phase instead of real+imag
 %   'nofac'    do not use overall factors pulled to the front (1 for scalar, 0 otherwise)
 %
@@ -29,23 +31,21 @@ function [str,Iout] = mat2str2(M, varargin)
      helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end
-  str=[]; nstr='';
+  sout='';
 
   getopt('init',varargin);
      fmt    = getopt('fmt',[]);
      sep    = getopt('sep',' ');
      rowsep = getopt('rowsep','\n');
      istr   = getopt('istr','');
-     notiny = getopt('notiny');
+     deps   = getopt('eps',-1); % former 'notiny' // Wb,Oct28,25
      phflag = getopt('phase');
      fflag  = getopt('-f');
      cflag  = getopt('-c');
      pflag  = getopt('-p');
      nofac  = getopt('nofac');
-  if pflag
-     nstr=getopt('get_last',nstr);
-     if ~ischar(nstr), wbdie('invalid usage (string with pflag)'); end
-  else getopt('check_error'); end
+     vn=getopt('get_last','');
+  getopt('check_error');
 
   if nargout>1, Iout=add2struct('-',fmt); end
 
@@ -53,7 +53,7 @@ function [str,Iout] = mat2str2(M, varargin)
      n=numel(M); if isempty(fmt), fmt='%g'; end
      M=reshape(mat2cell(M(:),ones(n,1),1),size(M));
      for i=1:n, M{i}=sprintf(fmt,M{i}); end
-     str=M; return
+     sout=M; return
   elseif isempty(fmt), fmt='%8g';
   end
 
@@ -61,11 +61,11 @@ function [str,Iout] = mat2str2(M, varargin)
   if ~nofac && isscalar(M), if isreal(M), nofac=1; end; end
 
   if n==1
-     str=sprintf(fmt,M); return
+     sout=sprintf(fmt,M); return
   end
   if ~fflag
      if all(diff(M(:))==0)
-        str=sprintf([fmt ' (%s)'],M(1),vec2str(s,'sep','x')); return
+        sout=sprintf([fmt ' (%s)'],M(1),vec2str(s,'sep','x')); return
      end
   end
 
@@ -76,14 +76,23 @@ function [str,Iout] = mat2str2(M, varargin)
      d=diag(M);
      if norm(M-diag(d))==0
         if all(diff(d)==0)
-             str=sprintf([fmt ' (eye; %gx%g)'],M(1),s);
-        else str=sprintf('diag([%s])',vec2str(d,'fmt',fmt)); end
+             sout=sprintf([fmt ' (eye; %gx%g)'],M(1),s);
+        else sout=sprintf('diag([%s])',vec2str(d,'fmt',fmt)); end
         done=1;
      end
   end
 
 if ~done
-  eps = 1E6 * abs(2-sqrt(2)^2) * abs(max(M(:)));
+  if deps, a=abs(max(M(:)));
+     if a>1e6*eps
+        if deps<0, deps=a*1e6*eps; end
+        if isreal(M), M(abs(M)<deps)=0;
+        else
+           i=find(abs(imag(M))<deps); M(i)=real(M(i));
+           i=find(abs(real(M))<deps); M(i)=imag(M(i));
+        end
+     end
+  end
 
   if nofac
      fac=1;
@@ -100,15 +109,15 @@ if ~done
   end
 
   if nargout>1
-     Iout=add2struct(Iout,fmt,eps,fac,sep,rowsep);
+     Iout=add2struct(Iout,fmt,deps,fac,sep,rowsep);
   end
 
-  str=cell(n1,n2);
+  sout=cell(n1,n2);
 
   if isreal(M)
      for i=1:n1
        for j=1:n2
-          str{i,j}=sprintf(fmt,M(i,j));
+          sout{i,j}=sprintf(fmt,M(i,j));
        end
      end
   else
@@ -139,11 +148,6 @@ if ~done
 
       for i=1:n1
         for j=1:n2, mij=M(i,j);
-          if notiny
-             if abs(real(mij))<eps, mij = imag(mij); end
-             if abs(imag(mij))<eps, mij = real(mij); end
-          end
-
           if real(mij)==0
              if imag(mij)==0
                   vstr = '0 '; % align with 1i etc. // previously '0.'
@@ -158,7 +162,7 @@ if ~done
              end
           end
 
-          str{i,j}=sprintf(fmts,vstr);
+          sout{i,j}=sprintf(fmts,vstr);
        end
      end
   end
@@ -167,18 +171,18 @@ if ~done
   sep=sprintf(sep);
 
   for i=1:n1
-     for j=1:n2, s=str{i,j};
+     for j=1:n2, s=sout{i,j};
         if abs(M(i,j))==0 && length(s)>=2 && isequal(s(end-1:end),'-0')
            s(end-1:end)=' 0';
         end
         if     j>1, s = [    sep s];
         elseif i>1, s = [ rowsep s];
         end
-        str{i,j}=s;
+        sout{i,j}=s;
      end
   end
 
-  str=str'; str=[str{:}];
+  sout=sout'; sout=[sout{:}];
 
   if ~isempty(istr) && isempty(find(istr=='='))
   istr=[istr ' = ']; end
@@ -190,21 +194,26 @@ if ~done
      if size(M,1)>1 && (~isempty(strfind(rowsep,'\n')) | ~isempty(strfind(rowsep,10)))
          if     ~isempty(find(istr=='[')), bs='\n]';
          elseif ~isempty(find(istr=='{')), bs='\n}'; else bs=''; end
-         str = sprintf(['%s%s\n\n%s' bs], istr, vstr, str);
+         sout = sprintf(['%s%s\n\n%s' bs], istr, vstr, sout);
      else
-         str = sprintf('%s%s[%s]',   istr, vstr, str);
+         sout = sprintf('%s%s[%s]',   istr, vstr, sout);
      end
   end
 end
 
   if ~nargout || pflag
-     if isempty(nstr)
-        nstr=inputname(1); if isempty(nstr), nstr='ans'; end
+     if isempty(vn), vn=inputname(1); % if isempty(vn), vn='ans'; end
+     elseif ~ischar(vn), vn, wbdie('invalid usage (variable name)');
      end
-     fprintf(1,'\n   %s = \n\n',nstr);
+
+     if ~isempty(vn)
+          fprintf(1,'\n   %s = \n\n',vn);
+     else fprintf(1,'\n'); end
      if done==1, fprintf(1,'      '); end
-     disp(str); fprintf(1,'\n');
-     if ~nargout, clear str; end
+
+     disp(sout); fprintf(1,'\n');
+
+     if ~nargout, clear sout; end
   end
 
 end

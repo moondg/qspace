@@ -29,10 +29,39 @@ bool gotMemOverlap(
    const T2* dest, size_t len2=-1 
 );
 
+namespace Wb {
+
+template <class T, ENABLE_IF_isPOD(T) > inline
+int MemCpy(T *data, const T* d0, size_t n) {
+   int rval=0;
+   if (n) { size_t N=n*sizeof(T); rval=1;
+      if (!data || !d0) wblog(FL,
+         "ERR %s(%p,%p,%ld) got NULL input",FCT,data,d0,n);
+
+      if (size_t(abs(data-d0))<N) 
+           { rval|=2; for (size_t i=0; i<n; ++i) { data[i]=d0[i]; }}
+      else { memcpy(data,d0,N); }
+   }
+   return rval;
+};
+
+template <class T, ENABLE_IF_noPOD(T) > inline
+int MemCpy(T *data, const T* d0, size_t n) {
+   int rval=0;
+   if (n) { rval=2;
+      if (!data || !d0) wblog(FL,
+         "ERR %s(%p,%p,%ld) got NULL input",FCT,data,d0,n);
+      for (size_t i=0; i<n; ++i) { data[i]=d0[i]; }
+   }
+   return rval;
+};
+
+}; 
+
 template <class T>
 inline void MEM_CPY_BASE(T* data, size_t n, T const* const d=NULL) {
 
-#ifdef MLB_VFLAG
+#ifdef QS_MEM_VFLAG
     wblog(FL,"TST base init");
 #endif
     if (n) {
@@ -47,7 +76,7 @@ inline void MEM_CPY_BASE(
     T* data, size_t n, size_t n1, T const* const d1, T const* const d2
 ){
 
-#ifdef MLB_VFLAG
+#ifdef QS_MEM_VFLAG
     wblog(FL,"TST base init %d->%d",n1,n);
 #endif
     if (n1) {
@@ -86,7 +115,7 @@ class sptr {
   ~sptr() {
       #pragma omp critical (manage_SPTR) 
       {  if (mtype || len || data || nref) wblog(FL,
-            "WRN %s() got %s",FCT,STR_(this));
+            "WRN %s() got %s",FCT,STR(*this));
          init_def();
       }
    }
@@ -106,8 +135,10 @@ class sptr {
 
    T* init2ref(size_t n, const T* d0);
 
-   int isRef() const {
-      return (nref || mtype==Wb::MEM_REF);
+   int isRef() const { int q=0;
+      if (nref) { q=nref; } else 
+      if (mtype==Wb::MEM_REF) { q=-1; }
+      return q;
    };
 
    explicit operator bool() const {
@@ -150,15 +181,14 @@ void MEM_CPY(T* data, size_t n, const T* d=NULL) {
 
 template <class T, ENABLE_IF_noPOD(T) >
 void MEM_CPY(T* data, size_t n, const T* d=NULL) {
-
-  #ifdef MLB_VFLAG
+  #ifdef QS_MEM_VFLAG
    wblog(FL,"TST class init");
   #endif
 
-   if (d) { for (size_t i=0; i<n; ++i) data[i]=d[i]; }
+   if (d) { for (size_t i=0; i<n; ++i) { data[i]=d[i]; }}
    else {
       const T z=T(); 
-      for (size_t i=0; i<n; ++i) data[i]=z;
+      for (size_t i=0; i<n; ++i) { data[i]=z; }
    }
 };
 
@@ -169,7 +199,7 @@ void MEM_CPY(T* data, size_t n, size_t n1, const T* d1, const T* d2) {
 
 template <class T, ENABLE_IF_noPOD(T) >
 void MEM_CPY(T* data, size_t n, size_t n1, const T* d1, const T* d2) {
-  #ifdef MLB_VFLAG
+  #ifdef QS_MEM_VFLAG
    wblog(FL,"TST class init %d->%d",n1,n);
   #endif
 
@@ -189,7 +219,7 @@ void MEM_CPY(T* data, size_t n, size_t n1, const T* d1, const T* d2) {
 
 template <class T>
 void MEM_CPY(T** data, size_t n, T* const* const d=NULL) {
-  #ifdef MLB_VFLAG
+  #ifdef QS_MEM_VFLAG
    wblog(FL,"TST got pointer space");
   #endif
    MEM_CPY_BASE(data,n,d);
@@ -199,30 +229,41 @@ template <class T>
 void MEM_CPY(T** data, size_t n, size_t n1,
    T* const* const d1, T* const* const d2
 ){
-  #ifdef MLB_VFLAG
+  #ifdef QS_MEM_VFLAG
    wblog(FL,"TST got pointer space");
   #endif
    MEM_CPY_BASE(data,n,n1,d1,d2);
 };
 
+template <class T, ENABLE_IF_isPOD(T) >
+void MEM_SET_ZERO(T* data, size_t n) {
+   memset(data,0,n*sizeof(T));
+};
+
+template <class T, ENABLE_IF_noPOD(T) >
+void MEM_SET_ZERO(T* data, size_t n) {
+   const T z=T(0);
+   for (size_t i=0; i<n; ++i) { data[i]=z; }
+};
+
 template <class T> inline
 void MEM_SET_BASE(T* data, size_t len, const T *a=NULL) {
-#ifdef MLB_VFLAG
+#ifdef QS_MEM_VFLAG
    wblog(FL,"TST base memset");
 #endif
    if (!a)
         { memset((void*)data,0,len*sizeof(T)); }
-   else { for (size_t i=0; i<len; ++i) data[i]=(*a); }
+   else { for (size_t i=0; i<len; ++i) { data[i]=a[i]; }}
 };
 
 template <class T> inline  
 void MEM_SET_BASE(T** data, size_t len, T* const *a=NULL) {
-#ifdef MLB_VFLAG
+#ifdef QS_MEM_VFLAG
    wblog(FL,"TST base memset (pointer space)");
 #endif
    if (!a)
         { memset((void*)data,0,len*sizeof(T*)); }
-   else { for (size_t i=0; i<len; ++i) data[i]=(*a); }
+   else { for (size_t i=0; i<len; ++i) { data[i]=a[i]; }}
 };
 
 template <class T>
@@ -247,14 +288,13 @@ class MEM_SET<T*> {
   public:
 
      MEM_SET(T** data, size_t len, T* const *a=NULL) {
-#ifdef MLB_VFLAG
+       #ifdef QS_MEM_VFLAG
         wblog(FL,"TST pointer memset");
-#endif
+       #endif
         MEM_SET_BASE(data,len,a); 
      }
 
   private:
-
 };
 
 template <> inline MEM_SET<int>::MEM_SET(

@@ -3,7 +3,8 @@ function A=getId(A,qs,k)
 %
 %    reduce QSpace A to rank-2 Id tensor which only has
 %    vacuum state / scalar representation with each index.
-%    if k is specified, itag{k} will be used.
+%    The itags are are set by itag{k} (if k is provided,
+%    empty itags otherwise).
 %
 % Wb,Oct18,14
 
@@ -23,12 +24,12 @@ function A=getId(A,qs,k)
 
   for i=1:2, A.Q{i}(:)=0; end
 
-  for i=1:size(A.info.cgr,2), q=A.info.cgr(i);
-     if ~isempty(q.type) && ~isempty(q.qset) && ~isempty(q.qdir)
-       c=emptystruct(q);
-       c.type=q.type;
+  for i=1:size(A.info.cgr,2), ci=A.info.cgr(i);
+     if ~isempty(ci.type) && ~isempty(ci.qset) && ~isempty(ci.qdir)
+       c=emptystruct(ci);
+       c.type=ci.type;
 
-       l=length(q.qset)/r0; l0=l0+l;
+       l=length(ci.qset)/r0; l0=l0+l;
        c.qset=zeros(1,2*l);
        if l0<=nq, j=l0-l+1:l0;
           c.qset=[qs(j), qs(j)];
@@ -39,7 +40,8 @@ function A=getId(A,qs,k)
        c.qdir='+-';
        c.cgw=['1' 0];
 
-     A.info.cgr(i)=c; end
+       A.info.cgr(i)=c;
+     end
   end
 
   if nq && l0~=nq
@@ -56,6 +58,13 @@ function A=getId(A,qs,k)
 
   if k, A.info.itags={t{k}, [t{k} '*']};
   else  A.info.itags={'', '*'}; end
+
+  q=getfield2(A.info,'fdir',{''});
+  if ~isempty(q)
+     i=find(q=='/'); if numel(i)~=1, disp(q);
+       wbdie('unexpected fdir'); end
+     A.info.fdir=['+-' q(i:end)];
+  end
 
 end
 

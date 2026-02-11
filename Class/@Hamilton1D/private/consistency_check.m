@@ -47,11 +47,18 @@ function [e,s]=consistency_check(HAM,varargin)
      end
   end
 
-  i=[~isempty(HAM.store), ~isempty(HAM.mat)]; e=0; s='';
-  if ~xor(i(1),i(2))
-     wbdie('invalid usage (either HAM.store or HAM.mat must be set)');
+  ie=[isempty(HAM.store); isempty(HAM.mat)]; e=0; s='';
+  if all(ie)
+     ie=[ ie
+        isempty(HAM.mpo)
+        isempty(HAM.oez)
+        isempty(HAM.ops)
+     ]; if all(ie), e=-1; return, end
   end
-  if i(1)
+
+  if ~diff(ie(1:2))
+     wbdie('invalid usage (either HAM.store or HAM.mat must be set)');
+  elseif ~ie(1)
      if ~isvarname(HAM.store)
        wbdie('got invalid name for global storage ''%s''',HAM.store); 
      end

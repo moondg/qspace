@@ -14,7 +14,7 @@ function varargout=getcaller(varargin)
   global varx__
   evalin('caller','global varx__');
 
-  wblog('WRN','%s() cannot call caller in caller!');
+  wblog('WRN','cannot call caller in caller!');
 
   if nargout
      varargout=cell(1,max(nargout,nargin));

@@ -56,6 +56,7 @@ function [ss,s]=getsym(A,varargin)
      for i=1:numel(ss), s=ss{i};
         if regexp(s,'^([AP]|Z\d+)$') % 'A','P','Z2', etc.
            if dflag>1, ds(i)=0; else ds(i)=1; end
+        elseif regexp(s,'^A4$'), ds(i)=1;
         elseif regexp(s,'^SU\d+$'), ds(i)=str2num(s(3:end))-1;
         elseif regexp(s,'^Sp\d+$'), ds(i)=str2num(s(3:end))/2;
         elseif regexp(s,'^SO\d+$')

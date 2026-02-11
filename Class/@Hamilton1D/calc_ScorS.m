@@ -29,6 +29,7 @@ function [ss,Iout]=calc_ScorS(HAM,varargin)
   getopt('init',varargin);
      kflag=getopt('-k');
      vflag=getopt('-v');
+     beta =getopt('beta',10);
      Rc=getopt('Rc',[]);
   k0=getopt('get_last',[]);
 
@@ -54,7 +55,7 @@ function [ss,Iout]=calc_ScorS(HAM,varargin)
   ops=untag(ops); 
 
   if isempty(k0) && isfield(HAM.user,'trotter')
-     k0=getfield2(HAM.user(1).trotter,'info','ops','--def',[]);
+     k0=getfield2(HAM.user(1).trotter,'info','ops',{[]});
      if ~isempty(k0)
         if iscell(k0) && numel(k0)==2
              k0=k0{2}; if ~isnumber(k0), k0=[]; end
@@ -78,11 +79,12 @@ function [ss,Iout]=calc_ScorS(HAM,varargin)
   k=kc;
   [Ak,AA]=Load_DMRG_AK(HAM,k,AA);
 
-  IPsi=-1;
+  IPsi=-99;
   if rank(Ak)==4, Akc=Ak;
      dg=getDimQS(Ak); nPsi=dg(1,end); NPsi=dg(end);
      if NPsi>1
-        if isempty(Rc), IPsi=1;
+        if isempty(Rc)
+           if beta<Inf && nPsi>1, IPsi=-1; else IPsi=1; end
         elseif isint(Rc), IPsi=Rc;
         elseif isequal(Rc,'all'), IPsi=1:nPsi;
         else IPsi=0;
@@ -99,11 +101,13 @@ function [ss,Iout]=calc_ScorS(HAM,varargin)
         if isnumeric(Eg)
            if nPsi~=1, wbdie('unexpected Eg for nPsi=%d',nPsi); end
         else
-           e=max(abs(diag(Eg,'-d'))); e=1E-12*max(1,e);
-           nd=numel(Eg.data); j=0;
-           for i=1:nd
-               n=length(Eg.data{i}); j=j+1:j+n;
-               Eg.data{i}=double(single(Eg.data{i})) + e*j; j=j+n;
+           nd=numel(Eg.data);
+           if all(IPsi>0), l=0;
+              eps=max(abs(diag(Eg,'-d'))); eps=1e-12*max(1,eps);
+              for i=1:nd
+                  n=length(Eg.data{i}); j=l+1:l+n;
+                  Eg.data{i}=double(single(Eg.data{i})) + j*eps; l=l+n;
+              end
            end
         end
      else
@@ -117,7 +121,7 @@ for iPsi=IPsi
   if iPsi>0 && isnumeric(Eg)
      Rc=1/sqrt(NPsi); Ak=Rc*Akc;
      AA(k)=Ak;
-  elseif iPsi>=0
+  elseif iPsi>=-1
      if iPsi>0
         wblog(' * ','computing correlations based on state %d/%d',iPsi,nPsi);
 
@@ -131,6 +135,14 @@ for iPsi=IPsi
            end
         end
         Rc=Rc/normQS(Rc);
+     elseif iPsi==-1
+        eg=sort(diag(Eg,'-d')); dE=max([1e-3,diff(eg)]); e0=eg(1);
+        Rc=getIdentity(Eg,2);   bfac=beta/dE;
+        for i=1:nd
+           Rc.data{i}=exp(-bfac*(Eg.data{i}-e0))';
+        end
+        Rc=Rc/trace(Rc);
+
      end
      Ak=contract(Akc,4,Rc,1);
      AA(k)=Ak;
@@ -232,7 +244,7 @@ for iPsi=IPsi
         end, end
      end
   end
-  if iPsi>0, SS{iPsi}=ss; end
+  if numel(IPsi)>1, SS{iPsi}=ss; end
 end
 
   if vflag, fprintf(1,'\n\n'); end

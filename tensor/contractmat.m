@@ -1,7 +1,7 @@
 function C=contractmat (A,B,ia,P_);
 % function C = contractmat (A,B,ia [,pout])
 %
-%     Contract single index ia of tensor A with matrix B
+%     Contract single index ia of tensor A with first index on matrix B
 %     while maintaining the index order in A. The resulting C
 %     can be optionally permuted by the trailing input argument pout.
 %

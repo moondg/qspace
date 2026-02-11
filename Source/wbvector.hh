@@ -21,15 +21,356 @@
 #define __WB_SIMPLE_VECTOR_HCC__
 
 template <class T> class wbvector;
+template <class T> class wbvec;
+
+template<class T>
+class wbvec { 
+
+ public:
+
+   wbvec(unsigned n=0)
+    : data(nullptr), l(0), len(0), ref(0) { if (n) {init(n); }};
+
+   wbvec(unsigned n, const T* d0)
+    : data(nullptr), l(0), len(0), ref(0) { if (n) { init(n,d0,-1); }}
+
+   wbvec(unsigned n, T* d0, char isr, unsigned l0=-1)
+    : data(nullptr), l(0), len(0), ref(0) {
+      if (n) {
+         if (!isr)
+              { init    (n,d0,l0); }
+         else { init2ref(n,d0,l0); }
+      }
+   };
+
+   wbvec(const wbvec &B)
+    : data(nullptr), l(0), len(0), ref(0) { 
+      if (B.len) { init(B.len,B.data); }
+   };
+
+  ~wbvec() {
+      if (data && !ref) { free(data); } 
+   };
+
+   wbvec& init(unsigned n=0);
+   wbvec& init(unsigned n, const T* d0, unsigned l=-1);
+   wbvec& init2ref(unsigned n,   T* d0, unsigned l=-1);
+
+   wbvec& Resize(unsigned n);
+
+   const T& operator[] (unsigned i) const { return data[i]; }
+         T& operator[] (unsigned i)       { return data[i]; }
+
+   T* current() {
+      if (l>len) wblog(FL,"ERR %s() invalid l=%d/%d",FCT,l,len);
+      return (data+l);
+   };
+   const T* current() const {
+      if (l>len) wblog(FL,"ERR %s() invalid l=%d/%d",FCT,l,len);
+      return (data+l);
+   };
+
+   inline int got_left() { return (len-l); };
+
+         T* current(unsigned &n)       { n=(len-l); return current(); };
+   const T* current(unsigned &n) const { n=(len-l); return current(); };
+
+   wbvec& operator=(const wbvec& B) { 
+      if (B.len) { init(B.len,B.data); } else { init(); }
+      return *this;
+   };
+
+   wbvec& operator=(const char* s) { 
+      unsigned n=(s && s[0] ? strlen(s) : 0);
+      if (!n) {
+         l=0; if (len) { data[0]=0; }
+         return *this;
+      }
+      if (!len) {
+         unsigned q=n, l=0; while (q) { ++l; q>>=1; }
+         init(1<<l);
+      }
+
+      if (n>=len) {
+         if (!len)
+              wblog(FL,"ERR %s() called on empty object (%d/%d)",FCT,n,len);
+         else wblog(FL,"WRN %s() string out of bounds (%d/%d)",FCT,n,len);
+         n=len-1;
+      }
+      strncat(data,s,n); l=n;
+      return *this;
+   };
+
+   explicit operator bool() const { return (check()&1); }
+   char check() const { char q=0; 
+       if (l  ) { q|=1; }
+       if (len) { q|=2; }
+       if (l>len || ((q!=0) ^ (data!=nullptr))) wblog(FL,"ERR %s() "
+          "invalid wbvec (l=%d/%d, %p",FCT,l,len,data);
+       return q;
+   };
+
+   inline wbvec& reset() {
+      l=0; if (len) { data[0]=0; }
+      return *this;
+   };
+
+   inline char skip_last(T x) { 
+      char q=0; if (l && l<=len && data[l-1]==x) { data[--l]=0; q=1; }
+      return q;
+   };
+
+   inline char skip_last() {
+      char q=0; if (l && l<=len) { data[--l]=0; q=1; }
+      return q;
+   };
+
+   inline int append(T x) { return append(0,0,x); }
+   inline int append(const char *F, int L, T x) {
+      if (l<len) { data[l]=x; }
+      return shift(F,L,1);
+   };
+
+   inline int shift(const char *F, int L, int n);
+
+   int catf(const char *F, int L, const char *fmt, ...); 
+
+   inline 
+   int cat(const char *s, unsigned n=-1) { return cat(0,0,s,n); }
+   int cat(const char *F, int L, const char *s, unsigned n=-1); 
+
+   inline 
+   int strcpy(const char *s, int n=-1) { return strcpy(0,0,s,n); }
+   int strcpy(const char *F, int L, const char *s, int n=-1);
+
+   int check_bounds(const char *F=nullptr, int L=0, char force=1, int l2=0);
+
+   wbvec& set(T x) {
+      if (x==0) { memset(data,0,len*sizeof(T)); }
+      else {
+         for (unsigned i=0; i<len; ++i) { data[i]=x; }
+         if (len && typeid(T)==typeid(char)) { data[len-1]=0; }
+      }
+      return *this;
+   };
+
+   int pad(T x, unsigned n=-1) {
+      unsigned l_=l;
+      if (int(n)<0) { n=len; } else
+      if (n>len) {
+         wblog(FL,"WRN %s() length out of bounds (n=%d/%d)",FCT,n,len);
+         n=len;
+      }
+      for (; l<n; ++l) { data[l]=x; }
+      return (l-l_);
+   };
+
+   wbvec& tr(const char *from, const char *to, unsigned i0=0) {
+      unsigned n=(from && *from ? strlen(from) : 0);
+      if (n) {
+         unsigned m=(to && *to ? strlen(to) : 0);
+         if (m) { unsigned i=i0, j;
+            for (--m; i<l; ++i) {
+            for (j=0; j<n; ++j) {
+                if (data[i]==from[j]) { data[i]=to[j<m?j:m]; break; }
+            }}
+         }
+         else { 
+            unsigned i=i0, i_=i0-1, j;
+            for (   ; i<l; ++i) {
+            for (j=0; j<n; ++j) { if (data[i]==from[j]) {
+                if (++i_<i) { data[i_]=data[i]; }
+                break;
+            }}}
+            l=(++i_);
+         }
+      }
+      return *this;
+   };
+
+   wbvec& tr(const T& from, const T& to, unsigned i0=0) { 
+      for (unsigned i=i0; i<l; ++i) { if (data[i]==from) { data[i]=to; }}
+      return *this;
+   };
+
+   void print(const char *istr=nullptr) const {
+      unsigned i=0;        printf("  %4s = [",istr?istr:"ans");
+      for (; i<l; ++i) { printf(" %g",double(data[i])); };
+      printf("\e[38;5;8m | ");
+      for (; i<len; ++i) { printf(" %g",double(data[i])); fflush(0); }
+      printf("\e[0m]  (%d / %d elements initialized)\n",l,len);
+   };
+
+   T* data;
+
+   unsigned l;   
+   unsigned len; 
+
+   char ref;
+
+ protected:
+ private:
+
+};
+
+template <class T>
+wbvec<T>& wbvec<T>::init(unsigned n) {
+
+   if (ref) { ref=0; } else
+   if (data && n!=len) { free(data); } 
+
+   if (n) {
+      data = (T*)malloc(n*sizeof(T));  
+      if (!data) wblog(FL,
+         "ERR %s() failed to allocate data (len=%d)",FCT,n);
+      data[0]=0; 
+      len=n; l=0;
+   }
+   else { data=nullptr; l=len=0; }
+   return *this;
+};
+
+template <class T>
+wbvec<T>& wbvec<T>::init(unsigned n, const T* d0, unsigned l0) {
+   init(n);
+   if (int(l0)<0) { if (n && d0) { l0=n; }} else
+   if (l0>n) wblog(FL,
+      "ERR %s() size out of bounds (len=%d/%d)",FCT,l0,n);
+
+   if (int(l0)>0) {
+      Wb::MemCpy(data,d0,l0); 
+      l=l0;
+   }
+   return *this;
+};
+
+template <class T>
+wbvec<T>& wbvec<T>::init2ref(unsigned n, T* d0, unsigned l0) {
+
+   if (!d0) wblog(FL,"ERR %s() got null ref",FCT);
+
+   if (data) { init(); }
+   if (int(l0)<=0) { l= 0; } else
+   if (    l0 < n) { l=l0; } else
+   wblog(FL,"ERR %s() size out of bounds (len=%d/%d)",FCT,l0,n);
+
+   len=n; data=d0; ref=1;
+
+   return *this;
+};
+
+template <>
+wbvec<char>& wbvec<char>::init(unsigned n, const char* d0, unsigned l0) {
+
+   if (int(n)<0) {
+      if (int(l0)>=0) { n=l0+1; } 
+      else if (d0) {
+         l0=strlen(d0); n=l0+1;
+      }
+      else { n=0; }
+   }
+   else if (int(l0)<0) {
+      if (d0) {
+         for (l0=0; l0<n && d0[l0]; ++l0) { }
+         if (l0==n && n) { --l0; } 
+      }
+      else { l0=0; }
+   }
+   if (!n) { return init(); }
+
+   init(n);
+
+   l=(n<l0 ? n:l0);
+   if (l) { Wb::MemCpy(data,d0,l); if (l<n) { data[l]=0; }} 
+
+   return *this;
+};
+
+template <>
+int wbvec<char>::check_bounds(const char *F, int L, char force, int l2) {
+   int n=l;
+   if (len) { data[len-1]=0; } 
+
+   if (!l2 ) { l2=len; } else                    
+   if (l2<0) { l2=len+l2; if (l2<0) l2=0; } else 
+   if (size_t(l2)>len) { l2=len; }                         
+
+   if (l>=size_t(l2)) {
+      n=(n>0 ? -n : -1);  
+
+      if (F || L) { char sx[64]; snprintf(sx,64,
+         "%s() string out of bounds (l=%d/%d)",FCT,l,l2);
+         if (F && force)
+              { wblog(F_L,"ERR %s\n%s",sx,data?data:"(null)"); }
+         else { wblog(F_L,"WRN %s\n%s",sx,data?data:"(null)"); }
+      }
+   }
+   return n;
+};
+
+template <class T>
+int wbvec<T>::shift(const char *F, int L, int n) {
+   if (unsigned(l+n)<len) { l+=n; data[l]=0; } 
+   else {
+      if (len) { data[len-1]=0; } 
+      if (F || L) { 
+         char sx[64]; snprintf(sx,64,
+            "%s() wbvec out of bounds (%d%+d/%d)",FCT,l,n,len);
+
+         if (len<60) {
+            if (F) wblog(F,L,"ERR %s\n%s%N",sx,data);
+            else   wblog(FL, "WRN %s\n%s%N",sx,data);
+         }
+         else {
+            if (F) wblog(F,L,"ERR %s%N%N%s%N",sx,data);
+            else   wblog(FL, "WRN %s%N%N%s%N",sx,data);
+         }
+      }
+      if (int(l+n)>=0) { l=len; } else { l=0; if (len) { data[0]=0; }}
+      n= (int(n)>0 ? -n : -1); 
+   }
+   return n;
+};
+
+template <>
+int wbvec<char>::catf(const char *F, int L, const char *fmt, ...) {
+   int n=0;
+   if (!l && len) { data[0]=0; }
+   if (!fmt || !fmt[0]) { return n; }
+
+   if (l<len) {
+      va_list args;  Wb::ARGV wd(&args); 
+      va_start(args,fmt);
+      n=vsnprintf(data+l,len-l,fmt,args);
+      n=shift(F,L,n); 
+   }
+   else { n=-1; }
+
+   return n;
+};
+
+template <>
+int wbvec<char>::cat(const char *F, int L, const char *s, unsigned n) {
+
+   if (!l && len) { data[0]=0; }
+   if (!s || !s[0] || !len) { return (n=0); }
+
+   unsigned i=0; for (; s[i] && i<n && l<len; ++i, ++l) { data[l]=s[i]; };
+   if (l==len && len) { data[len-1]=0; } 
+   n=i; l-=n; 
+
+   return shift(F,L,n); 
+};
 
 WBINDEX Index(widx_t i1, widx_t i2);
+
 char isUniqueIdxSet(const WBINDEX &I, widx_t imax);
-char validPerm(const WBPERM &P, wperm_t d=-1);
+
 void getIPerm (const WBPERM &P, WBPERM &iP);
 
    bool mxIsWbvector(
       const char *F, int L, const mxArray *a,
-      size_t *n_=NULL, const char *istr=NULL, char dflag='d');
+      size_t *n_=nullptr, const char *istr=nullptr, char dflag='d');
 
    bool mxIsWbvector(const mxArray *a) {
       return mxIsWbvector(0,1,a); 
@@ -40,29 +381,29 @@ class wbvector {
 
   public:
 
-    wbvector() : data(NULL), len(0), isref(0) {};
+    wbvector() : data(nullptr), len(0), isref(0) {};
 
-    wbvector(size_t l, T x) : data(NULL), len(0), isref(0) { 
-       RENEW(l,NULL,0,0); 
+    wbvector(size_t l, T x) : data(nullptr), len(0), isref(0) {
+       RENEW(l,nullptr,0,0); 
        set(x);
     };
 
-    wbvector(size_t l, const T* d0=NULL, char ref=0)
-     : data(NULL), len(0), isref(0) {
+    wbvector(size_t l, const T* d0=nullptr, char ref=0)
+     : data(nullptr), len(0), isref(0) {
        if (ref && d0 && l)
             { init2ref(l,d0); }
        else { RENEW(l,d0); }
     };
 
     wbvector(const wbvector &v)
-     : data(NULL), len(0), isref(0) { RENEW(v.len, v.data); };
+     : data(nullptr), len(0), isref(0) { RENEW(v.len, v.data); };
 
     template <class T2>
     wbvector(const wbvector<T2> &v)
-     : data(NULL), len(0), isref(0) { initT(v.len,v.data); }
+     : data(nullptr), len(0), isref(0) { initT(v.len,v.data); }
 
     wbvector(const wbvector &v1, const wbvector &v2)
-     : data(NULL), len(0), isref(0) {
+     : data(nullptr), len(0), isref(0) {
 
        size_t i, k=0;
        RENEW(v1.len+v2.len);
@@ -72,17 +413,34 @@ class wbvector {
     };
 
     wbvector(const char *F, int L, const mxArray *a, char check_type=1, char ref=0)
-     : data(NULL), len(0), isref(ref) {
-       init(F,L,a,NULL,check_type,ref);
+     : data(nullptr), len(0), isref(ref) {
+       init(F,L,a,nullptr,check_type,ref);
     };
 
     wbvector(const mxArray *a, char check_type=1, char ref=0)
-     : data(NULL), len(0), isref(ref) {
-       init(FL,a,NULL,check_type,ref);
+     : data(nullptr), len(0), isref(ref) {
+       init(FL,a,nullptr,check_type,ref);
     };
 
     virtual ~wbvector() {
        if (!isref && data) { WB_DELETE(data); }
+    };
+
+    wbvector& init_bare(size_t l=0) { return RENEW(l,nullptr,0,0); };
+
+    wbvector& init2val(size_t l, const T& x) {  
+       return RENEW_VAL(l,x); };
+
+    wbvector& Index(unsigned n) {
+       if (int(n)<0) wblog(FL,"ERR %s() got n=%d",FCT,n); 
+       init(n); for (unsigned i=0; i<n; ++i) { data[i]=i; }
+       return *this;
+    };
+
+    wbvector& Index(int i0, int i2) {
+       unsigned i=0, n=i2-i0+1; if (int(n)<0) { n=0; }
+       init(n); for (; i<n; ++i) { data[i]=i0+i; }
+       return *this;
     };
 
     wbvector& init(size_t l=0) { return RENEW(l); };
@@ -98,11 +456,8 @@ class wbvector {
        char init=1 
     ){ return RENEW(l,d0,n,init); };
 
-    wbvector& init2val(size_t l, const T& x) { 
-       return RENEW_VAL(l,x); };
-
     wbvector& initStride(size_t l, const T* d0, size_t stride) {
-       RENEW(l,NULL,0,0); 
+       RENEW(l,nullptr,0,0); 
        for (size_t i=0; i<len; ++i, d0+=stride) { data[i]=*d0; }
        return *this;
     };
@@ -122,7 +477,7 @@ class wbvector {
     };
 
     wbvector& init(size_t n, const wbvector &v) {
-       RENEW(n); if (n>v.len) n=v.len;
+       RENEW(n); if (n>v.len) { n=v.len; }
        for (size_t i=0; i<n; ++i) data[i]=v.data[i];
        return *this;
     };
@@ -185,7 +540,7 @@ class wbvector {
     wbvector& init2ref(size_t l, const T* d0) {
        if (l && !d0) wblog(FL,"ERR %s() got null ref (n=%d)",FCT,l);
        if (data && !isref) { RENEW(0); }
-       isref=1; len=l; data=(len ? (T*)d0 : NULL); 
+       isref=1; len=l; data=(len ? (T*)d0 : nullptr); 
        return *this;
     };
 
@@ -197,23 +552,23 @@ class wbvector {
     };
 
     int init( 
-       const char *F, int L, const mxArray *a, const char *istr=NULL,
+       const char *F, int L, const mxArray *a, const char *istr=nullptr,
        char check_type QS_UNUSED_VAR =1,
        char ref=0
     ) { return init_Struct(F,L,a,istr,ref); };
 
     int init_Struct(
        const char *F, int L, const mxArray *a,
-       const char *istr=NULL, char ref=0
+       const char *istr=nullptr, char ref=0
     );
 
     int init_base( 
        const char *F, int L, const mxArray *a,
-       const char *istr=NULL, char check_type=1, char ref=0
+       const char *istr=nullptr, char check_type=1, char ref=0
     );
 
     int init(
-       const mxArray *a, const char *istr=NULL, char check_type=1
+       const mxArray *a, const char *istr=nullptr, char check_type=1
     ){ return init(0,0,a,istr,check_type); };
 
     int init_mpfr( 
@@ -221,23 +576,13 @@ class wbvector {
        const char *istr="", char tcheck=1
     );
 
-    void initDef(size_t n) {
-        if (data) { WB_DELETE(data); }
-        len=n; if (n) { WB_NEW(data,n); }
-    };
-
-    void initDef(const wbvector &v) {
-       if (len!=v.len) initDef(v.len);
-       for (size_t i=0; i<v.len; ++i) data[i]=v[i];
-    };
-
-    wbvector& operator= (const wbvector &v) {
+    wbvector& operator=(const wbvector &v) {
        if (this!=&v) { RENEW(v.len, v.data); }
        return *this;
     };
 
     template<class TB>
-    wbvector<T>& operator= (const wbvector<TB> &v) {
+    wbvector<T>& operator=(const wbvector<TB> &v) {
        init(v.len);
        for (size_t i=0; i<v.len; ++i) { data[i]=T(v.data[i]); }
        return *this;
@@ -271,15 +616,17 @@ class wbvector {
     wbperm& pSort(wbperm &p) const;
 
     bool isSorted() const { 
-       for (size_t i=1; i<len; ++i) if (data[i-1]> data[i]) return 0;
+       for (size_t i=1; i<len; ++i) { if (data[i-1]> data[i]) return 0; }
        return 1;
     };
     bool isSortedU() const { 
-       for (size_t i=1; i<len; ++i) if (data[i-1]>=data[i]) return 0;
+       for (size_t i=1; i<len; ++i) { if (data[i-1]>=data[i]) return 0; }
        return 1;
     };
 
     bool isUnique() const;
+
+    char isValidPerm(wperm_t n=-1, char f=3) const;
 
     int contains(const T& x) const { 
        for (size_t i=0; i<len; ++i) { if (data[i]==x) return 1; }
@@ -291,6 +638,8 @@ class wbvector {
     bool isFinite() const {
        return Wb::is_finite(data,len);
     };
+
+    size_t numel() const { return len; }
 
     size_t find1(const T& x) const {
        for (size_t i=0; i<len; ++i) { if (data[i]==x) return i; }
@@ -323,7 +672,7 @@ class wbvector {
         else { return len-numZeros(eps); } 
     };
 
-    size_t numZeros(T eps=T(1E-14)) const;
+    size_t numZeros(T eps=T(1e-14)) const;
     size_t numEQ(const T&) const;   
     size_t numGT(const T&) const;   
     size_t numLT(const T&) const;   
@@ -333,19 +682,16 @@ class wbvector {
     wbindex& findGT(const T &x, wbindex &I, char iflag=0) const;
     wbindex& findGT(const T &x, wbindex &I, wbindex &Ix) const;
 
-    wbindex& findzeros(wbindex &I) const { return find(0,I); }
-    wbindex& find(wbindex &I) const { return find(0,I,'i'); }
-
     wbindex& find(wbindex &I, wbindex &Ix) const {
        find(0,Ix,I); return I; }
 
-    wbvector<size_t> find() const {
-       wbvector<size_t> I; 
-       return find(I);
-    };
+    wbindex& find(wbindex &I, char nonzero=1) const;
+
+    WBINDEX find() const {
+       WBINDEX I; return find(I); }; 
 
     wbindex& findRange(
-       const T &x1, const T &x2, wbindex &I, const char *w=NULL
+       const T &x1, const T &x2, wbindex &I, const char *w=nullptr
     ) const;
 
     int findClosestSorted(T r) const;
@@ -443,25 +789,23 @@ class wbvector {
 
     bool checkSameLength(
        const wbvector &a,
-       const char *F=NULL, int L=0, const char *istr=""
+       const char *F=nullptr, int L=0, const char *istr=""
     )  const;
 
     bool checkSameLength(
        const wbvector &a,
        const wbvector &b,
-       const char *F=NULL, int L=0, const char *istr=""
+       const char *F=nullptr, int L=0, const char *istr=""
     )  const;
 
     template <class T_>
     void operator+= (const T_ &a) {
-       if (a==T(0)) return;
-       for (size_t i=0; i<len; ++i) data[i]+=a;
+       if (a!=T(0)) { for (size_t i=0; i<len; ++i) { data[i]+=a; }}
     };
 
     template <class T_>
     void operator-= (const T_ &a) {
-       if (a==T(0)) return;
-       for (size_t i=0; i<len; ++i) data[i]-=a;
+       if (a!=T(0)) { for (size_t i=0; i<len; ++i) { data[i]-=a; }}
     };
 
     template <class T_>
@@ -471,11 +815,27 @@ class wbvector {
           if (!a) { MEM_SET<T>(data,len); }
           else { size_t i=0;
              if (a==T_(-1))
-                  for (; i<len; ++i) { data[i]=-data[i]; }
-             else for (; i<len; ++i) { data[i]*=a; }
+                  { for (; i<len; ++i) { data[i]=-data[i]; }}
+             else { for (; i<len; ++i) { data[i]*=a; }}
           }
        }
        return *this;
+    };
+
+    wbvector& Times(double fac, char conj=0) {
+       if (len) {
+          Wb::rangeTimes(data,len,fac,conj);
+       }
+       return *this;
+    };
+
+    wbvector& times(double fac, wbvector &B, char conj=0) const {
+       if (!len || !fac) { B.init(len); }
+       else {
+          B.RENEW(len,nullptr,0,0); 
+          Wb::rangeTimes(B.data,data,len,fac,conj);
+       }
+       return B;
     };
 
     template <class T_>
@@ -488,7 +848,7 @@ class wbvector {
           if (len<4 || WbUtil<T>::isInt()) { for (; i<len; ++i) data[i]/=a; }
           else {
              T x=1/T(a);
-             if (fabs(double(x*a-1))>1E-12) 
+             if (fabs(double(x*a-1))>1e-12) 
                   { for (; i<len; ++i) { data[i]/=a; }}
              else { for (; i<len; ++i) { data[i]*=x; }}
           }
@@ -566,10 +926,6 @@ class wbvector {
        c.Plus(b,bfac);
     };
 
-    wbvector& times(T fac, wbvector &x) const {
-        x=*this; x*=fac; return x;
-    };
-
     wbvector& RevertSigns();
 
     int isum() const {
@@ -612,41 +968,64 @@ class wbvector {
 
     wbvector& tensorProd(const wbvector &v2, wbvector &vv) const;
 
-    T scalarProd(const wbvector &v) const {
-        if (len!=v.len) wblog(FL,
-           "ERR scalarProd - length mismatch (%d/%d)",len,v.len);
-
-        if (len) return scalarProd(v.data);
-        else return 0;
+    wbvector& TensorProd(const wbvector &v2) { 
+       wbvector v1; save2(v1);
+       return v1.tensorProd(v2,*this);
     };
 
-    T scalarProd(const T *v) const { 
-        T s=T(); for (size_t i=0; i<len; ++i) s+=(data[i]*Wb::CONJ(v[i]));
-        return s;
+    T dotProd(const wbvector &v) const { T x=T();
+       if (len!=v.len) wblog(FL,
+          "ERR %s() length mismatch (len=%d/%d)",FCT,len,v.len);
+       for (size_t i=0; i<len; ++i) { x+=(data[i]*v[i]); }
+       return x;
+    };
+
+    T scalarProd(const wbvector &v) const { 
+       if (len!=v.len) wblog(FL,
+          "ERR %s() length mismatch (len=%d/%d)",FCT,len,v.len);
+
+       if (len) return scalarProd(v.data);
+       else return 0;
+    };
+
+    T scalarProd(const T *v) const { T x=T();
+       for (size_t i=0; i<len; ++i) { x+=(data[i]*Wb::CONJ(v[i])); }
+       return x;
     };
 
     T norm() const { return Wb::sqrt(norm2()); }
 
     T norm2() const { 
-       T s=0; if (len==0) return s;
-       s=Wb::norm2(data[0]);
+       T x=0; if (!len) { return x; }
+       x=Wb::norm2(data[0]);
 
-       for (size_t i=1; i<len; i++) s+=Wb::norm2(data[i]);
-       return s;
+       for (size_t i=1; i<len; ++i) { x+=Wb::norm2(data[i]); }
+       return x;
     };
+
+    T normDiff2() const { 
+       if (!len) { return 0; }
+       else {
+          size_t i=1; T dx2=0;
+          for (; i<len; ++i) { dx2+=Wb::norm2(data[i]-data[i-1]); }
+          return (dx2/len);
+       }
+    };
+
+    T normDiff() const { return Wb::sqrt(normDiff2()); }
 
     double normDiff(const wbvector &v, T fac=1) const {
        return std::sqrt(double(normDiff2(v,fac)));
     };
 
-    T normDiff2 (const wbvector &v, T fac=1) const;
+    T normDiff2(const wbvector &v, T fac=1) const;
     double normDiff2_(const wbvector &v, double fac=1) const;
 
     T GSProject(const T *v, char isnorm=0, char tflag=0) const {
        return gs_project_range(data,v,len,1,isnorm,tflag);
     };
 
-    wbvector& Normalize(const char *F=NULL, int L=0) {
+    wbvector& Normalize(const char *F=nullptr, int L=0) {
        double n=std::sqrt(norm2());
        if (n==0) {
           if (F) wblog(F,L,"WRN normalize zero vector!? - randomize");
@@ -687,7 +1066,7 @@ class wbvector {
        return q;
     }
 
-    bool allEqual2(const T &a, T eps=1E-15) const {
+    bool allEqual2(const T &a, T eps=1e-14) const {
        if (!eps) { return allEqual(a); } 
        else {
           T x, x2=0; if (a!=0)  eps*=a;
@@ -715,7 +1094,7 @@ class wbvector {
        return q;
     }
 
-    bool anyEqual(const T &a, size_t *i1=NULL) const {
+    bool anyEqual(const T &a, size_t *i1=nullptr) const {
        bool q=0; size_t i=0;
        for (; i<len; ++i) { if (data[i]==a) {
           if (i1) { (*i1)=i; }
@@ -758,7 +1137,7 @@ class wbvector {
        return q;
     };
 
-    bool anySmallVals(const T eps=1E-15) const {
+    bool anySmallVals(const T eps=1e-15) const {
        size_t i=0; if (eps>0)
             { for (; i<len; ++i) { if (Wb::abs(data[i])<eps) return 1; }}
        else { for (; i<len; ++i) { if (data[i]) return 1; }}
@@ -770,9 +1149,9 @@ class wbvector {
     }
 
     bool anyEqual(const wbvector<size_t> &I, const T &x,
-       size_t *k=NULL) const;
+       size_t *k=nullptr) const;
     bool anyUnequal(const wbvector<size_t> &I, const T &x,
-       size_t *k=NULL) const;
+       size_t *k=nullptr) const;
 
     bool isEmpty() const {
        if ((!len) ^ (!data)) wblog(FL,
@@ -831,10 +1210,16 @@ class wbvector {
        return (len ? 1 : 0);
     };
 
-    T& el(size_t i) const { 
+    inline T& at(size_t i) const { 
        if (i>=len) wblog(FL,
-          "ERR element index out of bounds (%d/%d)",i+1,len);
+          "ERR wbvector::%s() index out of bounds (i=%ld/%ld)",FCT,i,len);
        return data[i];
+    };
+
+    inline T& el(long i) const { 
+       if (i>=long(len) || -i>long(len)) wblog(FL,
+          "ERR wbvector::%s() index out of bounds (i=%ld/%ld)",FCT,i,len);
+       return data[i>=0 ? i : long(len)+i];
     };
 
     T elx(size_t i, const T &x) const {
@@ -870,7 +1255,7 @@ class wbvector {
     void setIdx (double shift=0., double fac=1.);
 
     int set2Group(const wbperm &P,
-        const WBINDEX &D, const T* S0=NULL, char iflag=0
+        const WBINDEX &D, const T* S0=nullptr, char iflag=0
     );
 
     wbvector& Resize_(size_t n) {
@@ -891,7 +1276,7 @@ class wbvector {
           if (isref) wblog(FL,"ERR %s() got reference (%d)",FCT,isref);
           init();
        }
-       else if (n<len && (len<32 || (4*n)>len)) { len=n; }
+       else if (n<len && (len<32 || (2*n)>len)) { len=n; }
        else if (n!=len) {
           if (n>len) wblog(FL,
              "WRN %s() got increasing size %ld -> %ld",FCT,len,n);
@@ -900,7 +1285,7 @@ class wbvector {
        return *this;
     };
 
-    wbvector& Resize(size_t n, const T* d=NULL) { 
+    wbvector& Resize(size_t n, const T* d=nullptr) { 
        if (isref) wblog(FL,"ERR %s() got reference (%d)",FCT,isref);
 
        if (n==len) { return *this; }
@@ -908,19 +1293,21 @@ class wbvector {
        if (!n) { len=0; if (data) WB_DELETE(data); return *this; }
 
        T *d0=data;
-       WB_NEW(data,n);
-          MEM_CPY<T>(data, n, (n<len ? n : len), d0, d);
-          len=n;
-       WB_DELETE(d0); return *this;
+       WB_NEW(data,n, n>len && !d ? 0 : 1); 
+       if (d && n>len)
+            { MEM_CPY<T>(data, n, len, d0, d); }
+       else { MEM_CPY<T>(data, (n<len? n:len), d0); }
+
+       len=n; WB_DELETE(d0);
+       return *this;
     };
 
     wbvector& resize(size_t n, wbvector& X) const {
        if (!n) { X.init(); } else
        if (n==len) { X=(*this) ; }
        else {
-          WB_NEW(X.data,n); X.len=n;
+          WB_NEW(X.data,n, n>len ? 0 : 1); X.len=n; 
           if (len) { MEM_CPY<T>(X.data, MIN(n,len), data); }
-          if (n>len) { MEM_SET<T>(X.data+len,n-len); }
        }
        return X;
     };
@@ -999,17 +1386,17 @@ class wbvector {
     };
     T min_(T x) const;
 
-    T aMax(size_t *k=NULL) const; 
+    T aMax(size_t *k=nullptr) const; 
 
     T aMax(unsigned &k) const { T x; 
        size_t k_; x=aMax(&k_); Wb::safeConvert(FL,k_,k);
        return x;
     };
 
-    T aMin(char zflag=0, size_t *k=NULL) const;  
+    T aMin(char zflag=0, size_t *k=nullptr) const;  
 
-    T maxneg(size_t *k=NULL) const;
-    T minpos(size_t *k=NULL) const;
+    T maxneg(size_t *k=nullptr) const;
+    T minpos(size_t *k=nullptr) const;
 
     T avg() const; 
     T std() const; 
@@ -1017,20 +1404,18 @@ class wbvector {
     void range(T &xmin, T&xmax) const;
     T range() const;
 
-    wbvector& Permute(const wbperm &P, char iflag=0);
-    wbvector& permute(wbvector &, const wbperm &P, char iflag=0) const;
+    wbvector& Permute(const wbperm &P); 
+    wbvector& permute(wbvector &B, const wbperm &P) const;
 
-    wbvector permute(const wbperm &P, char iflag=0) const {
-       wbvector<T> X; permute(X,P,iflag);
+    wbvector permute(const wbperm &P) const { 
+       wbvector<T> X; permute(X,P);
        return X;
     };
 
-    wbvector& blockPermute(
-       const wbperm &P, wbvector &, char iflag=0) const;
-
-    wbvector& BlockPermute(const wbperm &P, char iflag=0) {
+    wbvector& blockPermute(wbvector &B, const wbperm &P) const;
+    wbvector& BlockPermute(const wbperm &P) {
        wbvector<T> x(*this);
-       return x.blockPermute(P,*this,iflag);
+       return x.blockPermute(*this,P);
     };
 
     int blockCompare( 
@@ -1065,16 +1450,31 @@ class wbvector {
         else v.init(i2-i1, data+i1);
     };
 
-    void selectSU(const WBINDEX &I);
-    void select(const WBINDEX &I, T* r) const;
-    wbvector& select(const WBINDEX &I, wbvector &a) const;
-    wbvector& Select(const WBINDEX &I);
-    wbvector& BlockSelect(const WBINDEX &I, const WBINDEX &D);
+    template<class TI>
+    void selectSU(const wbvector<TI> &I);
 
-    wbvector select(const WBINDEX &I) const {
-       wbvector dI; select(I,dI); 
-       return dI;
+    template<class TI>
+    void select(const wbvector<TI> &I, T* r) const;
+
+    template<class TI>
+    wbvector& Select(const wbvector<TI> &I);
+
+    template<class TI>
+    wbvector& select(const wbvector<TI> &I, wbvector &B) const;
+
+    template<class TI>
+    wbvector  select(const wbvector<TI> &I) const {
+       wbvector B; return select(I,B); 
     };
+
+    wbvector& Select(cMVEC &mark, char nonzero=1);
+    wbvector& select(cMVEC &mark, wbvector &B, char nonzero=1) const;
+    wbvector  select(cMVEC &mark, char nonzero=1) const {
+       wbvector B; return select(mark,B,nonzero); 
+    };
+
+    template<class TI>
+    wbvector& BlockSelect(const wbvector<TI> &I, const wbvector<TI> &D);
 
     wbvector& getI(size_t k, wbvector &v) const;
     wbvector& getI(const wbindex &k, wbvector &v, char uflag=1) const;
@@ -1156,7 +1556,7 @@ class wbvector {
     template <class TI>
     T prod(const TI *I, size_t n) const {
        T x=0; if (n) { size_t i=1;
-         x=el(I[0]); for (; i<n; ++i) { x*=el(I[i]); }
+         x=at(I[0]); for (; i<n; ++i) { x*=at(I[i]); }
        }
        return x;
     };
@@ -1164,7 +1564,8 @@ class wbvector {
     template <class T1, class T2>
     T2 prod(const T1 *I, size_t n, T2 &s2) const {
        size_t i,k;
-       char m[len]; for (i=0; i<len; ++i) m[i]=0;
+       std::vector<char> m(len); 
+
        for (i=0; i<n; ++i) { k=I[i];
           if (k>=len) wblog(FL,
              "ERR %s() index out of bounds (%d/%d)",FCT,k,len);
@@ -1192,7 +1593,7 @@ class wbvector {
     void print(const char *istr, char mflag=0) const;
     void printdata(const char *istr=0) const {
        if (istr && istr[0]) printf("%s = ",istr);
-       printf("[ %s ]\n",STR_(this));
+       printf("[ %s ]\n",STR(*this));
     };
 
     void put(
@@ -1253,10 +1654,10 @@ class wbvector {
     wbstring sizeStr() const;
 
     wbstring toStrf(
-       const char *fmt0="",
+       const char *fmt0="", 
        const char *sep=" ",
-       unsigned stride=0,  
-       const char *sep2=""
+       unsigned stride=0,   
+       const char *sep2=""  
     ) const;
 
     T *data;
@@ -1267,36 +1668,34 @@ class wbvector {
 
   protected: 
 
-    wbvector& RENEW(size_t n, const T* d=NULL, size_t l=-1, char init=1) {
+    wbvector& RENEW(size_t n, const T* d=nullptr, size_t l=-1, char init=1) {
        if (data) {
-          if (isref ) { data=NULL; } else
+          if (isref ) { data=nullptr; } else
           if (n!=len) { WB_DELETE(data); } 
        }
-       isref=0; len=n; if (!n) { return *this; }
+       isref=0; if (!n) { len=0; return *this; }
 
-       if (!data) { WB_NEW(data,len); } 
+       if (!d ) { l=0; } else
+       if (l>n) { l=n; } 
 
-       if (long(l)<0) { l=len; }
+       if (init && l>=n) { init=0; }
 
-       if (d && l) {
-          MEM_CPY<T>(data,l<len ? l:len,d); if (l<len && init) {
-          MEM_CPY<T>(data+l,len-l,NULL); }
-       }
-       else if (init) {
-          MEM_CPY<T>(data, len, NULL); 
-       }
+       if (!data) { WB_NEW(data,n, init? 0 : 1); } else
+       if (init ) { MEM_CPY<T>(data+l,n-l,nullptr); } 
+
+       if (l) { MEM_CPY<T>(data,l,d); }
+       len=n;
 
        return *this;
     };
 
     wbvector& RENEW_VAL(size_t n, const T& x) {
-        if (isref) { data=NULL; isref=0; } else
-        if (n!=len && data) { WB_DELETE(data); }
+        if (isref) { data=nullptr; isref=0; } else
+        if (n!=len && data) { WB_DELETE(data); } 
 
-        len=n;
-        if (len) {
-           if (!data) { WB_NEW(data,len); }
-           for (size_t i=0; i<len; ++i) { data[i]=x; }
+        if ((len=n)) {
+           if (!data) { WB_NEW(data,n,1); } 
+           for (size_t i=0; i<n; ++i) { data[i]=x; }
         }
         return *this;
     };
@@ -1304,6 +1703,51 @@ class wbvector {
   private:
 
 }; 
+
+template<class T>
+inline wbvector<const T*>cPVEC1_(const T &A) {
+   return wbvector<const T*>(1,&A);
+};
+
+template<class T> 
+inline wbvector<const T*> cPVEC__(const wbvector<T> &A) {
+   wbvector<const T*> a(A.len);
+   for (unsigned i=0; i<A.len; ++i) { a[i]=&A[i]; }
+   return a;
+};
+
+template<class T> 
+inline unsigned cPVEC_nnz(
+   const  char *F, int L, const char *fct, wbvector<const T*> &A,
+   char lflag=0) { 
+
+   unsigned i=0, l=-1, nwrn=0;
+   for (; i<A.len; ++i) {
+       if (A[i]) {
+          if (*A[i]) { if (++l<i) { A[l]=A[i]; }}
+          else {
+             if (lflag=='w') { ++nwrn; wblog(F_L,
+             "WRN %s() got empty data[%d/%d]",fct?fct:FCT,i+1,A.len); }
+          }
+       }
+       else {
+          if (tolower(lflag)=='w') { ++nwrn; wblog(F_L, 
+          "WRN %s() got null data[%d/%d]",fct?fct:FCT,i+1,A.len); }
+       }
+   }
+
+   if (++l) { A.len=l; }
+   else {
+      if ((F || fct) && !nwrn) { char sout[128]; snprintf(sout,128,
+         "%s() got empty data (l=%d/%ld)",fct?fct:FCT,l,A.len);
+         if (lflag) 
+              { wblog(F_L,"WRN %s",sout); }
+         else { wblog(F_L,"ERR %s",sout); }
+      }
+      A.init();
+   }
+   return A.len;
+};
 
 template <class T>
 wbvector<T>& wbvector<T>::unRef() {
@@ -1316,7 +1760,8 @@ wbvector<T>& wbvector<T>::unRef() {
 
     T const* const d0=data;
 
-    WB_NEW(data,len); MEM_CPY<T>(data,len,d0);
+    WB_NEW(data,len,1); 
+    MEM_CPY<T>(data,len,d0);
     isref=0;
 
     return *this;
@@ -1860,21 +2305,25 @@ template<> mxArray* wbvector<     double>::toMx(const char tflag) const {
 template<> mxArray* wbvector<  wbcomplex>::toMx(const char tflag) const {
   return toMx_base(tflag); }
 
+template<> mxArray* wbvector<     size_t>::toMx(const char tflag) const {
+  return toMx_base(tflag); };
+template<> mxArray* wbvector<       long>::toMx(const char tflag) const {
+  return toMx_base(tflag); };
 template<> mxArray* wbvector<   unsigned>::toMx(const char tflag) const {
   return toMx_base(tflag); };
 template<> mxArray* wbvector<        int>::toMx(const char tflag) const {
   return toMx_base(tflag); }
+template<> mxArray* wbvector<      short>::toMx(const char tflag) const {
+  return toMx_base(tflag); }; 
+
 template<> mxArray* wbvector<       char>::toMx(const char tflag) const {
   return toMx_base(tflag); }
-template<> mxArray* wbvector<    uint8_T>::toMx(const char tflag) const {
+template<> mxArray* wbvector<     int8_t>::toMx(const char tflag) const {
   return toMx_base(tflag); }
-template<> mxArray* wbvector<      short>::toMx(const char tflag) const {
-  return toMx_base(tflag); };
-template<> mxArray* wbvector<   uint16_T>::toMx(const char tflag) const {
-  return toMx_base(tflag); };
-template<> mxArray* wbvector<       long>::toMx(const char tflag) const {
-  return toMx_base(tflag); };
-template<> mxArray* wbvector<     size_t>::toMx(const char tflag) const {
+template<> mxArray* wbvector<    uint8_t>::toMx(const char tflag) const {
+  return toMx_base(tflag); } 
+
+template<> mxArray* wbvector<   uint16_t>::toMx(const char tflag) const {
   return toMx_base(tflag); };
 
 template<class T>
@@ -1953,41 +2402,25 @@ inline WBINDEX Index(size_t i1, size_t i2) {
     return ii;
 };
 
-inline char isUniqueIdxSet(const WBINDEX &I0, widx_t imax) {
+inline char isUniqueIdxSet(const WBINDEX &I_, widx_t imax) {
 
-    size_t i, n=I0.len, e=0;
-    const widx_t *I=I0.data;
-    wbvector<char> mark(imax); char *m=mark.data;
+   size_t i, n=I_.len;
+   const widx_t *I=I_.data;
+   wbvector<char> mark(imax); char *m=mark.data;
 
-    for (i=0; i<n; i++) if (I[i]<imax) m[I[i]]++; else e++;
-    for (i=0; i<imax;  i++) if (m[i]>1) e++;
+   for (i=0; i<n; ++i) {
+      if (I[i]>=imax || ++m[I[i]]>1) { break; }
+   }
 
-    return (e==0);
-}
-
-char validPerm(const WBPERM &P, wperm_t d) {
-    char rval=0, id=0; size_t i=0, n=P.len;
-    const wperm_t *p=P.data;
-    wbvector<char> mark(n);
-
-    if (swperm_t(d)>=0) { if (P.len!=d) return rval; }
-    for (i=0; i<n; ++i) {
-       if (p[i]==i) { ++id; } else
-       if (p[i]>=n || mark[p[i]]++) { return rval; }
-    }
-
-    return (rval=(unsigned(id)==n? 2:1));
+   return (i==n);
 };
 
 inline void getIPerm(const WBPERM &P, WBPERM &iP) {
 
-    size_t i,n=P.len;
+   size_t i,n=P.len;
 
-  #ifdef __WBDEBUG__
-
-    if (!validPerm(P))
-    wbdie(FLINE,"invalid permutation.");
-
+ #ifdef __WBDEBUG__
+   if (P.isValidPerm()<=0) { wbdie(FLINE,"invalid permutation"); }
   #endif
 
     iP.init(n);
@@ -2000,7 +2433,7 @@ char isIdentityPerm(const WBPERM &P) {
 
     for (size_t i=0; i<P.len; i++) if (P[i]!=i) return 0;
     return 1;
-}
+};
 
 #endif
 

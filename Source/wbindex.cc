@@ -99,7 +99,7 @@ wbindex wbindex::flipIdx(widx_t ndim) const {
 inline char wbindex::isUnique(widx_t imax, widx_t offset) const {
     wbvector<char> mark(imax);
 
-    if (offset==0) {
+    if (!offset) {
        for (widx_t i=0; i<len; i++) {
           if (data[i]<imax) { if ((++mark[data[i]])>1) return 0; }
           else return 0;
@@ -165,9 +165,9 @@ void groupIndex<T>::getRecs0(
    const wbMatrix<T2> &AB, wbMatrix<T2> &X, T m
  ) const {
 
-   widx_t i0=0; if (swidx_t(m)<0) { m=-m; i0=AB.dim2-m;  }
+   widx_t i0=0; if (widx_ts(m)<0) { m=-m; i0=AB.dim2-m;  }
 
-   if (swidx_t(i0)<0 || i0+m>AB.dim2) wblog(FL,
+   if (widx_ts(i0)<0 || i0+m>AB.dim2) wblog(FL,
       "ERR %s() size out of bounds (%d+%d/%d)",FCT,i0+m,AB.dim2);
 
    X.init(D.len,m); if (!D.len || !m) return;
@@ -182,36 +182,334 @@ void groupIndex<T>::getRecs0(
    }
 };
 
+iFerm& iFerm::init(const char *F, int L, const char *s, unsigned r_) {
+
+   if (!s || !s[0]) { return init(); }
+
+   unsigned i=0, l=strlen(s);
+   MVEC::init(l ? l-1 : 0); 
+   for (; i<l && s[i]; ++i) {
+      if (s[i]=='+') { data[i]=+1; } else
+      if (s[i]=='-') { data[i]=-1; } else { break; }
+   }
+   if (!i || i+1>=l || s[i]!=QS_SEP_IFERM) wblog(F_L,
+      "ERR %s() invalid string '%s'",C_FCT,s);
+
+   r=i; if (int(r_)>=0 && r!=r_) wblog(FL,
+      "ERR %s() rank inconsistency '%s' (r=%d/%d)",C_FCT,s,r,r_);
+
+   for (; i<l && s[i+1]; ++i) {
+      data[i] = (s[i+1]-'1'); 
+      if (data[i]<0 || data[i]>8 || (i>r && data[i]<=data[i-1])) {
+         wblog(F_L,"ERR %s() invalid string '%s'",FCT,s);
+      }
+   }
+
+   return *this;
+};
+
+wbstring iFerm::toStr(char compact) const {
+   wbstring sout; 
+
+   if (!len) {
+      if (r) wblog(FL,"ERR %s() invalid iFerm (r=%d with empty)",FCT,r);
+      return (sout="");
+   }
+
+   if (compact<0) { compact = (permits_compact()? 2: 0); }
+   if (compact>0) {
+      sout.init(len+2); 
+      this->toStr(sout.data,sout.len,compact);
+   }
+   else {
+      sout.init(3*len);
+      this->toStr(sout.data,sout.len,compact);
+   }
+   return sout;
+};
+
+iFerm& iFerm::init(const char *F, int L, const mxArray *a, unsigned r_) {
+   char s[32]; s[0]=0;
+   if (a) {
+      if (mxIsChar(a)) {
+         int e=mxGetString(a,s,31);
+         if (e) wblog(F_L,"ERR %s() failed to read string (e=%d)",FCT,e);
+      }
+      else {
+         wblog(F_L,"ERR %s() invalid input of type '%s'",
+         FCT, mxGetClassName(a));
+      }
+   }
+   return init(F_L,s,r_); 
+};
+
+#ifdef LD_CLEBSCH_QS 
+char iFerm::check(const char *F, int L, const QVec &qvec, unsigned QDIM) {
+
+   int q=0; 
+   if (!len) { return q; } 
+
+   if (!r || r>=len) {
+      if (F) wblog(F_L,"ERR %s() invalid r=%d/%d",C_FCT,r,len);
+      q|=2;
+   }
+   else {
+      unsigned i=r, isym, nsym=qvec.len;
+      if (int(QDIM)>0) {
+         if (!nsym) { nsym=QDIM; } 
+         else if (nsym>QDIM) { wblog(F_L, 
+            "ERR %s() invalid QDIM=%d/%d",FCT,QDIM,nsym);
+         }
+      }
+
+      for (; i<len && !q; ++i) { isym=data[i];
+         if (isym>=nsym) {
+            if (F) wblog(F_L,"ERR %s() symmetry "
+               "index out of bounds (%d: %d/%d)",C_FCT,i,isym,nsym);
+            q|=2;
+         }
+         else if (qvec.len && !qvec[isym].permitsFerm()) {
+            if (F) { wblog(F_L,
+               "ERR %s() invalid symmetry #%d '%s' (%s)",
+               C_FCT,i-r+1,STR(qvec[isym]),STR(*this));
+            }
+            q|=4;
+         }
+      }
+   }
+   return q;
+};
+#endif
+
+int iFerm::check(const char *F, int L, unsigned r_, const iFerm *B_) const {
+   int q=len-r; 
+
+   if (len) {   
+      if (!r || r>=len) { q=-1; } else
+      if (int(r_)>=0 && r!=r_) { q=-2; }
+   }
+   else if (r) { q=-3; } 
+
+   if (B_ && q>=0) { const iFerm &B=*B_;
+      if (q!=int(B.len-B.r) || (!q && B.len)) { q=-10; }
+      else { 
+         for (unsigned i=0; i<len; ++i) {
+            if (data[r+i]!=B.data[B.r+i]) { q=-(11+i); break; }
+         }
+      }
+   }
+
+   if (q<0 && F) wblog(F,L,
+      "ERR %s() invalid fdir = '%s'",C_FCT,STR(*this));
+   return q;
+};
+
+iFerm& iFerm::init_op(const char *F, int L,
+   const char *fdr, char f, const iFerm &B) {
+
+   unsigned i=0, n=(fdr ? strlen(fdr) : 0), m=B.nsym();
+
+   if (!n) wblog(F_L,
+      "ERR %s() invalid fdr (%s)",FCT,fdr?"empty":"null");
+   if (!f) wblog(FL,"ERR %s() invalid f=%d",FCT,f);
+
+   MVEC::init(n+m); r=n;
+
+   for (; i<r; ++i) {
+      data[i] = adapt(f,fdr[i]);
+      if (data[i]==-127) 
+      wblog(F_L,"ERR %s() invalid input '%s'",FCT,fdr);
+   }
+
+   for (i=0; i<m; ++i) { data[r+i]=B.data[B.r+i]; }
+
+   return *this;
+};
+
+iFerm& iFerm::init_A(const char *F, int L,
+   const char *fdr, char fA, char fB, const iFerm &B) {
+
+   unsigned i=0, n=(fdr ? strlen(fdr) : 0), m=B.nsym();
+
+   if (n!=3) wblog(F_L,
+      "ERR %s() invalid fdr (%s; r=%d/3)",FCT,fdr?"empty":"null",n);
+   if (!fA || !fB) wblog(F_L,
+      "ERR %s() invalid fdir (%d/%d)",FCT,fA,fB);
+
+   MVEC::init(n+m); r=n;
+
+   data[0] = adapt(fA,fdr[0]);
+   data[1] = adapt(fB,fdr[1]);
+   data[2] = adapt(+1,fdr[2]);
+
+   for (i=0; i<n; ++i) { if (data[i]<-99) 
+      wblog(F_L,"ERR %s() invalid input '%s'",FCT,fdr); }
+
+   for (i=0; i<m; ++i) { data[r+i]=B.data[B.r+i]; }
+
+   return *this;
+};
+
+char* iFerm::toStr(char *s, int n, char compact) const {
+
+   if (!s) wblog(FL,"ERR %s() got null string");
+   if (!n) wblog(FL,"ERR %s() got len=%d/%d string",FCT,n,len);
+   if (!len) { s[0]=0; }
+   else {
+      unsigned i=0;
+      if (n<int(len+2)) wblog(FL,
+         "ERR %s() string too short (%d/%d)",FCT,n,len+2);
+
+      if (compact<0) { compact = (permits_compact()? 2: 0); }
+      if (compact) { 
+         for (i=0; i<r; ++i) {
+            if (data[i]==+1) { s[i]='+'; } else
+            if (data[i]==-1) { s[i]='-'; } else
+            wblog(FL,"ERR %s() unexpected data[%d/%d]=%s",FCT,i,len,cSTR(s[i]));
+         }
+         s[i]=QS_SEP_IFERM;
+            for (; i<len; ++i) { s[i+1]=data[i]+'1'; }
+         s[++i]= 0;
+      }
+      else { 
+         int l=0;
+         for (i=0; i<r && l+2<n; ++i) { if (l<n) {
+             l+=snprintf(s+l,n-l,"%s%d",l?",":"",data[i]);
+         }}
+         if (i<r || l+2+int(len-r)>=n) { s[n-1]=0; wblog(FL,
+            "ERR %s() string out of bounds '%s..'",FCT,s);
+         }
+         s[l]=QS_SEP_IFERM;
+            for (; i<len; ++i) { s[++l]=data[i]+'1'; }
+         s[++l]= 0;
+      }
+   }
+   return s;
+};
+
+char iFerm::get(const char *F, int L, const wbindex &I) const {
+
+   char f=0; 
+
+   if (data) {
+      if (!I.len) { f=data[0];
+      }
+      else {
+         for (unsigned i=0; i<I.len; ++i) {
+            if (I[i]>=r) wblog(F_L,
+               "ERR %s() index out of bounds (%s / %d)",FCT,STR(I),r);
+            if (i && data[I[i]]!=data[I[i-1]]) wblog(F_L,"ERR %s() "
+               "non-unique fdir for input %s @ %s",FCT,STR(*this),STR(I));
+         }
+         f=data[I[0]];
+      }
+   }
+   return f;
+};
+
+#ifdef LD_CLEBSCH_QS
+unsigned iFerm::iSym(
+   wbvector<QType> &qt, wbindex &I, const QVec &qtype, unsigned QDIM_
+ ) const {
+
+   unsigned QDIM=0, m=len-r;
+      if (!data) { qt.init(); I.init(); return QDIM; }
+      if (int(m)<=0) wblog(FL,"ERR %s() got %s (m=%d)",FCT,STR(*this),m);
+   unsigned i,j, nsym=0;
+   wbvector<unsigned> Iq;
+   MVEC mark;
+
+   if (qtype) {
+      QDIM=qtype.Qpos(Iq); 
+      if (int(QDIM_)>=0 && QDIM!=QDIM_) wblog(FL,
+         "ERR %s() QDIM inconsistency (%d/%d)",FCT,QDIM,QDIM_);
+      nsym=qtype.len; qt.init(m);
+   }
+   else if (int(QDIM_)>0) { QDIM=QDIM_;
+      qt.init2val(m,QType(QT_U1));
+      Iq.Index(QDIM); 
+      nsym=QDIM;
+   }
+   else wblog(FL,"ERR %s() "
+     "QDIM required for all-alelian case (%s)",FCT,STR(*this));
+
+   I.init(m);
+   mark.init(nsym); 
+
+   for (i=0; i<m; ++i) { j=data[r+i]; I[i]=Iq[j];
+      if (j>=nsym) wblog(FL,"ERR %s() "
+         "index out of bounds (%d/%d: %d/%d)",C_FCT,i+1,m,j,nsym);
+      if (++mark[j]>1) wblog(FL,"ERR %s() "
+         "got non-unique symmetry indices in iFerm %s",FCT,STR(*this));
+      if (qtype.len) { qt[i]=qtype[j]; }
+   }
+
+   for (i=0; i<m; ++i) { 
+      if (!qt[i].permitsFerm()) { wblog(FL,
+         "ERR %s() invalid symmetry `%s'\nnot yet implemented "
+         "with fermionic parity",C_FCT,STR(qt[i]));
+      }
+   }
+   return QDIM;
+};
+#endif
+
+iFerm& iFerm::Permute(const wbperm &P) {
+   if (*this && P) {
+      if (P.len>r) wblog(FL,
+        "ERR %s() permutation out of bounds (len=%d/%d)",FCT,P.len,r);
+      if (P.isValidPerm()<=0) wblog(FL,"ERR %s() invalid P=[%s]",FCT,STR(P));
+
+      MVEC x(r,data);
+      Wb::perm_data(FL,data,x.data,r,P.data,P.len,P.inv);
+   }
+   return *this;
+};
+
+iFerm& iFerm::permute(iFerm &B, const wbperm &P) const {
+   B=(*this); 
+   if (*this && P) {
+      if (P.len>r) wblog(FL,
+        "ERR %s() invalid permutation (len=%d/%d)",FCT,P.len,r);
+      if (P.isValidPerm()<=0) wblog(FL,"ERR %s() invalid P=[%s]",FCT,STR(P));
+      Wb::perm_data(FL,B.data,data,r,P.data,P.len,P.inv);
+
+      if (P.conj) { B.Conj(); }
+   }
+   return B;
+};
+
 int ctrIdx::init(const char *F, int L, const char *s, unsigned offset) {
 
-   int i, n=Str2Idx(FL,s,(wbvector<unsigned>&)(*this),offset,'x');
+   if (!s || !s[0]) {
+      if (F) wblog(F,L,"ERR %s() got empty/null string",FCT);
+      return -1;
+   }
+   unsigned i, n=strlen(s);
+   if (n>128) wblog(FL,"ERR %s() implausible ctr-idx '%s'",FCT,s);
 
-   if (!n) {
-      if (F) wblog(F,L,"ERR %s() got empty/null string !?",FCT);
+   for (conj=0, i=n-1; i<n; --i) {
+      if (CTR_IS_CONJ(s[i])) { ++conj; } else 
+      if (!isspace(s[i])) { break; } 
+   }
+   conj%=2; 
+
+   if (i<n && CTR_IS_SEP_ANY(s[i])) { --i; } 
+   n=i+1;
+
+   i=Wb::Str2Idx(0,0,s,*this,offset,'x',n);
+   if (int(i)<=0) {
+      if (F) wblog(F,L,"ERR %s() invalid contraction '%s'",FCT,s);
       return -1;
    }
 
-   if (n<0) { int m=0; i=-n-1; 
-
-      for (; s[i]; ++i) { if (!isspace(s[i])) {
-         if (CTR_IS_SEP_ANY(s[i])) { ++m; } else break;
-      }}
-      if (m<=1 && CTR_IS_CONJ(s[i])) { conj=1;
-         for (++i; s[i]; ++i) { if (!isspace(s[i])) break; }
-      }
-
-      if (s[i]) { if (F) wblog(F,L,"ERR %s() "
-         "invalid ctr-index set '%s' (%d: %c<%d>)",FCT,s,i+1,s[i],s[i]);
-         return -2;
-      }
+   if (!len) {
+      if (F) wblog(F,L,"ERR %s() got empty ctr-index '%s'",FCT,s);
    }
-
-   if (!len) { if (F) wblog(F,L,
-      "ERR %s() got empty ctr-index set '%s' !?",FCT,s);
-   }
-   else if (!wbvector<unsigned>::isUnique()) { if (F) wblog(F,L,
-       "ERR %s() invalid index set '%s' [%s]",
-        FCT,STR_(this),wbvector<unsigned>::toStr().data);
+   else if (!wbvector<unsigned>::isUnique()) {
+      if (F) wblog(F,L,
+         "ERR %s() invalid index set '%s' [%s]",
+         FCT,STR(*this),wbvector<unsigned>::toStr().data);
       return -3;
    }
    else if (F) { 
@@ -228,7 +526,7 @@ ctrIdx& ctrIdx::init(const char *F, int L, const mxArray *a) {
    if (mxIsChar(a)) {
       wbstring s(a); int e=init(F,L,s.data);
       if (e<=0) wblog(FL,
-         "ERR %s() '%s' => [%s] @ e=%d !?",FCT,s.data,STR_(this),e);
+         "ERR %s() '%s' => [%s] @ e=%d !?",FCT,s.data,STR(*this),e);
    }
    else {
       wbvector<unsigned>::init(F,L,a);
@@ -253,7 +551,9 @@ ctrIdx& ctrIdx::initOp(const char *F, int L,
 	  "ERR %s() got '%s' with QSpace %s !?",FCT,sopt,STR(B.itags));
 
    init(1);
-   if (sopt[l-1]=='*') { data[0]=0; conj=1; } else { data[0]=1; }
+   if (CTR_IS_CONJ(sopt[l-1])) 
+        { data[0]=0; conj=1; } 
+   else { data[0]=1; }         
 
    newtags.initOp(t1,B.itags,sopt+1);
 
@@ -293,7 +593,7 @@ int ctrIdx::extend2Perm(widx_t N, wbperm &P, char toend) const {
 wbperm&
 ctrIdx::extend2Perm(    unsigned ra, unsigned ma,
    const ctrIdx &icb__, unsigned rb, unsigned mb,
-   const wbperm &pab, char conj, unsigned mc,
+   const wbperm &pab, unsigned mc,
    wbperm &Pbc, 
    ctrIdx &kb,  
    ctrIdx &kcb, 
@@ -324,8 +624,8 @@ ctrIdx::extend2Perm(    unsigned ra, unsigned ma,
    ica.invert(ra,ka); 
    icb.invert(rb,kb); 
 
-   kca.initT(rca, ipab.data,     !conj);
-   kcb.initT(rcb, ipab.data+rca, !conj);
+   kca.initT(rca, ipab.data,     !pab.conj);
+   kcb.initT(rcb, ipab.data+rca, !pab.conj);
 
    if (Bflag) {
       wbperm Pa(ra+(mb?1:0)+(mc?1:0)); m=ra;
@@ -337,7 +637,7 @@ ctrIdx::extend2Perm(    unsigned ra, unsigned ma,
       for (i=0; i<ka.len; ++i, ++l) { Pa[l]=ka[i]; }
       if (mc) Pa[l++]=(m++); 
 
-      if (l!=Pa.len || !Pa.isValidPerm()) wblog(FL, 
+      if (l!=Pa.len || Pa.isValidPerm()<=0) wblog(FL, 
          "ERR %s() got invalid Pa=[%s] (%d/%d)",FCT,STR(Pa),l,Pa.len);
       Pa.invert(Pbc);
    }
@@ -351,7 +651,7 @@ ctrIdx::extend2Perm(    unsigned ra, unsigned ma,
       for (i=0; i<kb.len; ++i, ++l) { Pb[l]=kb[i]; }
       if (mc) Pb[l++]=(m++); 
 
-      if (l!=Pb.len || !Pb.isValidPerm()) wblog(FL, 
+      if (l!=Pb.len || Pb.isValidPerm()<=0) wblog(FL, 
          "ERR %s() got invalid Pb=[%s] (%d/%d)",FCT,STR(Pb),l,Pb.len);
 
       Pb.invert(Pbc); 
@@ -362,28 +662,52 @@ ctrIdx::extend2Perm(    unsigned ra, unsigned ma,
    return Pbc;
 };
 
-int ctrIdx::checkUniqueS(const char *F, int L, const unsigned r) const {
+int ctrIdx::checkUniqueS(const char *F, int L, unsigned r) const {
 
    if (len) {
       unsigned i=1;
       for (; i<len; ++i) {
          if (data[i-1]>=data[i]) {
              if (data[i-1]>data[i]) { if (F) wblog(F,L,
-                "ERR %s() ctrIdx not sorted [%s]",FCT,STR_(this));
+                "ERR %s() ctrIdx not sorted [%s]",FCT,STR(*this));
                 return 1;
              }
              if (data[i-1]==data[i]) wblog(F_L,
-             "ERR %s() ctrIdx not sorted [%s]",FCT,STR_(this));
+             "ERR %s() ctrIdx not unique [%s]",FCT,STR(*this));
          }
       }
 
       if (int(r)>0) { 
          if (data[i-1]>=r) wblog(F_L,
-         "ERR %s() ctrIdx out of bounds (%s; %d) !?",FCT,STR_(this),r);
+         "ERR %s() ctrIdx out of bounds (%s; %d) !?",FCT,STR(*this),r);
       }
    }
 
    return 0;
+};
+
+int ctrIdx::checkUnique(
+   const char *F, int L, unsigned r, char sorted) const {
+
+   int q=-1; 
+   if (!len) { return q; } 
+
+   if (int(r)<0) { r=this->max()+1; } 
+   if (r>32) wblog(F_L,"ERR %s() got ctrIdx ic<=%d !?",FCT,r);
+
+   char nns=0; 
+   MVEC mark(r);
+   for (unsigned i=0; i<len; ++i) {
+      if (data[i]>=r || ++mark[data[i]]>1) { q=0; break; }
+      if (i && data[i]<data[i]-1) { ++nns; }
+   }
+
+   if (!q && F) wblog(F,L,
+      "ERR %s() invalid object '%s'",FCT,STR(*this));
+   if (sorted && nns && F) wblog(FL,
+      "ERR %s() non-sorted object '%s'",FCT,STR(*this));
+
+   return q=(nns ? 1 : 2); 
 };
 
 ctrIdx& ctrIdx::invert(unsigned r, ctrIdx &I) const {
@@ -409,31 +733,65 @@ ctrIdx& ctrIdx::invert(unsigned r, ctrIdx &I) const {
     return I;
 };
 
-wbstring ctrIdx::toStr(char xflag) const {
-   wbstring s; 
+ctrIdx& ctrIdx::Shift_x(unsigned i1, unsigned i2) {
+   unsigned i=0, nx=0;
+   MVEC mark(len);
 
-   if (!xflag && this->anyGT(60)) { 
-      unsigned l, n=4*len+4; s.init(n); 
+   if (i1 >i2) { SWAP(i1,i2); } else
+   if (i1==i2 && int(i2)>=0) wblog(FL,
+      "ERR %s() invalid usage (%d,%d)",FCT,i1,i2);
 
-      l=snprintf(s.data,n,"%s%s",
-         ((wbvector<unsigned>&)(*this)+1).toStrf("%d",",").data,
-         conj? ";*":"");
-      if (l>=n) wblog(FL,
-         "ERR %s() string out of bounds (%d/%d)",FCT,l,n
-      );
-   }
-   else {
-      unsigned i=0, n=len+(conj ? 2 : 1); s.init(n);
-      for (; i<len; ++i) {
-         if (data[i]< 9) { s.data[i]='1'+ data[i];     } else
-         if (data[i]<35) { s.data[i]='A'+(data[i]- 9); } 
-         else            { s.data[i]='a'+(data[i]-35); } 
+   for (; i<len; ++i) {
+      if (data[i]==i1 || data[i]==i2) { ++mark[i]; ++nx; } 
+      else {
+         if (data[i]>i2) { --data[i]; }
+         if (data[i]>i1) { --data[i]; } 
       }
-      if (conj) { s.data[i++]='*'; }
-      s.data[i]=0;
+   }
+   if (nx) { Select(mark,0); }
+   return *this;
+};
+
+wbstring ctrIdx::toStr(char vflag) const {
+   wbvec<char> sout;
+
+   if (vflag>8) {
+      if (strchr("V!x",vflag)) { vflag=2; } else
+      if (vflag=='v') { vflag=1; } else {
+         wblog(FL,"WRN %s() got vflag=%s",FCT,cSTR(vflag));
+         vflag=7;
+      }
+   }
+   if (vflag<2) {
+      if (vflag<0) { vflag=7; } else
+      if (this->anyGT(60)) { vflag|=2; } 
+   }
+   if (vflag>=2) { 
+      sout.init(4*len+(conj? (conj==1? 2:8) : 0)); 
+      sout.cat(FL,((wbvector<unsigned>&)(*this)+1).toStrf("%d",",").data);
+      if (conj) {
+         if (conj==1)
+              { sout.cat(FL, ";*"); }
+         else { sout.catf(FL,";%s",cSTR(conj)); }
+      }
+   }
+   else { unsigned i=0;
+      if (vflag) { if (!conj || conj==1) { vflag=0; }}
+
+      sout.init(len + (vflag? 8:(conj? 2:1)) );
+      for (; i<len; ++i) {
+         if (data[i]< 9) { sout.data[i]='1'+ data[i];     } else
+         if (data[i]<35) { sout.data[i]='A'+(data[i]- 9); } 
+         else            { sout.data[i]='a'+(data[i]-35); } 
+      }
+      sout.data[i]=0; sout.l=i;
+      if (conj) {
+         if (vflag) { sout.catf(FL,":%s",cSTR(conj)); } else
+         if (conj==1 || Wb::conj2bool(conj)) { sout.cat(FL,"*"); }
+      }
    }
 
-   return s;
+   return sout.data;
 };
 
 itag_& itag_::init(const char* F, int L, const char *s, unsigned n) {
@@ -471,36 +829,35 @@ itag_& itag_::init(const char* F, int L, const char *s, unsigned n) {
 
 template<class TQ, class TD>
 itag_& itag_::init(const char *F, int L,
-   const wbvector< QSpace<TQ,TD> > &A,
-   wbindex ia 
+   wbvector<const QSpace<TQ,TD>* > A, 
+   wbindex ia
 ){
-   t=0; if (!A.len) return *this;
+   t=0; if (!cPVEC_nnz(FLF,A,'w')) { return *this; }
 
    unsigned k=0, l=0; itag_ x;
 
-   if (!ia.len) {
-      unsigned rk,r_=-1;
-      for (; k<A.len; ++k) {
-         if (int(rk=A[k].isOperator(&r_,'x'))<=0) wblog(FL,
+   if (!ia.len) { unsigned rk, r_=-1;
+      for (k=0; k<A.len; ++k) {
+         if (int(rk=A[k]->isOperator(&r_,'x'))<=0) wblog(FL,
             "ERR %s() invalid rank-%d operator \n(%d: %d/%d, `%s')",
-            FCT,A[k].itags.len,k+1,rk,r_,A[k].otype2Str().data
+            FCT,A[k]->itags.len,k+1,rk,r_,A[k]->otype2Str().data
          );
       }
       ia.Index(r_); k=0;
    }
    if (!ia.len) wblog(FL,"ERR %s() got empty index set !?",FCT);
 
-   for (; k<A.len; ++k) {
-      const iTags &it=A[k].itags;
+   for (k=0; k<A.len; ++k) {
+      const iTags &it=A[k]->itags;
       for (l=0; l<ia.len; ++l) {
          if (ia[l]>=it.len) wblog(F_L,
             "ERR %s() index out of bounds (%d/%d)",FCT,ia[l],it.len);
          (x=it[ia[l]]).deConj();
 
          if (!t) t=x.t; else
-         if (x.t && x.t!=t) wblog(F_L,"ERR %s() got itags "
-            "mismatch (%s [%s]; %s)",FCT, A[k].itags.toStr().data,
-            (ia+1).toStr().data, this->toStr().data
+         if (x.t && x.t!=t) wblog(F_L,
+            "ERR %s() got itags mismatch (%s [%s]; %s)",
+            FCT, STR(A[k]->itags),STR(ia+1), STR(*this)
          );
       }
    }
@@ -575,12 +932,12 @@ itag_& itag_::SetFlags(unsigned l, char check) {
    for (; i<n; ++i) {
       if (l & (1<<i)) {
          if (check && (s[i] & 128)) wblog(FL,
-            "WRN %s() flag %d already set (%s)",FCT,i,STR_(this));
+            "WRN %s() flag %d already set (%s)",FCT,i,STR(*this));
          s[i] |= 128;
       }
       else if (i) { 
          if (check && (s[i] & 128)) wblog(FL,
-            "WRN %s() unsetting flag %d (%s)",FCT,i,STR_(this));
+            "WRN %s() unsetting flag %d (%s)",FCT,i,STR(*this));
          s[i] &= 127;
       }
    }
@@ -590,35 +947,28 @@ itag_& itag_::SetFlags(unsigned l, char check) {
 itag_& itag_::SetSI(const char *F, int L,
    const char *tag, unsigned k, char mflag, char nfmt) {
 
-   unsigned l, n=ITAG_LEN+1; 
-   char s[n];
+   wbvec<char> s(ITAG_LEN+1); 
+   char c=0;
+
    if (!tag) wblog(F_L,"ERR %s() got null tag",FCT);
 
-   if (nfmt==2) { l=snprintf(s,n,"%s%02d",tag,k); } 
-   else if (nfmt<=1) { l=snprintf(s,n,"%s%d",tag,k); }
+   if (nfmt==2) { s.catf(0,0,"%s%02d",tag,k); } else 
+   if (nfmt<=1) { s.catf(0,0,"%s%d",  tag,k); }
    else {
-      unsigned m=8; char fmt[m]; 
-      l=snprintf(fmt,m,"%%s%%0%d",nfmt);
-      if (l>=m) wblog(FL,
-         "ERR %s() fmt string out of bounds (%s; %d/%d)",FCT,fmt,l,m);
-      l=snprintf(s,n,fmt,tag,k);
+      wbvec<char> fmt(8); 
+      fmt.catf(FL,"%%s%%0%d",nfmt);
+      s.catf(0,0,fmt.data,tag,k);
    }
 
    if (mflag & ~char(7)) wblog(F_L,
       "ERR %s() invalid mflag=%s",FCT,cSTR(mflag));
 
-   if (mflag&3) { 
-      char m=getMark();
-      if (m && l<n) { s[l]=m; if (++l<n) { s[l]=0; }}
-   }
-   if (mflag&1 || ((mflag&2) && isConj())) { 
-      if (l+1<n) { s[l]=CC_ITAG; s[l+1]=0; }
-      else { ++l; } 
-   }
-   if (l>=n) { s[n-1]=0; wblog(F_L,"ERR %s() "
-      "string out of bounds (%s, %d/%d/%d)",FCT,s,l,n,ITAG_LEN); }
+   if (mflag&3) { char m=getMark(); if (m) s.append(0,0,m); }
+   if (mflag&1 || ((mflag&2) && isConj())) { s.append(0,0,CC_ITAG); c=1; }
 
-   return init(s);
+   s.check_bounds(FL,1,c-1);
+
+   return init(s.data);
 };
 
 #ifndef NOMEX
@@ -656,14 +1006,15 @@ char itag_::sameAs(const itag_ &B, char lflag) const {
    return q;
 };
 
-unsigned itag_::to_str(char *sout, unsigned len, 
+unsigned itag_::to_str( 
+   const char *F, int L, char *sout, unsigned len,
    char cflag 
  ) const {
 
    unsigned e=0, l=0, i=0, m=0, n=ITAG_LEN;
    const char *st=(const char *)(&t), c128=char(128);
 
-   if (int(len)<=int(n)) wblog(FL,
+   if (int(len)<=int(n)) wblog(F_L,
       "ERR %s() string out of bounds (%d/%d)",FCT,len,n);
 
    for (; i<n && st[i]; ++i) { sout[i]=st[i];
@@ -677,7 +1028,7 @@ unsigned itag_::to_str(char *sout, unsigned len,
       if (st[i]==c128) { m|=(1<<i); } else { e+=100; }
    }}
 
-   if (e) { sout[l]=0; wblog(FL,
+   if (e) { sout[l]=0; wblog(F_L,
       "WRN %s() got non-char itag (%s; e=%d) !?",FCT,sout,e); }
    if ((m&1) && !cflag) { m-=1; }
 
@@ -688,7 +1039,7 @@ unsigned itag_::to_str(char *sout, unsigned len,
    }
    if (m&1 && l<len) { sout[l++]=CC_ITAG; }
 
-   if (l>=len) { sout[len-1]=0; wblog(FL,
+   if (l>=len) { sout[len-1]=0; wblog(F_L,
       "ERR %s() string out of bounds (%s / %d)",FCT,sout,l); }
    sout[l]=0;
 
@@ -763,7 +1114,7 @@ itag_& itag_::AppendChar(char q, const char *qs) {
             --i;
          }
       }
-      else wblog(FL,"ERR %s() itag out of bounds (%s)",FCT,STR_(this));
+      else wblog(FL,"ERR %s() itag out of bounds (%s)",FCT,STR(*this));
 
       s[i] = q + (s[i] & char(128));
    }
@@ -805,7 +1156,7 @@ itag_& itag_::PrependChar(char q, const char *qs) {
 
    if (!qs || !strchr(qs,x)) {
       for (; i<n; ++i) { if (!( s[i] & char(127) )) { break; }}
-      if (i==n) wblog(FL,"ERR %s() itag out of bounds (%s)",FCT,STR_(this));
+      if (i==n) wblog(FL,"ERR %s() itag out of bounds (%s)",FCT,STR(*this));
       for (; i; --i) {
          s[i] = (s[i-1] & 127) + (s[i] & 128);
       }
@@ -858,15 +1209,13 @@ iTags& iTags::init_alpha(
    char t,           
    unsigned k        
 ){
-   unsigned i=0, l, n=10; char st[n];
-
+   wbvec<char> st(10);
    init(r+s);
-   for (; i<len; ++i) {          
-      l=snprintf(st,n,"%s%c%d",tag ? tag : QS_ITAG_,t+i,k);
-      if (i>=r && ++l<n) { st[l-1]=CC_ITAG; st[l]=0; }
-      if (l>=n) wblog(FL,
-         "ERR %s() string out of bounds (%s: %d/%d)",FCT,st,l,n);
-      data[i].init(st);
+
+   for (unsigned i=0; i<len; ++i) {          
+      st.reset().catf(FL,"%s%c%d",tag ? tag : QS_ITAG_,t+i,k);
+      if (i>=r) { st.append(FL,CC_ITAG); }
+      data[i].init(st.data);
    }
 
    return *this;
@@ -879,9 +1228,17 @@ unsigned iTags::init_qdir(const char *s) {
    QDir qdir(FL,s); init(qdir.len);
 
    for (unsigned i=0; i<qdir.len; ++i) {
-      if (qdir[i]<0) data[i].Conj(); 
+      if (qdir[i]<0) { data[i].Conj(); } 
    }
+   return qdir.len;
+};
 
+unsigned iTags::init(const QDir &qdir) {
+
+   init(qdir.len);
+   for (unsigned i=0; i<qdir.len; ++i) {
+      if (qdir[i]<0) { data[i].Conj(); } 
+   }
    return qdir.len;
 };
 
@@ -933,8 +1290,9 @@ iTags& iTags::initOp(
 unsigned iTags::Init( 
    const char *F, int L, const char *tag, unsigned k, char lflag
 ){
-   size_t l=0, n=64; char s[n]; s[0]=0;
+   wbvec<char> s(64);
    iTags Ix(*this);  
+   int e=0;
 
    if (!tag) wblog(F_L,"ERR %s() invalid tag (empty)",FCT);
    if (!strncmp(tag,"nrg:",4)) {
@@ -945,12 +1303,12 @@ unsigned iTags::Init(
          "ERR %s() invalid k=%d for '%s'",FCT,k,tag);
 
       if (t[0]=='H' && strchr("KD",t[1])) { 
-         l=snprintf(s,n,"%c%02d;%c%02d*",t[1],k,t[1],k);
+         s.catf(0,0,"%c%02d;%c%02d*",t[1],k,t[1],k);
       }
       else if (t[0]=='A' && strchr("KD",t[1])) { 
          if (k) 
-              { l=snprintf(s,n,"K%02d;%c%02d*;s%02d",k-1,t[1],k,k); }
-         else { l=snprintf(s,n,  "L00;%c%02d*;s%02d",    t[1],k,k); }
+              { s.catf(0,0,"K%02d;%c%02d*;s%02d",k-1,t[1],k,k); }
+         else { s.catf(0,0,  "L00;%c%02d*;s%02d",    t[1],k,k); }
       }
       else wblog(FL,"ERR %s() invalid tag `%s'",FCT,tag);
    }
@@ -979,56 +1337,59 @@ unsigned iTags::Init(
 
          if (r==2) {
             snprintf(fmt,20,"%%%d.%ds;%%%d.%ds*",n1,n1,n1,n1);
-            l=snprintf(s,n,fmt,t,t);
+            s.catf(0,0,fmt,t,t);
          }
          else {
             snprintf(fmt,20,"%%%d.%ds;%%%d.%ds*;%%s*",n1,n1,n1,n1);
-            l=snprintf(s,n,fmt,t,t,t+n1+1);
+            s.catf(0,0,fmt,t,t,t+n1+1);
          }
       }
       else if (r==3)
-           { l=snprintf(s,n,"%s;%s*;op*",t,t); }
-      else { l=snprintf(s,n,"%s;%s*",t,t); } 
+           { s.catf(0,0,"%s;%s*;op*",t,t); }
+      else { s.catf(0,0,"%s;%s*",t,t); } 
 
-      if (r==3 && !data[2].isConj() && l>1 && l<n) { s[--l]=0; }
+      if (r==3 && !data[2].isConj()) { s.skip_last(); }
    }
    else wblog(F_L,"ERR %s() unexpected tag '%s'",FCT,tag);
-   if (l>=n) wblog(FL,"ERR %s() string out of bounds (%s/%d)",FCT,l,n);
-   n=0; 
 
-   init(F,L,s);
+   s.check_bounds(FL,1);
+
+   init(F,L,s.data);
 
    if (len<Ix.len) {
 
       for (unsigned i=0; i<len; ++i) {
-         if (data[i].isConj(Ix.data[i],0)) { ++n; }
+         if (data[i].isConj(Ix.data[i],0)) { ++e; }
          else { Ix[i]=data[i]; }
       }
-      if (!n) { Ix.save2(*this); }
+      if (!e) { Ix.save2(*this); }
    }
    else if (Ix.len && !Ix.sameConj(*this)) {
-      n=99; 
+      e=99; 
    }
 
-   if (n) wblog(FL,"ERR inconsistent conj labels "
-      "(%s => %s; e=%d)",STR(Ix), STR_(this), n);
+   if (e) wblog(FL,"ERR inconsistent conj labels "
+      "(%s => %s; e=%d)",STR(Ix), STR(*this), e);
+
    return len; 
 };
 
 iTags& iTags::Init(unsigned r, int k, const char **ss) {
 
-   unsigned i=0, l, n=9; char st[n+1]; 
+   unsigned i=0; char c;
+   wbvec<char> st(10);
+
    init(r);
 
-   for (; i<r; ++i) { l=snprintf(st,n,"%s", ss[i]);
-      if (k>=0 && l<n) {
-         if (l>1 && st[l-2]==CC_ITAG) { --l;
-              l+=snprintf(st+l,n-l,"%d%c",k,CC_ITAG)-1; }
-         else l+=snprintf(st+l,n-l,"%d",k);
+   for (; i<r; ++i) {
+      st.reset().catf(0,0,"%s",ss[i]); c=0;
+      if (k>=0) {
+         if (st.skip_last(CC_ITAG))  
+              { st.catf(0,0,"%d%c",k,CC_ITAG); c=1; }
+         else { st.catf(0,0,"%d",k); }
       }
-      if (l>=n) { st[n]=0; wblog(FL,
-         "ERR %s() string out of bounds (%s /%d)",FCT,st,n); }
-      data[i].init(st);
+      st.check_bounds(FL,1,c-1); 
+      data[i].init(st.data);
    }
 
    return *this;
@@ -1124,7 +1485,7 @@ unsigned iTags::Set(const char* F, int L,
          data[r+i].SetSI(F_L,tom,i+1, conjOM ? 1 : 0);
       }
       else wblog(F_L,
-      "ERR %s() non-empty OM itags (%s; %d+%d)",FCT,STR_(this),r,m);
+      "ERR %s() non-empty OM itags (%s; %d+%d)",FCT,STR(*this),r,m);
    }
 
    return rval;
@@ -1132,25 +1493,20 @@ unsigned iTags::Set(const char* F, int L,
 
 wbstring iTags::toStr(char vflag) const {
 
-   unsigned k, n=ITAG_LEN;
-   size_t l=0, N=(n*len>28 ? 2*n*len+8 : 64); 
-   char s[N];
+   unsigned k,l,n=ITAG_LEN;
+   wbvec<char> s(n*len>28 ? 2*n*len+8 : 64); 
+   char *sk;
 
-   if (vflag) { s[0]='{'; s[1]=' '; l=2; }
-   s[N-1]=0;
+   if (vflag) { s.cat(0,0,"{ "); }
 
    for (k=0; k<len; ++k) {
-      if (l+4>=N) wblog(FL,"ERR %s() "
-         "string out of bounds (%s; %d*%d @ %d/%d)",FCT,s,len,n,l,N);
-      if (k) { s[l++]=','; if (vflag) { s[l++]=' '; }}
-      l+=data[k].to_str(s+l,N-l);
+      if (k) { if (vflag) { s.cat(0,0,", "); } else { s.append(0,0,','); }}
+      sk=s.current(n);
+      l=data[k].to_str(FL,sk,n); s.shift(FL,l);
    }
-   if (l>=N || (vflag && l+6>N)) wblog(FL,"ERR %s() "
-      "string out of bounds (%s; %d*%d @ %d/%d)",FCT,s,len,n,l,N);
-   if (vflag) { s[l]=' '; s[l+1]='}'; l+=2; }
-   s[l]=0;
+   if (vflag) { s.cat(FL," }"); }
 
-   return s;
+   return s.data;
 };
 
 int iTags::getCtr(const char *F, int L,  const iTags &B,
@@ -1180,22 +1536,22 @@ int iTags::getCtr(const char *F, int L,  const iTags &B,
       else { cflag=!cflag; }  
    }
 
-   if (e) { unsigned n=64, e1=0, e2=0; char s[n];
+   if (e) { unsigned e1=0, e2=0; wbvec<char> s(128);
       for (i=  0; i<  len; ++i) {
       for (j=i+1; j<  len; ++j) { if (  data[i]==  data[j]) { ++e1; }}}
       for (i=  0; i<B.len; ++i) {
       for (j=i+1; j<B.len; ++j) { if (B.data[i]==B.data[j]) { ++e2; }}}
 
       if (e1) {
-         l=snprintf(s,n,"got non-unique itag%s in A",e1>1 || e2>1? "s":"");
-         if (e2 && l<n) { l+=snprintf(s+l,n-l," and B"); }
+         s.catf(FL,"got non-unique itag%s in A", (e1>1 || e2>1) ? "s":"");
+         if (e2) { s.cat(FL," and B"); }
       }
       else if (e2)
-           { l=snprintf(s,n,"got non-unique itag%s in B",e2>1? "s":""); }
-      else { l=snprintf(s,n,"got non-unique itags"); } 
+           { s.catf(FL,"got non-unique itag%s in B",e2>1? "s":""); }
+      else { s.cat (FL,"got non-unique itags"); } 
 
       wblog(F_L,"ERR %s() %s (e=%d, %d/%d)\n  A: %s\n  B: %s",
-      FCT,s,e,e1,e2,STR_(this),STR(B));
+      FCT,s.data,e,e1,e2,STR(*this),STR(B));
    }
 
    ia.wbvector<unsigned>::init(nc);
@@ -1210,14 +1566,14 @@ int iTags::getCtr(const char *F, int L,  const iTags &B,
       if (it) {
          wblog(F_L,"WRN contract::match() check missing conj flag\n"
           "A: %-15s -> %s\n"
-          "B: %-15s -> %s", STR_(this), STR(ia), STR(B), STR(ib));
+          "B: %-15s -> %s", STR(*this), STR(ia), STR(B), STR(ib));
          mexWRN("applying conj(A) flag");
          ia.Conj(); 
       }
    }
    else if (F || !L) { wblog(FL, 
      "ERR %s() empty set of matching itags\n    %s%s\n X  %s%s", FCT,
-      STR_(this), ia.conj ? "*":"",
+      STR(*this), ia.conj ? "*":"",
       STR(B),     ib.conj ? "*":"" );
    } 
 
@@ -1287,16 +1643,14 @@ int iTags::UpdateItagsCtr(const char *F, int L,
       if (q==1) { b.tSet(a); } else
       if (q==2) { a.tSet(b); } else
       if (q& 4) { 
-         unsigned n=9; char s[n];
+         wbvec<char> s(9);
          if (!tag) wblog(F_L,"ERR %s() got null tag (%p)",FCT,tag);
-         l=snprintf(s,n,"%s%d",tag,++k); 
-         if (q>4 && l+1<n) {
+         s.catf(FL,"%s%d",tag,++k); 
+         if (q>4) {
             char c=((char&)a)&127;
-            if (c) { s[l]=c; s[++l]=0; }
+            if (c) { s.append(0,0,c); }
          }
-         if (l>=n) { s[n-1]=0; wblog(FL,
-            "ERR %s() string out of bounds (%s: %d/%d)",FCT,s,l,n); }
-         a.Set(s); b.Set(s);
+         a.Set(s.data); b.Set(s.data);
       }
       else wblog(F_L,"ERR %s() q=%d",FCT,q);
    }
@@ -1305,7 +1659,7 @@ int iTags::UpdateItagsCtr(const char *F, int L,
 
    if (e && (F || L)) {
       sprintf_str("'%s' @ %s / '%s' @ %s (e=%d)",
-          STR_(this), STR(ia), STR(B), STR(ib), e);
+          STR(*this), STR(ia), STR(B), STR(ib), e);
       if (e&15) wblog(F_L,"ERR %s() itag mismatch %s",FCT,str);
       else if (unsigned((e>>=4)&15) + 1 >= ia.len)
            wblog(F_L,"ERR %s() missing conj-flag %s", FCT,str);
@@ -1391,7 +1745,7 @@ int iTags::FlagItagsCtr(
       if (ma[j]&2 || mb[l]&2) {
          if (SGN(data[j].sameAs(B.data[l]))!=sgn) wblog(FL, 
             "ERR %s() invalid ctr-indices %s / %s (sgn=%d)",
-            FCT,STR_(this),STR(B),sgn);
+            FCT,STR(*this),STR(B),sgn);
 
            data[j].SetFlags(-2); if (ma[j]&2) { ma[j]-=2; id-=  1; }
          B.data[l].SetFlags(-1); if (mb[l]&2) { mb[l]-=2; id-=256; }
@@ -1426,7 +1780,7 @@ int iTags::FlagItagsCtr(
       if (ia_.len!=ib.len) { wblog(F_L,"ERR %s() ctr-index mismatch\n"
          "   A: %s | %s -> %s\n"
          "   B: %s | %s -> %s", FCT,
-         STR_(this),STR(ia),STR(ia_), STR(B),STR(ib),STR(ib_));
+         STR(*this),STR(ia),STR(ia_), STR(B),STR(ib),STR(ib_));
       }
    }
   #endif
@@ -1439,7 +1793,7 @@ int iTags::findRegEx(const char *pat) const {
    regex_t r; int e, k=-1;
 
    unsigned i, m=0, l=ITAG_LEN+2; 
-   char s[l+1]; s[l]=0; 
+   wbvector<char> s(l+1); 
    wbstring ptx;
 
    if (!pat || !pat[0]) wblog(FL,"ERR got empty itag regexp");
@@ -1464,8 +1818,8 @@ int iTags::findRegEx(const char *pat) const {
    }
 
    for (i=0; i<len; ++i) {
-       data[i].to_str(s,l);
-       if (!regexec(&r,s,0,NULL,0)) { 
+       data[i].to_str(FL,s.data,l);
+       if (!regexec(&r,s.data,0,NULL,0)) { 
           if (!m || !data[k].sameAs(data[i])) { k=i; ++m; }
        }
    }
@@ -1497,7 +1851,7 @@ int iTags::RegEx_replace(const char *F, int L, const char *rstr) const {
    if (!i1 || !i2 || s[i] || icase>1 || gflag>1) wblog(F_L,
       "ERR invalid itag regex '%s'\nexpecting s/*/*/*",rstr);
 
-   char  rst_[strlen(rstr+2)+1];
+   std::vector<char> Rst_(strlen(rstr+2)+1); char *rst_=Rst_.data();
    strcpy(rst_,rstr+2); rst_[i1-1]=rst_[i2-1]=0;
 
    wbstring t_(ITAG_LEN+1);

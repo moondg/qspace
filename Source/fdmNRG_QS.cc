@@ -1044,13 +1044,14 @@ mxArray* addTOA(const char *F, int L, const mxArray *S,
    }
    else {
       unsigned i,j, m=mxGetM(S), n=mxGetN(S);
-      int id[nf], e=mxGetNumberOfDimensions(S)>2 || (m!=1 && n!=1);
+      int e=mxGetNumberOfDimensions(S)>2 || (m!=1 && n!=1);
+      wbvec<int> id(nf);
 
       m*=n;
 
       for (i=0; i<nf; ++i) {
          id[i]=mxGetFieldNumber(S,fn[i]);
-         if (id[i]<0) ++e;
+         if (id[i]<0) { ++e; }
       }
 
       if (e) wblog(F,L,"ERR invalid structure TOA !?");

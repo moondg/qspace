@@ -2,7 +2,8 @@ function qdir=get_qdir(qstr);
 % function qdir=get_qdir(qstr);
 % Wb,Aug27,16
 
-  qdir=regexprep(qstr,'([\w\d]+)\*,*','-');
+  qdir=regexprep(qstr,'-','');
+  qdir=regexprep(qdir,'([\w\d]+)\*,*','-');
   qdir=regexprep(qdir,'([\w\d]+),*','+');
 
   i=find(qdir==';'); n=numel(i);

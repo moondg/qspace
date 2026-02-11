@@ -73,8 +73,8 @@ function [Rho,Iout,IL,E3]=initRho(HAM,tau,varargin)
   else [Ham,~, ~, E3]=MPO_add(HAM.mpo,osw);
   end
 
-  E1=MPO_trace(Ham,E3);
-  E2=MPO_trace(Ham,2,E3);
+  E1=MPO_trace(Ham,  E3);
+  E2=MPO_trace(Ham,2,E3); 
 
   q2=[ E2, MPO_norm2(Ham) ];
   e2=abs(diff(q2))/norm(q2);
@@ -117,14 +117,15 @@ function [Rho,Iout,IL,E3]=initRho(HAM,tau,varargin)
      wblog(' * ','expanding RHO up to power p=%d / %d',pwr,p_);
   end
 
-  n=max(6,pwr);
-  for p=n:-1:1
+  pwr=max(4,pwr);
+  for p=pwr:-1:1
      fac(p+1,:)= [ (-tau)^p/factorial(p), p ];
   end
   fac(1,:)=[1  0];
 
-  fac(1:3,3)=[Dtot, E1, E2];
-  for p=3:n, fac(p+1,3)=MPO_trace(Ham,p,E3); end
+  q=[Dtot, E1, E2]; i=1:min(3,pwr);
+  fac(i,3)=q(i);
+  for p=3:pwr, fac(p+1,3)=MPO_trace(Ham,p,E3); end
 
   tt(end+1)=get_time(t0);
 
@@ -132,7 +133,7 @@ function [Rho,Iout,IL,E3]=initRho(HAM,tau,varargin)
 
   tt(end+1)=get_time(t0);
 
-  add2struct(Iout,fac,pwr,'timing=tt',dloc,Dtot,Eref,tau);
+  add2struct(Iout,'timing=tt',fac,pwr,dloc,Dtot,Eref,dE,tau);
 
   Iout.Z =MPO_trace(Rho,E3);
   Iout.Z2=MPO_norm2(Rho);

@@ -12,7 +12,7 @@
 # 
 #    -t   test flag (prints status info to stderr)
 #    -q   quiet mode, i.e., suppress certain warnings
-#         intended for calling *this in Makefiles
+#         (intended for calling *this in Makefiles)
 #
 #    -LD  enforces buildup of full LD_LIBRARY_PATH
 #    -ld  using matlab's default LD_LIBRARY_PATH (once it starts)

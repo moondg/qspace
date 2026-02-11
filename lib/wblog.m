@@ -29,13 +29,16 @@ function [rval,wesc]=wblog(varargin)
 
   persistent fid newfile llday
 
-  if ~nargin, eval(['help ' mfilename]); return; end
+  if ~nargin
+     if ~isdeployed, eval(['help ' mfilename]); end
+     return
+  end
   hl_check=0;
 
   if nargin && isequal(varargin{1},'--hl-check')
      rval=wblog_hl_check();
-     if nargin>1 && ischar(varargin{2}), hl_check=1;
-     else return; end
+     if nargin<=1 || ~ischar(varargin{2}), return; end
+     hl_check=1;
 
   elseif nargin==1
      if isequal(varargin{1},'--ping')
@@ -262,14 +265,16 @@ end
 % NB! since wblog() is called within getopt avoid
 % wblog() to use routines with varargin calling getopt()
 
-function line = lineno_aux(id)
+function lstr = lineno_aux(id)
 
-  [stack,index]=dbstack;
-  stack=stack(min([1+id, length(stack)]));
+  [S,index]=dbstack;
+  if 1+id>numel(S), lstr='(cmdline)'; return; end
 
-  if ~isequal(stack.file, [stack.name '.m']);
-       line = sprintf('%s>%s:%d', stack.file, stack.name, stack.line);
-  else line = sprintf('%s:%d', stack.file, stack.line); end
+  S=S(1+id);
+
+  if ~isequal(S.file, [S.name '.m']);
+       lstr = sprintf('%s>%s:%d', S.file, S.name, S.line);
+  else lstr = sprintf('%s:%d', S.file, S.line); end
 
 end
 
@@ -286,7 +291,7 @@ function [q,iterm]=wblog_hl_check()
    if isempty(qs), q=1;
    else q=str2num(qs);
       if isempty(q) || numel(q)~=1 || q<0
-         wbdie('invalid QS_LOG_COLOR = %s',qs); 
+         wbdie(-2,'invalid QS_LOG_COLOR = %s',qs); 
       elseif q<0, q=0; end
    end
 end

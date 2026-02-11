@@ -17,9 +17,6 @@ char USAGE[] =
                                                               \n\
    (C) Wb,Oct12,09 ; Wb,Apr26,10                              \n";
 
-#define gTQ  double
-#define QTYPE gTQ
-
 #include "wblib.h"
 
 void mexFunction(
@@ -33,8 +30,9 @@ void mexFunction(
    if (nargin && Mx::IsEqual(argin[k],"-v")) { vflag=1; nargin--; k++; }
 
    if (nargin>4 || !mxIsChar(argin[k]) || 
-      !Mx::IsVector(argin[k+1]) || !Mx::IsVector(argin[k+2]) ||
-     (nargin>3 && !Mx::IsVector(argin[k+3]))
+       Mx::IsVector(argin[k+1])<=0 ||
+       Mx::IsVector(argin[k+2])<=0 || (nargin>3 &&
+       Mx::IsVector(argin[k+3])<=0    )
    ){
        if (nargin || k || nargout) wblog(FL,"ERR invalid usage");
        else { usage(); return; }

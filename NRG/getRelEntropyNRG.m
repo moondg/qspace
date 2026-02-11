@@ -20,20 +20,22 @@ function [I,II,NRG,NRG0]=getRelEntropyNRG(NRG,NRG0,varargin)
      wbdie('invalid usage'), end, return
   end
 
+  z=0;
+
   getopt('init',varargin);
      TT    = getopt('TT',[]); if isempty(TT)
-     z     = getopt('z',0); end
+     z     = getopt('z',z); end
      pflag = getopt('-p');
-  getopt('check_error');
+  Inrg=getopt('get_last',[]);
 
   if ischar(NRG)
      i=sprintf('%s_info.mat',NRG);
      i0=sprintf('%s_info.mat',NRG0);
      if ~exist(i,'file') || ~exist(i0,'file'), { NRG, NRG0 }
         wbdie('invalid NRG data (%s)',i); end
+     if ~isempty(Inrg), wbdie('invalid usage (Inrg)'); end
      Inrg=load(i);
-  else
-     Inrg=NRG;
+  elseif isempty(Inrg), wbdie('invalid usage (Inrg not specified)');
   end
 
   if isempty(TT)

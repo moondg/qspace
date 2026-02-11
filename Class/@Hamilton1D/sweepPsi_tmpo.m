@@ -45,7 +45,7 @@ function [HAM,Iout]=sweepPsi_tmpo(HAM,varargin)
 
   if ntau<=2, vflag=vflag+1; olap=2; end
 
-  if isempty(getfield2(HAM.user,'-q','trotter','info','dt')), wbdie(...
+  if isempty(getfield2(HAM.user,'trotter','info','dt',{[]})), wbdie(...
     'invalid usage (need to setup first [using setupTrotter2]'); end
 
   L=length(HAM);
@@ -58,7 +58,7 @@ function [HAM,Iout]=sweepPsi_tmpo(HAM,varargin)
   dt=Itr.dt;
   fop=Itr.fermionic; if fop, Zop=HAM.oez(2).op; end
 
-  ops=getfield2(Itr,'-q','ops'); nops=numel(ops);
+  ops=getfield2(Itr,'ops',{[]}); nops=numel(ops);
   if nops
      if nops~=2 || ~iscell(ops) || ~isnumber(ops{2});
         wbdie('single operator needed for correlation function');

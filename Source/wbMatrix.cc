@@ -113,9 +113,9 @@ wbMatrix<T>& wbMatrix<T>::init2ref(const wbvector<T> &v, const char tflag) {
 };
 
 template <class T> inline
-wbMatrix<T>& wbMatrix<T>::init2ref(const wbMatrix<T> &M) {
+wbMatrix<T>& wbMatrix<T>::init2ref(const wbMatrix<T> &A) {
    if (data && !isref) { init(); }; isref=1;
-   dim1=M.dim1; dim2=M.dim2; data=M.data;
+   dim1=A.dim1; dim2=A.dim2; data=A.data;
    return *this;
 };
 
@@ -166,7 +166,7 @@ wbMatrix<T>& wbMatrix<T>::init(
 template <class T> inline
 int matchSortedIdxU( 
     const char *F, int L,
-    C_TMAT &QA, C_TMAT &QB, wbindex &Ia, wbindex &Ib,
+    cTMAT &QA, cTMAT &QB, wbindex &Ia, wbindex &Ib,
     widx_t m,  
      char lex   
 ){
@@ -223,7 +223,7 @@ WBINDEX& wbMatrix<size_t>::toIndex(
    WBINDEX &I, const WBINDEX *S) const {
 
    const size_t *idx=data;
-   if (S==NULL) {
+   if (S==nullptr) {
       WBINDEX SX(dim2); widx_t *s=SX.data; size_t i=0,j;
 
       for (; i<dim1; ++i, idx+=dim2) {
@@ -496,8 +496,9 @@ wbMatrix<T>& wbMatrix<T>::NormalizeCol(size_t k) {
 
 template <class T> inline
 wbMatrix<T>& wbMatrix<T>::set2Cols(const size_t i1, const size_t i2){
-   const wbMatrix<T> M; save2(M);
-   M.getCols(i1,i2,*this); return *this;
+   const wbMatrix<T> X; save2(X);
+   X.getCols(i1,i2,*this);
+   return *this;
 };
 
 template <class T> inline
@@ -882,7 +883,7 @@ void wbMatrix<T>::recSetB(
        "ERR setRecB() index out of bounds (%d/%d; %d/%d %d)",
         r,dim1, j,dim2, D);
 
-    if (q2==NULL)
+    if (q2==nullptr)
        for (size_t i=0; i<D; i++) q[i]=q0[i];
     else if (a) {
        if (a==+1) for (size_t i=0; i<D; i++) q[i]=q0[i]+q2[i]; else
@@ -971,7 +972,7 @@ void wbMatrix<T>::recSet (
 template <class T>
 void wbMatrix<T>::recSet(size_t i, const T* v, T x) {
     if (i>=dim1) wblog(FL,
-       "ERR record index out of bounds (%d/%s)",i,SSTR_(this));
+       "ERR record index out of bounds (%d/%s)",i,SSTR(*this));
     T *d=data+i*dim2; i=0; 
     if (d!=v) {
        if (x==T(+1)) { for (; i<dim2; ++i) d[i]= v[i]; } else
@@ -1099,7 +1100,7 @@ template <class T> inline
 wbMatrix<T>& wbMatrix<T>::colTimes(size_t i, T x) {
 
    if (i>=dim2) wblog(FL,
-      "ERR %s() index out of bounds (%s/%d)",FCT,SSTR_(this),i);
+      "ERR %s() index out of bounds (%s/%d)",FCT,SSTR(*this),i);
    if (x!=T(1)) { T *d=data+i; i=0; 
       if (x==T( 0)) { for (; i<dim1; ++i, d+=dim2) d[0]= T(0); } else
       if (x==T(-1)) { for (; i<dim1; ++i, d+=dim2) d[0]=-d[0]; }
@@ -1112,7 +1113,7 @@ template <class T> inline
 wbMatrix<T>& wbMatrix<T>::rowTimes(size_t i, T x) {
 
    if (i>=dim1) wblog(FL,
-      "ERR %s() index out of bounds (%d /%s",FCT,i,SSTR_(this));
+      "ERR %s() index out of bounds (%d /%s",FCT,i,SSTR(*this));
    if (x!=T(1)) { T *d=data+i*dim2; i=0; 
       if (x==T( 0)) { for (; i<dim2; ++i) d[i]= T(0); } else
       if (x==T(-1)) { for (; i<dim2; ++i) d[i]=-d[i]; }
@@ -1151,95 +1152,103 @@ size_t wbMatrix<double>::skipNanRecs(wbindex &I) {
 
 template <class T> inline
 wbMatrix<T>& wbMatrix<T>::recPermute(
-   const wbperm &P, wbMatrix<T> &M, char iflag
- ) const {
+   wbMatrix<T> &B, const wbperm &P) const {
 
-   if (P.len!=dim1 || !P.isValidPerm()) wblog(FL,
+   if (P.len!=dim1 || P.isValidPerm()<=0) wblog(FL,
       "ERR %s() invalid permutation [%s; %d]",FCT,STR(P),dim1);
-   if (&M==this) wblog(FL,"ERR %s() got same object!",FCT);
+   if (&B==this) wblog(FL,"ERR %s() got same object!",FCT);
 
-   if (M.dim1!=dim1 || M.dim2!=dim2) { 
-      M.init(dim1,dim2);
+   if (B.dim1!=dim1 || B.dim2!=dim2) { 
+      B.init(dim1,dim2);
    }
 
-   if (iflag) { 
+   if (P.inv) { 
       const T *d=data;
       for (size_t i=0; i<P.len; ++i, d+=dim2)
-      MEM_CPY<T>(M.data+P[i]*dim2, dim2, d); 
+      MEM_CPY<T>(B.data+P[i]*dim2, dim2, d); 
    }
    else {
-      T *d=M.data;
+      T *d=B.data;
       for (size_t i=0; i<P.len; ++i, d+=dim2)
       MEM_CPY<T>(d, dim2, data+P[i]*dim2); 
    }
 
-   return M;
+   return B;
 };
 
 template <class T> inline
 wbMatrix<T>& wbMatrix<T>::colPermute(
-  const wbperm &P, wbMatrix<T> &M,
-  char iflag 
-) const {
+   wbMatrix<T> &B, const wbperm &P) const {
 
-   size_t i,j;
-   const wperm_t *p=P.data;
-   const T* d0; T* d2;
+   char q=P.relevant(FL);
 
-   if (!P.isValidPerm(0,0,dim2)) wblog(FL,
-      "ERR %s() invalid permutation [%s; %d]", FCT,STR(P), dim2);
-   M.init(dim1,dim2); d2=M.data; d0=data;
+   if (q>1) wblog(FL,"ERR %s() got P=%s",FCT,STR(P));
+   if (P.len>dim2) wblog(FL,
+      "ERR %s() P.len=%d/%d out of bounds",FCT,P.len,dim2);
 
-   if (iflag) {
-      for (i=0; i<dim1; i++, d0+=dim2, d2+=dim2)
-      for (j=0; j<dim2; j++) d2[p[j]]=d0[j];
-   }
+   if (!(q&1)) { B=*this; }
    else {
-      for (i=0; i<dim1; i++, d0+=dim2, d2+=dim2)
-      for (j=0; j<dim2; j++) d2[j]=d0[p[j]];
+      size_t i,j;
+      const wperm_t *p=P.data; const T* d0; T* d2;
+
+      B.init(dim1,dim2); d2=B.data; d0=data;
+
+      if (P.inv) {
+         for (i=0; i<dim1; ++i, d0+=dim2, d2+=dim2) {
+            for (j=0; j<P.len; ++j) { d2[p[j]]=d0[j]; }
+            for (   ; j<dim2;  ++j) { d2[  j ]=d0[j]; }
+         }
+      }
+      else {
+         for (i=0; i<dim1; ++i, d0+=dim2, d2+=dim2) {
+            for (j=0; j<P.len; ++j) { d2[j]=d0[p[j]]; }
+            for (   ; j<dim2;  ++j) { d2[j]=d0[  j ]; }
+         }
+      }
    }
 
-   return M;
+   return B;
 };
 
 template <class T> inline
-void wbMatrix<T>::blockPermute(const wbperm &P, wbMatrix<T> &M
-) const {
+void wbMatrix<T>::blockPermute(
+   wbMatrix<T> &B, wbperm P) const { 
 
-   if (this==&M) {
-      wbMatrix<T> X(*this); X.blockPermute(P,M);
+   if (this==&B) {
+      wbMatrix<T> X(*this); X.blockPermute(B,P);
       return;
    }
 
    size_t i,j,D; const T *d0=data; T *d;
 
-   if (!P.len || !P.isValidPerm()) wblog(FL,
+   if (!P.len || P.isValidPerm()<=0) wblog(FL,
       "ERR invalid permutation (%d;%d)", P.len, dim2);
    if (dim2%P.len) wblog(FL,
       "ERR block dimension mismatch ( %d = %d*?? )", dim2, P.len);
 
-   M.init(dim1,dim2); d=M.data; D=dim2/P.len;
+   B.init(dim1,dim2); d=B.data; D=dim2/P.len;
+   P.flatten();
 
    for (i=0; i<dim1; i++, d0+=dim2)
    for (j=0; j<P.len; j++, d+=D) MEM_CPY<T>(d, D, d0+D*P[j]);
-}
+};
 
 template <class T> inline
 wbMatrix<T>& wbMatrix<T>::cols2Front(
-  const WBINDEX &I1, wbMatrix<T> &M
+  const WBINDEX &I1, wbMatrix<T> &B
 ) const {
 
    wbperm P; P.init2Front(I1,dim2);
-   return colPermute(P,M);
+   return colPermute(B,P);
 };
 
 template <class T> inline
 wbMatrix<T>& wbMatrix<T>::cols2End(
-  const WBINDEX &I1, wbMatrix<T> &M
+  const WBINDEX &I1, wbMatrix<T> &B
 ) const {
 
    wbperm P; P.init2End(I1,dim2);
-   return colPermute(P,M);
+   return colPermute(B,P);
 };
 
 template <class T>
@@ -1259,13 +1268,14 @@ WBIDXMAT& wbMatrix<T>::toBlockIndex(
    wbperm P;
 
    wbvector<  WBINDEX const* > Ip;
+   wbperm iP(P,'i');
 
-   QQ.initDef(m);
-   II.initDef(m); Ip.init(m);
+   QQ.init(m);
+   II.init(m); Ip.init(m);
 
    for (i=0; i<m; i++) {
       getBlock(i,D,QQ[i]).groupRecs(P,dd);
-      II[i].BlockIndex(dd).Permute(P,'i');
+      II[i].BlockIndex(dd).Permute(iP);
       Ip[i]=(&II[i]);
    }
 
@@ -1332,17 +1342,15 @@ template <class T>
 void wbMatrix<T>::recPrint(
     size_t k, const char *istr0, char mflag) const {
 
-    size_t l=0, n=64; char s[n];
+    wbvec<char> s(64);
     wbvector<T> d;
 
     if (k>=dim1) wblog(FL,
        "ERR %s() index out of bounds (%d/%d)",FCT,k,dim1);
-
-    l=snprintf(s,n,"%.32s.rec(%ld)", istr0, k);
-    if (l>=n) wblog(FL,"ERR %s() string out of bounds (%ld/%ld)",FCT,l,n);
+    s.catf(FL,"%.32s.rec(%ld)", istr0, k);
 
     d.init(dim2, (*this).rec(k));
-    d.print(s,mflag); 
+    d.print(s.data,mflag); 
 
     return;
 };
@@ -1472,28 +1480,30 @@ void getSortPerm_OMP(
    }
 
    int id=0, i,l; 
-   int mp=MIN(
-      1 << unsigned(floor(log2(double(A.dim1)))-6), 
-      omp_get_max_threads()
-   );
+   int np=1;
+   if (!omp_in_parallel()) { 
+      l=(1 << unsigned(floor(log2(double(A.dim1)))-6)); 
+      np=MAX( QSP_NUM_THREADS, OMP_NUM_THREADS );
+      np=MIN(l,np);
+   }
 
-   double nsub=double(A.dim1)/mp;
+   double nsub=double(A.dim1)/np;
 
-   wbindex idx(mp+1); wbperm PX(P.len);
-   for (i=0; i<mp; ++i) { idx[i]=size_t(i*nsub+0.5); }
+   wbindex idx(np+1); wbperm PX(P.len);
+   for (i=0; i<np; ++i) { idx[i]=size_t(i*nsub+0.5); }
    idx[i]=A.dim1;
 
-#pragma omp parallel for 
-   for (i=0; i<mp; ++i) {
+  #pragma omp parallel for 
+   for (int i=0; i<np; ++i) {
       size_t i1=idx.data[i], i2=idx.data[i+1];
       sort(P.data+i1, P.data+i2, R); 
       id=MAX(id,omp_get_thread_num());
    }
 
-   while (idx.len>2) { int m2=mp/2; P.swap(PX); 
+   while (idx.len>2) { int m2=np/2; P.swap(PX); 
 
-#pragma omp parallel for 
-      for (i=0; i<m2; ++i) { 
+     #pragma omp parallel for 
+      for (int i=0; i<m2; ++i) { 
          size_t k=2*i, i1=idx.data[k], i2=idx.data[k+1], i3=idx.data[k+2];
          merge( 
             PX.data+i1, PX.data+i2,
@@ -1502,18 +1512,18 @@ void getSortPerm_OMP(
          id=MAX(id,omp_get_thread_num());
       }
 
-      if (mp%2) {
-         size_t i1=idx.data[mp-3], i2=idx.data[mp-1], i3=idx.data[mp];
-         memcpy(PX.data+i1,P.data+i1,(i2-i1)*sizeof(size_t));
+      if (np%2) {
+         size_t i1=idx.data[np-3], i2=idx.data[np-1], i3=idx.data[np];
+         Wb::MemCpy(PX.data+i1,P.data+i1,(i2-i1)); 
          merge( 
             PX.data+i1, PX.data+i2,
             PX.data+i2, PX.data+i3, P.data+i1, R
          );
-         idx[mp-1]=idx[mp]; idx.len=(mp--);
+         idx[np-1]=idx[np]; idx.len=(np--);
       }
 
-      for (l=1, i=2; i<mp; i+=2, ++l) { idx[l]=idx[i]; }
-      idx[l]=idx[mp]; mp=l; idx.len=l+1; 
+      for (l=1, i=2; i<np; i+=2, ++l) { idx[l]=idx[i]; }
+      idx[l]=idx[np]; np=l; idx.len=l+1; 
    }
 
 };
@@ -1524,8 +1534,9 @@ template <class T> inline
 wbMatrix<T>& wbMatrix<T>::SortRecs(
    wbperm &P, char dir, char lex
 ){
-   if (!dim1) { P.init(); return *this; }
    static int use_omp=-1;
+
+   P.init(); if (!dim1) { return *this; }
 
 #ifdef LD_CLEBSCH_QS
    if (use_omp<0) {
@@ -1585,7 +1596,7 @@ void wbMatrix<T>::groupRecs_rdeg(
    if (dim1==0) { P.init(); D.init(); return; }
 
    SortRecs(P);
-   groupSortedRecs(D);
+   GroupSortedRecs(D);
 
    if (R.dim1!=P.len) wblog(FL,
       "ERR %s() dimension mismatch (%d/%d)",FCT,R.dim1,P.len);
@@ -1598,7 +1609,7 @@ void wbMatrix<T>::groupRecs_rdeg(
    wbvector< WBINDEX > SS;
    wbvector< wbindex > II;
    wbMatrix<T2> Q;
-   wbperm pp;
+   wbperm pp, iP;
 
    if (I2 || Sb) { II.init(m); if (Sb) SS.init(m); }
 
@@ -1616,52 +1627,54 @@ void wbMatrix<T>::groupRecs_rdeg(
        else {
           if (d!=1) wblog(FL,"ERR d=%g !?",d); 
           if (I2 || Sb) {
-             II[i].init(1).set(0); if (Sb)
-             SS[i].init(1).set(1);
+             II[i].init(1).set(0); if (Sb) {
+             SS[i].init(1).set(1); }
           }
           continue;
        }
    }
 
+   if (iflag) { P.invert(iP); }
+
    if (Ib) {
       wbindex J; J.BlockIndex(D); J.save2(*Ib);
       if (Ib->len!=P.len) wblog(FL,"ERR size mismatch %d/%d",Ib->len,P.len);
-      if (iflag) Ib->Permute(P,iflag); 
+      if (iflag) Ib->Permute(iP); 
    }
 
    if (I2) {
       wbvector< WBINDEX* > J(II.len);
       for (i=0; i<II.len; ++i) { J[i]=(WBINDEX*)(&II[i]); }; I2->Cat(J);
       if (I2->len!=P.len) wblog(FL,"ERR size mismatch %d/%d",I2->len,P.len);
-      if (iflag) I2->Permute(P,iflag); 
+      if (iflag) I2->Permute(iP); 
    }
 
    if (Sb) {
       Sb->Cat(SS);
       if (Sb->len!=P.len) wblog(FL,"ERR size mismatch %d/%d",Sb->len,P.len);
-      if (iflag) Sb->Permute(P,iflag); 
+      if (iflag) Sb->Permute(iP); 
    }
 };
 
 template <class T>
 void wbMatrix<T>::groupRecs(
-   wbperm &P, WBINDEX &D, size_t nc,
+   wbperm &P, WBINDEX &D, size_t nc, char lex,
    WBINDEX &Ib, 
    WBINDEX &I2, 
    WBINDEX &Sb, 
-   char iflag 
+   char iflag   
 ){
-   if (dim1==0) { P.init(); D.init(); return; }
+   if (!dim1) { P.init(); D.init(); return; }
 
    SortRecs(P);
 
    if (nc>dim2) wblog(FL,"ERR dimension out of bounds (%d/%d)",nc,dim2);
-   groupSortedRecs(D,nc,Ib,I2,Sb);
+   GroupSortedRecs(D,nc,lex,Ib,I2,Sb);
 
-   if (iflag) {
-      Ib.Permute(P,iflag);
-      I2.Permute(P,iflag);
-      Sb.Permute(P,iflag);
+   if (iflag) { wbperm iP(P,'i');
+      Ib.Permute(iP);
+      I2.Permute(iP);
+      Sb.Permute(iP);
    }
 };
 
@@ -1689,7 +1702,7 @@ void wbMatrix<T>::groupRecs(
  #endif
 
    if (X) {
-     if (dim1>1) { X->init(*this); } else { X=NULL; }
+     if (dim1>1) { X->init(*this); } else { X=nullptr; }
    }
 
    if (!isSorted(+1,lex)) 
@@ -1700,8 +1713,8 @@ void wbMatrix<T>::groupRecs(
    clk.Switch("mat:group:recs"); 
  #endif
 
-   if (int(m)<0) { groupSortedRecs(D, 0,-1,lex); }
-   else if (m) { groupSortedRecs(D,'k',m,lex); }
+   if (int(m)<0) { GroupSortedRecs(D,-1,lex); } 
+   else if (m) { groupSortedRecs(D,m,lex); }
    else { D.init(1); D[0]=dim1; }
 
    if (X && (dim1==X->dim1)) { X->save2(*this);
@@ -1718,126 +1731,118 @@ void wbMatrix<T>::groupRecs(
 };
 
 template <class T>
-void wbMatrix<T>::groupRecs(
-   wbperm &P, WBINDEX &D,
+void wbMatrix<T>::groupRecs(wbperm &P, WBINDEX &D,
    const WBINDEX *I, char lex
 ){
    if (dim1==0) { P.init(); D.init(); return; }
 
    SortRecs(P,+1,lex); 
 
-   if (!I) { groupSortedRecs(D,0,-1,lex); }
+   if (!I) { GroupSortedRecs(D,-1,lex); }
    else {
       wbMatrix<T> X; this->cols2Front(*I,X);
-      X.groupSortedRecs(D,'k',I->len,lex);
+      X.groupSortedRecs(D,I->len,lex);
    }
 };
 
 template <class T>
-void wbMatrix<T>::groupSortedRecs(
-   WBINDEX &d,
-   char keepall, 
-   size_t m,   
-   char lex
-){
-   size_t i,ig,n=dim1;
+wbMatrix<T>& wbMatrix<T>::ReduceBlocks(const WBINDEX &D) {
+
+   if (!D || !*this) { return init(); }
+   if (D.len!=dim1) {
+      for (size_t i=0, ig=0; ig<D.len; i+=D[ig], ++ig) { 
+         if (i>=dim1) wblog(FL,"ERR %s() "
+           "dims out of bounds (ig=%d/%d: D=%d/%d)",FCT,ig,i,D.sum(),dim1);
+         if (ig<i) {
+         MEM_CPY<T>(data+ig*dim2, dim2, data+i*dim2); }
+      }
+      Resize(D.len,dim2);
+   }
+   else if (D.anyUnequal(1)) wblog(FL,
+     "ERR %s() size mismatch (%d/%d)",FCT,D.sum(),dim1);
+   return *this;
+};
+
+template <class T>
+wbMatrix<T>& wbMatrix<T>::GroupSortedRecs(WBINDEX &D, size_t m, char lex) {
+   groupSortedRecs(D,m,lex); 
+   ReduceBlocks(D);
+   return *this;
+};
+
+template <class T>
+WBINDEX& wbMatrix<T>::groupSortedRecs( 
+   WBINDEX &D, size_t m, char lex) const { 
+
+   size_t i,ig;
    char c, cref=0;
 
-   if (int(m)<0) { m=dim2; }
-   else if (m>dim2) wblog(FL,"ERR number out of bounds (%d/%d)",m,dim2);
-   if (!dim2) {
-      if (!dim1) wblog(FL,
-         "WRN %s() for %dx%d matrix !?",FCT,dim1,dim2);
-      d.init(1); d[0]=dim1; init(); return;
-   }
-   else if (m==0) {
-      if (m<dim2 && !keepall) wblog(FL,
-         "WRN %s() keeping all since (m=%d)<%d",FCT,m,dim2);
-      d.init(1); d[0]=dim1; return;
+   if (int(m)<0) { m=dim2; } else
+   if (m>dim2) wblog(FL,"ERR size out of bounds (%d/%d)",m,dim2);
+   if (!dim2 || !m) {
+      if (!dim1) wblog(FL,"WRN %s() for %dx%d matrix",FCT,dim1,dim2);
+      D.init(1); D[0]=dim1; return D;
    }
 
-   d.init(n); if (n==0) return;
+   D.init(dim1); if (!dim1) { return D; }
 
-   ig=0; d[ig]++;
-   for (i=1; i<n; i++) {
-       c=recCompare(i,i-1,m,lex);
-       if (c) {
-           if ((++ig)!=i) { if (!keepall)
-           MEM_CPY<T>(data+ig*dim2, dim2, data+i*dim2); }
-
-           if (c!=cref) {
-               if (cref) { MXPut(FL,"a").add(*this,"M").add(m,"m");
-                  wblog(FL,"ERR recs not sorted %d/%d (%d, m=%d/%d)",
-                  c,cref,i,m,dim2);
-               }
-               else cref=c;
-           }
-       }
-
-       d[ig]++;
+   ig=0; ++D[ig];
+   for (i=1; i<dim1; ++i) { c=recCompare(i,i-1,m,lex);
+      if (c) { ++ig;
+         if (!cref) { cref=c; } else
+         if (c!=cref) wblog(FL,
+            "ERR recs not sorted (%d: %d/%d, m=%d/%d)",i,c,cref,m,dim2);
+      }
+      ++D[ig];
    }
 
-   d.Resize(ig+1);
-   if (!keepall) Resize(ig+1,dim2);
+   return D.Resize(ig+1);
 };
 
 template <class T>
-void wbMatrix<T>::groupSortedRecs(
-   WBINDEX &d,
-   size_t m,     
-   char lex,
-   WBINDEX &Ib, 
+WBINDEX& wbMatrix<T>::groupSortedRecs(
+   WBINDEX &D, size_t m, char lex,  
+   WBINDEX &Ig, 
    WBINDEX &I2, 
-   WBINDEX &Sb  
-){
-   size_t i,j,i2,i0=0, ig=0;
-   char c,c2, cref=0;
+   WBINDEX *D2  
+) const {
+   size_t i,j=1,i2=0,i0=0, ig=0; widx_t *d2=nullptr;
+   char c, c2=0, cref=0;
 
    if (int(m)<0) { m=dim2; }
    else if ((!m && dim2) || m>dim2) wblog(FL,
       "ERR number out of bounds (%d/%d)",m,dim2);
 
    if (!dim1 || !dim2) {
-      d.init(); init(); Ib.init(); I2.init(); Sb.init();
-      return;
+      D.init(); Ig.init(); I2.init(); if (D2) { D2->init(); }
+      return D;
    }
 
-   Ib.init(dim1); d.init(dim1);
-   I2.init(dim1);
-   Sb.init(dim1);
+   Ig.init(dim1); D.init(dim1);
+   I2.init(dim1); 
+   if (D2) { D2->init(dim1); d2=D2->data; }
 
-   for (d[ig]++, i=1; i<=dim1; i++, d[ig]++) {
-       if (i<dim1)
-            c=recCompare(i,i-1,m,lex);
-       else c=99;
-
-       if (c) {
-           for (i2=0, j=i0+1; j<i; j++) {
-              c2=recCompare(j,j-1,-1,lex); if (c2) { i2++;
-                 if (c2!=cref) {
-                    if (cref) wblog(FL, 
-                       "ERR input recs not sorted (%d: %d/%d).",i,c2,cref);
-                    else cref=c2;
-                 }
-              }
-              I2[j]=i2;
-           }
-           for (i2++, j=i0; j<i; j++) { Ib[j]=ig; Sb[j]=i2; }
-           i0=i; if (i>=dim1) break;
-
-           if (c!=cref) { 
-               if (cref) wblog(FL,
-                  "ERR input recs not sorted (%d: %d/%d).",i,c,cref);
-               else cref=c;
-           }
-
-           if ((++ig)!=i) 
-           MEM_CPY<T>(data+ig*dim2, dim2, data+i*dim2);
-       }
+   for (++D[ig], i=1; i<dim1; ++i, ++D[ig]) {
+      c =recCompare(i,i-1, m,lex); if (!c && m<dim2) {
+      c2=recCompare(j,j-1,-1,lex); } else { c2=c; }
+      if (c2) {
+         if (!cref) { cref=c2; } else
+         if (c2!=cref) { wblog(FL, 
+            "ERR input not sorted (%d: %d/%d/%d)",i,c,c2,cref);
+         }
+      }
+      if (c) {
+         if (d2) { for (j=i0; j<i; ++j) { d2[j]=i2; }}
+         ++ig; i0=i; i2=0;
+      }
+      I2[i]=i2++;
+      Ig[i]=ig;
    }
+   if (d2) { for (j=i0; j<i; ++j) { d2[j]=i2; }}
 
-   d.len=ig+1; 
-   dim1=ig+1;  
+   D.len=ig+1; 
+
+   return D;
 };
 
 template <> inline
@@ -2120,7 +2125,7 @@ int wbMatrix<T>::getDiff(
     Q1.SortRecs(P1);
     Q2.SortRecs(P2);
 
-    Q1.getDiffSorted(Q2,ix1, Ib ? &ix2 : NULL);
+    Q1.getDiffSorted(Q2,ix1, Ib ? &ix2 : nullptr);
     P1.get(ix1, Ia); if (Ib) {
     P2.get(ix2,*Ib); }
 
@@ -2132,7 +2137,7 @@ int wbMatrix<T>::getDiffSorted(
    const wbMatrix<T> &B, wbindex &Ia, wbindex *IB
 ) const {
 
-   size_t ia,ib,la,lb; widx_t *Ib=NULL; char c;
+   size_t ia,ib,la,lb; widx_t *Ib=nullptr; char c;
 
    if (dim2!=B.dim2) wblog(FL,
       "ERR %s() dimension mismatch (%d/%d)",FCT,dim2,B.dim2);

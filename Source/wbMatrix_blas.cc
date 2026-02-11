@@ -52,7 +52,7 @@ template<class TA, class TB, class TC>
 void DZGEMM_VEC(
     const wbMatrix<TA> &A,
     const wbvector<TB> &B,
-    wbvector<TC> &C, int m, int n,
+    wbvector<TC> &C, long m, long n,
     char aflag='N', const TA afac=1., const TC cfac=0.
 );
 
@@ -60,7 +60,7 @@ template<class TD>
 void DZGEMM(
     const wbMatrix<TD> &A,
     const wbMatrix<TD> &B, wbMatrix<TD> &C,
-    const unsigned k, 
+    const size_t k, 
     char aflag='N', char bflag='N',
     const TD afac=1., const TD cfac=0.
 );
@@ -69,11 +69,10 @@ template<>
 inline void DZGEMM<double>(
     const wbMatrix<double> &A,
     const wbMatrix<double> &B, wbMatrix<double> &C,
-    const unsigned k, 
+    const size_t k, 
     char aflag, char bflag,
     const double afac, const double cfac
 ){
-
 #ifdef WB_CLOCK
    Wb::Clock clk("dgemm",1); 
    if (aflag=='N')
@@ -81,18 +80,17 @@ inline void DZGEMM<double>(
    else stat_dgemm.account(A.dim1*A.dim2*(A.dim1==B.dim1 ? B.dim2 : B.dim1));
 #endif
 
-    dgemm(bflag, aflag, int(C.dim2), int(C.dim1), int(k),
-       afac, B.data, int(B.dim2),
-             A.data, int(A.dim2),
-       cfac, C.data, int(C.dim2)
-    );
-}
+    dgemm(&bflag, &aflag, &(long&)C.dim2, &(long&)C.dim1, &(long&)k,
+       &afac, B.data, &(long&)B.dim2,
+              A.data, &(long&)A.dim2,
+       &cfac, C.data, &(long&)C.dim2);
+};
 
 template<>
 inline void DZGEMM<wbcomplex>(
     const wbMatrix<wbcomplex> &A,
     const wbMatrix<wbcomplex> &B, wbMatrix<wbcomplex> &C,
-    const unsigned k, 
+    const size_t k, 
     char aflag, char bflag,
     const wbcomplex afac, const wbcomplex cfac
 ){
@@ -104,11 +102,11 @@ inline void DZGEMM<wbcomplex>(
    else stat_dgemm.account(A.dim1*A.dim2*(A.dim1==B.dim1 ? B.dim2 : B.dim1));
 #endif
 
-   zgemm (
-     bflag, aflag, (int)C.dim2, (int)C.dim1, (int)k,
-     afac, B.data, (int)B.dim2, A.data, (int)A.dim2,
-     cfac, C.data, (int)C.dim2
-   );
+   zgemm(
+     &bflag, &aflag, &(long&)C.dim2, &(long&)C.dim1, &(long&)k,
+     &afac.r, (double*)B.data, &(long&)B.dim2,
+              (double*)A.data, &(long&)A.dim2,
+     &cfac.r, (double*)C.data, &(long&)C.dim2);
 
 #ifdef WB_CLOCK
  { Wb::Clock *clk;
@@ -197,7 +195,7 @@ void MatProd(
    }
 
    if (cfac!=0.) {
-       if (C.data==NULL && i00flag) {
+       if (C.data==nullptr && i00flag) {
           if (cfac!=1.) wblog(FL,
              "WRN C = A*B + c*[] with c=%s !?", toStr(cfac).data);
           C.init(a1,b2);
@@ -261,13 +259,15 @@ template<>
 inline void DZGEMM_VEC(
    const wbMatrix<double> &A,
    const wbvector<double> &B,
-   wbvector<double> &C, int m, int n,
+   wbvector<double> &C, long m, long n,
    char aflag, const double afac, const double cfac
 ){
-   dgemm (
-     'N', aflag, 1, m, n, afac,
-      B.data, 1, A.data, A.dim2, cfac,
-      C.data, 1
+   char flag='N'; long d1=1;
+   dgemm(
+      &flag, &aflag, &d1, &m, &n,
+      &afac, B.data, &d1,
+             A.data, &(long&)A.dim2,
+      &cfac, C.data, &d1
    );
 }
 
@@ -275,13 +275,15 @@ template<>
 inline void DZGEMM_VEC(
    const wbMatrix<wbcomplex> &A,
    const wbvector<wbcomplex> &B,
-   wbvector<wbcomplex> &C, int m, int n,
+   wbvector<wbcomplex> &C, long m, long n,
    char aflag, const wbcomplex afac, const wbcomplex cfac
 ){
-   zgemm (
-     'N', aflag, 1, m, n, afac,
-      B.data, 1, A.data, A.dim2, cfac,
-      C.data, 1
+   char flag='N'; long d1=1;
+   zgemm(
+      &flag, &aflag, &d1, &m, &n,
+      &afac.r, (double*)B.data, &d1,
+               (double*)A.data, &(long&)A.dim2,
+      &cfac.r, (double*)C.data, &d1
    );
 }
 
@@ -289,7 +291,7 @@ template<>
 inline void DZGEMM_VEC(
    const wbMatrix<double> &A,
    const wbvector<wbcomplex> &B,
-   wbvector<wbcomplex> &C, int m, int n,
+   wbvector<wbcomplex> &C, long m, long n,
    char aflag, const double afac, const wbcomplex cfac
 ){
    wbvector<double> b,cr,ci;
@@ -305,7 +307,7 @@ inline void DZGEMM_VEC(
 inline void DZGEMM_aux(
    const wbMatrix<double> &A,
    const wbMatrix<double> &B, wbMatrix<double> &C,
-   const unsigned k, 
+   const size_t k, 
    char aflag='N', char bflag='N',
    const double afac=1., const double cfac=0.
 ){
@@ -460,7 +462,7 @@ inline wbMatrix<TC>& MMDIAG(
 inline void WbEigenSymmetric (
     const wbMatrix<double> &M, wbMatrix<double> &V, wbvector<double> &E
 ){
-    unsigned n=M.dim1; pINT ni=0, q=0;
+    long n=M.dim1, ni=0, q=-1, e=0;
     double nd=0;
 
     if (M.dim1!=M.dim2) wblog(FL,
@@ -469,73 +471,77 @@ inline void WbEigenSymmetric (
 
     V=M; E.init(n); if (n==0) return;
 
-    dsyevd('V','U',n,V.data,n,E.data,&nd,-1,&ni,-1,q); 
-    if (nd<1 || ni<1 || q) wblog(FL,
-       "ERR DSYEVD returned lwork=%g/%d (e=%d) !?",nd,ni,q);
+    dsyevd("V","U",&n,V.data,&n,E.data,&nd,&q,&ni,&q,&e); 
+    if (nd<1 || ni<1 || e) wblog(FL,
+       "ERR DSYEVD returned lwork=%g/%d (e=%d) !?",nd,ni,e);
 
     wbvector<double> wd(nd);
-    wbvector<pINT> wi(ni);
+    wbvector<long> wi(ni);
 
     dsyevd(
-       'V',        
-       'L',        
-        n,         
-        V.data,    
-        n,         
-        E.data,    
-        wd.data, wd.len, 
-        wi.data, wi.len, 
-        q          
+       "V",     
+       "L",     
+       &n,      
+       V.data,  
+       &n,      
+       E.data,  
+       wd.data, &(long&)wd.len, 
+       wi.data, &(long&)wi.len, 
+       &e       
     );
 
-    if (q) wblog(FL,"ERR DSYEV returned e=%d !?", q);
+    if (e) wblog(FL,"ERR DSYEV returned e=%d !?", e);
 }
 
 inline void WbEigenSymmetric (
     const wbMatrix<wbcomplex> &M, wbMatrix<wbcomplex> &V, wbvector<double> &E
 ){
-    unsigned n=M.dim1; pINT q, ni=0;
+    long n=M.dim1, q=-1, e, ni=0;
     wbcomplex nz=0; double nr=0;
 
     if (M.dim1!=M.dim2) wblog(FL,
        "ERR %s() requires square matrix (%d,%d)",FCT,M.dim1,M.dim2);
-    if (!M.isHConj(1E-12,&nr)) wblog(FL,
+    if (!M.isHConj(1e-12,&nr)) wblog(FL,
        "ERR %s() got non-hermitian matrix (%.3g)",FCT,nr);
     nr=0;
 
     V=M; E.init(n); if (!n) return;
 
-    zheevd('V','U',n,V.data,n,E.data,&nz,-1,&nr,-1,&ni,-1,q); 
-    if (nz.r<1 || nr<1 || ni<1 || q) wblog(FL,
-       "ERR ZHEEVD returned lwork=%g/%g/%d (e=%d) !?",nz.r,nr,ni,q);
+    zheevd("V","U",&n,
+       (double*)V.data,&n, E.data,
+       (double*)&nz,&q,&nr,&q,&ni,&q,&e); 
+
+    if (nz.r<1 || nr<1 || ni<1 || e) wblog(FL,
+       "ERR ZHEEVD returned lwork=%g/%g/%d (e=%d) !?",nz.r,nr,ni,e);
 
     wbvector<wbcomplex> wz(nz.r);
     wbvector<double> wr(nr);
-    wbvector<pINT> wi(ni);
+    wbvector<long> wi(ni);
 
     zheevd(
-       'V',        
-       'L',        
-        n,         
-        V.data,    
-        n,         
-        E.data,    
-        wz.data, wz.len, 
-        wr.data, wr.len, 
-        wi.data, wi.len, 
-        q          
+        "V",     
+        "L",     
+        &n,      
+        (double*)V.data, 
+        &n,      
+        E.data,  
+        (double*)wz.data, &(long&)wz.len, 
+        wr.data, &(long&)wr.len, 
+        wi.data, &(long&)wi.len, 
+        &e       
     );
 
-    if (q<0) { wblog(FL,"ERR %s() ZHEEVD returned e=%d",FCT,q); }
-    if (q>0) {
+    if (e<0) { wblog(FL,"ERR %s() ZHEEVD returned e=%d",FCT,e); }
+    if (e>0) {
        V=M; E.init(n);
 
-       wblog(FL,"WRN %s() ZHEEVD returned i=%d / falling back to ZHEEV",FCT,q);
-       MXPut(FL,0,"tmpfile").add(M,"M").add(q,"q");
+       wblog(FL,"WRN %s() ZHEEVD returned i=%d / falling back to ZHEEV",FCT,e);
+       MXPut(FL,0,"tmpfile").add(M,"M").add(e,"e");
 
        if (n<128) { ni=2*n-1; } 
        else { 
-          ni=ilaenv(1,"zhetrd","U",(pINT)n,(pINT)n,(pINT)n,(pINT)n);
+          long ispec=1; 
+          ni=ilaenv(&ispec,"zhetrd","U",&n,&n,&n,&n,6,1);  
           if (ni>n) wblog(FL,"WRN %s() got lwork=(%d+2)*%d",FCT,ni,n);
           ni=(ni+1)*n;
        }
@@ -544,17 +550,17 @@ inline void WbEigenSymmetric (
        nr=3*n-2; if (nr>wr.len) { wr.init(nr); }
 
        zheev(
-          'V',      
-          'L',      
-           n,       
-           V.data,  
-           n,       
+          "V",      
+          "L",      
+           &n,      
+           (double*)V.data,  
+           &n,      
            E.data,  
-           wz.data, ni,    
+           (double*)wz.data, &ni, 
            wr.data, 
-           q        
+           &e       
        );
-       wblog(FL,"ERR ZHEEV returned e=%d", q);
+       wblog(FL,"ERR ZHEEV returned e=%d", e);
     }
 
     V.Conj();
@@ -575,30 +581,33 @@ inline void GESVD_M(
    wbvector<double> &S,
    wbMatrix<double> &Vt
 ){
-   unsigned M=A.dim1, N=A.dim2, K=S.len;
-   wbvector<double> wd;
+   long M=A.dim1, N=A.dim2, K=S.len;
+   long e, q=-1, ni=8*MIN(M,N); 
    double nd;
-   pINT q, ni=8*MIN(M,N); 
-   wbvector<pINT> wi(ni);
+
+   wbvector<double> wd;
+   wbvector<long> wi(ni);
 
 #ifdef WB_CLOCK
    Wb::Clock clk("dgesvd",1); 
 #endif
 
-   dgesdd('S',N,M,A.data,N,S.data,Vt.data,N,U.data,K,&nd,-1,wi.data,q);
-   if (nd<1 || q) wblog(FL,
-      "ERR DGESDD returned lwork=%g (e=%d) !?",nd,q);
+   dgesdd("S",&N,&M,
+      A.data,&N,S.data, Vt.data,&N, U.data,&K,
+      &nd,&q, wi.data,&e);
+
+   if (nd<1 || e) wblog(FL,
+      "ERR DGESDD returned lwork=%g (e=%d) !?",nd,e);
    wd.init(nd);
 
-   dgesdd(
-     'S', N, M, A.data, N, S.data,
-      Vt.data, N,   
-      U.data, K,    
-      wd.data, wd.len, wi.data,
-      q
+   dgesdd("S", &N, &M, A.data, &N, S.data,
+      Vt.data, &N,   
+      U.data, &K,    
+      wd.data, &(long&)wd.len, wi.data,
+      &e
    );
 
-   if (q) wblog(FL,"ERR DGESDD returned e=%d !?", q);
+   if (e) wblog(FL,"ERR DGESDD returned e=%d !?", e);
 };
 
 template<>
@@ -608,14 +617,13 @@ inline void GESVD_M(
    wbvector<double> &S,
    wbMatrix<wbcomplex> &Vt
 ){
-   unsigned M=A.dim1, N=A.dim2, K=S.len;
+   long M=A.dim1, N=A.dim2, K=S.len, n=MIN(M,N), q=-1, e;
    wbvector<wbcomplex> wz;
 
-   pINT q, n=MIN(M,N);
    wbcomplex nz;
 
    wbvector<double> wd(n*(5*n+7)); 
-   wbvector<pINT> wi(12*n); 
+   wbvector<long> wi(12*n); 
 
    if (!M || !N) wblog(FL,"ERR %s() got %dx%d matrix!?",FCT,M,N);
 
@@ -623,20 +631,19 @@ inline void GESVD_M(
    Wb::Clock clk("zgesvd",1); 
 #endif
 
-   zgesdd(
-     'S',N,M,A.data,N,S.data,Vt.data,N,U.data,K,
-      &nz, -1, wd.data, wi.data, q);
-   if (nz.r<1 || q) wblog(FL,
-      "ERR ZGESDD() returned lwork=%g (e=%d) !?",nz.r,q);
+   zgesdd("S",&N,&M,
+      (double*)A.data, &N, S.data,(double*)Vt.data, &N, (double*)U.data, &K,
+      (double*)&nz, &q, wd.data, wi.data, &e);
+
+   if (nz.r<1 || e) wblog(FL,
+      "ERR ZGESDD() returned lwork=%g (e=%d) !?",nz.r,e);
    wz.init(nz.r);
 
-   zgesdd(
-     'S', N, M, A.data, N, S.data, Vt.data, N, U.data, K,
-      wz.data, wz.len, wd.data, wi.data,
-      q
-   );
+   zgesdd("S",&N,&M,
+      (double*)A.data, &N, S.data, (double*)Vt.data, &N, (double*)U.data, &K,
+      (double*)wz.data, &(long&)wz.len, wd.data, wi.data, &e);
 
-   if (q) wblog(FL,"ERR ZGESDD returned e=%d !?", q);
+   if (e) wblog(FL,"ERR ZGESDD returned e=%d !?", e);
 };
 
 template<class T>

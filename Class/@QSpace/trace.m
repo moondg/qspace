@@ -1,32 +1,34 @@
 function x=trace(A,I,varargin)
 % function x=trace(A,I [,opts])
 %
-%   trace of QSpace operator
+%   trace of QSpace tensor
 %
 % Usage 1: A=trace(A)   - regular trace of rank-2 object
-% Usage 2: A=trace(A,I)
+% Usage 2: A=trace(A,I [,J])
 %
 %    generalized trace with pairwise specification of indizes
 %    to contract I = [i1 i2; j1 j2; ... ]
+%    or, if J is present, I with J.
 %
-% Wb,Sep11,06 ; Wb,Apr10,15
+% Wb,Sep11,06 ; Wb,Apr10,15 ; Wb,Jul16,25
 
    if ~nargin
-      eval(['help ' mfilename]);
-      if nargin || nargout, wbdie('invalid usage'), end, return
+      if ~helpthis(nargout,varargin{:}), wbdie('invalid usage'); end
+     return
    end
 
    getopt('init',varargin);
       Qflag=getopt('-Q');
-   getopt('check_error');
+   J=getopt('get_last',[]);
 
-   q=numel(A);
-   if q~=1, wbdie('invalid usage (%d entries in A)',q); end
+   n=numel(A);
+   if n~=1, wbdie('invalid usage (%d entries in A)',n); end
 
    if isscalar(A)
-      if nargin>1 && ~isempty(I)
-      wbdie('cannot contract scalar'); end
-      x=A.data{1}; return
+      if nargin>1 && (~isempty(I) || ~isempty(J))
+         wbdie('cannot contract scalar'); end
+      if Qflag, x=A; else x=A.data{1}; end
+      return
    elseif isempty(A.Q)
       if Qflag, x=QSpace({},{0}); else x=0; end
       return
@@ -81,12 +83,14 @@ function x=trace(A,I,varargin)
       return
    end
 
- % generalized trace
- % pairwise specification of indizes to contract I = [i1 i2; j1 j2; ... ]
- % => no longer applicable (need mex file)
- % see Archive/trace_141112.m for old m-script implementation
- % Wb,Nov12,14
+   if nargin==2
+      if size(I,2)~=-2, wbdie('invalid usage'); end
+      J=I(:,2); I=I(:,1);
+   elseif ~isequal(size(I),size(J))
+      wbdie('invalid usage (I and J of different size)');
+   end
 
-   wbdie('invalid usage');
+   x=traceQS(A,I,J);
+   x=QSpace(x);
 end
 

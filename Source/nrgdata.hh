@@ -29,7 +29,7 @@
 
 // ------------------------------------------------------------------ */
 
-   const double DEPS2=1E-6*DBL_EPSILON;
+   const double DEPS2=1e-6*DBL_EPSILON;
 
    template <class TQ, class TD>
    class NRGData;
@@ -152,7 +152,7 @@ void RIXS_para::check(const char *F, int L, char init) {
       );
    }
    else if (F && init) {
-      if (Einc.i<1E-2*Einc.r || Einc.i>1E2*Einc.r) wblog(FL,
+      if (Einc.i<1e-2*Einc.r || Einc.i>1E2*Einc.r) wblog(FL,
          "WRN %s() got Einc.i / Einc_r = %.3g / %.3g = %.3g",
          PROG, Einc.i, Einc.r, Einc.i/Einc.r
       );
@@ -168,7 +168,7 @@ void RIXS_para::check(const char *F, int L, char init) {
          if (Einc.r) { sigma = Einc.i/Einc.r; }
          else wblog(FL,"ERR %s() got bot sigma and real(Einc) zero !?",FCT);
       }
-      else if (sigma<1E-3 && F) {
+      else if (sigma<1e-3 && F) {
          wblog(FL,"WRN %s() got sigma = %g",PROG,sigma);
       }
    }
@@ -182,7 +182,7 @@ Wb::String RIXS_para::toStr() const {
 
    if (Einc.r) {
       double x=Einc.i/Einc.r;
-      if (x && fabs((x-sigma)/x)<1E-4)
+      if (x && fabs((x-sigma)/x)<1e-4)
            s.pushf(" @ sigma=%.3g",sigma);
       else s.pushf(" @ %.3gi, sigma=%g",x,sigma);
    }
@@ -469,8 +469,8 @@ wblog(FL,"ERR %s() check!",FCT);
     bool opExists(char tflag=1);
 
     void initOp(unsigned n=1, char calc_=1, char store_=0) {
-       KK.initDef(n); DK.initDef(n); nrgIdx.initDef(n);
-       KD.initDef(n); DD.initDef(n); calc=calc_; store=store_;
+       KK.init(n); DK.init(n); nrgIdx.init(n);
+       KD.init(n); DD.init(n); calc=calc_; store=store_;
     };
 
     bool initOp(const char *F, int L,
@@ -692,13 +692,13 @@ void Wb::initLocalOp(const char *F, int L,
    char force,       
    char *name        
 ){
-   size_t n=12; char istr[n];
+   wbvec<char> istr(12);
    if (k)
-        snprintf(istr,n,"arg #%d",k);
-   else strcpy(istr,"operator");
+        { istr.catf(0,0,"arg #%d",k); }
+   else { istr.cat(0,0,"operator"); }
 
    if (!a || mxIsEmpty(a)) {
-      if (force) wblog(F,L,"ERR invalid %s%s",istr,a ? " (empty)":"");
+      if (force) wblog(F,L,"ERR invalid %s%s",istr.data, a? " (empty)":"");
       return;
    }
 
@@ -709,18 +709,18 @@ void Wb::initLocalOp(const char *F, int L,
       name[0]=0;
 
       if (mxGetString(a,name,n) || name[0]==0) wblog(F,L,
-         "ERR invalid string of %s%s",istr,name[0] ? "":" (empty)");
+         "ERR invalid string of %s%s",istr.data,name[0] ? "":" (empty)");
 
       a=mexGetVariablePtr("caller",name);
 
       if (!a) wblog(F,L,
-      "ERR Can not read QSpace `%s' (%s) from workspace",name,istr);
+      "ERR Can not read QSpace `%s' (%s) from workspace",name,istr.data);
    }
 
    Wb::initLocalOp_aux(F,L,a,C);
 
    if (force && C.isEmpty()) wblog(F,L,
-   "ERR invalid QSpace (%s is empty)",istr);
+   "ERR invalid QSpace (%s is empty)",istr.data);
 };
 
 template<class TQ, class TD>
@@ -772,7 +772,7 @@ void NRGData<TQ,TD>::updateOp(
          Wb::updateOp(F,L,*this, DK, A.D, B.K, KK, iter);
       e+=Wb::updateOp(F,L,*this, KK, A.K, B.K, KK, iter); 
 
-      if (KD.len!=DK.len) KD.initDef(DK.len);
+      if (KD.len!=DK.len) KD.init(DK.len);
       for (i=0; i<DK.len; ++i) DK[i].transp(KD[i]);  
    }
    else if (nop==1) {
@@ -790,7 +790,7 @@ void NRGData<TQ,TD>::updateOp(
    for (i=0; i<nop; ++i) {
 
       wbvector< QSpace<TQ,TD> > &C = getOpsXX(tags[i]);
-      if (C.len!=m) C.initDef(m);
+      if (C.len!=m) C.init(m);
 
       X.init(); X2.init(); 
 
@@ -1334,7 +1334,7 @@ bool NRGData<TQ,TD>::initOp(const char *F, int L,
    wbvector< QSpace<TQ,TD> > NRG; 
    mxArray *a;
 
-   nrgIdx.initDef(C0.len); kloc=0;
+   nrgIdx.init(C0.len); kloc=0;
 
    if (C0.len==0) {
       init(1); return 0;
@@ -1357,7 +1357,7 @@ bool NRGData<TQ,TD>::initOp(const char *F, int L,
           C0[i].QDIM, C0[0].QDIM,FL,str);
    }
 
-   KK.initDef(C0);
+   KK.init(C0);
 
    for (i=0; i<C0.len; ++i) {
       if (nrgIdx[i].idx>=0) continue;
@@ -1451,7 +1451,7 @@ bool NRGData<TQ,TD>::initOp(const char *F, int L,
 
    wbvector< wbvector< QSpace<TQ,TD> > > NRG;
 
-   nrgIdx.initDef(CC.len);
+   nrgIdx.init(CC.len);
 
    if (CC.len==0) {
       init(1); return 0;
@@ -1484,11 +1484,11 @@ bool NRGData<TQ,TD>::initOp(const char *F, int L,
    if (kloc<0) wblog(FL,"ERR all empty operators !?");
    kloc=MAX(0,kloc-1); 
 
-   KK.initDef(CC.len);
-   CI.initDef(CC.len);
+   KK.init(CC.len);
+   CI.init(CC.len);
    for (i=0; i<CC.len; ++i) {
       if (!CC[i].len) wblog(FL,"ERR empty operator set !?");
-      CI[i].initDef(CC[i]);
+      CI[i].init(CC[i]);
       KK[i]=CC[i][0]; 
    }
 
@@ -1673,19 +1673,17 @@ bool NRGData<TQ,TD>::checkVec(
    const char *F, int L,
    const char *XX, unsigned R, const char *istr
 ){
-   unsigned l,n=128;
-   char nm[n]; int fid;
-
+   int fid;
    char cflag=WbUtil<TD>::isComplex();
 
-   l=snprintf(nm,n,"%s%s", name.data, XX); 
-   if (l>=n) wblog(FL,"ERR strlen out of bounds (%d/%d)",l,n);
+   wbvec<char> Nm(128); const char *nm=Nm.data;
+   Nm.catf(FL,"%s%s", name.data, XX); 
 
    if (MX) {
       const size_t *s=mxGetDimensions(MX);
       const int n=mxGetNumberOfDimensions(MX);
 
-      fid=mxGetFieldNumber(MX, nm);
+      fid=mxGetFieldNumber(MX,nm);
       if (fid<0) {
          if (istr) {
             wblog(F,L,"WRN invalid %s", istr);
@@ -1735,11 +1733,9 @@ bool NRGData<TQ,TD>::checkVec(
 template<class TQ, class TD>
 bool NRGData<TQ,TD>::checkVecVec(const char *XX, unsigned R) {
 
-   unsigned l,n=128;
-   char nm[n]; int fid;
-
-   l=snprintf(nm,n,"%s%s",name.data,XX); 
-   if (l>=n) wblog(FL,"ERR strlen out of bounds (%d/%d)",l,n);
+   int fid;
+   wbvec<char> Nm(128); const char *nm=Nm.data;
+   Nm.catf(FL,"%s%s",name.data,XX); 
 
    if (MX) {
       fid=mxGetFieldNumber(MX,nm);
@@ -1844,8 +1840,9 @@ mxArray* NRGData<TQ,TD>::toMx() const {
 template<class TQ, class TD>
 void NRGData<TQ,TD>::info(const char *vstr) const {
 
-    unsigned i, nl=0, n_=128;
-    char sx[nrgIdx.len+1], s_[n_];
+    unsigned i, nl=0;
+    wbvec<char> sx[nrgIdx.len+1];
+    wbvec<char> s_(128);
 
     for (i=0; i<nrgIdx.len; ++i) {
        if ( nrgIdx[i].idx<0) sx[i]='C';
@@ -1855,47 +1852,47 @@ void NRGData<TQ,TD>::info(const char *vstr) const {
        else sx[i]='2'; 
     }; sx[i]=0;
 
-    snprintf(s_,n_,"%d/%d; calc=%d (%s; %d); store=%d",
-    NRG_ITER+1, NRG_N, calc, sx, nrgIdx.len, store);
+    s_.catf(FL,"%d/%d; calc=%d (%s; %d); store=%d",
+    NRG_ITER+1, NRG_N, calc, sx.data, nrgIdx.len, store);
 
     if (MX) {
        PRINTF("\n%s Structure `%s' (0x%lX), %s\n",
        vstr && vstr[0] ? vstr : (name.data ? name.data : "ans"),
-       NAME.data ? NAME.data : "",MX,s_);
+       NAME ? NAME.data : "",MX,s_.data);
     }
     else {
        PRINTF("\n%s File structure `%s', %s\n",
        vstr && vstr[0] ? vstr : (name.data ? name.data : "ans"),
-       NAME.data ? NAME.data : "",s_);
+       NAME ? NAME.data : "",s_.data);
     }
 
     if (!KK.isEmpty()) {
        if (!nl) { PRINTF("\n"); ++nl; }
        for (i=0; i<KK.len; ++i) {
-          snprintf(s_,n_,"KK[%d]", i); 
-          KK[i].info(s_);
+          s_.reset().catf(FL,"KK[%d]", i); 
+          KK[i].info(s_.data);
        }
     }
 
     if (!KD.isEmpty()) {
        if (!nl) { PRINTF("\n"); ++nl; }
        for (i=0; i<KD.len; ++i) {
-          snprintf(s_,n_,"KD[%d]", i);
-          KD[i].info(s_);
+          s_.reset().catf(FL,"KD[%d]", i);
+          KD[i].info(s_.data);
        }
     }
     if (!DK.isEmpty()) {
        if (!nl) { PRINTF("\n"); ++nl; }
        for (i=0; i<DK.len; ++i) {
-          snprintf(s_,n_,"DK[%d]", i);
-          DK[i].info(s_);
+          s_.reset().catf(FL,"DK[%d]", i);
+          DK[i].info(s_.data);
        }
     }
     if (!DD.isEmpty()) {
        if (!nl) { PRINTF("\n"); ++nl; }
        for (i=0; i<DD.len; ++i) {
-          snprintf(s_,n_,"DD[%d]", i);
-          DD[i].info(s_);
+          s_.reset().catf(FL,"DD[%d]", i);
+          DD[i].info(s_.data);
        }
     }
 
@@ -2073,9 +2070,9 @@ void updateOp_L(const char *F, int L,
    }
 
    Xin.contract(F,L,2,A2,1,Xk); 
-   A1.contract(F,L,"1,3;*",Xk, (rk!=3 ? "1,3":"1,4"), Xout); 
+   A1.contract(F,L,"13*",Xk, (rk!=3 ? "13":"14"), Xout); 
 
-   if (rk==3) Xout.Permute("1,3,2"); 
+   if (rk==3) Xout.Permute("132"); 
 
    Xout.otype=Xin.otype;
    Xout.SkipZeroData();
@@ -2098,7 +2095,7 @@ void updateOp_s(const char *F, int L,
    }
 
    A2.contract(F,L,3,x,2, Xk); 
-   A1.contract(F,L,"1,3;*", Xk,"1,3", Xout); 
+   A1.contract(F,L,"13*", Xk,"13", Xout); 
 
    Xout.otype=x.otype;
    Xout.SkipZeroData();
@@ -2120,8 +2117,8 @@ inline void updateOp_Ls(
       wblog(FL,"ERR %s() got invalid Ls-operator (%d/%d)",FCT,rk,r_);
    }
 
-   Xin.contract("3,4",A2,"1,3", Xk);  
-   A1.contract("1,3;*",Xk,"1,2",Xout);
+   Xin.contract("34",A2,"13", Xk);  
+   A1.contract("13*",Xk,"12",Xout);
 
    Xout.otype=Xin.otype;
    Xout.SkipZeroData();
@@ -2143,8 +2140,8 @@ inline void updateOp_sL(
       wblog(FL,"ERR %s() got invalid sL-operator (%d)",FCT,rk,r_);
    }
 
-   Xin.contract("4,3",A2,"1,3", Xk);  
-   A1.contract("1,3;*",Xk,"2,1",Xout);
+   Xin.contract("43",A2,"13", Xk);  
+   A1.contract("13*",Xk,"21",Xout);
 
    Xout.otype=Xin.otype;
    Xout.SkipZeroData();
@@ -2220,7 +2217,7 @@ int Wb::updateOp(const char *F, int L,
    const wbvector< wbvector<QSpace<TQ,TD> > > &CI=NRG.CI;
    const wbvector< NRGIndex<TQ,TD> > &nrgIdx=NRG.nrgIdx;
 
-   if (A1.isEmpty() || A2.isEmpty()) { F12.initDef(nop); return 0; }
+   if (A1.isEmpty() || A2.isEmpty()) { F12.init(nop); return 0; }
 
    if (nrgIdx.len!=nop) wblog(FL,
       "ERR %s() severe size mismatch (nrgIdx: %d,%d)",FCT,nrgIdx.len,nop);
@@ -2260,7 +2257,7 @@ int Wb::updateOp(const char *F, int L,
        FCT, A1.sizeStrQ().data, A2.sizeStrQ().data);
 
    if (F12.len!=nop) 
-   F12.initDef(nop);
+   F12.init(nop);
 
    if ((int)iter>NRG.kloc) {
       for (i=0; i<nop; ++i) {
@@ -2286,7 +2283,7 @@ int Wb::updateOp(const char *F, int L,
    }
    else {
       char Lflag = A1.getDim(1)>1 || A2.getDim(1)>1;
-      unsigned l=0, tlen=16; char tag[tlen];
+      wbvec<char> tag_(16); char *tag=tag_.data;
 
       wbstring mark(nop,'*');
 
@@ -2373,15 +2370,10 @@ int Wb::updateOp(const char *F, int L,
          if (F12[i].isEmpty() && !FKK[i].isEmpty()) ++e;
       }
 
-      l=snprintf(tag,tlen,"FDM %2d/%d",iter,NRG_N); {
-         if (NRG.name.data && NRG.name.data[0] && l<tlen)
-            l+=snprintf(tag+l,tlen-l," %s:",NRG.name.data);
-         if (l>=tlen) wblog(FL,
-        "ERR %s() string out of bounds (%d/%d)",FCT,l,tlen);
-      }
+      tag_.catf(FL,"FDM %2d/%d",iter,NRG_N); if (NRG.name) {
+      tag_.catf(FL," %s:",NRG.name.data); }
 
-      if (!nop)
-         wblog(FL,"%s got empty spectral ops",tag);
+      if (!nop) { wblog(FL,"%s got empty spectral ops",tag); }
       else {
          unsigned i1=0, m=mark.count('*');
          for (i=0; i<nop; ++i) { if (mark[i]!='*') { i1=i; break; }}
@@ -2466,7 +2458,7 @@ unsigned applyZ0(const QSpace<TQ,TD> &Z0, QSpace<TQ,TD> &CK){
          wblog(FL,"ERR %s() Z0 does not match operator space",FCT);
          return 2;
       }
-      Z0.contract("3 4",CK,"1 2",CK); 
+      Z0.contract("34",CK,"12",CK); 
       CK.otype=otype;
    }
    else wblog(FL,"ERR %s() invalid rank=%d.",FCT,r);
@@ -2505,8 +2497,8 @@ unsigned getDLoc(
 
     #ifndef WB_SKIP_ASSERT
       if (fflag) { QSpace<TQ,TD> E;
-         A.K.contract("1,3;*",A.K,"1,3",E); 
-         if (!E.isIdentityMatrix(1E-12)) {
+         A.K.contract("13*",A.K,"13",E); 
+         if (!E.isIdentityMatrix(1e-12)) {
             MXPut(FL).add(A,"A").add(E,"E");
             wblog(FL,"ERR NRG[%d].AK not in LRs index order",iter,N);
          }

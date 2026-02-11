@@ -45,7 +45,7 @@ function [sr,Ir]=rat2(x,varargin)
   end
 
   if isempty(x), str=''; e=[]; return; end
-  [sr,Ir]=wbrat(x,opts{:});
+  [sr,Ir]=wbrat(x,opts{:}); if ~iscell(sr), sr={sr}; end
 
   if aflag
      srd=char(8730);

@@ -11,7 +11,7 @@
   if isvar('mat'), s='';
      if isvar('Imain')
         if isfield(Imain,'host'), s=Imain.host;
-        else s=getfield2(Imain,'info','host','--def',''); end
+        else s=getfield2(Imain,'info','host',{''}); end
      end
      if ~isempty(s)
         if iscell(s), s=s{1}; end

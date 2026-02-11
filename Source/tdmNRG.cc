@@ -469,7 +469,7 @@ void mexFunction(
 
    if (locRho!=99) locRho=0;
 
-   Rho.initDef(2); P.initOp(1);
+   Rho.init(2); P.initOp(1);
 
    for (iter=0; iter<N; ++iter) {
       NRG_ITER=iter; SIG.check911();
@@ -628,7 +628,7 @@ void initOverlap(
    for (i=0; i<2; ++i)
    for (j=0; j<2; ++j) {
       wbvector< QSpace<TQ,TD> > &Pk=P.getOpsXX(tags[k++]);
-      if (Pk.len!=1) Pk.initDef(1);
+      if (Pk.len!=1) Pk.init(1);
       a0[i]->contract("13*",*(aa[j]),"13",Pk[0]); 
    }
 }

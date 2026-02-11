@@ -12,72 +12,77 @@ function rval=setdef(varargin)
 %    if more arguments are specified, input arguments are
 %    returned as structure.
 %
+% Options
+%
+%    -v   verbose mode
+%    -e   do not overwrite empty values
+%         (by default, empty values are considered uninitialized)
+%
 % Examples
 %
 % setdef('U',0.12, 'epsd','= -U/3', 'Gamma',0.01);
 %    since U may be defined through first arguemnt, the expression '= ...'
-%    will evaluate the string if variable is not defined yet.
+%    evaluates the string (if variable is not defined yet).
 %
-% Wb,Jun15,07  Wb,Mar01,08
+% Wb,Jun15,07  Wb,Jun16,25
 
-  evalin('caller','global sdval__ sdflag__');
-  global sdval__ sdflag__
+% [Wb-06/16/25] added option -e
+
+  evalin('caller','global sd_val__ sd_gotval__');
+  global sd_val__ sd_gotval__
 
   getopt('init',varargin);
-     verb=getopt('-v');
-  varargin=getopt('get_remaining'); narg=length(varargin);
+     vflag=getopt('-v');
+     eflag=getopt('-e');
+  args=getopt('get_remaining'); nargs=length(args);
 
-  if ~narg, return; end
-  if narg==1 && isstruct(varargin{1}), S=varargin{1};
-     ff=fieldnames(S); n=length(ff); varargin=cell(1,n);
-     for i=1:n, varargin{i}={ff{i},getfield(S,ff{i})}; end
-     varargin=cat(2,varargin{:}); narg=length(varargin);
+  if ~nargs, return; end
+  if nargs==1 && isstruct(args{1}), S=args{1};
+     ff=fieldnames(S); n=length(ff); args=cell(1,n);
+     for i=1:n, args{i}={ff{i},getfield(S,ff{i})}; end
+     args=cat(2,args{:}); nargs=length(args);
   end
 
-  if narg<2 || mod(narg,2)
-     eval(['help ' mfilename]); varargin
+  if nargs<2 || mod(nargs,2)
+     eval(['help ' mfilename]); args
      if nargin, wbdie('invalid usage'); else return; end
   end
 
-  if nargout && narg<=2
-     if narg~=2, wbdie('invalid usage'); end
-     n=varargin{1}; rval=varargin{2}; sdflag__=0;
+  if ~nargin || mod(nargs,2), wbdie('invalid usage'); end
 
-     evalin('caller',sprintf(...
-     'if exist(''%s'',''var''), sdval__=%s; sdflag__=1; end',n,n));
+  for i=1:2:nargs
+     vn=args{i}; v=args{i+1}; sd_gotval__=0;
+     if ~ischar(vn), wbdie(...
+       'invalid usage (variables must be specified by name)'); end
 
-     if ~sdflag__ && ischar(rval) && ~isempty(rval) && rval(1)=='='
-        evalin('caller',sprintf(...
-        'eval(''sdval__=%s;''); sdflag__=1;',rval(2:end)));
-     end
-     if sdflag__, rval=sdval__;
-        if verb, wblog(' * ','%-10s = %g',n,rval); end
-     end
-  else
-     for i=1:2:narg
-        n=varargin{i}; v=varargin{i+1}; sdflag__=0;
+     evalin('caller',sprintf( ...
+       'if exist(''%s'',''var''), sd_gotval__=1; sd_val__=%s; end',vn,vn));
 
-        evalin('caller',sprintf( ...
-        'if exist(''%s'',''var''), sdflag__=1; sdval__=%s; end',n,n));
-        if sdflag__, varargin{i+1}=sdval__; continue; end
-
-        if ischar(v) && ~isempty(v) && v(1)=='='
-           evalin('caller',sprintf('eval(''sdval__=%s;'');',v(2:end)));
-           v=sdval__;
-        end
-
-        assignin('caller',n,v);
-
-        if verb, wblog(' * ','%-10s = %g',n,v); end
+     if sd_gotval__ && (eflag || ~isempty(sd_val__))
+        args{i+1}=sd_val__;
+        continue
      end
 
-     if nargout, rval=struct;
-        for i=1:2:narg
-        rval=setfield(rval,varargin{i},varargin{i+1}); end
+     if ischar(v) && ~isempty(v) && v(1)=='='
+        evalin('caller',sprintf('eval(''sd_val__=%s;'');',v(2:end)));
+        v=sd_val__;
+     end
+
+     if ~nargout
+        if vflag, wblog(' * ','%-10s = %g',vn,v); end
+        assignin('caller',vn,v);
      end
   end
 
-  clear global sdval__ sdflag__
+  if nargout
+     if nargin==2, rval=args{2};
+     else rval=struct;
+        for i=1:2:nargs
+        rval=setfield(rval,args{i},args{i+1}); end
+     end
+  end
+
+  clear global sd_val__ sd_gotval__
 
 end
 

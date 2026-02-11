@@ -28,11 +28,11 @@ void mexFunction(
     mxIsQSpace(FL,argin[0],r,'c',-1,NULL,NULL,"valid QSpace required");
 
     if (mxIsQSpace(argin[0])>0) { 
-       const QSpace<gTQ,double> A(argin[0],'r');
+       const QSpace<gTQ,double> A(argin[0],'r',1,0);
        nrm2=A.norm2();
     }
     else {
-       const QSpace<gTQ,wbcomplex> A(argin[0]);
+       const QSpace<gTQ,wbcomplex> A(argin[0],'r',1,0);
        wbcomplex z2=A.norm2();
        if (fabs(z2.i)>1E-14) wblog(FL,
           "ERR %s() got imaginary part (%s)",FCT,z2.toStr().data);

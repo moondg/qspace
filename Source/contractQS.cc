@@ -184,7 +184,7 @@ char icFlags::set(const mxArray *a, const char *istr) {
       }}
       else { 
          unsigned l=0;
-         if (s[0]=='!') { ++s; xflag=0; } else { xflag=1; }
+         if (s[0]=='!') { ++s; xflag=1; } else { xflag=0; }
          for (; s[l]; ++l) { if (!isdigit(s[l])) break; }
 
          if (s[l]) {
@@ -208,7 +208,7 @@ char icFlags::set(const mxArray *a, const char *istr) {
       q=1; 
    }
    else if (mxIsNumeric(a)) {
-      if (Mx::IsVector(a)) {
+      if (Mx::IsVector(a)>0) {
          unsigned i=0, j;
          wbvector<double> x(FL,a); 
          if (x.len && !tflag) {
@@ -222,7 +222,7 @@ char icFlags::set(const mxArray *a, const char *istr) {
                }
                sidx[i]=j+'0'; 
             }
-            sidx[i]=0; xflag=1;
+            sidx[i]=0; xflag=0;
          }
          q=(x.len ? 2 : 0);
       }
@@ -282,7 +282,7 @@ void icFlags::apply(QSpace<TQ,TD> &X, char vflag) {
          "valid set of itags required (%s; r=%d)",FCT,IT2STR(X),r);
 
       for (i=0; i<r; ++i) {
-         if ((!xflag) ^ (!m[i])) X.SetFlags(FL,i+1); 
+         if ((!xflag)==(!m[i])) X.SetFlags(FL,i+1); 
       }
    }
 };
@@ -370,19 +370,19 @@ void mexFunction(
     if (nargin>=4 &&  
          !mxIsCell(argin[0]) && isCtrIdx(argin[1]) &&
          !mxIsCell(argin[3]) && isCtrIdx(argin[3])
-       ) { 
+       ) {
        a=contract_plain(nargin,argin);
     }
     else {
        unsigned i,l=0, lmax=0, zflag=0,
-          nc=nargin,
+          na=nargin,
           level=0;  
        unsigned vflag=1; wbperm P;
        char q, nQS=0;
 
        icFlags Q;
        for (i=0; i<(unsigned)nargin; ++i) {
-          q=Q.check_arg(argin[i]); if (q<=0) { nc=i; break; }
+          q=Q.check_arg(argin[i]); if (q<=0) { na=i; break; }
           if (q>3) { l=0; ++nQS; } 
           else if (q&2) { l=i; }   
        }
@@ -394,8 +394,8 @@ void mexFunction(
           wblog(FL,"ERR %s() invalid usage (%s)",myname,str);
        }
 
-       if (nc<(unsigned)nargin) {
-          OPTS opts(argin+nc,nargin-nc);
+       if (na<(unsigned)nargin) {
+          OPTS opts(argin+na,nargin-na);
 
           if (opts.getOpt("-v")) { vflag=2; } else
           if (opts.getOpt("-q")) { vflag=0; } 
@@ -403,35 +403,36 @@ void mexFunction(
           opts.checkAnyLeft(FL);
        }
 
-       if (l+1==nc) { 
-          int r=isValidPerm(argin[l]); 
-          if (r>=0 && (r!=1 || l<2)) {
+       if (l+1==na) { 
+          size_t r=-1; 
+          char q=Wb::isValidPerm(argin[l],0,&r);
+          if (q>0 && long(r)>=0 && (r!=1 || l<2)) {
              P.init(FL,argin[l],1);  
-             --nc; 
+             --na; 
           }
        }
 
-       if (int(i=is_valid_cell_ctr(nc,argin,0,lmax))<=0) wblog(FL,
+       if (int(i=is_valid_cell_ctr(na,argin,0,lmax))<=0) wblog(FL,
           "ERR invalid cell contraction (e=%d)",-i);
        zflag=(i>>16); 
 
        if (vflag>1) {
-          unsigned l,n=64, nQS=((i>>8)&255) + zflag; char s[n];
-          l=snprintf(s,n,"%d level%s total",lmax+1, lmax?"s":"");
-          if (zflag && l<n) { l+=snprintf(s+l,n-l,
-             ", %d/%d QSpace%s complex",zflag, nQS, zflag!=1? "s":""); }
+          unsigned nQS=((i>>8)&255) + zflag;
+          wbvec<char> s(64);
+          s.catf(0,0,"%d level%s total",lmax+1, lmax?"s":"");     if (zflag) {
+          s.catf(0,0,", %d/%d QSpace%s complex",zflag,nQS, zflag!=1?"s":""); }
           wblog(FL,"=== cell contraction %34R","=");
-          wblog(FL," *  %d contractions total\n%s",i&255,s);
+          wblog(FL," *  %d contractions total\n%s",i&255,s.data);
        }
 
        if (zflag) {
           QSpace<gTQ,wbcomplex> C;
-          contractQS_itags(nc,argin,level,vflag,C,P);
+          contractQS_itags(na,argin,level,vflag,C,P);
           a=C.toMx();
        }
        else {
           QSpace<gTQ,double> C;
-          contractQS_itags(nc,argin,level,vflag,C,P);
+          contractQS_itags(na,argin,level,vflag,C,P);
           a=C.toMx();
        }
     }
@@ -482,12 +483,12 @@ int match_regex_itag(
       if (unsigned(i)>itags.len) wblog(FL,
          "ERR %s() index out of bounds (%d/%d)",FCT,i,itags.len);
 
-      if (i>0) { unsigned n=16; char sx[n]; 
-         unsigned l=3; strncpy(sx,s,l);     
+      if (i>0) { wbvec<char> sx(16);  
+         sx.cat(FL,s,3); 
 
-         l+=snprintf(sx+l,n-l,"%s",itags[i-1].toStr(0).data);
-         if (k) { l+=snprintf(sx+l,n-l,":%s",s+k+1); }
-         otags=sx; 
+         sx.catf(FL,"%s",itags[i-1].toStr(0).data);
+         if (k) { sx.catf(FL,":%s",s+k+1); }
+         otags=sx.data; 
       }
       else if (!i) wblog(FL,"ERR auto-contract failed to match regex \n"
         "`%s' for %s in %s: `%s'",s+3,Astr,Bstr,STR(itags));
@@ -637,7 +638,8 @@ unsigned contractQS_itags(
    QSpace<gTQ,TD> &C, 
    wbperm &P    
 ){
-   unsigned i, l=-1, len=0; char mark[nargin];
+   unsigned i, l=-1, len=0;
+   wbvec<char> mark(nargin);
    icFlags q;
 
    for (i=0; i<unsigned(nargin); ++i) {
@@ -661,10 +663,10 @@ unsigned contractQS_itags(
          else {
             if (!mxIsCell(q.a)) wblog(FL,"ERR %s() got non-cell !?",FCT);
             unsigned j=0, nc=mxGetNumberOfElements(q.a);
-            const mxArray* ac[nc]; wbperm P_;
+            wbvec<const mxArray*> ac(nc); wbperm P_;
             for (; j<nc; ++j) ac[j]=mxGetCell(q.a,j);
 
-            contractQS_itags(nc,ac,level+1,vflag,X[l],P_);
+            contractQS_itags(nc,ac.data,level+1,vflag,X[l],P_);
          }
       }
       else if (mark[i]&3) { 
@@ -691,7 +693,7 @@ unsigned contractQS_itags(
 
          if (P) { unsigned r=C.rank(FL);
             if (P.len<=r) {
-               if (vflag) { wblog(FL,
+               if (vflag>1) { wblog(FL,
                   "--> applying permutation %s",STR(P)); }
                C.Permute(P);
             }
@@ -726,13 +728,13 @@ unsigned contractQS_itags(
 
       if (A.isEmpty() || B.isEmpty()) {
          if (vflag>1) {
-            unsigned n=64; char s[n];
             char i[2]={ A.isEmpty(), B.isEmpty() };
-            snprintf(s,n,"cell contraction (%d): %s empty",level,
+            wbvec<char> s(64);
+            s.catf(FL,"cell contraction (%d): %s empty",level,
               i[0] ? (i[1] ? "both QSpaces are": "1st QSpace is")
                    : (i[1] ? "2nd QSpace is" : "NEITHER (!?) QSpace is"));
             vflag += 256; 
-            wblog(FL,"%2d) %s",vflag>>8,s);
+            wblog(FL,"%2d) %s",vflag>>8,s.data);
          }
          C.init(); return len;
       }
@@ -759,9 +761,18 @@ unsigned contractQS_itags(
       for (i=0; i<icb.len; ++i) if (icb[i]>=rb) wblog(FL,
          "ERR %s() index out of bounds (%d; %d)",PROG,icb[i],rb);
 
-      if (vflag>1) { wblog(FL,
-         " *     %-37s @ %-5s %2d\nX  %-37s @ %-5s %2d",
-         IT2STR(A), STR(ica), ra, IT2STR(B), STR(icb), rb);
+      if (vflag>1) { wbvec<char> sa(64), sb(64);
+         if (A.fdir)
+              { sa.catf(0,0,"%-30s %6s",IT2STR(A),STR(A.fdir)); }
+         else { sa.catf(0,0,"%-37s",IT2STR(A)); }
+         sa.catf(0,0," @ %-5s %2d",STR(ica),ra);
+
+         if (B.fdir)
+              { sb.catf(0,0,"%-30s %6s",IT2STR(B),STR(B.fdir)); }
+         else { sb.catf(0,0,"%-37s",IT2STR(B)); }
+         sb.catf(0,0," @ %-5s %2d",STR(icb),rb);
+
+         wblog(FL," *     %s\nX  %s",sa.data,sb.data);
       }
       if (level==0 && k+1==len) {
          if (!A.qtype.permitsOM(ra+rb-ica.len-icb.len)) {
@@ -810,22 +821,22 @@ int is_valid_cell_ctr(
    for (; i<na; ++i) { const mxArray *a=aa[i];
       if (mxIsCell(a)) {
          unsigned i=0, nc=mxGetNumberOfElements(a);
-         const mxArray* ac[nc]; ++nQS;
+         wbvec<const mxArray*> ac(nc); ++nQS;
          for (; i<nc; ++i) { ac[i]=mxGetCell(a,i); }
 
-         if ((q=is_valid_cell_ctr(nc,ac,level+1,lmax))>0)
+         if ((q=is_valid_cell_ctr(nc,ac.data,level+1,lmax))>0)
               { rval+=q; }  
          else { rval=q; break; }
       }
       else if (mxIsChar(a) || mxIsNumeric(a)) {
          if (Q.set(a,0)<=0) { wbstring s(a); wblog(FL,
-            "ERR %s() invalid QSpace cell-structure ('%s' @ l=%d)",
+            "ERR %s() invalid QSpace cell-structure\n%s @ l=%d",
             FCT,s.data,level);
          }
       }
       else if ((n=mxGetNumberOfElements(a))!=1) {
-         wblog(FL,"ERR invalid QSpace cell-structure "
-         "(%s @ l=%d, %d elements)",mxGetClassName(a), level,n);
+         wblog(FL,"ERR invalid QSpace cell-structure\n"
+         "`%s' @ l=%d, %d elements",mxGetClassName(a), level,n);
       }
       else {
          try { q=mxIsQSpace(FL,a,'c'); }
@@ -855,8 +866,9 @@ int contractRC(
    int nargin, const mxArray *argin[]
 ){
 
-   int i,l, n=256, n1=256, n2=384, slen=2*n, i0, nc=nargin/4;
-   char sbuf[slen];
+   int i,l, n=256, n1=256, n2=384, i0, nc=nargin/4;
+   std::vector<char> sbuf_(2*n); 
+   char *sbuf=sbuf_.data();
 
    if ((nargin-1)%4) wblog(FL,"ERR %s() "
       "invalid usage [nargin: (%d-1)%%4] !?",FCT,nargin);
@@ -872,7 +884,6 @@ int contractRC(
 
    QType t(FL,argin[0]); 
 
-   memset(sbuf,0,slen);
    mxGetString(argin[0],sbuf,n); l=strlen(sbuf); sbuf[l]=' '; sbuf[++l]=0;
 
    if (nc!=1)
@@ -893,8 +904,8 @@ int contractRC(
 
       wblog(FL,"%s %s @ %s | %s @ %s",sbuf+n,STR(Qa),STR(ia),STR(Qb),STR(ib));
 
-      const CData<gTQ,RTD> &a = gCS.getBUF(FL,Qa,'l');
-      const CData<gTQ,RTD> &b = gCS.getBUF(FL,Qb,'l');
+      const CData<gTQ,RTD> &a = gCS.getBUF(FL,Qa,LB_GEN); 
+      const CData<gTQ,RTD> &b = gCS.getBUF(FL,Qb,LB_GEN); 
 
       A.initBase(&a);
       B.initBase(&b);
@@ -921,8 +932,9 @@ int contractCD(
    int nargin, const mxArray *argin[]
 ){
 
-   int i,l,n=256,n1=256,n2=384;
-   char sbuf[2*n];
+   int i,l, n=256, n1=256, n2=384;
+   std::vector<char> sbuf_(2*n); 
+   char *sbuf=sbuf_.data();
 
    if (nargin!=5 || nargout>1) wblog(FL,"ERR %s() "
       "invalid usage [nargin: (%d-1)%%4] !?",FCT,nargin);
@@ -937,7 +949,6 @@ int contractCD(
 
    QType t(FL,argin[0]); 
 
-   memset(sbuf,0,2*n);
    mxGetString(argin[0],sbuf,n); l=strlen(sbuf); sbuf[l]=' '; sbuf[++l]=0;
 
    ++argin;
@@ -947,8 +958,8 @@ int contractCD(
 
    wblog(FL,"--> %s @ %s | %s @ %s",STR(Qa),STR(ia),STR(Qb),STR(ib));
 
-   const CData<gTQ,RTD> &a = gCS.getBUF(FL,Qa,'l');
-   const CData<gTQ,RTD> &b = gCS.getBUF(FL,Qb,'l');
+   const CData<gTQ,RTD> &a = gCS.getBUF(FL,Qa,LB_GEN); 
+   const CData<gTQ,RTD> &b = gCS.getBUF(FL,Qb,LB_GEN); 
    cdata<RTD> c;
 
    a.cgd.contract(FL,ia,b.cgd,ib,c,0,0,0);

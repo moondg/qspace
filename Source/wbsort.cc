@@ -27,124 +27,125 @@
 
 template<class T>
 void Wb::hpsort(
-    wbvector<T> &ra,    
-    wbperm &P,
-    char dir            
+   wbvector<T> &ra,    
+   wbperm &P,
+   char dir            
 ){
-    size_t i,j,l,ir, N=ra.len; wperm_t ia,*p;
-    T rra;
+   size_t i,j,l,ir, N=ra.len; wperm_t ia,*p;
+   T rra;
 
-    char q, Q=(dir>0 ? +1 : -1);
+   char q; dir=(dir>=0 ? +1:-1);
 
-    P.Index(N); p=P.data; if (N<2) return;
+   P.Index(N); p=P.data; if (N<2) { return; }
 
-    l = (N>>1);
-    ir= N-1;
+   l = (N>>1);
+   ir= N-1;
 
-    for (;;) {
-        if(l>0) {                       
-            rra=ra[--l];
-            ia=p[l];
-        } else {                        
-            rra=ra[ir];                 
-            ra[ir]=ra[0];               
+   for (;;) {
+      if (l>0) {                 
+         rra=ra[--l];
+         ia=p[l];
+      }
+      else {                     
+         rra=ra[ir];             
+         ra[ir]=ra[0];           
 
-            ia=p[ir]; p[ir]=p[0];
+         ia=p[ir]; p[ir]=p[0];
 
-            if ((--ir)==0) {            
-                ra[0]=rra;              
-                p[0]=ia;
-                break;
-            }
-        }
+         if ((--ir)==0) {        
+            ra[0]=rra;           
+            p[0]=ia;
+            break;
+         }
+      }
 
-        i=l;
+      i=l;
 
-        j=l+l+1;
-        while (j<=ir) {
-            if (j<ir) {
-               q=NUMCMP(ra[j],ra[j+1]); if (q==0) q=NUMCMP(p[j],p[j+1]);
-               if (q!=Q) j++;       
-            }
+      j=l+l+1;
+      while (j<=ir) {
+         if (j<ir) {
+            q=NUMCMP(ra[j],ra[j+1]);
+            if (!q) { q=NUMCMP(p[j],p[j+1]); if (dir<0) q=-q; } 
+            if (q!=dir) { ++j; } 
+         }
 
-            q=NUMCMP(rra,ra[j]); if (q==0) q=NUMCMP(ia,p[j]);
-            if (q!=Q) {             
-                ra[i]=ra[j];
-                p[i]=p[j];
+         q=NUMCMP(rra,ra[j]);
+         if (!q) { q=NUMCMP(ia,p[j]); if (dir<0) q=-q; } 
 
-                i = j;
-                j = ((j+1)<<1) - 1;
-            }
-            else break;              
-        }
-        ra[i]=rra;                   
-        p[i]=ia;
-    }
+         if (q!=dir) {           
+            ra[i]=ra[j];
+            p[i]=p[j];
 
-    return;
+            i=j; j=((j+1)<<1)-1;
+         }
+         else break;             
+      }
+      ra[i]=rra;                 
+      p[i]=ia;
+   }
 };
 
 template<class T>
-int Wb::hpsort(
-    T *A,        
-    size_t lda,  
-    size_t N,    
-    wbperm &P,
-    char dir,    
-    char lex     
+void Wb::hpsort(
+   T *A,        
+   size_t lda,  
+   size_t N,    
+   wbperm &P,
+   char dir,    
+   char lex     
 ){
-    size_t i,j,l, ia,ir, *p;
+   size_t i,j,l, ia,ir, *p;
 
-    char q, Q=(dir>0 ? +1 : -1); 
+   char q; dir=(dir>=0? +1:-1); 
 
-    P.Index(N); p=P.data; if (N<2) return 0;
+   P.Index(N); p=P.data; if (N<2) { return; }
 
-    l=(N>>1); ir=N-1;
-    T x[lda];
+   l=(N>>1); ir=N-1;
+   wbvec<T> x_(lda); T* x=x_.data;
 
-    for (;;) {
-        if (l>0) { 
-           ia=p[--l]; MEM_CPY<T>(x,lda,A+l*lda); 
-        }
-        else { 
-            ia=p[ir];   MEM_CPY<T>(x,lda,A+ir*lda); 
-            p[ir]=p[0]; MEM_CPY<T>(A+ir*lda,lda,A); 
+   for (;;) {
+      if (l>0) { 
+         ia=p[--l]; MEM_CPY<T>(x,lda,A+l*lda); 
+      }
+      else { 
+          ia=p[ir];   MEM_CPY<T>(x,lda,A+ir*lda); 
+          p[ir]=p[0]; MEM_CPY<T>(A+ir*lda,lda,A); 
 
-            if ((--ir)==0) {
-                p[0]=ia; MEM_CPY<T>(A,lda,x); 
-                break;
-            }
-        }
+          if ((--ir)==0) {
+              p[0]=ia; MEM_CPY<T>(A,lda,x); 
+              break;
+          }
+      }
 
-        i=l; j=2*l+1;
+      i=l; j=2*l+1;
 
-        while (j<=ir) { T *aj=A+j*lda;
-            if (j<ir) {
-                q=Wb::recCompare(aj,aj+lda,lda,lex); 
-                if (q==0) q=NUMCMP(p[j],p[j+1]); 
-                if (q!=Q) { ++j; aj+=lda; } 
-            }
+      while (j<=ir) { T *aj=A+j*lda;
+         if (j<ir) {
+            q=Wb::recCompare(aj,aj+lda,lda,lex); 
+            if (!q) { q=NUMCMP(p[j],p[j+1]); if (dir<0) q=-q; } 
+            if (q!=dir) { ++j; aj+=lda; }  
+         }
 
-            q=Wb::recCompare(x,aj,lda,lex); if (q==0) q=NUMCMP(ia,p[j]);
-            if (q!=Q) {  
-                MEM_CPY<T>(A+i*lda,lda,A+j*lda); 
-                p[i]=p[j];
+         q=Wb::recCompare(x,aj,lda,lex);
+         if (!q) { q=NUMCMP(ia,p[j]); if (dir<0) q=-q; } 
 
-                i=j;
-                j=((j+1)<<1)-1;
-            }
-            else break;              
-        }
-        p[i]=ia; MEM_CPY<T>(A+i*lda,lda,x);   
-    }
+         if (q!=dir) {  
+            MEM_CPY<T>(A+i*lda,lda,A+j*lda); 
+            p[i]=p[j];
 
-    return 0;
+            i=j;
+            j=((j+1)<<1)-1;
+         }
+         else break;  
+      }
+      p[i]=ia; MEM_CPY<T>(A+i*lda,lda,x);  
+   }
 };
 
 template<class T>
-int Wb::hpsort(
+void Wb::hpsort(
     wbMatrix<T> &ra, wbperm &P, char dir, char lex
- ){ return hpsort(ra.data, ra.dim2, ra.dim1, P, dir, lex); };
+ ){ hpsort(ra.data, ra.dim2, ra.dim1, P, dir, lex); };
 
 template<class T>
 void Wb::hpsort(wbvector<T> &ra) { wbperm P; hpsort(ra,P); }

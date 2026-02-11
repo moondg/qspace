@@ -17,12 +17,6 @@ function varargout=syntax_hl(wtype,use_tex)
 % See MLIB/wblog.m
 % Wb,Jun30,23
 
-% see also / adapted from MLIB/wblog.m
-  if nargout>3 || ~nargin, helpthis
-     if nargin || nargout, wbdie('invalid usage'), end
-     return
-  end
-
   if nargin<2, use_tex=0; end
   if 0 && use_tex, q=1;
   else
@@ -30,6 +24,13 @@ function varargout=syntax_hl(wtype,use_tex)
      if isempty(q)
         if isdesktop>1, q=1; else q=0; end
      elseif q<0, q=0; end
+  end
+
+  if ~nargin && nargout<=1, varargout={q}; return; end
+
+  if nargout>3 || ~nargin, helpthis
+     if nargin || nargout, wbdie('invalid usage'), end
+     return
   end
 
   wesc={ q,'','' };
@@ -59,6 +60,10 @@ function varargout=syntax_hl(wtype,use_tex)
              wesc{2}={ wesc{2}, [128 128 128], round(0.50*wesc{2}) };
           end
        end
+
+    case { 'QS:fdir' }
+        wesc{2}=202;
+
     otherwise
     if nargout<3
        if isstr(wtype),  wbdie('invalid wtype=%s',wtype); 

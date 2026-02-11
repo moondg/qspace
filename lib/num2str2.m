@@ -38,9 +38,9 @@ function s=num2str2(val,varargin)
      elseif getopt('--bytes'), bflag=2;
      else bflag=0; end
 
-  varargin=getopt('get_remaining'); narg=length(varargin);
+  varargin=getopt('get_remaining'); nargs=length(varargin);
 
-  if ~narg && numel(val)==1 && ~bflag
+  if ~nargs && numel(val)==1 && ~bflag
      if isempty(fmt), fmt='%.4g'; end
      if isreal(val)
         s=sprintf(fmt,val);
@@ -72,9 +72,9 @@ function s=num2str2(val,varargin)
   elseif isequal(val,'-n0'), nset=2; else nset=0; end
 
   if nset
-     if mod(narg,2), wbdie('invalid usage (%g)',narg); end
+     if mod(nargs,2), wbdie('invalid usage (%g)',nargs); end
      s={};
-     for i=1:2:narg
+     for i=1:2:nargs
         q=varargin{i}; t=varargin{i+1};
         if numel(q)~=1 || ~isnumeric(q), wbdie(...
            'invalid usage (alternating numbers expected)'); end
@@ -98,7 +98,7 @@ function s=num2str2(val,varargin)
 % show number limited by given (absolute) accuracy
 % -------------------------------------------------------------------- %
 
-  if ~bflag && narg && isnumeric(varargin{1}) && isscalar(varargin{1})
+  if ~bflag && nargs && isnumeric(varargin{1}) && isscalar(varargin{1})
      dval=varargin{1};
 
      if dval<=0
@@ -183,8 +183,10 @@ function s=num2str2(val,varargin)
 % default usage
 % -------------------------------------------------------------------- %
 
+  if ~nargs && isempty(val), s='[]'; return; end
+
   if bflag
-     if ~narg
+     if ~nargs
         varargin={ 5E3, 1,    ''
                    1E6, 2^10, 'k'
                    1E9, 2^20, 'M'
@@ -192,11 +194,11 @@ function s=num2str2(val,varargin)
                   1E15, 2^40, 'T' };
         if bflag>1, varargin(:,3)={' bytes',' kB',' MB',' GB',' TB'}; end
         varargin=reshape(varargin',1,[]);
-        narg=numel(varargin);
+        nargs=numel(varargin);
      else wbdie('invalid usage'); end
   end
 
-  if narg<3 || mod(narg,3) || ~isscalar(val) || ~isnumeric(val)
+  if nargs<3 || mod(nargs,3) || numel(val)~=1 || ~isnumeric(val)
      helpthis, if nargin || nargout, wbdie('invalid usage'), end
      return
   end

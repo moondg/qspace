@@ -1,7 +1,7 @@
 function [dfac,sw]=get_cgr_fac(A,i,sflag)
 % function [dfac,sw]=get_cgr_fac(A,i [,opts])
 %
-%    CGData is no longer stored with the QSpaces themselves,
+%    CData is not stored with QSpace tensors themselves,
 %    only their weights cgw within outer multiplicity space.
 %    Therefore CGData is globally normalized to 1. up to
 %    outer multiplicity.
@@ -30,16 +30,21 @@ function [dfac,sw]=get_cgr_fac(A,i,sflag)
      if ~isfield(A.info,'cgr') || ~isfield(A.info.cgr,'size')
         wbdie('invalid info.cgr data'); end
 
-     cgr=A.info.cgr(i,:); q=ones(1,numel(cgr));
-     for j=1:numel(cgr)
-        w=cgr(j).cgw; if ~isa(w,'double'), w=mpfr2dec(w); end
+     cgi=A.info.cgr(i,:); nsym=numel(cgi);
+     q=ones(1,nsym); szw=ones(nsym,2);
+     for j=1:nsym
+        w=cgi(j).cgw; if ~isa(w,'double'), w=mpfr2dec(w); end
         if isempty(w)
-           if ~isempty(cgr(j).type) || ~isempty(cgr(j).qset) || ...
-              ~isempty(cgr(j).qdir), wbdie(...
+           if ~isempty(cgi(j).type) || ~isempty(cgi(j).qset) || ...
+              ~isempty(cgi(j).qdir), wbdie(...
               'unexpected CGRef data (assuming CGR_ABELIAN)');
            end
-           q(j)=1;
-        elseif numel(w)==1, q(j)=w;
+           q(j)=1; continue
+        end
+
+        szw(j,:)=size(w);
+
+        if numel(w)==1, q(j)=w;
         elseif norm(w-w(1)*eye(size(w)))<1E-12, q(j)=w(1);
         elseif isvector(w), q(j)=norm(w);
         else
@@ -71,7 +76,7 @@ function [dfac,sw]=get_cgr_fac(A,i,sflag)
         if numel(q)==1
            if sflag>1 && q && abs(q)~=1
               [sw,~]=wbrat(q); r=0;
-              sw=regexprep(sw{1},'sqrt\((.*)\)(?@r=1;)',[srd '$1']);
+              sw=regexprep(sw,'sqrt\((.*)\)(?@r=1;)',[srd '$1']);
               if ~r, sw_=sw;
                  sw=[ srd num2str(q*q)]; if q<0, sw=['-' sw]; end
                  if length(sw)>4, sw=sw_; end
@@ -84,6 +89,12 @@ function [dfac,sw]=get_cgr_fac(A,i,sflag)
         end
      else sw='';
      end
+
+     if any(diff(szw,[],2))
+        szw=prod(szw,1); s=sprintf('cgw %d->%d',szw);
+        if isempty(sw), sw=s; else sw=[sw ', ' s]; end
+     end
+
      if nargin<2, q=sw; end
   end
 

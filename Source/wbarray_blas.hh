@@ -119,8 +119,6 @@ void DMatProd(
       char wjob
    );
 
-#define SVD_BUG_SAFEGUARD 
-
    template<class T> 
    void wbSVD(
        const wbarray<T> &A, 
@@ -135,7 +133,7 @@ void DMatProd(
        wbsparray<double>&U, wbvector<double> &E
    ){
        wbarray<double> Mf,Uf; M.toFull(Mf);
-       wbEigenS(Mf,Uf,E); U.init(FL,Uf,1E-14);
+       wbEigenS(Mf,Uf,E); U.init(FL,Uf,1e-14);
    };
 
 template<class T>

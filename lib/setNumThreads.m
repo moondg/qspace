@@ -9,7 +9,7 @@ function rval=setNumThreads(varargin)
 %
 % Wb,Apr05,16
 
-% NB! leave QSP_NUM_THREADS out of this (see startup_numethreads.m)!
+% NB! leave QSP_NUM_THREADS out of this by default (see startup_numthreads.m)!
 % rather focus on standard matlab environment
 %  -> num_threads() in matlab environment, and
 %  -> OMP_NUM_THREADS = MKL_NUM_THREADS
@@ -20,6 +20,7 @@ function rval=setNumThreads(varargin)
      elseif getopt('-v'), vflag=vflag+1; end
      iflag=getopt('-i');
      fflag=getopt('-f');
+     QSflag=getopt('--qs');
   n=getopt('get_last',[]);
 
   n0=num_threads();
@@ -32,7 +33,28 @@ function rval=setNumThreads(varargin)
      return
   end
 
+  if ischar(n), n=str2num(n); end
   if numel(n)>2, n, wbdie('invalid usage'); end
+
+  if QSflag, qsp='QSP_NUM_THREADS';
+     n2=n;
+           if ~ischar(n2), n2=num2str(n2); end
+           n2_=n2; if isempty(n2), n2_=''''''; end
+     n_=getenv(qsp);
+     if ~nargout || vflag>1, sout={'',''};
+        if isequal(n_,n2), sout{2}=sprintf('already at %s = %s',qsp,n2);
+        else
+           if isempty(n_)
+                sout{1}=sprintf('%s -> %s',qsp,n2_);
+           else sout{1}=sprintf('%s=%s -> %s',qsp,n_,n2_); end
+           setenv(qsp,n2);
+        end
+        fprintf(1,['\n   %s' char(27) '[38;5;8m' ... 
+          '%s  (having numthreads=%d)' char(27) '[0m\n\n'],sout{:},n0);
+     end
+     if nargout, rval=n0; end
+     return
+  end
 
   nc=I.nthreads.cores;
   n1=max(n);

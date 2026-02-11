@@ -287,7 +287,7 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
         if isempty(Q)
            if vflag
               if NPsi, s='all states'; else s='state'; end
-              fprintf(1,'> %s  %s converged (%d/%d, %d/%d: %.2g/%.2g)  \n',...
+              fprintf(1,'> %s  %s converged (%d/%d, %d/%d: %.2g/%.2g)  \r',...
               datestr(now,'HH:MM:SS'),s,ipass,npass,idav,ndav,nrm*nrm,q*reps);
            end
 

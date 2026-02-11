@@ -174,7 +174,7 @@ void NRG_Wilson(
     int nargin, const mxArray *argin[]
 ) {
     unsigned i,j,k,l,r,m=0,n,N, iter=0, Nkeep=256;
-    double dbl, Etrunc1, Etrunc=0, Estop=0, deps=1E-12, db=-1;
+    double dbl, Etrunc1, Etrunc=0, Estop=0, deps=1e-12, db=-1;
     int vflag=Wb::envVRB; 
     char nostore=0, toFile=0, wf=-1, checkIdA=1, cmplx=ISCOMPLX_(TD);
     char akflag=0, zflag=1, cgflag=0, fflag=0;
@@ -205,7 +205,8 @@ void NRG_Wilson(
 
     const char* vpass[] = { "param", "Gamma" };
     unsigned npass=sizeof(vpass)/sizeof(const char*);
-    mxArray* apass[npass];
+    wbvec<mxArray*> apass(npass);
+    wbvec<char> sx(STRLEN,str,'r');
 
     time_t tstart=time(NULL);
 
@@ -226,7 +227,7 @@ void NRG_Wilson(
 #ifdef MATLAB_MEX_FILE
     mexAtExit(myCleanUp);  
 #endif
-    Wb::ResSummary(NULL,1);
+    Wb::ResSummary(NULL,1); 
 
     if (nargin<=2) {
        if (mxGetString(argin[0],str,128)) wblog(FL,
@@ -323,7 +324,7 @@ void NRG_Wilson(
     opts.getOpt(FL,"zflag",zflag);
     opts.getOpt(FL,"NEE", NEE);
 
-    if (opts.getOpt(FL,"-Estop","using Estop=1E-4")) Estop=1E-4;
+    if (opts.getOpt(FL,"-Estop","using Estop=1e-4")) Estop=1e-4;
     else opts.getOpt(FL,"Estop",Estop);
 
     if (fout.isEmpty()) {
@@ -360,7 +361,7 @@ void NRG_Wilson(
        H0.init_itags(FL,"nrg:HK",0);
     }
 
-    i=H0.skipZeroOffDiag(1E-14,'b'); if (i) {
+    i=H0.skipZeroOffDiag(1e-14,'b'); if (i) {
        wblog(FL," *  skipped %d off-diagonal blocks from H0",i);
       #ifdef MATLAB_MEX_FILE
        H0.put("H0_");
@@ -372,7 +373,7 @@ void NRG_Wilson(
        wblog(FL,"WRN got empty A0 (building from H0)");
        AK.initIdentity(H0);
        AK.PrependSingletons(3); 
-       AK.Permute("1 3 2");     
+       AK.Permute("132");     
     }
     else {
        wbvector<widx_t> D,D_;
@@ -390,7 +391,7 @@ void NRG_Wilson(
        }
 
        AK.contract(FL,"13*",AK,"13",FX);
-       if (!FX.isIdentityMatrix(1E-12)) {
+       if (!FX.isIdentityMatrix(1e-12)) {
           MXPut(FL,"a").add(AK,"AK").add(FX,"FX");
           wblog(FL,"ERR A0 does not describe orthonormal basis");
        }
@@ -441,14 +442,13 @@ void NRG_Wilson(
           r=FC[k].Reduce2AbelianOp(FL); 
        }
 
-       if ((cgflag<=0 && r>2) || (cgflag>0 && r>3)) {
-          l=0; str[0]=0;
-          if (FC[k].qtype.len) l+=snprintf(
-             str+l,99,"; q=%s",FC[k].qtype.toStr().data);
-          if (FC[k].otype!=QS_NONE) l+=snprintf(
-             str+l,99,"; t=%s",FC[k].otype2Str().data);
-          wblog(FL,
-         "ERR %s() got rank-%d operator (%d%s)",myname,r,cgflag,str);
+       if ((cgflag<=0 && r>2) || (cgflag>0 && r>3)) { sx.reset();
+          if (FC[k].qtype.len) sx.catf(FL,
+             "; q=%s",FC[k].qtype.toStr().data);
+          if (FC[k].otype!=QS_NONE) sx.catf(FL,
+             "; t=%s",FC[k].otype2Str().data);
+          wblog(FL,"ERR %s() "
+          "got rank-%d operator (%d%s)",myname,r,cgflag,sx.data);
        }
 
        if ((cgflag>0 || FC[k].itags) && !FC[k].itags.isOp()) wblog(FL,
@@ -491,7 +491,7 @@ void NRG_Wilson(
           }
        }
        else if (FC.len && FC[0].otype==QS_OPERATOR) {
-          wbperm P = (zflag<=1? "1324" : "2314");
+          wbperm P(zflag<=1? "1324" : "2314");
 
           for (i=0; i<F1.len; ++i) {
              if (zflag<=1) {
@@ -657,18 +657,17 @@ void NRG_Wilson(
 
     if (vflag) {
        wblog(FL,"--- %48R","-");
-       l=sprintf_str("Lambda=%g, L=%d",Lambda,N);
+       sx.catf(FL,"Lambda=%g, L=%d",Lambda,N);
        if (Etrunc>0) 
-            { l+=snprintf(str+l,64,", Etrunc=%.3g (@%d)",Etrunc,Nkeep); }
-       else { l+=snprintf(str+l,64,", Nkeep=%d",Nkeep); }
-       if (!toFile)
-            { l+=snprintf(str+l,16,", internal"); }
-       wblog(FL," *  %s\nsym=%s",str,STR2(A0.qtype,'V'));
+            { sx.catf(FL,", Etrunc=%.3g (@%d)",Etrunc,Nkeep); }
+       else { sx.catf(FL,", Nkeep=%d",Nkeep); }
+       if (!toFile) { sx.catf(FL,", internal"); }
+       wblog(FL," *  %s\nsym=%s",sx.data,STR2(A0.qtype,'V'));
 
-       str[0]=0; l=0;
-       if (vflag &14) l+=snprintf(str+l,16," vflag=%d",vflag); 
-       if (nostore) l+=snprintf(str+l,16," %s",toFile? "NOSTORE":"noStore");
-       if (l) wblog(FL," *  flags:%s",str);
+       sx.reset();
+       if (vflag &14) { sx.catf(FL," vflag=%d",vflag); } 
+       if (nostore  ) { sx.catf(FL," %s",toFile? "NOSTORE":"noStore"); }
+       if (sx.l) wblog(FL," *  flags:%s",sx.data);
 
        if (WbUtil<TD>::isComplex()) {
            wblog(FL," *  running in complex mode");
@@ -724,7 +723,7 @@ void NRG_Wilson(
          AK.getQsub(2,Qs); 
          Qs.makeUnique(); if (Qs!=QS) {
 #ifdef MATLAB_MEX_FILE
-         Qs.Print("A0->QS"); QS.Print("FX->QS");
+         Qs.print("A0->QS"); QS.print("FX->QS");
 #endif
          if (akflag) wblog(FL,
             "ERR local QIDX inconsistency%N%N    Hint: "
@@ -770,12 +769,10 @@ void NRG_Wilson(
           MXPut(FL).add(E2,"E2").add(ID,"ID");
           throw;
        }
-       if (dbl>1E-12) { 
-          wbvector< QSpace<TQ,TD> > AA(1);
+       if (dbl>1e-12) { 
           double db2=0; wbindex Ia(1); Ia[0]=2;
 
-          AA[0].init2ref(AK);
-          E2.initIdentityCG(AA,Ia);
+          E2.initIdentityCG( cPVEC1_(AK), Ia);
 
           try { db2=E2.normDiff2(ID); }
           catch (...) {
@@ -783,7 +780,7 @@ void NRG_Wilson(
              throw;
           }
 
-          if (db2<1E-12)
+          if (db2<1e-12)
              wblog(FL,"WRN got truncated A0 (e=%.4g,%.4g) !?",dbl,db2);
           else {
              MXPut(FL,"i").add(ID,"ID").add(E2,"id");
@@ -860,7 +857,7 @@ void NRG_Wilson(
                  zflag<=1 ? 1 : 0, 
                 gg.dim1 ? gg.rec(iter-1) : NULL, FG);
 
-             if (iter==1 && !H4.isHConj(0,0,1E-12,'v')) { 
+             if (iter==1 && !H4.isHConj(0,0,1e-12,'v')) { 
                 MXPut(FL,"a").add(HK,"HK").add(ff.getRec(iter-1),"ff")
                 .add(gg.dim1? gg.getRec(iter-1) : wbvector<double>(),"gg")
                 .add(F1K,"F1").add((zflag<=1 || !wf) ? F2 : F1,"F2")
@@ -905,8 +902,8 @@ void NRG_Wilson(
              A4.contract(2,AD,1,AD,"132"); 
           }
           else {
-             AK.Permute("2,3,1"); if (!AD.isEmpty())
-             AD.Permute("2,3,1"); 
+             AK.Permute("231"); if (!AD.isEmpty())
+             AD.Permute("231"); 
              NK(iter,1)=D4.colSum(0);
           }
        }
@@ -999,25 +996,25 @@ void NRG_Wilson(
        #endif
     }
 
-    if (vflag) printf("\n");
+    if (vflag) { printf("\n"); }
 
     m=NK.colMax(0,i);
     n=NK.colMax(NK.dim2>3? 2:1,j);
-    l=sprintf_str("NK=%s / %s",I2STR(m),I2STR(n));
+    sx.reset().catf(FL,"NK=%s / %s",I2STR(m),I2STR(n));
     if (NK.dim2>3) { 
-       l+=snprintf(str+l,64," (%s / %s)",I2STR(NK(i,1)),I2STR(NK(j,3))); }
+       sx.catf(FL," (%s / %s)",I2STR(NK(i,1)),I2STR(NK(j,3))); }
 
     for (dbl=1E99, i=0; i<EK.dim1; ++i) {
        if (!Wb::isnan(EK(i,1)) && EK(i,1)>EK(i,0)) {
        if (dbl>EK(i,1)) { dbl=EK(i,1); }}
     }
 
-    l+=snprintf(str+l,32," @ Etr=%.4g",dbl);
-    if (Etrunc>0) { l+=snprintf(str+l,32," / %g",Etrunc); }
+    sx.catf(FL," @ Etr=%.4g",dbl); if (Etrunc>0) {
+    sx.catf(FL," / %g",Etrunc);    }
 
     if (dbl>0.9*Etrunc)
-         { wblog(FL,"==> %s",str); }
-    else { wblog(FL,"WRN %s",str); }
+         { wblog(FL,"==> %s",sx.data); }
+    else { wblog(FL,"WRN %s",sx.data); }
 
     if (!toFile || (toFile && nargout>1))
     argout[0] = S; 
@@ -1218,7 +1215,9 @@ void nrgBuildH4_cg(
    for (i=0; i<FG.len; ++i) if (FG[i].isEmpty()) wblog(FL,
        "WRN got empty space FG[%d]",i+1);
 
-   A4.initIdentityCG(F1K,F2,"1 3 2"); 
+   A4.initIdentityCG(
+      cPVEC__(F1K),
+      cPVEC__(F2 ),"1 3 2"); 
 
    Q=HK; Q.ExpandDiagonal();
    Q.contract(2,A4,1,AX);
@@ -1409,7 +1408,7 @@ void checkGSDeg(const wbvector<double> &E4) {
    unsigned i,n;
    double dE=E4.aMin(1);
 
-   for (n=i=0; i<E4.len; ++i) if (Wb::abs(E4[i])<1E-10) ++n;
+   for (n=i=0; i<E4.len; ++i) if (Wb::abs(E4[i])<1e-10) ++n;
 
    if (n==1)
             wblog(FL, " *  ground state is unique (%g).", dE); else

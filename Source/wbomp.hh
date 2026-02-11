@@ -31,6 +31,7 @@ namespace Wb {
 wbstring ompID2Str(char vflag=0);
 
 int ompStatus(const char *F, int L); 
+int omp_parallel(); 
 
 class ompNLock { 
 
@@ -38,7 +39,7 @@ class ompNLock {
 
     ompNLock(const char *s=NULL)
      : level(0), owner(-1), istr(0), nactive(0), ntot(0) {
-       omp_init_nest_lock(&_nlk);
+       omp_init_nest_lock(&lk_n);
        if (s && s[0]) { set_istr(s); }
     };
 
@@ -50,8 +51,11 @@ class ompNLock {
        }
        if (istr) { delete [] istr; istr=0; }
        owner=-1; 
-       omp_destroy_nest_lock(&_nlk);
+       omp_destroy_nest_lock(&lk_n);
     };
+
+    explicit operator bool() const { 
+       return (level || nactive ? 1 : 0); }
 
     void set_istr(const char *s);
 
@@ -76,7 +80,7 @@ class ompNLock {
 
  private:
 
-    omp_nest_lock_t _nlk;   
+    omp_nest_lock_t lk_n;   
 
     ompNLock(const ompNLock &);
     void operator=(const ompNLock &);
@@ -86,31 +90,37 @@ class ompNLock {
 #endif
 };
 
+#define WB_OMP_LMAX 99
+
 class ompGuard { 
 
  public:
 
     ompGuard() : lp(0) { };
 
-    ompGuard(const char *F, int L, ompNLock &lk, int lmax=99)
-     : lp(0) {
-       if (omp_get_num_threads()>1) { 
-          acquire(F,L,lk,lmax);
-       }
-    };
+    ompGuard(const char *F, int L, ompNLock &lk, int lmax=WB_OMP_LMAX)
+     : lp(0) { if (Wb::omp_parallel()) { 
+       acquire(F,L,lk,lmax);
+    }};
 
-    ompGuard(ompNLock &lk, int lmax=99) : lp(0) {
-       if (omp_get_num_threads()>1) { 
-          acquire(0,0,lk,lmax);
-       }
-    };
+    ompGuard(ompNLock &lk, int lmax=WB_OMP_LMAX)
+    : lp(0) { if (Wb::omp_parallel()) { 
+       acquire(0,0,lk,lmax);
+    }};
 
-    void acquire(ompNLock &lk, int lmax=99) { acquire(0,0,lk,lmax); };
-    void acquire(const char *F, int L, ompNLock &lk, int lmax=99);
+    void acquire(const char *F, int L, ompNLock &lk, int lmax=WB_OMP_LMAX);
+
+    void acquire(ompNLock &lk, int lmax=WB_OMP_LMAX) {
+       acquire(0,0,lk,lmax); };
 
    ~ompGuard() { if (lp) { lp->release(); }};
 
+    explicit operator bool() const { 
+       return (lp ? bool(*lp) : 0); }
+
     int level() { return (lp ? lp->level : -1); };
+
+    wbstring toStr(const char *istr_=NULL) const;
 
  private:
 
@@ -229,11 +239,13 @@ class thread_xlink {
  private:
 };
 
+inline unsigned get_omp_tid_nn(unsigned *l_=nullptr, char check=1);
+
 }; 
 
-   Wb::ompNLock wblog_lock("wblog");     
-   Wb::ompNLock rclog_lock("rclog");     
-   Wb::ompNLock mxapi_lock("mxapi");     
+   Wb::ompNLock wblog_lk("wblog");      
+   Wb::ompNLock rclog_lk("rclog");      
+   Wb::ompNLock mexap_lk("mexap");      
 
    Wb::ompNLock XS_buf("XS_buf");
 

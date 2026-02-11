@@ -28,7 +28,8 @@ void mxPutAndDestroy(
     const char* ws 
 ){
     int i=0;
-    if (!ws ||!ws[0]) wblog(FL,"ERR %s() invalid workspace `%s'",FCT,ws);
+    if (!ws || !*ws) wblog(FL,
+       "ERR %s() invalid workspace `%s'",FCT,ws?ws:"(null)");
     if (!strcmp(ws,"caller") || !strcmp(ws,"base")) { i=1; }
 
  #ifndef MATLAB_MEX_FILE
@@ -50,7 +51,7 @@ void mxPutAndDestroy(
     }
 
     #ifdef QS_USING_OMP
-       Wb::ompGuard myLK(mxapi_lock); 
+       Wb::ompGuard myLK(mexap_lk); 
     #endif
 
     if (i) {
@@ -61,9 +62,9 @@ void mxPutAndDestroy(
     }
     else {
        wbstring tmp;
-       if (!ws || !ws[0] || !strcmp(ws,"tmpfile")) { 
+       if (!ws || !*ws || !strcmp(ws,"tmpfile")) { 
           tmp.init(64); tmpmatFL(F_L,
-             vn && vn[0] && strcmp(vn,"ans")? vn:"", tmp.data,tmp.len);
+             vn && *vn && strcmp(vn,"ans")? vn:"", tmp.data,tmp.len);
           ws=tmp.data; i=1;
        }
        else {
@@ -83,6 +84,16 @@ void mxPutAndDestroy(
     }
 
     mxDestroyArray(a); 
+};
+
+int Mx::IsEqual(const mxArray *a, const char *s) { 
+
+   unsigned n=strlen(s)+1;
+   wbvec<char> sx(n+1);
+
+   if (mxGetString(a,sx.data,n))
+        { return 0; }
+   else { return (strcmp(sx.data,s) ? 0 : 1); }
 };
 
 int Mx::IsNumArray( 
@@ -106,7 +117,7 @@ int Mx::IsNumArray(
    if (mxIsChar(a)   ) { rval|=16; } else 
    if (mxIsLogical(a)) { rval|=32; }      
 
-   if (rval && mxIsComplex(a)) { rval|=4; }
+   if (rval && mxIsComplex(a)) { rval|=4; } 
 
    if (type=='d') {
       if (!(rval & 2)) { 
@@ -290,9 +301,10 @@ size_t copy_row2col_major(
       "ERR %s() got null pointers (%p/%p) !?",FCT,a,b);
 
    unsigned i=0, l=r-1;
-   size_t j, k=0, len=S[0], I[r]; for (; i<r; ++i) { I[i]=0; }
+   size_t j, k=0, len=S[0];
+   std::vector<size_t> I_(r); size_t *I=I_.data();
 
-   for (i=1; i<r; ++i) len*=S[i];
+   for (i=1; i<r; ++i) { len*=S[i]; }
 
    for (k=0; k<len; ++k) {
        for (j=I[0], i=1; i<r; ++i) j = j*S[i] + I[i];
@@ -411,14 +423,14 @@ size_t Mx::Array<T>::cpy_to_(
    if (P && trans) wblog(FL,
       "ERR %s() got trans=%d together with permutation",FCT,trans);
    if (data && (void*)data!=(void*)xd) wblog(FL,
-      "ERR %s got pointer mismatch %p / %p\n%s",xStr(),data,xd,STR_(this));
+      "ERR %s got pointer mismatch %p / %p\n%s",xStr(),data,xd,STR(*this));
 
    if (!trans && !P) {
       Wb::cpyRange(b,xd,len,ck);
       return len;
    }
 
-   if (!ax) wblog(FL,"ERR %s() %s",FCT,STR_(this));
+   if (!ax) wblog(FL,"ERR %s() %s",FCT,STR(*this));
 
    if (trans) {
       size_t l=
@@ -475,43 +487,36 @@ bool Mx::IsIndex(const mxArray *a, int base) {
 template<class T>
 wbstring Mx::Array<T>::toStr(char vflag, unsigned l) const {
 
-   wbstring s(l); 
+   wbstring s_(l); 
+   wbvec<char> s(l,s_.data,'r');
 
    if (ax) {
       unsigned i=0;
       const size_t *S=mxGetDimensions(ax);
 
-      l=snprintf(s.data,s.len,"%s%s ",
-         mxIsComplex(ax)? "complex ":"",mxGetClassName(ax));
-      for (; i<rank && l<s.len; ++i) {
-         l+=snprintf(s.data+l,s.len-l,"%ldx",S[i]); }
+      s.catf(FL,"%s%s ",mxIsComplex(ax)? "complex ":"",mxGetClassName(ax));
+      for (; i<rank && l<s.len; ++i) { s.catf(FL,"%ldx",S[i]); }
 
-      if (l<s.len) { if (i) { --l; }
-         l+=snprintf(s.data+l,s.len-l," [%s",TSTR(T)); }
-      if (l<s.len) {
-         l+=snprintf(s.data+l,s.len-l," @ ");
-         if (!data) { l+=snprintf(s.data+l,s.len-l,"d=null; "); } else
-         if (vflag) { l+=snprintf(s.data+l,s.len-l,"d=%p; ",data); }
-      }
-      if (l<s.len) {
-         l+=snprintf(s.data+l,s.len-l,"%d,%d,%d; l=%ld]",
-            cmplx,trans,mxref,len);
-      }
+      if (i) { s.shift(FL,-1); }
+      s.catf(FL," [%s",TSTR(T));
 
-      if (l>=s.len) wblog(FL,"ERR %s() string out of bounds "
-         "(%d/%d)%N'%s'",FCT,l,s.len,s.data);
+      s.catf(FL," @ ");
+      if (!data) { s.catf(FL,"d=null; "); } else
+      if (vflag) { s.catf(FL,"d=%p; ",data); }
+      s.catf(FL,"%d,%d,%d; l=%ld]",cmplx,trans,mxref,len);
    }
    else {
-      if (vflag) snprintf(s.data,s.len,
-         "ax=%p -> %p (%s; %d,%d,%d; len=%ld)",ax,data,TSTR(T),
-         cmplx,trans,mxref,len);
-      else snprintf(s.data,s.len,
-         "null%s (%s; %d,%d,%d; n=%ld)", data ? " -> d!=0":"",
-         TSTR(T), cmplx,trans,mxref,len
-      );
+      if (vflag) {
+         s.catf(FL,"ax=%p -> %p (%s; %d,%d,%d; len=%ld)",
+         ax,data,TSTR(T), cmplx,trans,mxref,len);
+      }
+      else {
+         s.catf(FL,"null%s (%s; %d,%d,%d; n=%ld)", data ? " -> d!=0":"",
+         TSTR(T), cmplx,trans,mxref,len);
+      }
    }
 
-   return s;
+   return s_;
 };
 
 template<class T>
@@ -565,11 +570,11 @@ int mxGetNumber(const mxArray *a, T &d, const char qflag) {
 
     if (n==1) { return 0; }
     else {
-       unsigned l,m=64; char msg[m];
-       l=snprintf(msg,m,"%s %s() invalid input",SHORT_FL,FCT);
-       if (n>1) { l+=snprintf(msg+l,m-l," (got array, n=%d)",n); } else
-       if (!n ) { l+=snprintf(msg+l,m-l," (empty)"); }
-       Wb::quietErrLog(FL,msg,qflag);
+       wbvec<char> s(64);
+       s.catf(0,0,"%s %s() invalid input",SHORT_FL,FCT);
+       if (n>1) { s.catf(0,0," (got array, n=%d)",n); } else
+       if (!n ) { s.catf(0,0," (empty)"); }
+       Wb::quietErrLog(FL,s.data,qflag);
        return 1;
     }
 };
@@ -594,31 +599,27 @@ inline int mxGetString(const mxArray *a, wbstring &s) {
 wbstring mxSize2Str(const mxArray *a) {
    if (!a) { return "(null)"; }
 
-   size_t l=0, n=32; char s[n];
+   wbvec<char> s(32);
+
    int i=0, r=mxGetNumberOfDimensions(a);
    const size_t *S=mxGetDimensions(a);
 
-   for (; i<r; ++i) {
-       l+=snprintf(s+l,n-l,"%s%d", i ? "x":"", unsigned(S[i]));
-       if (l>=n) wblog(FL,"ERR %s() string out of bounds (%d/%d)",FCT,l,n);
-   }
-   return s;
+   for (; i<r; ++i) { s.catf(FL,"%s%ld", i? "x":"",S[i]); }
+   return s.data;
 };
 
 wbstring mxTypeSize2Str(const mxArray *a) {
-   size_t n=64; char s[n];
-   if (!a) { strcpy(s,"(null)"); return s; }
+   if (!a) { return "(null)"; }
+   else {
+      int i=0, r=mxGetNumberOfDimensions(a);
+      const size_t *S=mxGetDimensions(a);
 
-   size_t l=snprintf(s,n,"%s: ",mxGetClassName(a));
-   int r=mxGetNumberOfDimensions(a);
-   const size_t *S=mxGetDimensions(a);
+      wbvec<char> s(64);
+      s.catf(FL,"%s: ",mxGetClassName(a));
 
-   for (int i=0; i<r; ++i) {
-      l+=snprintf(s+l,n-l,"%s%d",i?"x":"", (unsigned)S[i]);
-      if (l>=n) wblog(FL,
-         "ERR %s() string out of bounds (%d/%d)\n`%s'",FCT,l,n,s);
+      for (; i<r; ++i) { s.catf(FL,"%s%ld",i?"x":"",S[i]); }
+      return s.data;
    }
-   return s;
 };
 
 template<class T>
@@ -663,15 +664,16 @@ mxArray* cpyRange2Mx(const T* d, const wbvector<size_t> &S0){
 
    mxArray *a;
    unsigned i=0, n=S0.prod(0), r=S0.len, len=MAX(2U,r);
-   size_t s[len]; 
 
-   for (; i<r; ++i) s[i]=S0[i];
+   std::vector<size_t> sz(len); 
+
+   for (; i<r; ++i) { sz[i]=S0[i]; }
    if (i<len) {
-      if (n) for (; i<len; ++i) s[i]=1; 
-      else   for (; i<len; ++i) s[i]=0; 
+      if (n) { for (; i<len; ++i) { sz[i]=1; }} 
+      else   { for (; i<len; ++i) { sz[i]=0; }} 
    }
 
-   a=Mx::Array<double>(len,s).copyFromTR(d);
+   a=Mx::Array<double>(len,sz.data()).copyFromTR(d);
    if (!a && d) wblog(FL,
      "ERR %s() got %p -> %p @ len=%d !?",FCT,d,a,len);
 
@@ -684,11 +686,12 @@ mxArray* cpyRange2Mx(const char* d0, const wbvector<size_t> &S0){
    unsigned i, r=S0.len, n=S0.prod(0), len=MAX(2U,r);
    mxArray *a;
 
-   size_t s[len];
-   for (i=0; i<r; i++) s[i]=S0[i];
-   if (i<2) { if (i) s[1]=1; else s[0]=s[1]=0; }
+   std::vector<size_t> sz(len);
 
-   a=Mx::Array<mxChar>(len,s).Return();
+   for (i=0; i<r; i++) { sz[i]=S0[i]; }
+   if (i<2) { if (i) sz[1]=1; else sz[0]=sz[1]=0; }
+
+   a=Mx::Array<mxChar>(len,sz.data()).Return();
 
    if (a==NULL) {
       if (!d0) wblog(FL,

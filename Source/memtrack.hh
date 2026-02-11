@@ -28,8 +28,8 @@ namespace Wb {
 
 #if !( defined __WBDEBUG__ || defined __WB_MEM_CHECK__ )
 
-#define WB_NEW(p,n) Wb::NEW(p,n)
-#define WB_NEW_1(p) Wb::NEW_1(p);
+#define WB_NEW(p,n,b) Wb::NEW(p,n,b)
+#define WB_NEW_1(p)   Wb::NEW_1(p);
 
 #define WB_NEW_2(p,x) { p = new x; \
   if (!p) wblog(__FILE__,__LINE__,"ERR failed to allocate instance"); \
@@ -41,10 +41,11 @@ namespace Wb {
 namespace Wb {
 
   template<class T>
-  inline void NEW(T* &p, const size_t &n) {
+  inline void NEW(T* &p, const size_t &n, char bare) {
 
      if (n) {
-      { try { p = new T[n]; } catch (...) { p=NULL; } }
+      { try { p = (bare ? new T[n] : new T[n]()); }
+        catch (...) { p=NULL; }}
 
         if (!p) { printf("\n");
             MemStat(FL); 
@@ -58,7 +59,7 @@ namespace Wb {
 
   template<class T>
   inline void NEW_1(T* &p) { 
-     try { p = new T; } catch (...) { p=NULL; }
+     try { p = new T(); } catch (...) { p=NULL; }
 
      if (!p) { printf("\n");
          MemStat(FL); 
@@ -70,8 +71,8 @@ namespace Wb {
 
 #else
 
-#define WB_NEW(p,n) Wb::NEW(__FILE__,__LINE__,p,n);
-#define WB_NEW_1(p) Wb::NEW_1(__FILE__,__LINE__,p);
+#define WB_NEW(p,n,b) Wb::NEW(__FILE__,__LINE__,p,n,b);
+#define WB_NEW_1(p)   Wb::NEW_1(__FILE__,__LINE__,p);
 
 #define WB_NEW_2(p,x) { p = new x; \
   if (!p) wblog(__FILE__,__LINE__,"ERR failed to allocate instance"); \

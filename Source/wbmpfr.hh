@@ -317,6 +317,8 @@ class mpfr__ {
     mpfr__ round() const {
        mpfr__<P> x(*this);mpfr_round(x.f,x.f); return x; };
 
+    int isfinite() const { return mpfr_regular_p(f); };
+
     explicit operator double() const { return mpfr_get_d(f,DEF_RND); };
 
     explicit operator wbcomplex() const;
@@ -378,7 +380,7 @@ class mpfr__ {
 
        if (!istr || !istr[0])  {
           long p,q; unsigned niter; double r, x=getval_d();
-          int e=Rational(x,p,q,&r,&niter,NULL,6,1000000,1E-10,1E-12);
+          int e=Rational(x,p,q,&r,&niter,NULL,6,1000000,1e-10,1e-12);
           if (!e && p) { char s[32];
              if (q!=1) snprintf(s,32," = %ld/%ld",p,q);
                else snprintf(s,32," = %ld",p);
@@ -520,6 +522,16 @@ class cc_quad {
    cc_quad sqrt(const cc_quad &a) { return a.sqrt(); }
 
 }; 
+
+   template <> inline constexpr
+   char WbUtil<Wb::quad >::isFloat() { return 1; };
+   template <> inline constexpr
+   char WbUtil<Wb::qquad>::isFloat() { return 1; };
+
+   template <> inline
+   constexpr double WbUtil<Wb::quad>::eps() {
+      return 2.93874e-39; 
+   }
 
 #endif
 

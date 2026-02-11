@@ -16,13 +16,10 @@
  * limitations under the License.
  * --------------------------------------------------------------------- */
 
-#ifndef __WB_LIB_MEX_HCC__
-#define __WB_LIB_MEX_HCC__
+#ifndef __WB_LIB_H__
+#define __WB_LIB_H__
 
-/* ------------------------------------------------------------------ //
-   header file for mex programs
-   A. Weichselbaum (C) Jan 2006
-// ------------------------------------------------------------------ */
+// #define QS_FERM_ACTIVE
 
 #define PP_STR__(a) #a
 #define PP_STRFY(a) PP_STR__(a)
@@ -72,6 +69,10 @@
 
 #include <string>
 #include <iostream>
+
+#include <locale.h> 
+#include <wchar.h>
+
 #include <typeinfo>
 
 #include <sys/ipc.h>
@@ -80,17 +81,21 @@
 #include <sys/stat.h>
 
 #if __linux__
-#include <sys/sysinfo.h> 
+#include <sys/sysinfo.h>     
+#include <sys/syscall.h>     
+#elif __APPLE__
+#include <pthread.h>         
 #endif
 
 #include <map>
-#include <queue>         
-#include <unordered_map> 
-#include <algorithm>     
-#include <vector>        
+#include <queue>             
+#include <unordered_map>     
+#include <algorithm>         
+#include <vector>            
+#include <initializer_list>  
 
 #ifdef QS_USING_OMP
-#include <omp.h>   
+   #include <omp.h>          
 #else
    int omp_get_max_threads() { return 1; }
    int omp_get_num_threads() { return 1; }
@@ -128,6 +133,80 @@
 
 #define sprintf_str(...) snprintf(str,STRLEN,__VA_ARGS__)
 
+#if 1
+#   define  widx_t   size_t  
+#   define  widx_ts  long    
+#   define  wperm_t  size_t
+#   define  wperm_ts long    
+#else
+#   define  widx_t   unsigned
+#   define  widx_ts  int
+#   define  wperm_t  unsigned
+#   define  wperm_ts int
+#endif
+
+#if 1
+#   define  SPIDX_T  size_t
+#   define sSPIDX_T  long
+#else
+#   define  SPIDX_T  unsigned
+#   define sSPIDX_T  int
+#endif
+
+#define WBINDEX  wbvector<widx_t>
+#define WBPERM   wbvector<wperm_t>
+#define WBIDXMAT wbMatrix<widx_t>
+
+#define  MVEC        wbvector<int8_t> 
+#define cMVEC  const wbvector<int8_t> 
+
+#define  UVEC        wbvector<unsigned>
+#define cUVEC  const wbvector<unsigned>
+#define  DMAT        wbMatrix<double>
+#define cDMAT  const wbMatrix<double>
+#define  UMAT        wbMatrix<unsigned>
+#define cUMAT  const wbMatrix<unsigned>
+#define  IMAT        wbMatrix<int>
+#define cIMAT  const wbMatrix<int>
+#define cTMAT  const wbMatrix<T>
+#define cMEX   const mxArray
+#define cUINT  const unsigned
+#define cCHAR  const char
+
+#define DMAT0   wbMatrix<double>()
+
+#define __FL__ (file ? file : __FILE__), (line ? line : __LINE__)
+
+#define F_L   (F ? F : __FILE__), (F ? L : __LINE__)
+#define FL_   (F ? F : NULL), (F ? L : 0)  
+#define FL_q(x) (x?__FILE__:NULL), (x?__LINE__:0)  
+#define F_LF  (F ? F : __FILE__), (F ? L : __LINE__), __FUNCTION__
+#define F_L_F (F ? F : __FILE__), (F ? L : __LINE__), (fct ? fct : __FUNCTION__)
+
+#define FSTR  __FILE__ ": "
+#define FLINE __FILE__, __LINE__
+#define FL    __FILE__, __LINE__
+#define FLF   __FILE__, __LINE__, __FUNCTION__
+#define FCT   __FUNCTION__
+#define FCL   __FUNCTION__, __LINE__
+
+#define C_FCT  Wb::class_function(__PRETTY_FUNCTION__,1) 
+#define pFCT  Wb::class_function(__PRETTY_FUNCTION__,0)
+
+std::string getName(const std::type_info &type_id, char vflag=1);
+
+#define PFL  shortFL(    __FILE__,    __LINE__,-1,""), WBL_GOT_SHORTFL
+#define PF_L shortFL(F?F:__FILE__,F?L:__LINE__,-1,""), WBL_GOT_SHORTFL
+
+#ifndef TIME
+#define TIME Wb::TimeStamp('T').data
+#endif
+
+#ifndef shortFLT
+#define shortFLT shortFL(__FILE__,__LINE__), Wb::TimeStamp('T').data
+#define SHORT_FL shortFL(__FILE__,__LINE__) 
+#endif
+
 #define MX_CHECK_HELPER_NARGS(n1,n2,m) \
    if (nargin>0 && \
        checkHelpVersion(argin[0], nargout ? argout : NULL)) { return; }; \
@@ -144,125 +223,16 @@
       if (nargin || nargout) wblog(FL,str); else usage(FL,str); \
    }
 
-template <class T> class wbvector;
-template <class T> class wbMatrix;
-template <class T> class wbarray;
-template <class TD> class wbsparray;
-template <class TQ, class TD> class QSpace;
-template <class T> class sparseIndex2D;
-
-class bitset;
-class wbcomplex;
-class wbindex;
-class wbperm;
-class wbstring;
-
-class iTags;
-class ctrIdx;
-
-namespace CG {
-   class FileLock;
-}
-
-namespace Wb {
-   class Clock;
-   class ClockSet;
-}
-
-using namespace std;
-
-#ifdef MATLAB_MEX_FILE
-class MXPut;
-#endif
-
-#define ENABLE_IF_COMPLEX(T__) typename \
-   std::enable_if<  WbUtil<T__>::isComplex(), T__ >::type* = nullptr
-
-#define ENABLE_IF_isPOD(T__) typename \
-   std::enable_if<  WbUtil<T__>::isPOD(), T__ >::type* = nullptr
-
-#define ENABLE_IF_noPOD(T__) typename \
-   std::enable_if< !WbUtil<T__>::isPOD(), T__ >::type* = nullptr
-
-#define ENABLE_IF_isINT(T__) typename \
-   std::enable_if<std::is_integral<T__>::value>* = nullptr
-
-#if 1
-   #define   widx_t size_t  
-   #define  swidx_t long    
-   #define  wperm_t size_t
-   #define swperm_t long   
-#else
-   #define   widx_t unsigned
-   #define  swidx_t int
-   #define  wperm_t unsigned
-   #define swperm_t int
-#endif
-
-#if 1
-   #define  SPIDX_T  size_t
-   #define sSPIDX_T  long
-#else
-   #define  SPIDX_T  unsigned
-   #define sSPIDX_T  int
-#endif
-
-#define WBINDEX  wbvector<widx_t>
-#define WBPERM   wbvector<wperm_t>
-#define WBIDXMAT wbMatrix<widx_t>
-
-#define   UVEC        wbvector<unsigned>
-#define C_UVEC  const wbvector<unsigned>
-#define   DMAT        wbMatrix<double>
-#define C_DMAT  const wbMatrix<double>
-#define   UMAT        wbMatrix<unsigned>
-#define C_UMAT  const wbMatrix<unsigned>
-#define   IMAT        wbMatrix<int>
-#define C_IMAT  const wbMatrix<int>
-#define C_TMAT  const wbMatrix<T>
-#define C_MEX   const mxArray
-#define C_UINT  const unsigned
-#define C_CHAR  const char
-
-#define DMAT0   wbMatrix<double>()
-
-#define __FL__ (file ? file : __FILE__), (line ? line : __LINE__)
-
-#define F_L   (F ? F : __FILE__), (F ? L : __LINE__)
-#define F_LF  (F ? F : __FILE__), (F ? L : __LINE__), __FUNCTION__
-#define F_L_F (F ? F : __FILE__), (F ? L : __LINE__), (fct ? fct : __FUNCTION__)
-
-#define FSTR  __FILE__ ": "
-#define FLINE __FILE__, __LINE__
-#define FL    __FILE__, __LINE__
-#define FLF   __FILE__, __LINE__, __FUNCTION__
-#define FCT   __FUNCTION__
-#define FCL   __FUNCTION__, __LINE__
-
-std::string getName(const std::type_info &type_id, char vflag=1);
-
-#define PFL  shortFL(__FILE__,__LINE__,-1,""), WBL_GOT_SHORTFL
-#define PF_L shortFL(F?F:__FILE__,F?L:__LINE__,-1,""), WBL_GOT_SHORTFL
-
-#ifndef TIME
-#define TIME Wb::TimeStamp('T').data
-#endif
-
-#ifndef shortFLT
-#define shortFLT shortFL(__FILE__,__LINE__), Wb::TimeStamp('T').data
-#define SHORT_FL shortFL(__FILE__,__LINE__) 
-#endif
-
 #ifndef PSTR
-  #ifdef QS_USING_OMP
-    #define PSTR Wb::ompID2Str().data
-  #else
-    #define PSTR "" 
-  #endif
+#  ifdef QS_USING_OMP
+#    define PSTR Wb::ompID2Str().data
+#  else
+#    define PSTR "" 
+#  endif
 #endif
 
 #ifndef Inf
-#define Inf FP_INFINITE
+#  define Inf FP_INFINITE
 #endif
 
 #if !defined(MAX)
@@ -310,7 +280,7 @@ std::string getName(const std::type_info &type_id, char vflag=1);
 #endif
 
 #if !defined(TSTR)
-#define TSTR(a) getName(typeid(a),1).c_str()
+#define  TSTR(a) getName(typeid(a),1).c_str() 
 #endif
 
 #if !defined(sTSTR)
@@ -322,7 +292,7 @@ std::string getName(const std::type_info &type_id, char vflag=1);
 #endif
 
 #if !defined(SSTR_)
-#define SSTR_(a) (a)->sizeStr().data
+#define SSTR_(a) (a ? (a)->sizeStr().data : "(null)")
 #endif
 
 #if !defined(SSTRM)
@@ -338,7 +308,7 @@ std::string getName(const std::type_info &type_id, char vflag=1);
 #endif
 
 #if !defined(QSTR_)
-#define QSTR_(a) (a)->qStr().data
+#define QSTR_(a) (a ? (a)->qStr().data : "(null)")
 #endif
 
 #if !defined(STR)
@@ -346,7 +316,7 @@ std::string getName(const std::type_info &type_id, char vflag=1);
 #endif
 
 #if !defined(STR_)
-#define STR_(a) (a)->toStr().data
+#define STR_(a) (a ? (a)->toStr().data : "(null)")
 #endif
 
 #if !defined(STR2)
@@ -354,7 +324,7 @@ std::string getName(const std::type_info &type_id, char vflag=1);
 #endif
 
 #if !defined(STR2_)
-#define STR2_(a,b) (a)->toStr(b).data
+#define STR2_(a,b) (a ? (a)->toStr(b).data : "(null)")
 #endif
 
 #if !defined(cSTR)
@@ -377,6 +347,26 @@ std::string getName(const std::type_info &type_id, char vflag=1);
 #define BITS(a) Wb::bits(a).data
 #endif
 
+#if !defined(BITS_) 
+#define BITS_(a,b) Wb::bits(a,b).data
+#endif
+
+#if !defined(UNSET_BINARY) 
+#define UNSET_BINARY(a,b) ((a) &= ~(b))
+#endif
+
+#if !defined(ABS)
+#define ABS(a) Wb::abs(a)
+#endif
+
+#if !defined(NORM)
+#define NORM(a) Wb::norm(a)
+#endif
+
+#if !defined(NORM2)
+#define NORM2(a) Wb::norm2(a)
+#endif
+
 #if !defined(POW)
    template <class T>
    inline T POW(const T &a, const unsigned &n) {
@@ -389,24 +379,22 @@ std::string getName(const std::type_info &type_id, char vflag=1);
 #if !defined(SGN)
    template <class T>
    inline int SGN(const T &a) {
-      return ((T(0)<a)-(a<T(0))); 
+      return ( (a>T(0)) - (a<T(0)) ); 
    }
 #endif
 
 #if !defined(NUMCMP)
    template <class T>
    inline char NUMCMP(const T &a, const T &b) {
-      if (a<b) return -1; else
-      if (a>b) return +1;
-      return 0;
-   }
+      if (a<b) { return -1; } else
+      if (a>b) { return +1; } else { return 0; }
+   };
 
    template <class Ta, class Tb>
    inline char NUMCMP(const Ta &a, const Tb &b) {
-      if (a<b) return -1; else
-      if (a>b) return +1;
-      return 0;
-   }
+      if (a<b) { return -1; } else
+      if (a>b) { return +1; } else { return 0; }
+   };
 #endif
 
 #define ISREAL(x)    WbUtil<x>::isReal()
@@ -418,132 +406,70 @@ std::string getName(const std::type_info &type_id, char vflag=1);
    #include <Accelerate/Accelerate.h>
 
 #elif defined(NOMEX)
+
    #include "nomex.hh"
+
 #else
 
    #include <mex.h>
    #include <mat.h>
 
-   #define QS_VERSION 4.0
+   #define QS_VERSION 4.1 
+
    #define QS_VERSION_SUB   0
    #define QS_VERSION_SUB_ ""     
 
-   #ifdef MEX_MLVER
-      #define MEX_MLVER_STR PP_STRFY(MEX_MLVER)
-   #else
-      #define MEX_MLVER_STR "(unknown)"
-   #endif
+#   ifdef MEX_MLVER
+#      define MEX_MLVER_STR PP_STRFY(MEX_MLVER)
+#   else
+#      define MEX_MLVER_STR "(unknown)"
+#   endif
 
-   #ifdef HOST_NAME
-      #define HOST_NAME_STR PP_STRFY(HOST_NAME)
-   #else
-      #define HOST_NAME_STR "(host)"
-   #endif
+#   ifdef HOST_NAME
+#      define HOST_NAME_STR PP_STRFY(HOST_NAME)
+#   else
+#      define HOST_NAME_STR "(host)"
+#   endif
+
+#if 1
+#  include <blas.h>    
+#  include <lapack.h>  
+#endif
 
 #define mxIsNumChar(a) (mxIsNumeric(a) || mxIsChar(a) || mxIsLogical(a))
 
 #endif
 
 #ifdef MAIN 
-   #undef printf  
+#  undef printf  
 #endif
 
 #ifndef PROG
-#ifdef MATLAB_MEX_FILE
-   #define PROG mexFunctionName()
-#else
-   #define PROG "(?prog?)" 
-#endif
+#  ifdef MATLAB_MEX_FILE
+#    define PROG mexFunctionName()
+#  else
+#    define PROG "(?prog?)" 
+#  endif
 #endif
 
    enum WBL_COLOR_SCHEME { WLC_OFF,
        WLC_DARK,
    NUM_WBL_COLOR_SCHEME };
 
-namespace Wb {
-   class myname__ {
-     public:
-       myname__() { unsigned i=0, k=0;
-          #ifdef PROG
-             snprintf(data,60,"%s",PROG);
-          #elif defined MATLAB_MEX_FILE
-             snprintf(data,60,"%s",mexFunctionName());
-          #else
-             snprintf(data,60,"(?myname?)");
-          #endif
-
-           for (i=0; data[i]; ++i) { if (data[i]=='/') k=i+1; }
-           if (k && data[k]) {
-              for (i=0; data[k]; ++k, ++i) { data[i]=data[k]; }
-              data[i]=0;
-           }
-
-          #ifdef PROG_TAG 
-             snprintf(data+60,4,"%.3s",PROG_TAG);
-          #else
-             snprintf(data+60,4,"%.3s",data);
-          #endif
-       };
-
-       char data[64];
-
-     private:
-   };
-
-   myname__ myName; 
-
-#define myname Wb::myName.data
-#define mytag  Wb::myName.data+60 
-
-   WBL_COLOR_SCHEME useCol = WLC_DARK; 
-
-   int get_WB_VERBOSE(const char *F=0, int L=0);
-   int got_DBSTOP(const char *F=0, int L=0);
-   int got_DESKTOP();
-   int is_DEPLOYED(const char *F=0, int L=0);
-
-   int envVRB= 0; 
-   int envDKT=-1; 
-
-   int envDBG= 0; 
-
-   int my_caller_tid=0; 
-
-}; 
-
-void dbstop(const char* file, int line);
-void ExitMsg(const char* s="", char xflag=0);
-void doflush();
-
 #ifdef LD_CLEBSCH_QS
-#ifndef QS_SKIP_MPFR 
-   #define QS_USING_MPFR
-#endif
+#  ifndef QS_SKIP_MPFR 
+#    define QS_USING_MPFR
+#  endif
 #endif
 
    #define QS_ITAG_ "__"  
 
-#ifdef  __WBDEBUG__
-#define       __WB_MEM_CHECK__
-#undef WB_SKIP_ASSERT
+#ifdef __WBDEBUG__
+#  define  __WB_MEM_CHECK__
+#  undef WB_SKIP_ASSERT
 #elif defined __WB_MEM_CHECK__
-#define __WBDEBUG__
+#  define __WBDEBUG__
 #endif
-
-namespace Wb {
-class ARGV { 
-  public:
-    ARGV(va_list *vl=NULL) : args(vl) {};
-   ~ARGV() { if (args) { va_end(*args); args=NULL; }};
-
-  private:
-    va_list *args;
-};
-};
-
-namespace wblog { 
-   const int SLEN=256;  
-};
 
 #ifdef MATLAB_MEX_FILE
 #define PRINTF(...) \
@@ -552,10 +478,10 @@ namespace wblog {
    else { fprintf(stdout,__VA_ARGS__); } \
  }
 #else
-#define PRINTF printf
+#  define PRINTF printf
 #endif
 
-#include "wblibx.h" 
+#include "wblib.hh"
 
 #include "wblog.h"
 
@@ -600,7 +526,10 @@ namespace wblog {
 
 #include "wbutil.hh"
 
-#include "wbblas.hh"
+#ifndef refblas_h 
+#  include "wbblas.hh"
+#endif
+
 #include "wbMatrix_blas.hh"
 #include "wbarray_blas.hh"
 
@@ -618,9 +547,10 @@ namespace wblog {
 #include "clebsch.hh"
 #include "QSpace_aux.hh"
 #include "QSpace.hh"
-#include "mpsortho.hh" 
+#include "mpsortho.hh"    
 #endif
 
+#include "wblib.cc" 
 #include "wblog.c"
 
 #ifdef QS_USING_MPFR
@@ -651,7 +581,9 @@ namespace wblog {
 #include "wbarray.cc"
 #include "wbsparray.cc"
 
+#include "wbopts.cc"
 #include "wbclock.cc"
+
 #include "mexlib.cc"
 #include "matlib.cc"  
 #include "wbMatrix_blas.cc"
@@ -667,78 +599,6 @@ namespace wblog {
 #include "clebsch_old.cc"
 #include "mpsortho.cc"    
 #endif
-
-namespace Wb {
-
-   class gpara__ {
-     public:
-       gpara__() {
-         #ifdef __WBDEBUG__
-           wblog(FL,"TST %s() setting up global %s",myname,FCT);
-         #endif
-           tlast=time(NULL); 
-
-           wb_srand(); 
-
-         #ifdef __WB_MPFR_HH__
-           gmp_randinit_default(Wb::wb_rstate);
-         #endif
-
-          envDKT=got_DESKTOP();
-          my_caller_tid=omp_get_thread_num(); 
-
-          init();
-       };
-
-       void init(char force=0) {
-          time_t tnow=time(NULL), dt=tnow-tlast;
-
-          #ifdef __WBDEBUG__
-             wblog(FL,"TST gpara__::%s() %s ENV (dt=%ld)", FCT,
-             dt>=1 ? "checking":"skipping", dt);
-          #endif
-
-          if (force || dt>=1) { tlast=tnow; } else { return; }
-
-          memset(str,0,STRLEN+1);   
-          envVRB=get_WB_VERBOSE();  
-          envDBG=got_DBSTOP();
-
-          #ifdef QS_USING_OMP
-             Wb::GetNumThreads(FL,OMP_NUM_THREADS,"OMP_NUM_THREADS");
-             Wb::GetNumThreads(FL,QSP_NUM_THREADS,"QSP_NUM_THREADS");
-
-             sp_num_threads=MAX(OMP_NUM_THREADS,QSP_NUM_THREADS);
-          #endif
-
-          my_caller_tid=omp_get_thread_num(); 
-       };
-
-    private:
-       time_t tlast;
-   };
-
-   gpara__ gpara;
-
-class CleanUp {
-  public:
-    CleanUp() { 
-       gpara.init(); 
-    };
-
-   void Check() {
-      wblog::check_ERR_pending();
-   };
-
-   ~CleanUp() {
-       wblog::myIO.clear();
-       if (gwb_Profs.size()) { Wb::save_and_clear_Profiling(); }
-    };
-
- private:
-};
-
-}; 
 
 #ifdef MAIN
    #ifdef MATLAB_MEX_FILE
@@ -770,13 +630,14 @@ class CleanUp {
 
    void doflush() { fflush(0); };
 
-#else
+#elif defined(MATLAB_MEX_FILE)
 
    #ifdef DBSTOP
       void ExitMsg(const char* s, char xflag) {
-         if (s && s[0]) printf("%s >%s<\n",shortFL(FL),s ? s:"");
+         if (s && s[0]) printf("%s %s() :: %s\n",shortFL(FL),FCT,s ? s:"");
          dbstop(FL);
-         printf("\n%s dbstop() and on we go ...\n\n", shortFL(FL));
+         printf("\n%s %s() and on we go ...\n\n",shortFL(FL),FCT);
+
          mexErrMsgIdAndTxt("Wb:ERR:mex",s);
       }
    #else
@@ -791,14 +652,17 @@ class CleanUp {
    #endif
 
    void doflush() {
-       fflush(0); 
+     #if defined(__OMP_H) || defined(QS_USING_OMP)
+      if (!Wb::omp_parallel())
+     #endif
+      { fflush(0); } 
 
-       #if 0
+      #if 0
 
-       if (!omp_in_parallel()) {
-          mexEvalString("pause(0);");
-       }
-       #endif
+      if (!omp_in_parallel()) {
+         mexEvalString("pause(0);");                 
+      }
+      #endif
 
    };
 

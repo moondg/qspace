@@ -95,11 +95,14 @@ function varargout=setitags(A,varargin)
 
      if nargin>2 && ~n, n=[numel(tA), numel(tB)];
         if diff(n)
-           wbdie('invalid usage (rank mistmatch %g/%g)',n); end
+           wbdie('invalid usage (rank mismatch %g/%g)',n); end
         n=n(1); ia=1:n; ib=1:n;
      end
 
-     ix=[]; for i=1:n, if isequal(tA{i},tB{i}), ix(end+1)=i; end; end
+     ix=[];
+     for i=1:n
+        if isequal(tA{ia(i)},tB{ib(i)}), ix(end+1)=i; end
+     end
      nskip=numel(ix);
      if nskip
          ia(ix)=[]; ib(ix)=[]; n=numel(ia);

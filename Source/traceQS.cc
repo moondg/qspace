@@ -26,13 +26,16 @@ void mexFunction(
    int nargin, const mxArray *argin[]
 ){ Wb::CleanUp aclu; try { 
 
-   unsigned r=-1;
+   unsigned r=-1; char isr;
    ctrIdx i1,i2;
 
    MX_CHECK_HELPER_NARGS(1,-1,1); 
    if ((nargin!=1 && nargin!=3)) usage(FL,"ERR invalid usage");
 
-   mxIsQSpace(FL,argin[0],r,'c');
+   int q=mxIsQSpace(FL,argin[0],r,'c',-2);
+   if (q<0  ) wblog(FL,"ERR %s() invalid usage (arg #1 not a QSpace",FCT);
+   if (q&128) wblog(FL,"ERR %s() expecting single QSpace for arg #1",FCT);
+   isr=(q&4 ? 0 : 1); 
 
    if (nargin>2) {
       i1.init(FL,argin[1]);
@@ -42,7 +45,7 @@ void mexFunction(
    if (i1.len!=i2.len) wblog(FL,"ERR %s() "
       "invalid index sets i1=%s <> i2=%s",PROG,STR(i1),STR(i2));
 
-   if (mxIsQSpace(argin[0])>0) { 
+   if (isr) { 
       const QSpace<gTQ,double> A(argin[0],'r');
       argout[0]=traceQS(A,i1,i2); 
    }
@@ -66,15 +69,17 @@ mxArray* traceQS(const QSpace<TQ,TD> &A, ctrIdx &i1, ctrIdx &i2) {
 
    unsigned r=A.rank();
 
-   wblog(FL,"WRN %s() DO NOT USE / TO BE REINSTATED",FCT);
-   if (r==2 && !i1.len) {
-      return numtoMx(double(A.trace())); 
+   if (!i1.len && !i2.len) {
+      if (r%2) wblog(FL,"ERR %s() invalid usage (got odd rank r=%d)",FCT,r);
+      return numtoMx(A.trace());
    }
    else {
-      QSpace<TQ,TD> A2; A.trace(FL,i1,i2,A2);
-      if (A2.isScalar())
-           { return numtoMx(double(A2.DATA[0]->data[0])); }
-      else { return A2.toMx(); }
+      QSpace<TQ,TD> B; B.mt=Wb::MEX_RETURN; 
+      A.trace(FL,i1,i2,B);
+
+      if (B.isScalar())
+           { return B.DATA[0]->toMx(); }
+      else { return B.toMx(); }
    }
 };
 

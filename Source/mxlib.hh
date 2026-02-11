@@ -106,14 +106,7 @@ inline mxArray* mx_get_field(mxArray *S, unsigned k, int i) {
 
 namespace Mx {
 
-int IsEqual(const mxArray *a, const char *s) { 
-
-   int n=strlen(s)+1;
-   char sx[n+1]; sx[0]=0;
-
-   if (mxGetString(a,sx,n)) { return 0; }
-   else { return (strcmp(sx,s) ? 0 : 1); }
-};
+int IsEqual(const mxArray *a, const char *s); 
 
 template <class T> 
 class Array { 
@@ -151,7 +144,7 @@ class Array {
        catch (...) { wblog(F_L,"ERR %s() ",FCT); } 
 
        if (!ax || (!mxref && !data)) wblog(F_L,
-       "ERR %s() invalid input\n%s %s",FCT,SHORT_FL,STR_(this));
+       "ERR %s() invalid input\n%s %s",FCT,SHORT_FL,STR(*this));
     };
 
     wbstring toStr(char vflag=0, unsigned l=64) const;
@@ -441,13 +434,16 @@ bool IsScalar(const mxArray *a) {
    return (mxGetNumberOfDimensions(a)==2 && mxGetNumberOfElements(a)==1);
 };
 
-int IsVector(const mxArray *a) { 
+char IsVector(const mxArray *a) { 
    int q=0; 
-   if (mxGetNumberOfDimensions(a)==2) {
+   unsigned n=mxGetNumberOfDimensions(a);
+   if (n==2) {
       const size_t *s=mxGetDimensions(a);
-           if (s[0]==1) { q=1; }  
-      else if (s[1]==1) { q=2; }  
+      if (s[0]==1) { q|=1; }  
+      if (s[1]==1) { q|=2; }  
+      if (!q && !s[0] && !s[1]) { q=-1; }
    }
+   else if (n<2) { q=-1; } 
    return q;
 };
 

@@ -1,10 +1,11 @@
 function [HAM,IS]=Hamilton1D(varargin)
-% function [HAM]=Hamilton1D(type, L [,opts])
+% function [HAM]=Hamilton1D(type, {oham} [,opts])
+% function [HAM]=Hamilton1D(HAM [,opts])
 %
-%    setup class for one-dimensional DMRG Hamiltonians
-%    in a traditional setting in a quasi-MPO structure.
-%    The class already also applies for the non-abelian
-%    setting.
+%    Setup class for one-dimensional DMRG Hamiltonians
+%    as full-fledged MPO, or in a more traditional setting,
+%    as a quasi-MPO structure. The class already also
+%    applies for the non-abelian setting.
 %
 % Wb,Apr06,14 ; Wb,Aug25,15
 
@@ -13,7 +14,8 @@ function [HAM,IS]=Hamilton1D(varargin)
 % [HAM]=Hamilton1D('tightbinding',{12,'-perBC'},'-mat'); 
 
   if ~nargin
-   % e.g. called at the very beginning of each private/setup_*.m routines
+   % called at the very beginning of each [private/]setup_*.m routine
+   % see also Hamilton1D('empty',...) below
      HAM=class(setup_empty(),'Hamilton1D'); IS=[];
      return
   end
@@ -37,21 +39,58 @@ function [HAM,IS]=Hamilton1D(varargin)
      helpthis; wbdie('invalid usage');
   end
 
-  if nargin<2 || ~ischar(varargin{1}), helpthis
-     if nargin || nargout, wbdie('invalid usage'), end, return
+  l=2;
+  user_mode=(nargin && isstruct(varargin{1}));
+  if user_mode
+     HAM=varargin{1}; l=1;
+     if ~isequal(fieldnames(HAM),fieldnames(setup_empty()))
+        wbdie('invalid user-mode usage (HAM structure expected)'); 
+     end
   end
 
-  getopt('init',varargin(3:end));
+  if nargin<l, wbdie('invalid usage (got %d/%d args)',nargin,l), end
+
+  store=''; fout=''; 
+
+  getopt('init',varargin(l+1:end));
      tflag=getopt('-t');
-     use_mat=getopt('-mat'); store=''; fout=''; if ~use_mat
-     store=getopt('store', store);  if isempty(store)
-     fout=getopt('fout',[]); end; end
+     use_mat=getopt('-mat');    if ~use_mat
+     store=getopt('store','');  if isempty(store)
+     fout=getopt('fout','');    end; end
+
+     if user_mode
+        ftag   = getopt('ftag', '');
+        HH     = getopt('HH',   []);
+        stype  = getopt('stype',[]);
+        use_mpo= getopt('--mpo',{});
+     end
   getopt('check_error');
 
 % -------------------------------------------------------------------- %
-  switch varargin{1}
+  if user_mode
+
+     q=HAM.oez; for i=1:numel(q), q{i}=init_ops(q{i}{:}); end
+     HAM.oez=reshape([q{:}],size(q));
+
+     q=HAM.ops; for i=1:numel(q), q{i}=init_ops(q{i}{:}); end
+     HAM.ops=reshape([q{:}],size(q));
+
+     HAM=class(HAM,'Hamilton1D');
+
+     HH=HH(abs(HH(:,end))>0,:);
+
+	 if isequal(use_mpo,{0}) || isequal(use_mpo,{'not_specified'})
+		HAM=setup_mpo(HAM,HH,stype);
+	 else
+		HAM.info.HH=HH;
+		HAM.info.stype=stype;
+		if isequal(use_mpo,{1}), use_mpo={}; end
+		HAM=setup_mpo_full(HAM,use_mpo{:});
+	 end
+
+  elseif ~ischar(varargin{1}), wbdie('invalid usage');
+  else switch varargin{1}
     case 'Heisenberg',   [HAM]=setup_Heisenberg(varargin{2}{:});
-    case 'AKLT',         [HAM]=setup_AKLT(varargin{2}{:});
     case 'HsbgLadder',   [HAM]=setup_HeisenbergLadder(varargin{2}{:});
     case 'HBTriLadder',  [HAM]=setup_HeisenbergTriLadder(varargin{2}{:});
     case 'HBLadderX',    [HAM]=setup_HeisenbergLadderX(varargin{2}{:});
@@ -66,9 +105,10 @@ function [HAM,IS]=Hamilton1D(varargin)
     case 'tightbinding', [HAM]=setup_tightbinding(varargin{2}{:});
     case 'tb_ladder',    [HAM]=setup_tb_ladder(varargin{2}{:});
     case 'tb_testferm',  [HAM]=setup_tb_testferm(varargin{2}{:});
+    case 'AKLT',         [HAM]=setup_AKLT(varargin{2}{:});
+    case 'A4-chain',     [HAM]=setup_A4_chain(varargin{2}{:});
     case 'empty',        [HAM]=setup_empty(varargin{2}{:});
-    otherwise wbdie('invalid system ''%s''',varargin{1});
-  end
+  end, end
   if isfield(HAM.info,'XY')
      [Q,I,D]=uniquerows(round(100*HAM.info.XY)); i=find(D>1);
      if ~isempty(i)
@@ -90,11 +130,16 @@ function [HAM,IS]=Hamilton1D(varargin)
      HAM.mat=[getenv('LMA') '/DMRG/' HAM.store];
      HAM.store=[];
   elseif ~isempty(store)
-     if ~isempty(findstr(store,'/')) 
+     if any(store=='/')
           HAM.mat  =store;
      else HAM.store=store; end
   elseif ~isempty(fout)
-     HAM.mat=fout;
+     if ~isempty(regexp(fout,'^\.*\/')), D='';
+     else
+        if ismcc, D='.'; else D=getenv('LMA'); end
+        fout=[D '/DMRG/' regexprep(fout,'^DMRG[^\w]*','')];
+     end
+     HAM.mat=regexprep(fout,'//+','/');
      HAM.store='';
   elseif ~xor(isempty(HAM.store),isempty(HAM.mat))
      wbdie('invalid output setting');
@@ -108,7 +153,9 @@ function [HAM,IS]=Hamilton1D(varargin)
 
   if tflag, o={'-t'}; else o={}; end
   e=consistency_check(HAM,o{:});
-  HAM=class(HAM,'Hamilton1D');
+
+  if ~user_mode
+  HAM=class(HAM,'Hamilton1D'); end
 
   if tflag
        wblog('TST','skipping storage setup'); 
