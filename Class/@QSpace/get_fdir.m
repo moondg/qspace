@@ -19,7 +19,7 @@ function [fdir,isym]=get_fdir(A)
         wbdie('invalid fdir'); end
      is=['@' sprintf('%d',is) ];
 
-     if all(abs(fdir)<=1) % keep compact by default
+     if all(abs(fdir)<=1)
         fdir(fdir>0)='+';
         fdir(fdir<0)='-'; fdir=[fdir is];
      else

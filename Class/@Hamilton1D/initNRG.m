@@ -47,13 +47,17 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
 %      Same as with NPsi above, if Qtot is not specified, the symmetry
 %      sector of the `NRG ground state' is taken for Qtot.
 %
-%      Note that for NPsi>1 or dQtotN the distribution ov states or
+%      Note that for NPsi>1 or dQtotN the distribution of states or
 %      multiplets over the symmetry sectors may change via truncation
 %      in the Davidson algorithm in the DMRG sweeps. However, the DMRG
 %      ensures that in each symmetry sector chosen during initialization
 %      at least one state or multipiplet is maintained throughout,
 %      irrespective whether lower discarded global eigenstates exist
 %      in other symmetry sectors also targeted.
+%
+%   'QtotN',.. same as dQtotN above, except that symmetry labels
+%      are taken as is, i.e., not relative to Qtot. This is equivalent
+%      to assuming Qtot=0.
 %
 % Wb,Apr08,14 ; Wb,Jul06,16
 
@@ -66,7 +70,7 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
   Iout=struct; tuneH=0; ot={};
 
   [rs,nq]=symrank(HAM.oez(1).op);
-  ns=numel(rs);
+  ns=numel(rs); Qtot=[]; dQflag=1;
 
   getopt('INIT',varargin);
      Nkeep=getopt('Nkeep',16);
@@ -74,21 +78,25 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
      cplx =getopt('--cplx');
 
      dQtotN=getopt('dQtotN',[]);
+     if isempty(dQtotN)
+        dQtotN=getopt('QtotN',[]);
+        if ~isempty(dQtotN), Qtot=0; dQflag=0; end
+     end
+
      if ~isempty(dQtotN), [m,n]=size(dQtotN);
         if n~=nq+1 || size(uniquerows(dQtotN(:,1:end-1)),1)<m
            wbdie('invalid dQtotN=[%s]',...
            mat2str2(dQtotN,'fmt','%g','rowsep','; ','-f'));
         end
-        NPsi=sum(dQtotN(:,end)); Qtot=[];
+        NPsi=sum(dQtotN(:,end));
      else
         NPsi=getopt('NPsi',0);
-        if NPsi>0
-             Qtot=[];
-        else Qtot=0;
-        end
      end
 
-     Qtot=getopt('Qtot',Qtot);
+     if isempty(Qtot)
+        Qtot=getopt('Qtot',Qtot);
+     end
+
      if ~isempty(Qtot)
         if iscell(Qtot), ot=Qtot(2:end); Qtot=Qtot{1}; tuneH=2;
         elseif getopt('-f'), tuneH=2;
@@ -373,14 +381,14 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
            wblog('NB!','using symmetrized ground state space (--maxS)');
            u=repmat(1/sqrt(g),1,g);
            for i=1:numel(i1), j=i1(i);
-              s=size(Xk.AK.data{j}); s(1)=g;
-              Xk.AK.data{j}=contract(u,reshape(Xk.AK.data{j}(1:g,:),s),2,1);
+              x=Xk.AK.data{j}; s=size(x); s(1)=g; x=reshape(x(1:g,:),s);
+              Xk.AK.data{j}=contract(u,x,2,1);
            end
         else
            for i=1:numel(i1)
               j=i1(i); l=numel(EKt.data{i2(i)});
-              s=size(Xk.AK.data{j}); s(1)=l;
-              Xk.AK.data{j}=reshape(Xk.AK.data{j}(1:l,:),s);
+              x=Xk.AK.data{j}; s=size(x); s(1)=l; x=reshape(x(1:l,:),s);
+              Xk.AK.data{j}=x;
            end
         end
 
@@ -463,7 +471,14 @@ function [H0,Iout,HH]=initNRG(HAM,varargin)
   addto_dmrg_info(HAM,NPsi);
 
   if nargout>1
-     Iout=add2struct(Iout,HKt,EKt,Qtot,dQtotN,found,Nkeep,maxS,rtol,Xk,NPsi);
+     Iout=add2struct(Iout,HKt,EKt);
+
+     if dQflag || norm(Qtot)
+          Iout=add2struct(Iout,Qtot,dQtotN);
+     else Iout.QtotN=dQtotN; end
+
+     Iout=add2struct(Iout,found,Nkeep,maxS,rtol,Xk,NPsi);
+
      [~,Iout.HKt]=eig(HKt);
      if tuneH, Iout=add2struct(Iout,'Qop?','Qopl?',It); end
   end

@@ -893,8 +893,8 @@ function [HAM]=setup_mpo_full(HAM,varargin)
     % E0 can be complex for the case of ~addHc => use num2str()
     % => e0 = uniform contribution per site
 
-      q=1; if addHc, q=2; end % NB! if addHc: mpo+mpo' => 2*e0
-      wblog('-->','got Id term in HAM.mpo (E0=%s)',num2str(q*e0,'%.4g')); 
+      q=e0; if addHc, q=2*q; end % NB! if addHc: mpo+mpo' => 2*e0
+      wblog('-->','got %.4g*Id per site in HAM.mpo (L=%g)',q,L); 
 
     % WRN! need to be careful with how E0 is subtracted!
     % no proper start/stop states yet: Id may be admixed
@@ -1269,20 +1269,22 @@ function M3=check_start_stop(mpo,oez,k1,k2,varargin)
           else q=         x0(2,1);
           end
           e=norm(1-q);
-          if e>1E-8, ll(end+1,:)={ k, sprintf(...
-             'start/stop diagonal entry differs from 1. (e=%.3g)',e) };
+          if e>1E-8, q=sprintf(' %.3g',q);
+             ll(end+1,:)={
+                k, ['start/stop diagonal entry differs from 1 (having' q ')']
+             };
           end
        elseif k>1, ll(end+1,:)={k,'skipped'};
        end
     end
 
     nl=size(ll,1);
-    if nl, ll=ll';
-       wblog(1,'WRN','MPO got %d non-canonical MPO entries',nl);
+    if nl, q=num2str2('-n',nl,'non-canonical MPO entry');
+       wblog(1,'WRN',['MPO got ' q]); ll=ll'; 
        fprintf(1,'   k=%2d %s\n',ll{:});
        wblog('-->','%3d/%d  iterations passed (k=%d..%d)',L-nl,L,k1,k2);
-    elseif vflag, wblog(1,'MPO',...
-      'all sites k=%d..%d/%d in start/stop state order',k1,k2,L); 
+    elseif vflag
+       wblog(1,'MPO','all sites k=%d..%d/%d in start/stop state order',k1,k2,L);
     end
 
     if ~nargout, clear M3; end

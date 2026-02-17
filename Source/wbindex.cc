@@ -1462,7 +1462,7 @@ unsigned iTags::Set(const char* F, int L,
 
    if (int(m)<0) { if (tom) { m=len-r; }}
    else {
-      if (m && r< 2) wblog(F_L,"ERR %s() "
+      if (r<=2 && m!=1) wblog(F_L,"ERR %s() " 
          "requesting %d OM leg%s for rank-%d",FCT,m,m==1?"":"s",r);
 
       if ((l=r+m)<len) wblog(F_L,

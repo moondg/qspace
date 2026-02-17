@@ -4,31 +4,25 @@
 
 char USAGE[]=""; // Wb,Oct10,25
 
-// WRN! C program crashes when calling mexFunctionName()
 #ifdef MATLAB_MEX_FILE
    #define PROG mexFunctionName()
 #else
    #define PROG "mpfrplus"
 #endif
 
-// #define QS_USING_MPFR // also require definitions of RTI, RTD, etc ...
    #define LD_CLEBSCH_QS
 
 #include "wblib.h"
 
-/* ------------------------------------------------------------- *
- * GATEWAY ROUTINE // main MAIN MEXFUN 
- * ------------------------------------------------------------- */
-
 void mexFunction(
    int nargout, mxArray *argout[],
    int nargin,  const mxArray *argin[]
-){ Wb::CleanUp aclu; try { // automated clean up
+){ Wb::CleanUp aclu; try { 
 
    char dflag=0;
    double a,b;
 
-   MX_CHECK_HELPER_NARGS(4,5,1); // nargin=4 \in [4,4], nargout<=1
+   MX_CHECK_HELPER_NARGS(4,5,1); 
 
    if (!Mx::IsNumber(0,0,argin[0]) ||
        !Mx::IsNumber(0,0,argin[2])) { usage(FL,"invalid usgae"); }
@@ -39,7 +33,7 @@ void mexFunction(
       dflag=1;
    }
 
-   wbsparray<Wb::quad> A(argin[1]), B(argin[3]); // RTD
+   wbsparray<Wb::quad> A(argin[1]), B(argin[3]); 
    mxGetNumber(argin[0],a);
    mxGetNumber(argin[2],b);
 
@@ -52,12 +46,8 @@ void mexFunction(
    }
    else { argout[0]=A.toMx(); }
 
-
 }  catch (Wb::LogException &e) { ExitMsg(e.istr); }
    catch (...) { ExitMsg("caught exception in mpfrplus"); }
    aclu.Check();
 };
-
-/* ---------------------------------------------------------------------- */
-/* ---------------------------------------------------------------------- */
 

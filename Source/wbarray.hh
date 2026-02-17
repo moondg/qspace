@@ -739,8 +739,7 @@ class wbarray {
 
     size_t numOM(unsigned r0) const {
        size_t M=numel(r0); 
-       if (int(r0)<2) wblog(FL,"ERR %s() invalid r0=%d/%d",FCT,r0,SIZE.len);
-       if (r0==2 && M>1) wblog(FL, 
+       if (int(r0)<0 || !M || (r0<=2 && M>1)) wblog(FL, 
           "ERR %s() got OM=%d for %s @ r0=%d",FCT,M,SSTR(*this),r0);
        return M;
     };
@@ -2052,20 +2051,18 @@ class tensorRef_ {
      };
 
      template<class T>
-     tensorRef_& init(const wbarray<T> &A, const iTags *t_=nullptr, char c=0) {
+     tensorRef_& init(
+        const wbarray<T> &A, const iTags *t_=nullptr, char c=0) {
+
         R.init(A); 
         S.init2ref(A.SIZE); ID.init(); id=0; conj=c;
 
         if (!t_) { it.init(); }
         else {
-           if (t_->len!=S.len) { unsigned r=t_->len;
-              if (r==1) { wblog(FL, 
-                "ERR %s() rank mismatch r=%d/%d (%s vacuum state?) %s",
-                 FCT, r,S.len, SSTR(A), STR_(t_));
-              }
-              else if (r>S.len || (r==2 && A.numOM(r)!=1)) {
+           if (t_->len!=S.len) { unsigned l=t_->len;
+              if (l>S.len || (l<=2 && A.numOM(l)!=1)) {
                  wblog(FL,"ERR %s() rank mismatch r=%d/%d (%s) %s",
-                 FCT, r,S.len, SSTR(A), STR_(t_));
+                 FCT, l,S.len, SSTR(A), STR_(t_));
               }
            }
            it.init(*t_);

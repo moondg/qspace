@@ -77,13 +77,17 @@ function s=num2str2(val,varargin)
      for i=1:2:nargs
         q=varargin{i}; t=varargin{i+1};
         if numel(q)~=1 || ~isnumeric(q), wbdie(...
-           'invalid usage (alternating numbers expected)'); end
-        if ~ischar(t), wbdie(...
-           'invalid usage (alternating string expected)'); end
-        if q~=0 || nset>1
-           if q==0 s{end+1}=sprintf('no %ss',t);
-           elseif q==1, s{end+1}=sprintf('%g %s',q,t);
-           else s{end+1}=sprintf('%g %ss',q,t); end
+           'invalid usage (alternating number[/string] expected)'); end
+        if ~ischar(t) || isempty(t), wbdie(...
+           'invalid usage (alternating [number/]string expected)'); end
+        if ~q && nset>1, continue; end
+
+        if q==1, s{end+1}=sprintf('%g %s',q,t);
+        else
+           if q, q=num2str(q); else q='no'; end
+           if     t(end)=='s', s{end+1}=[q ' ' t 'es' ];
+           elseif t(end)=='y', s{end+1}=[q ' ' t(1:end-1) 'ies'];
+           else s{end+1}=[q ' ' t 's']; end
         end
      end
      if numel(s)>1

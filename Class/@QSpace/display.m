@@ -157,7 +157,7 @@ function display(A,varargin)
         else
            s=sprintf(fmt,iA);
            if isempty(nm), s=[s '. '];
-           elseif ~bitget(vflag,32), if numel(iA)==1
+           elseif ~bitget(vflag,32), if numel(iA)==1 && nA<10
                 s=regexprep(s,'^ ',''); end
                 s=[nm '(' s ') '];
            else s=[nm '(' s ') = ']; end

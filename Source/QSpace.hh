@@ -3155,8 +3155,8 @@ void QSpace<TQ,TD>::init(
    char skip_empty, 
    char check_cgw_norm
 ){
-   unsigned i,j,l,m,n,r,dim1=0,dim2=0; unsigned rk=-1;
-   mxArray *aq,*ad,*ai;
+   unsigned i,j,l,m,n,r,dim1=0,dim2=0; unsigned rk=-1; int e=0;
+   mxArray *aQ,*aD,*aI;
    wbvector< wbMatrix<TQ>  > MQ;
    wbvector< wbMatrix<TQ>* > mq;
    const char cflag = (typeid(TD)==typeid(wbcomplex) ? 'C' : 0);
@@ -3170,12 +3170,14 @@ void QSpace<TQ,TD>::init(
 
    if (!S || mxIsEmpty(S) || mxIsEmptyQSpace(S,k)) return;
 
-   aq=mxGetField(S,k,"Q");
-   ad=mxGetField(S,k,"data");
-   ai=mxGetField(S,k,"info");
+   aQ=mxGetField(S,k,"Q");
+   aD=mxGetField(S,k,"data");
+   aI=mxGetField(S,k,"info");
 
-   if (mxIsQSpace(F_L,S,rk,cflag,k)<=0 || !aq || !ad) wblog(F_L,
-      "ERR invalid QSpace (%d,%d)",aq==0,ad==0);
+   if ((e=mxIsQSpace(F_L,S,rk,cflag,k))<=0 || !aQ || !aD) {
+      wblog(F_L,"ERR invalid QSpace (q=%d: Q%s, data%s)",
+      e, aQ? "":" null",aD? "":" null");
+   }
 
    if (ref) {
       if (ref=='r') { refD        = ref; } else
@@ -3183,18 +3185,18 @@ void QSpace<TQ,TD>::init(
 
    }
 
-   m=mxGetM(aq); r=mxGetN(aq);
+   m=mxGetM(aQ); r=mxGetN(aQ);
 
-   if ((m!=1 && r!=1 && m && r) || mxGetNumberOfDimensions(aq)>2) {
+   if ((m>1 && r>1) || mxGetNumberOfDimensions(aQ)>2) {
       wblog(F,L,"ERR %s() invalid QSpace\n"
       "Q must be blocked into row cell vector (%dx%d; %d)",
-      FCT,m,r,mxGetNumberOfDimensions(aq));
+      FCT,m,r,mxGetNumberOfDimensions(aQ));
    }
 
    r*=m; MQ.init(r); 
 
    for (i=0; i<r; ++i) {
-      MQ[i].init(mxGetCell(aq,i));
+      MQ[i].init(mxGetCell(aQ,i));
 
       if (i==0) {
          dim1=MQ[i].dim1; dim2=MQ[i].dim2;
@@ -3205,8 +3207,7 @@ void QSpace<TQ,TD>::init(
       }
    }
 
-   mq.init(MQ.len); for (i=0; i<MQ.len; ++i) mq[i] = &MQ[i];
-
+   mq.init(MQ.len); for (i=0; i<MQ.len; ++i) { mq[i] = &MQ[i]; }
    QIDX.CAT(2, (const wbMatrix<TQ>**) mq.data, mq.len);
    QDIM=dim2;
 
@@ -3214,18 +3215,18 @@ void QSpace<TQ,TD>::init(
       "ERR %s() invalid input QSpace\nrows in [Q{:}] are not unique",FCT);
    setupDATA();
 
-   if (ai) {
-      unsigned n=mxGetNumberOfElements(ai);
+   if (aI) {
+      unsigned n=mxGetNumberOfElements(aI);
       if (n) {
          unsigned dq=0; 
          mxArray *a; QVec qv;
 
-         if (!mxIsStruct(ai)) wblog(F,L,
+         if (!mxIsStruct(aI)) wblog(F,L,
             "ERR invalid QSpace.info (structure required)");
          if (n!=1) wblog(F,L,
             "ERR invalid QSpace.info (got %d elements)",n);
 
-         a=mxGetField(ai,0,"qtype");
+         a=mxGetField(aI,0,"qtype");
          if (a) { qtype.init(F,L,a);
           # ifdef QS_USING_OMP
             qtype.checkInit();
@@ -3236,21 +3237,21 @@ void QSpace<TQ,TD>::init(
          isa=qtype.allAbelian();
          if (isa==1 && qtype.len) { qtype.ReduceU1(); }
 
-         initOType(F_L,mxGetField(ai,0,"otype"));
+         initOType(F_L,mxGetField(aI,0,"otype"));
 
-         itags.init(F_L,mxGetField(ai,0,"itags"));
+         itags.init(F_L,mxGetField(aI,0,"itags"));
          if (itags.len && itags.len!=r) { wblog(FL,
             "ERR %s() invalid number of itags (%s; %d/%d)",
              FCT,IT2STR__,itags.len,r);
          }
 
-         fdir.init(F_L,mxGetField(ai,0,"fdir"),r); 
+         fdir.init(F_L,mxGetField(aI,0,"fdir"),r); 
          if (!Wb::envFERM) { fdir.init(); } 
 
-         a=mxGetField(ai,0,"ctime");
+         a=mxGetField(aI,0,"ctime");
          if (a && !mxIsEmpty(a)) { mxGetNumber(a,ctime); }
 
-         a=mxGetField(ai,0,"cgr");
+         a=mxGetField(aI,0,"cgr");
          if (a && !mxIsEmpty(a)) { cgr|=1;
             QSet<TQ> Q;
             char xflag=(isa ? 0 : 1); 
@@ -3270,7 +3271,7 @@ void QSpace<TQ,TD>::init(
                "ERR %s() empty QDIM while info.cgr is specified (%d/%d)",
                 FCT,m,n);
             else
-            if (mxGetNumberOfDimensions(ad)>2 ||
+            if (mxGetNumberOfDimensions(aD)>2 ||
                 m!=QIDX.dim1 || m!=CGR.dim1 ||
                 n!=qtype.len || n!=CGR.dim2 || qtype.Qlen()!=QDIM)
             wblog(FL,"ERR %s() invalid dimensions for cell array "
@@ -3319,17 +3320,16 @@ void QSpace<TQ,TD>::init(
    }
    else qtype.init();
 
-   m=mxGetM(ad); n=mxGetN(ad);
+   m=mxGetM(aD); n=mxGetN(aD);
 
-   if ((m>1 && n>1) || mxGetNumberOfDimensions(ad)>2) wblog(F,L,
+   if ((m>1 && n>1) || mxGetNumberOfDimensions(aD)>2) wblog(F,L,
       "ERR QSpace() cell VECTOR expected for data (%d,%d)",m,n);
-
-   m*=n;
+   m*=n; 
 
    if (DATA.len!=m) {
-      if (m==1 && DATA.len==0 && QIDX.isEmpty() && CGR.isEmpty()) {
+      if (m==1 && !DATA.len && QIDX.isEmpty() && CGR.isEmpty()) {
          QIDX.init(1,0); setupDATA();
-         if (r<2) r=2; 
+         if (!r) r=2; 
       }
       else { wblog(F,L,
         "ERR QSpace() dimension mismatch (QIDX: %dx%d, data: %d)",
@@ -3338,8 +3338,8 @@ void QSpace<TQ,TD>::init(
    }
 
    for (n=i=0; i<m; ++i) {
-      DATA[i]->init(mxGetCell(ad,i), refD);
-      DATA[i]->appendSingletons(FL,r,1); 
+      DATA[i]->init(mxGetCell(aD,i), refD);
+      DATA[i]->appendSingletons(FL,r, r>2? 1:0); 
       if (!*DATA[i]) { ++n; }
    }
 
