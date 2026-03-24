@@ -3,6 +3,10 @@ with newest entries listed first.
 
 ## Version upgrade QSpace v4.1
 
+`[03/24/2026]` fixed broken support for HPTT.
+Thanks to Jonas Wattendorff (University of Cologne, Germany)
+for pointing this out.
+
 `[02/11/2026]` push of updates to public repository qspace-v4-pub,
 macOS version (binaries) to follow.
 
