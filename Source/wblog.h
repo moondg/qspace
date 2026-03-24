@@ -57,6 +57,8 @@
 #define WBL_RESIZE__ (1U<<24) 
 #define WBL_RLARGE__ (1U<<25) 
 
+#define WBL_UTIL__   (1U<<30) 
+
 #define WBLOG_MSEC   (Wb::envVRB & WBL_MSEC__  )
 #define WBLOG_TCAST  (Wb::envVRB & WBL_TCAST__ )
 #define WBLOG_CLK    (Wb::envVRB & (WBL_CLK__ | 192)) 
@@ -65,6 +67,8 @@
 #define WBLOG_IO     (Wb::envVRB & WBL_IO__    )
 #define WBLOG_RESIZE (Wb::envVRB & WBL_RESIZE__)
 #define WBLOG_RLARGE (Wb::envVRB & WBL_RLARGE__)
+
+#define WBLOG_UTIL   (Wb::envVRB & WBL_UTIL__  )
 
 #define WBL_HLEN 20
 #define WBL_GOT_SHORTFL -99

@@ -1954,6 +1954,9 @@ void wbarray_permute__(
 
    wbvector<int> Sz(A.SIZE), P_(P); 
 
+   if (WBLOG_UTIL) wblog(FL,
+      "TST %s() P=%s (using HPTT)",FCT,STR(P));
+
    auto plan = hptt::create_plan(P_.data, Sz.len,
        P.fac, A.data, Sz.data, nullptr,  
        0.,    B_data,          nullptr,  
@@ -1973,8 +1976,13 @@ void wbarray_permute__(
        hptt::ESTIMATE,np>=1 ? np : 1);
    plan->execute();
 
+   if (WBLOG_UTIL) wblog(FL,
+      "TST %s() P=%s (using HPTT, complex)",FCT,STR(P));
+
    if (P.conj) { 
-      for (size_t i=0, n=A.numel(); i<n; ++i) { Wb::CONJ(B_data[i]); }
+      for (size_t i=0, n=A.numel(); i<n; ++i) {
+          B_data[i]=Wb::CONJ(B_data[i]);
+      }
    }
 };
 

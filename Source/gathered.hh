@@ -457,7 +457,8 @@ class num2Fmt {
    template<class T, ENABLE_IF_not_isFloat(T)>
    inline void rangeTimes(T* data, size_t n, double fac, char conj=0) {
       if (fac!=1 || conj) { wblog(FL,"WRN %s() "
-         "ignoring fac=%g, conj=%d for type %s",FCT,fac,conj,TSTR(T));
+         "ignoring fac=%g, conj=%d for %s (q=%d)",
+         FCT,fac,conj, TSTR(T), WbUtil<T>::isFloat());
       }
    };
 
