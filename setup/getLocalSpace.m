@@ -63,6 +63,10 @@ function varargout=getLocalSpace(model,varargin)
 %  % three spinless channels with SU(3) channel symmetry
 %    [FF,Z,IS]=getLocalSpace('Fermion','SUNchannel','NC',3,'-v');
 %
+%  % N=2 spinfull channels with Sp(2N) particle/hole + channel symmetry
+%    [FF,Z,SS,IS]=getLocalSpace('FermionS','SU2spin,SpNchannel','NC',2,'-v');
+%    [FF,Z,SS,IS]=getLocalSpace('FermionS','SU2spin,Sp4channel','-v'); % same
+%
 %  % single spin-S site
 %    [S,IS]=getLocalSpace('Spin',1,'-v'); 
 %

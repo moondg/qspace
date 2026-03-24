@@ -72,6 +72,9 @@ function varargout=SymStore(sym,task,varargin)
      elseif isequal(args{1},'--check-fOM')
         check_fOM(args{2:end});
         varargout={}; return
+     elseif isequal(args{1},'--check-parity')
+        check_parity(args{2:end});
+        varargout={}; return
      elseif isequal(args{1},'--xtr')
         [varargout{:}]=xfile2qout(args{2:end});
         return

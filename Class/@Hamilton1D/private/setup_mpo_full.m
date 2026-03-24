@@ -81,6 +81,9 @@ function [HAM]=setup_mpo_full(HAM,varargin)
 
    ndig='2';
 
+   HAM.oez=check_stype_transpose(HAM.oez,stype,'HAM.oez');
+   HAM.ops=check_stype_transpose(HAM.ops,stype,'HAM.ops');
+
    oez=getdatafield(HAM.oez,'op');
    ops=getdatafield(HAM.ops,'op'); nops=size(ops,1);
 
@@ -1268,11 +1271,16 @@ function M3=check_start_stop(mpo,oez,k1,k2,varargin)
                q=[x0(1,1),x0(2,2)];
           else q=         x0(2,1);
           end
-          e=norm(1-q);
-          if e>1E-8, q=sprintf(' %.3g',q);
-             ll(end+1,:)={
-                k, ['start/stop diagonal entry differs from 1 (having' q ')']
-             };
+          e=norm(1-q); m=min(3,floor(L/4));
+          if e>1e-8
+             if k<1+m && norm(q-[1 0])<1e-8
+                wblog(' * ','no HAM term completed yet at k=%d (L-bdry)',k); 
+             elseif k>L-m && norm(q-[0 1])<1e-8
+                wblog(' * ','no more new HAM terms after k=%d (R-bdry)',k); 
+             else 
+                ll(end+1,:)=...
+                { k, ['start/stop got diag([' sprintf(' %.3g',q) '])'] };
+             end
           end
        elseif k>1, ll(end+1,:)={k,'skipped'};
        end
@@ -1282,7 +1290,7 @@ function M3=check_start_stop(mpo,oez,k1,k2,varargin)
     if nl, q=num2str2('-n',nl,'non-canonical MPO entry');
        wblog(1,'WRN',['MPO got ' q]); ll=ll'; 
        fprintf(1,'   k=%2d %s\n',ll{:});
-       wblog('-->','%3d/%d  iterations passed (k=%d..%d)',L-nl,L,k1,k2);
+       wblog('-->','%3d/%d remaining entries passed (k=%d..%d)',L-nl,L,k1,k2);
     elseif vflag
        wblog(1,'MPO','all sites k=%d..%d/%d in start/stop state order',k1,k2,L);
     end

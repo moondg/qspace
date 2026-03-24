@@ -6,7 +6,24 @@ function [D,sym,err]=get_dir(sym,varargin)
 %
 % Wb,Jan30,15
 
-% sym=regexprep(sym,'(S[pU])\(*(\d+)\)','$1$2\n');
+  err=0;
+
+% permit explicit specificiation of other RCStore data
+  if ~isempty(find(sym=='/',1)), s='';
+    if exist(sym,'dir')
+       D=regexprep(sym,'\/((S[pOU]|A)\d{1,2})(?@s=$1;)\/?$','');
+       if ~isempty(s), sym=s;
+          D=[ regexprep(D,'^~\/',[getenv('HOME') '/']), '/' sym];
+       end
+     end
+     if isempty(s)
+        if nargout>2, err=-2;
+        else wbdie('unexpected (path to) symmetry %s',sym);
+        end
+     end
+     return
+  end
+
   sym=check_sym(sym);
 
   D=getenv('RC_STORE');
@@ -18,7 +35,7 @@ function [D,sym,err]=get_dir(sym,varargin)
      getRC(sym,'--ping');
   end
 
-  ix=[]; DX={}; err=0;
+  ix=[]; DX={};
   for i=1:nD
      D{i}=[ D{i} '/' sym ];
      if ~exist(D{i},'dir')

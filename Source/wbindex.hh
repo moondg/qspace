@@ -1118,7 +1118,7 @@ class iFerm : public MVEC {
   public:
     iFerm() : r(0) {};
     iFerm(const iFerm &b) : r(0) { init(b); };
-    iFerm(const char *s) : r(0) { init(FL,s); };
+    iFerm(const char  *s) : r(0) { init(FL,s); };
 
     iFerm(unsigned r_, unsigned nsym) : r(r_) { MVEC::init(r_+nsym); };
 

@@ -408,7 +408,7 @@ function [X1,X2,r2,Iout]=update_psi_2site(HAM,X1,X2,k1,k2,kdir,varargin)
   [U,B,Iout]=orthoQS(Psi,iff(kdir>0,1,2),oe{:});
 
   if NPsi && Iout.svd2tr>1E-32
-     B=ortho_Psi3(B,stol^2,NPsi1,'-k');
+     [B,ns,nrm,Iout.wrn]=ortho_Psi3(B,stol^2,NPsi1,'-k');
   end
 
   if NPsi>1

@@ -1,5 +1,5 @@
-function [Q,ns,nrm]=ortho_Psi3(Q,stol,NPsi,kflag)
-% function [Q,ns,nrm]=ortho_Psi3(Q,stol,NPsi, [kflag])
+function [Q,ns,nrm,msg]=ortho_Psi3(Q,stol,NPsi,kflag)
+% function [Q,ns,nrm,msg]=ortho_Psi3(Q,stol,NPsi, [kflag])
 %
 %    Orthonormalize Q in g assuming lr[g] index order.
 %    i.e. orthonormalizes states in Q w.r.t to state index (#3)
@@ -24,7 +24,7 @@ function [Q,ns,nrm]=ortho_Psi3(Q,stol,NPsi,kflag)
   else kflag, wblog('WRN','got unexpected kflag (ignore)'); kflag=0;
   end
 
-  nrm=normQS(Q);
+  nrm=normQS(Q); msg='';
   if ~isobject(Q), Q=QSpace(Q); end
 
   if ~NPsi
@@ -57,9 +57,16 @@ function [Q,ns,nrm]=ortho_Psi3(Q,stol,NPsi,kflag)
         end
         Q=QSpace(contractQS(U,3,X,1));
 
-        e=norm(Q-Q_); if e>1E-4
-           wblog('WRN','basis change by %.3g',e);
-           if kflag>1, wbstop, end
+        e=norm(Q-Q_);
+        if e>5e-4
+           msg=sprintf('δψ=%.1e',e);
+           if e>0.05
+              if kflag>1 || nargout<4
+                   wblog('WRN', msg); if kflag>1, wbstop, end
+              else msg=[ 'WRN ' msg]; end
+           elseif nargout<4
+              wblog(' * ', msg);
+           end
         end
      end
 

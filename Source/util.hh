@@ -520,9 +520,9 @@ template <> inline constexpr
 
 #ifdef _COMPLEX_H  
 template <> inline constexpr
-   char WbUtil<complex<double> >::isFlaot() { return  7; }; 
-template <> inline constexpro
-   char WbUtil<complex<float > >::isFloat() { return 11; }; 
+   char WbUtil<std::complex<double> >::isFloat() { return  7; }; 
+template <> inline constexpr
+   char WbUtil<std::complex<float > >::isFloat() { return 11; }; 
 #endif
 
 #ifdef MATLAB_MEX_FILE
@@ -538,9 +538,9 @@ template <> inline constexpr
 
 #ifdef _COMPLEX_H  
 template <> inline constexpr
-   char WbUtil<complex<double> >::isComplex() { return 2; };
+   char WbUtil<std::complex<double> >::isComplex() { return 2; };
 template <> inline constexpro
-   char WbUtil<complex<float > >::isComplex() { return 4; };
+   char WbUtil<std::complex<float > >::isComplex() { return 4; };
 #endif
 
 #ifdef MATLAB_MEX_FILE

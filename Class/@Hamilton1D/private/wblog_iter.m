@@ -10,11 +10,11 @@ function Il=wblog_iter(k,kdir,L,r2,I,isw)
         else s{1}=' 2-site'; end
         wblog(1,'@%s%s DMRG%s',mfilename('class'),s{:});
         fprintf(1,'\n%s\n%s\n%s\n',...
-        '────────────┬──────────────────────────────────┬───────────────────',...
-        '  systime   │sweep  Nkept  exp(SEnt)   disc.wt │ energy/site       ',...
-        '────────────┴──────────────────────────────────┴───────────────────');
+        '────────────┬─────────────────────────────────┬───────────────────',...
+        '  systime   │sweep  Nkept  exp(SEnt)  disc.wt │ energy/site       ',...
+        '────────────┴─────────────────────────────────┴───────────────────');
      elseif ~isempty(regexp(k,'sep')), fprintf(1,'%s\n',...
-        '───────────────────────────────────────────────────────────────────');
+        '──────────────────────────────────────────────────────────────────');
      else disp(k), wbdie('invalid usage'); end
 
      return
@@ -34,20 +34,29 @@ function Il=wblog_iter(k,kdir,L,r2,I,isw)
   else E0=[]; s={sw,repmat(' ',1,15),'\r'};
   end
 
-  if r2 % avoid '0.000e+00' string // Wb,Jun01,19
-       s{4}=sprintf('%8.3e',r2);
-  else s{4}=sprintf('%9g',r2); end
-
   if isfield(I,'se')
-       se=I.se; s{5}=sprintf('%10.6f',exp(se));
-  else se=[]; s{5}=''; end
+       se=I.se; s{4}=sprintf('%10.6f',exp(se));
+  else se=[]; s{4}=''; end
+
+  if r2 % avoid '0.000e+00' string // Wb,Jun01,19
+       s{5}=sprintf('%9.2e',r2);
+  else s{5}=sprintf('%9g',r2); end
 
   if isfield(I,'NK'), NK=I.NK;
   elseif isfield(I,'Nkeep'), NK=I.Nkeep;
   else NK=nan; end
 
+  if isfield(I,'wrn') && ~isempty(I.wrn), tag='';
+     q=regexprep(I.wrn,'(WRN|ERR)(?@tag=$1;)\s*','');
+     if ~isempty(tag)
+        [i,w]=wblog('--hl-check',tag);
+        if i, q=[w{1} q w{2}]; end
+     end
+     s{2}(end+1:16)=' '; s{2}=[s{2} q];
+  end
+
   fprintf(['  %s  %s %5g %s %s │ %s\n',s{3}],...
-     datestr(now,'HH:MM:SS'),s{1},NK,s{[5 4]},s{2});
+     datestr(now,'HH:MM:SS'),s{1},NK,s{4:5},s{2});
 
   if nargout
      Il.E0=E0;

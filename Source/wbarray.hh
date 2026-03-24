@@ -1950,31 +1950,32 @@ void wbarray_permute__(
 
 template <>
 void wbarray_permute__(
-   double *B_data, const wbarray<double> &A, const wbperm &P_, int np) {
+   double *B_data, const wbarray<double> &A, const wbperm &P, int np) {
 
-   wbvector<int> Sz(A.SIZE), P(P_); 
+   wbvector<int> Sz(A.SIZE), P_(P); 
 
-   auto plan = hptt::create_plan(P.data, Sz.len,
+   auto plan = hptt::create_plan(P_.data, Sz.len,
        P.fac, A.data, Sz.data, nullptr,  
        0.,    B_data,          nullptr,  
        hptt::ESTIMATE,np>=1 ? np : 1);
    plan->execute();
 
-   if (P.conj) { Conj(); } 
 };
 
 template <>
 void wbarray_permute__(
-   wbcomplex *B_data, const wbarray<wbcomplex> &A, const wbperm &P_, int np) {
+   wbcomplex *B_data, const wbarray<wbcomplex> &A, const wbperm &P, int np) {
 
-   wbvector<int> Sz(A.SIZE), P(P_);
-   auto plan = hptt::create_plan(P.data, Sz.len,
+   wbvector<int> Sz(A.SIZE), P_(P);
+   auto plan = hptt::create_plan(P_.data, Sz.len,
        P.fac, (hptt::DoubleComplex*)A.data, Sz.data, nullptr,
        0.,    (hptt::DoubleComplex*)B_data,          nullptr,
        hptt::ESTIMATE,np>=1 ? np : 1);
    plan->execute();
 
-   if (P.conj) { Conj(); } 
+   if (P.conj) { 
+      for (size_t i=0, n=A.numel(); i<n; ++i) { Wb::CONJ(B_data[i]); }
+   }
 };
 
 #endif

@@ -62,9 +62,12 @@ function HAM=setup_mpo(HAM,HH,varargin)
       wbdie('invalid HH (got non-unique records !?)');
    end
 
-   check_ortho_ops(HAM.oez,HAM.ops,HH);
+   HAM.oez=check_stype_transpose(HAM.oez,stype,'HAM.oez');
+   HAM.ops=check_stype_transpose(HAM.ops,stype,'HAM.ops');
 
-   nops=size(HAM.ops,1); ntype=size(HAM.ops,2);
+   nops =size(HAM.ops,1);
+   ntype=size(HAM.ops,2);
+
    if size(HAM.oez,2)~=ntype, wbdie(['invalid usage '...
      '(same number of sets for ops and oez required: %d/%d)'],...
      size(HAM.oez,2),ntype);
@@ -88,6 +91,8 @@ function HAM=setup_mpo(HAM,HH,varargin)
          vec2str(setdiff((1:ntype)',q),'-f'),ntype);
       end
    end
+
+   check_ortho_ops(HAM.oez,HAM.ops,HH);
 
    qops=ones(size(HAM.ops)); n=numel(HAM.ops);
    for i=1:n

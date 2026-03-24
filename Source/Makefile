@@ -118,13 +118,13 @@
   XOPT += MACOSX_DEPLOYMENT_TARGET=12.0
 
   ifdef XFLAGS
-     XOPT += CXXFLAGS="\$$CXXFLAGS $(XFLAGS)"  # works :)
+     XOPT += CXXFLAGS="\$$CXXFLAGS $(XFLAGS)"
   endif
   ifdef LFLAGS
-     XOPT += LDFLAGS="\$$LDFLAGS $(LFLAGS)"    # Wb,Apr24,20
+     XOPT += LDFLAGS="\$$LDFLAGS $(LFLAGS)"
   endif
 
-  XOPT = CXXLIBS="\$$CXXLIBS $(OMP)"
+  XOPT += CXXLIBS="\$$CXXLIBS $(OMP)"
 
   ifdef VFLAG
      OPTS += '-v' # e.g. include by running: make ... VFLAG=1
