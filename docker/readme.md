@@ -1,4 +1,4 @@
-# QSpace v4.0 install guide
+# QSpace v4.1 install guide
 
 See [QSpace](https://bitbucket.org/qspace4u/qspace-v4-pub) for more information.
 
@@ -7,14 +7,17 @@ See [QSpace](https://bitbucket.org/qspace4u/qspace-v4-pub) for more information.
 
 Automated installation can be done by
 
-```
-bash installer.sh
-. ~/.bashrc
-mlsetup
-cd $MYMATLAB/Source
-make -B all
-```
+1. Copy `installer.sh` to computer.
+2. Modify `QSPACE_DIR` in `installer.sh`.
+3. Run command below
+    ```bash
+    bash installer.sh
+    . ~/.bashrc
+    mlsetup
+    cd $MYMATLAB/Source
+    make -B all
+    ```
 
 # Description
-+ Default installation path is `$HOME/Documents/MATLAB/qspace-v4-pub`, which can be changed by modifying `QSPACE_DIR` in `installer.sh`.
++ Default installation path is `$HOME/Documents/MATLAB/qspace`, which can be changed by modifying `QSPACE_DIR` in `installer.sh`.
 + `LMA` and `RC_STORE`, `RC_SYNC` are set to be in `QSPACE_DIR/build`.
